@@ -1,0 +1,10 @@
+build
+TAGS
+tags
+cscope.*
+s.vim
+*.swp
+
+s
+.gdbinit
+
