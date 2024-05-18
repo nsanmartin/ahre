@@ -1,15 +1,33 @@
 INCLUDE:=$(HOME)/usr/include
 LIB:=$(HOME)/usr/lib
-CFLAGS:=-g -O3 -Wall -Wextra -Werror -pedantic -Wold-style-definition
+CFLAGS:=-g -O3 -Wall -Wextra -Werror -pedantic -Wold-style-definition -Iinclude
 
 AHRE:=ahre
 
-$(AHRE): curl/lib/.libs tidy-html5/build/cmake/libtidy.a
+AHRE_OBJDIR=build
+AHRE_SRCDIR=src
+AHRE_INCLUDE=include
+AHRE_HEADERS=$(wildcard $(AHRE_INCLUDE)/*.h)
+AHRE_SRCS=$(wildcard $(AHRE_SRCDIR)/*.c)
+AHRE_OBJ=$(AHRE_SRCS:src/%.c=$(AHRE_OBJDIR)/%.o)
+
+
+$(AHRE): $(AHRE_OBJ)
 	$(CC) $(CFLAGS) \
 		-I$(INCLUDE) \
 		-L$(LIB) \
 		$(AHRE).c -o build/$(AHRE) \
-		-lcurl -llexbor -ltidy
+		$^  \
+		-lcurl -llexbor -ltidy \
+
+
+$(AHRE_OBJDIR)/%.o: $(AHRE_SRCDIR)/%.c $(AHRE_HEADERS)
+	$(CC) $(CFLAGS) \
+		-I$(INCLUDE) \
+		-L$(LIB) \
+		-c -o $@ \
+		$< \
+		-lcurl -llexbor -ltidy 
 
 #TODO: add lexbor as submodule too
 debug: curl/lib/.libs tidy-html5/build/cmake/libtidy.a
