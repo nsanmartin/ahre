@@ -1,13 +1,25 @@
-CFLAGS:=-g -Wall 
+INCLUDE:=$(HOME)/usr/include
+LIB:=$(HOME)/usr/lib
+CFLAGS:=-g -O3 -Wall -Wextra -Werror -pedantic -Wold-style-definition
 
-GETHREF=gethref
+AHRE:=ahre
 
+$(AHRE): curl/lib/.libs tidy-html5/build/cmake/libtidy.a
+	$(CC) $(CFLAGS) \
+		-I$(INCLUDE) \
+		-L$(LIB) \
+		$(AHRE).c -o build/$(AHRE) \
+		-lcurl -llexbor -ltidy
+
+#TODO: add lexbor as submodule too
 debug: curl/lib/.libs tidy-html5/build/cmake/libtidy.a
 	$(CC) $(CFLAGS) \
 		-I./tidy-html5/include \
+		-I$(INCLUDE)\
 		-L./curl/lib/.libs \
 		-L./tidy-html5/build/cmake \
-		$(GETHREF).c -o build/$(GETHREF) -lcurl -ltidy \
+		-L$(LIB) \
+		$(AHRE).c -o build/$(@) -lcurl -llexbor -ltidy \
 		-Wl,-rpath=./tidy-html5/build/cmake
 
 curl/configure:
