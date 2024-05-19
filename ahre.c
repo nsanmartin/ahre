@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <tidy.h>
 #include <tidybuffio.h>
@@ -6,19 +7,22 @@
  
 #include <wrappers.h>
 #include <user-interface.h>
+#include <ah-doc.h>
 
 void print_help(const char* program) { printf("usage: %s [-b (lxb|tidy)] <url>\n", program); }
 
 typedef enum { LxbBe, TidyBe } BeLib;
 
 
-int loop_lexbor(AhreCtx ctx[static 1]) {
+int loop_lexbor(const char* url) {
+    AhCtx* ctx = AhCtxMalloc(url, ah_process_line);
+    if (!ctx) { exit(EXIT_FAILURE); }
 
     while (!ctx->quit) {
-        ahre_lexbor(ctx->url);
-        ahre_read_line_from_user(ctx);
+        ah_read_line_from_user(ctx);
     }
 
+    AhCtxFree(ctx);
     return EXIT_SUCCESS;
 }
 
@@ -50,14 +54,9 @@ opt_read:
     if (!bad_input) {
         switch (be_lib) {
             case LxbBe: {
-                AhreCtx ctx = {
-                    .url=argv[param],
-                    .user_line_callback=ahre_process_line,
-                    .quit=false
-                };
-                return loop_lexbor(&ctx);
+                return loop_lexbor(argv[param]);
             }
-            case TidyBe: { return ahre_tidy(argv[param]); }
+            case TidyBe: { return ah_tidy(argv[param]); }
             default: { goto exit_error; }
         }
     }

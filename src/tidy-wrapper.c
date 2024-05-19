@@ -2,7 +2,7 @@
 
 int tidy_parse(TidyDoc* tdocp, TidyBuffer* docbuf);
 
-int ahre_tidy(const char* url) {
+int ah_tidy(const char* url) {
         CurlWithErrors cwe = curl_create();
         if (!cwe.curl) {
             fprintf(stderr, "curl_easy_init failure\n");

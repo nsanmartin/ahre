@@ -7,6 +7,8 @@
 #include <curl/curl.h>
 #include <lexbor/html/html.h>
 
+#include <ah-doc.h>
+
 #define FAILED(msg) { perror(msg); exit(EXIT_FAILURE); }
 
 //TODO: rename for CurlCtx
@@ -23,8 +25,10 @@ static inline  CurlWithErrors curl_create(void) {
     return rv;
 }
 
-int ahre_tidy(const char* url);
-int ahre_lexbor(const char* url);
+int ah_tidy(const char* url);
+//int ah_lexbor_doc(AhCtx ctx[static 1]);
+int lexbor_fetch_document(lxb_html_document_t* document, const char* url);
+int lexbor_print_a_href(lxb_html_document_t* document);
 
 int curl_set_all_options(CURL* curl, const char* url, char* errbuf);
 int curl_set_callback_and_buffer(CURL* curl, curl_write_callback callback, void* docbuf);

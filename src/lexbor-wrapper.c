@@ -84,7 +84,19 @@ size_t chunk_callback(char *in, size_t size, size_t nmemb, void* outstream) {
 }
 
  
-int ahre_lexbor(const char* url) {
+//int ah_lexbor_doc(AhCtx ctx[static 1]) {
+//    if (ctx->fetch) {
+//        if (lexbor_fetch_document(ctx->doc, ctx->url)) { FAILED("Failed to create HTML Document"); }
+//        //if (LXB_STATUS_OK != serialize(lxb_dom_interface_node(document))) { FAILED("Failed to serialize HTML"); }
+//        lexbor_print_a_href(ctx->doc);
+//        ctx->fetch = false;
+//
+//        //lxb_html_document_destroy(document);
+//    }
+//    return EXIT_SUCCESS;
+//}
+
+int ah_lexbor(const char* url) {
     lxb_html_document_t* document = lxb_html_document_create();
     if (!document) { FAILED("Failed to create HTML Document"); }
 
