@@ -18,7 +18,7 @@ $(AHRE): $(AHRE_OBJ)
 		-L$(LIB) \
 		$(AHRE).c -o build/$(AHRE) \
 		$^  \
-		-lcurl -llexbor -ltidy \
+		-lcurl -llexbor -ltidy -lreadline
 
 
 $(AHRE_OBJDIR)/%.o: $(AHRE_SRCDIR)/%.c $(AHRE_HEADERS)

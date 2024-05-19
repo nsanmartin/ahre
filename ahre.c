@@ -5,10 +5,23 @@
 #include <lexbor/html/html.h>
  
 #include <wrappers.h>
+#include <user-interface.h>
 
 void print_help(const char* program) { printf("usage: %s [-b (lxb|tidy)] <url>\n", program); }
 
 typedef enum { LxbBe, TidyBe } BeLib;
+
+
+int loop_lexbor(AhreCtx ctx[static 1]) {
+
+    while (!ctx->quit) {
+        ahre_lexbor(ctx->url);
+        ahre_read_line_from_user(ctx);
+    }
+
+    return EXIT_SUCCESS;
+}
+
 
 int main(int argc, char **argv) {
     bool bad_input = false;
@@ -36,7 +49,14 @@ opt_read:
 
     if (!bad_input) {
         switch (be_lib) {
-            case LxbBe: { return ahre_lexbor(argv[param]); }
+            case LxbBe: {
+                AhreCtx ctx = {
+                    .url=argv[param],
+                    .user_line_callback=ahre_process_line,
+                    .quit=false
+                };
+                return loop_lexbor(&ctx);
+            }
             case TidyBe: { return ahre_tidy(argv[param]); }
             default: { goto exit_error; }
         }
