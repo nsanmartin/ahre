@@ -1,6 +1,6 @@
 INCLUDE:=$(HOME)/usr/include
 LIB:=$(HOME)/usr/lib
-CFLAGS:=-g -O3 -Wall -Wextra -Werror -pedantic -Wold-style-definition -Iinclude
+CFLAGS:=-g  -Wall -Wextra -Werror -pedantic -Wold-style-definition -Iinclude
 
 AHRE:=ahre
 
@@ -10,6 +10,9 @@ AHRE_INCLUDE=include
 AHRE_HEADERS=$(wildcard $(AHRE_INCLUDE)/*.h)
 AHRE_SRCS=$(wildcard $(AHRE_SRCDIR)/*.c)
 AHRE_OBJ=$(AHRE_SRCS:src/%.c=$(AHRE_OBJDIR)/%.o)
+
+
+ahre-tags: $(AHRE) tags
 
 
 $(AHRE): $(AHRE_OBJ)
@@ -67,3 +70,4 @@ cscope:
 
 clean:
 	find build -type f -delete
+	if [ -f tags ]; then rm tags; fi

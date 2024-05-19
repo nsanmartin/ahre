@@ -9,13 +9,6 @@
 
 int ah_read_line_from_user(AhCtx ctx[static 1]) {
     char* line = 0x0;
-    //while ((line = readline("> "))) {
-    //    if (line && *line) {
-    //        ctx->user_line_callback(ctx, line);
-    //        add_history(line);
-    //    }
-    //    ah_free(line);
-    //}
     line = readline("> ");
     if (line && *line) {
         ctx->user_line_callback(ctx, line);
@@ -27,11 +20,11 @@ int ah_read_line_from_user(AhCtx ctx[static 1]) {
 
 int ah_process_line(AhCtx ctx[static 1], const char* line) {
     printf("line: `%s'\n", line);
-    if (strcmp("q", line) == 0) {
+    if (!line || strcmp("q", line) == 0) {
         puts("quitting");
         ctx->quit = true;
     } else if (strcmp("p", line) == 0) {
-        lexbor_print_a_href(ctx->doc);
+        lexbor_print_a_href(ctx->ahdoc->doc);
     }    
 
     return 0;

@@ -1,30 +1,6 @@
 #include <wrappers.h>
 
 
-size_t chunk_callback(char *in, size_t size, size_t nmemb, void* outstream);
-
-
-int lexbor_fetch_document(lxb_html_document_t* document, const char* url) {
-
-    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(document)) { FAILED("Failed to parse HTML"); }
-
-    CurlWithErrors cwe = curl_create();
-    if (!cwe.curl) { FAILED("curl_easy_init failure\n"); }
-
-    if (curl_set_all_options(cwe.curl, url, cwe.errbuf)
-        || curl_set_callback_and_buffer(cwe.curl, chunk_callback, document)) {
-        FAILED("error initializing cwe.curl");
-    }
-
-    if (curl_easy_perform(cwe.curl)) { FAILED(cwe.errbuf); }
-
-    curl_easy_cleanup(cwe.curl);
-
-    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_end(document)) { FAILED("Failed to parse HTML"); }
-    return 0;
-}
-
-
 int lexbor_print_a_href(lxb_html_document_t* document) {
     lxb_dom_collection_t* collection = lxb_dom_collection_make(&document->dom_document, 128);
     if (collection == NULL) {
@@ -38,7 +14,7 @@ int lexbor_print_a_href(lxb_html_document_t* document) {
     for (size_t i = 0; i < lxb_dom_collection_length(collection); i++) {
         lxb_dom_element_t* element = lxb_dom_collection_element(collection, i);
 
-        //serialize_node(lxb_dom_interface_node(element));
+        //TODO: store in a buffer
         size_t value_len = 0;
         const lxb_char_t * value = lxb_dom_element_get_attribute(element, (const lxb_char_t*)"href", 4, &value_len);
         fwrite(value, 1, value_len, stdout);
@@ -81,32 +57,5 @@ size_t chunk_callback(char *in, size_t size, size_t nmemb, void* outstream) {
     lxb_html_document_t* document = outstream;
     size_t r = size * nmemb;
     return  LXB_STATUS_OK == lxb_html_document_parse_chunk(document, (lxb_char_t*)in, r) ? r : 0;
-}
-
- 
-//int ah_lexbor_doc(AhCtx ctx[static 1]) {
-//    if (ctx->fetch) {
-//        if (lexbor_fetch_document(ctx->doc, ctx->url)) { FAILED("Failed to create HTML Document"); }
-//        //if (LXB_STATUS_OK != serialize(lxb_dom_interface_node(document))) { FAILED("Failed to serialize HTML"); }
-//        lexbor_print_a_href(ctx->doc);
-//        ctx->fetch = false;
-//
-//        //lxb_html_document_destroy(document);
-//    }
-//    return EXIT_SUCCESS;
-//}
-
-int ah_lexbor(const char* url) {
-    lxb_html_document_t* document = lxb_html_document_create();
-    if (!document) { FAILED("Failed to create HTML Document"); }
-
-    if (lexbor_fetch_document(document, url)) { FAILED("Failed to create HTML Document"); }
-
-    //if (LXB_STATUS_OK != serialize(lxb_dom_interface_node(document))) { FAILED("Failed to serialize HTML"); }
-    lexbor_print_a_href(document);
-
-
-    lxb_html_document_destroy(document);
-    return EXIT_SUCCESS;
 }
 

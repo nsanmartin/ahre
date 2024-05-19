@@ -2,8 +2,18 @@
 
 int tidy_parse(TidyDoc* tdocp, TidyBuffer* docbuf);
 
+
+int curl_set_all_options(CURL* curl, const char* url, char* errbuf) {
+    return curl_easy_setopt(curl, CURLOPT_URL, url)
+        || curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf)
+        || curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L)
+        || curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1)
+        ;
+}
+
+
 int ah_tidy(const char* url) {
-        CurlWithErrors cwe = curl_create();
+        AhCurl cwe = curl_create();
         if (!cwe.curl) {
             fprintf(stderr, "curl_easy_init failure\n");
             return -1;
@@ -75,7 +85,6 @@ int tidy_parse(TidyDoc* tdocp, TidyBuffer* docbuf) {
         err = tidyRunDiagnostics(tdoc); /* load tidy error buffer */
         if(err >= 0) {
           dump_hrefs(tdoc, tidyGetRoot(tdoc), 0); /* walk the tree */
-          //fprintf(stderr, "%s\n", tidy_errbuf.bp); /* show errors */
         }
       }
     }

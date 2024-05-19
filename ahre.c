@@ -7,7 +7,7 @@
  
 #include <wrappers.h>
 #include <user-interface.h>
-#include <ah-doc.h>
+#include <ahdoc.h>
 
 void print_help(const char* program) { printf("usage: %s [-b (lxb|tidy)] <url>\n", program); }
 
@@ -15,8 +15,11 @@ typedef enum { LxbBe, TidyBe } BeLib;
 
 
 int loop_lexbor(const char* url) {
-    AhCtx* ctx = AhCtxMalloc(url, ah_process_line);
-    if (!ctx) { exit(EXIT_FAILURE); }
+    AhCtx* ctx = AhCtxCreate(url, ah_process_line);
+    if (!ctx) {
+        /* TODO: do not ext, ask for another url instead */
+        return EXIT_FAILURE;
+    }
 
     while (!ctx->quit) {
         ah_read_line_from_user(ctx);
