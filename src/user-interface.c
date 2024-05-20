@@ -19,13 +19,19 @@ int ah_read_line_from_user(AhCtx ctx[static 1]) {
 }
 
 int ah_process_line(AhCtx ctx[static 1], const char* line) {
-    printf("line: `%s'\n", line);
-    if (!line || strcmp("q", line) == 0) {
+    if (!line) { perror("user line is null, aborting."); exit(EXIT_FAILURE); }
+    if (strcmp("", line) == 0) {
+        puts("empty liine, bye");
+        ctx->quit = true;
+    }
+    if (strcmp("q", line) == 0) {
         puts("quitting");
         ctx->quit = true;
     } else if (strcmp("p", line) == 0) {
         lexbor_print_a_href(ctx->ahdoc->doc);
-    }    
+    } else if (strncmp("tag ", line, 4) == 0) {
+        lexbor_print_tag(line + 4, ctx->ahdoc->doc);
+    }
 
     return 0;
 }
