@@ -2,8 +2,8 @@
 #define WRAPPERS_A_HREF_H_
 
 #include <stdio.h>
-#include <tidy.h>
-#include <tidybuffio.h>
+#include <tidy/tidy.h>
+#include <tidy/tidybuffio.h>
 #include <curl/curl.h>
 #include <lexbor/html/html.h>
 

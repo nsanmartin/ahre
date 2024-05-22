@@ -6,6 +6,7 @@
 #include <lexbor/html/html.h>
 
 #include <wrappers.h>
+#include <mem.h>
 
 
 typedef struct AhCtx AhCtx;
@@ -32,4 +33,11 @@ void AhCtxFree(AhCtx* ctx) ;
 
 AhDoc* AhDocCreate(const char* url);
 void AhDocFree(AhDoc* ctx) ;
+
+static inline void AhDocUpdateUrl(AhDoc ad[static 1], const char* url) {
+        ah_free((char*)ad->url);
+        ad->url = url;
+}
+int AhDocFetch(AhCurl ahcurl[static 1], AhDoc ad[static 1]) ;
+const char* ah_urldup(const char* url) ;
 #endif

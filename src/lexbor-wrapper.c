@@ -105,6 +105,9 @@ lxb_inline lxb_status_t serialize(lxb_dom_node_t *node) {
     );
 }
 
+void print_html(lxb_html_document_t* document) {
+        serialize(lxb_dom_interface_node(document));
+}
 
 size_t chunk_callback(char *in, size_t size, size_t nmemb, void* outstream) {
     lxb_html_document_t* document = outstream;
