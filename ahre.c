@@ -32,7 +32,7 @@ int loop_lexbor(const char* url) {
 
 int main(int argc, char **argv) {
     bool bad_input = false;
-    if (argc != 2 && argc != 4) { goto exit_error; }
+    if (argc != 1 && argc != 2 && argc != 4) { goto exit_error; }
 
     BeLib be_lib = LxbBe; /* default is lexbor */
 

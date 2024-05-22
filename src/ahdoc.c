@@ -16,7 +16,8 @@ bool is_url_too_long(const char* url) {
 }
 
 const char* ah_urldup(const char* url) {
-        if (!url || !*url || is_url_too_long(url)) {
+	if (!url) { return 0x0; }
+        if (!*url || is_url_too_long(url)) {
                 perror("url too long");
                 return 0x0;
         }
@@ -27,10 +28,10 @@ AhDoc* AhDocCreate(const char* url) {
     AhDoc* rv = ah_malloc(sizeof(AhDoc));
     if (!rv) { goto exit_fail; }
     url = ah_urldup(url);
-    if (!url) {
-        perror("urldup error");
-        goto free_rv;
-    }
+    //if (!url) {
+    //    perror("urldup error");
+    //    goto free_rv;
+    //}
     lxb_html_document_t* document = lxb_html_document_create();
     if (!document) {
         perror("Lxb failed to create html document");
@@ -41,7 +42,7 @@ AhDoc* AhDocCreate(const char* url) {
 
 free_url:
     ah_free((char*)url);
-free_rv:
+//free_rv:
     ah_free(rv);
 exit_fail:
     return 0x0;
@@ -79,9 +80,9 @@ AhCtx* AhCtxCreate(const char* url, AhUserLineCallback callback) {
         perror("Error configuring curl write fn/data"); goto free_ahdoc;
     }
 
-    if (Ok != curl_lexbor_fetch_document(ahcurl, ahdoc)) {
-        perror("Error fetching doc"); goto free_ahdoc;
-    }
+    //if (Ok != curl_lexbor_fetch_document(ahcurl, ahdoc)) {
+    //    perror("Error fetching doc"); goto free_ahdoc;
+    //}
 
     *rv = (AhCtx) {
         .ahcurl=ahcurl,

@@ -1,5 +1,7 @@
+#include <ahutils.h>
 #include <ahdoc.h>
 #include <wrappers.h>
+
 
 lxb_inline lxb_status_t
 print_tag_callback(const lxb_char_t *data, size_t len, void *ctx) {
@@ -8,12 +10,18 @@ print_tag_callback(const lxb_char_t *data, size_t len, void *ctx) {
     return LXB_STATUS_OK;
 }
 
-int lexbor_print_tag(const char* tag, lxb_html_document_t* document) {
-    if (!tag || !*tag) { puts("Ah, invalid tag"); return 0; }
-    while (*tag && isspace(*tag)) { ++tag; }
-    const char* end = tag;
+Str next_word(const char* s) {
+    if (!s || !*s) { return (Str){0}; }
+    while (*s && isspace(*s)) { ++s; }
+    const char* end = s;
     while (*end && !isspace(*end)) { ++end; }
-    if (tag == end) { puts("Ah, invalid tag"); return 0; }
+    if (s == end) { return (Str){0}; }
+    return (Str){.s=s, .len=end-s};
+}
+
+int lexbor_print_tag(const char* tag, lxb_html_document_t* document) {
+    Str tags = next_word(tag);
+    if (tags.len == 0) { puts("Ah, invalid tag"); return 0; }
 
     lxb_dom_collection_t* collection = lxb_dom_collection_make(&document->dom_document, 128);
     if (collection == NULL) {
@@ -23,8 +31,8 @@ int lexbor_print_tag(const char* tag, lxb_html_document_t* document) {
     if (lxb_dom_elements_by_tag_name(
             lxb_dom_interface_element(document->body),
             collection,
-            (const lxb_char_t *) tag,
-            end - tag 
+            (const lxb_char_t *) tags.s,
+            tags.len 
         ) != LXB_STATUS_OK
     ) { FAILED("Failed to get elements by name"); }
 
