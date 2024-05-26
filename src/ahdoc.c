@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <aherror.h>
 #include <curl-lxb.h>
 #include <mem.h>
@@ -6,6 +7,11 @@
 
 // this is just a "random" bound. TODO: think it better
 enum { ah_max_url_len = 1024 };
+
+
+ErrStr lexbor_read_doc_from_url_or_file (AhCurl ahcurl[static 1], AhDoc ad[static 1]); 
+
+
 
 bool is_url_too_long(const char* url) {
     if (!url) { return true; }
@@ -28,10 +34,6 @@ AhDoc* AhDocCreate(const char* url) {
     AhDoc* rv = ah_malloc(sizeof(AhDoc));
     if (!rv) { goto exit_fail; }
     url = ah_urldup(url);
-    //if (!url) {
-    //    perror("urldup error");
-    //    goto free_rv;
-    //}
     lxb_html_document_t* document = lxb_html_document_create();
     if (!document) {
         perror("Lxb failed to create html document");
@@ -42,7 +44,6 @@ AhDoc* AhDocCreate(const char* url) {
 
 free_url:
     ah_free((char*)url);
-//free_rv:
     ah_free(rv);
 exit_fail:
     return 0x0;
@@ -55,12 +56,13 @@ void AhDocFree(AhDoc* ahdoc) {
 }
 
 
-int AhDocFetch(AhCurl ahcurl[static 1], AhDoc ad[static 1]) {
-    if (Ok != curl_lexbor_fetch_document(ahcurl, ad)) {
-        perror("Error fetching doc");
-        return 1;
-    }
-    return 0;
+ErrStr AhDocFetch(AhCurl ahcurl[static 1], AhDoc ad[static 1]) {
+    return lexbor_read_doc_from_url_or_file (ahcurl, ad);
+    //if (Ok != lexbor_read_doc_from_url_or_file (ahcurl, ad)) {
+    //    perror("Error fetching doc");
+    //    return 1;
+    //}
+    //return 0;
 }
 
 AhCtx* AhCtxCreate(const char* url, AhUserLineCallback callback) {
@@ -75,15 +77,6 @@ AhCtx* AhCtxCreate(const char* url, AhUserLineCallback callback) {
     AhDoc* ahdoc = AhDocCreate(url);
     if (!ahdoc) { goto free_ahcurl; }
 
-    if (curl_easy_setopt(ahcurl->curl, CURLOPT_WRITEFUNCTION, chunk_callback)
-        || curl_easy_setopt(ahcurl->curl, CURLOPT_WRITEDATA, ahdoc->doc)) {
-        perror("Error configuring curl write fn/data"); goto free_ahdoc;
-    }
-
-    //if (Ok != curl_lexbor_fetch_document(ahcurl, ahdoc)) {
-    //    perror("Error fetching doc"); goto free_ahdoc;
-    //}
-
     *rv = (AhCtx) {
         .ahcurl=ahcurl,
         .user_line_callback=callback,
@@ -93,8 +86,6 @@ AhCtx* AhCtxCreate(const char* url, AhUserLineCallback callback) {
 
     return rv;
 
-free_ahdoc:
-    AhDocFree(ahdoc);
 free_ahcurl:
     AhCurlFree(ahcurl);
 free_rv:
@@ -109,3 +100,43 @@ void AhCtxFree(AhCtx* ah) {
     ah_free(ah);
 }
 
+bool file_exists(const char* path) { return access(path, F_OK) == 0; }
+
+enum { READ_FROM_FILE_BUFFER_LEN = 4096 };
+unsigned char _read_from_file_bufer[READ_FROM_FILE_BUFFER_LEN] = {0};
+
+ErrStr lexbor_read_doc_from_file(AhDoc ahdoc[static 1]) {
+    FILE* fp = fopen(ahdoc->url, "r");
+    if  (!fp) { return strerror(errno); }
+
+    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(ahdoc->doc)) {
+        return "Lex failed to init html document";
+    }
+
+    size_t bytes_read = 0;
+    while ((bytes_read = fread(_read_from_file_bufer, 1, READ_FROM_FILE_BUFFER_LEN, fp))) {
+        if (LXB_STATUS_OK != lxb_html_document_parse_chunk(
+                ahdoc->doc,
+                _read_from_file_bufer,
+                bytes_read
+            )
+        ) {
+            return "Failed to parse HTML chunk";
+        }
+    }
+    //if (ferror(fp)) { perror("error reading file"); fclose(fp); return ErrFile; }
+    if (ferror(fp)) { fclose(fp); return strerror(errno); }
+    fclose(fp);
+
+    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_end(ahdoc->doc)) {
+        return "Lbx failed to parse html";
+    }
+    return Ok;
+}
+
+ErrStr lexbor_read_doc_from_url_or_file (AhCurl ahcurl[static 1], AhDoc ad[static 1]) {
+    if (file_exists(ad->url)) {
+        return lexbor_read_doc_from_file(ad);
+    }
+    return curl_lexbor_fetch_document(ahcurl, ad);
+}

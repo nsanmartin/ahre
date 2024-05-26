@@ -2,11 +2,13 @@
 #define __AH_DOC_AHRE_H__
 
 #include <stdbool.h>
+#include <errno.h>
 
 #include <lexbor/html/html.h>
 
 #include <wrappers.h>
 #include <mem.h>
+#include <aherror.h>
 
 
 typedef struct AhCtx AhCtx;
@@ -38,6 +40,6 @@ static inline void AhDocUpdateUrl(AhDoc ad[static 1], const char* url) {
         ah_free((char*)ad->url);
         ad->url = url;
 }
-int AhDocFetch(AhCurl ahcurl[static 1], AhDoc ad[static 1]) ;
+ErrStr AhDocFetch(AhCurl ahcurl[static 1], AhDoc ad[static 1]) ;
 const char* ah_urldup(const char* url) ;
 #endif

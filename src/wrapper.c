@@ -34,21 +34,12 @@ void AhCurlFree(AhCurl* ac) {
      ah_free(ac);
 }
 
-Error curl_lexbor_fetch_document(AhCurl ahcurl[static 1], AhDoc* ahdoc) {
-    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(ahdoc->doc)) {
-        return ah_logging_error("Lex failed to init html document", ErrLxb);
-    }
-
-    if (curl_easy_setopt(ahcurl->curl, CURLOPT_URL, ahdoc->url)) {
-        return ah_logging_error("Curl failed to set url", ErrCurl);
-    }
-
-    if (curl_easy_perform(ahcurl->curl)) {
-        return ah_logging_error("Curl failed to perform curl", ErrCurl);
-    }
-
-    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_end(ahdoc->doc)) {
-        return ah_logging_error("Lbx failed to parse html", ErrLxb);
-    }
+ErrStr curl_lexbor_fetch_document(AhCurl ahcurl[static 1], AhDoc* ahdoc) {
+    if (curl_easy_setopt(ahcurl->curl, CURLOPT_WRITEFUNCTION, chunk_callback)
+        || curl_easy_setopt(ahcurl->curl, CURLOPT_WRITEDATA, ahdoc->doc)) { return "Error configuring curl write fn/data"; }
+    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(ahdoc->doc)) { return "Lex failed to init html document"; }
+    if (curl_easy_setopt(ahcurl->curl, CURLOPT_URL, ahdoc->url)) { return "Curl failed to set url"; }
+    if (curl_easy_perform(ahcurl->curl)) { return "Curl failed to perform curl"; }
+    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_end(ahdoc->doc)) { return "Lbx failed to parse html"; }
     return Ok;
 }

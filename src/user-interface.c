@@ -1,6 +1,7 @@
+#include <errno.h>
+#include <stdlib.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-#include <stdlib.h>
 
 #include <wrappers.h>
 #include <user-interface.h>
@@ -56,14 +57,12 @@ int ah_ed_cmd(AhCtx ctx[static 1], const char* line) {
     } else if (strncmp("e ", line, 2) == 0) {
             line = skip_space(line + 2);
             const char* url = ah_urldup(line);
-
             if (url) {
                 AhDocUpdateUrl(ctx->ahdoc, url);
-                if (AhDocFetch(ctx->ahcurl, ctx->ahdoc)) {
-                    puts("could not fetch");
-                };
+                ErrStr err_str =  AhDocFetch(ctx->ahcurl, ctx->ahdoc);
+                if (err_str) { fprintf(stderr, "Error fetching document: %s\n", err_str); }
             } else {
-                    perror("url error");
+                    ah_log_err("url error");
             }
 
     }

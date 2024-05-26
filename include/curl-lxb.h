@@ -3,6 +3,6 @@
 
 #include <ahdoc.h>
 
-Error curl_lexbor_fetch_document(AhCurl ahcurl[static 1], AhDoc* ahdoc);
+ErrStr curl_lexbor_fetch_document(AhCurl ahcurl[static 1], AhDoc* ahdoc);
 #endif
 
