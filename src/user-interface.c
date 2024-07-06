@@ -3,12 +3,12 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+#include <ahutils.h>
 #include <wrappers.h>
 #include <user-interface.h>
 
 
 void print_html(lxb_html_document_t* document);
-static void log_info(const char* msg) { puts(msg); }
 
 int ah_read_line_from_user(AhCtx ctx[static 1]) {
     char* line = 0x0;
@@ -35,14 +35,15 @@ size_t cmd_match(const char* str, const char* cmd) {
 
 int ah_re_cmd(AhCtx ctx[static 1], const char* line) {
     line = skip_space(line);
-    if (!ctx->ahdoc->url) { log_info("no document"); return 0; }
+    if (!ctx->ahdoc->url) { ah_log_info("no document"); return 0; }
     size_t offset = 0;
     if ((offset = cmd_match(line, "tag"))) {
         lexbor_print_tag(line + offset, ctx->ahdoc->doc);
     } else if ((offset = cmd_match(line, "attr"))) {
     } else if ((offset = cmd_match(line, "class"))) {
-    } else if (strncmp("ahre", line, 4) == 0) {
-            line += 4;
+    } else if ((offset = cmd_match(line, "ahre"))) {
+    //} else if (strncmp("ahre", line, 4) == 0) {
+            line += offset;
             if (!*skip_space(line)) {
                 lexbor_print_a_href(ctx->ahdoc->doc);
             }
@@ -62,7 +63,7 @@ int ah_ed_cmd(AhCtx ctx[static 1], const char* line) {
                 ErrStr err_str =  AhDocFetch(ctx->ahcurl, ctx->ahdoc);
                 if (err_str) { fprintf(stderr, "Error fetching document: %s\n", err_str); }
             } else {
-                    ah_log_err("url error");
+                    ah_log_error("url error", ErrMem);
             }
 
     }
