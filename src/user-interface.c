@@ -19,7 +19,15 @@ int ah_read_line_from_user(AhCtx ctx[static 1]) {
     return 0;
 }
 
-size_t cmd_match(const char* str, const char* cmd) {
+char* str_match(char* s, const char* cmd) {
+    if (!*s) { return 0x0; }
+	for (; *s && !isspace(*s); ++s, ++cmd) {
+		if (*s != *cmd) { return 0x0; }
+	}
+	return s;
+}
+
+size_t cmd_match(char* str, char* cmd) {
 	size_t len = strlen(cmd);
 	size_t space = 0;
 	for (; space < len && str[space] && !isspace(str[space]); ++space) {
@@ -33,25 +41,39 @@ size_t cmd_match(const char* str, const char* cmd) {
 	return 0;
 }
 
-int ah_re_cmd(AhCtx ctx[static 1], const char* line) {
+int ah_re_cmd(AhCtx ctx[static 1], char* line) {
     line = skip_space(line);
-    if (!ctx->ahdoc->url) { ah_log_info("no document"); return 0; }
-    size_t offset = 0;
-    if ((offset = cmd_match(line, "tag"))) {
-        lexbor_print_tag(line + offset, ctx->ahdoc->doc);
-    } else if ((offset = cmd_match(line, "attr"))) {
-    } else if ((offset = cmd_match(line, "class"))) {
-    } else if ((offset = cmd_match(line, "ahre"))) {
-    //} else if (strncmp("ahre", line, 4) == 0) {
-            line += offset;
-            if (!*skip_space(line)) {
+    char* rest = 0x0;
+    if ((rest = str_match(line, "url"))) {
+        puts("url");
+        if (!*skip_space(line)) {
+           printf("url: %s\n",  ctx->ahdoc->url ? ctx->ahdoc->url : "<no url>");
+        } else {
+            printf("set with url: %s\n", rest);
+        }
+        return 0;
+    }
+
+    if (!ctx->ahdoc->url) { ah_log_info("no document"); return 0;
+    } else if ((rest = str_match(line, "fetch"))) {
+        puts("fetch");
+    } else if ((rest = str_match(line, "tag"))) {
+        puts("tag");
+        lexbor_print_tag(line, ctx->ahdoc->doc);
+    } else if ((rest = str_match(line, "attr"))) {
+        puts("attr");
+    } else if ((rest = str_match(line, "class"))) {
+        puts("class");
+    } else if ((rest = str_match(line, "ahre"))) {
+        puts("ahre");
+            if (!*skip_space(rest)) {
                 lexbor_print_a_href(ctx->ahdoc->doc);
             }
     }
     return 0;
 }
 
-int ah_ed_cmd(AhCtx ctx[static 1], const char* line) {
+int ah_ed_cmd(AhCtx ctx[static 1], char* line) {
     if (strcmp("q", line) == 0) { ctx->quit = true; }
     else if (strcmp("p", line) == 0) {
             print_html(ctx->ahdoc->doc);
@@ -70,7 +92,7 @@ int ah_ed_cmd(AhCtx ctx[static 1], const char* line) {
     return 0;
 }
 
-int ah_process_line(AhCtx ctx[static 1], const char* line) {
+int ah_process_line(AhCtx ctx[static 1], char* line) {
     if (!line) { ctx->quit = true; return 0; }
     line = skip_space(line);
 

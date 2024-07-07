@@ -3,6 +3,8 @@
 #include <curl-lxb.h>
 #include <mem.h>
 #include <wrappers.h>
+
+#include <ahutils.h>
 #include <ahdoc.h>
 
 // this is just a "random" bound. TODO: think it better
@@ -77,6 +79,11 @@ AhCtx* AhCtxCreate(const char* url, AhUserLineCallback callback) {
     AhDoc* ahdoc = AhDocCreate(url);
     if (!ahdoc) { goto free_ahcurl; }
 
+    ErrStr err = AhDocFetch(ahcurl, ahdoc);
+    if (err) {
+        ah_log_error(err, ErrCurl);
+        goto free_ahcurl;
+    }
     *rv = (AhCtx) {
         .ahcurl=ahcurl,
         .user_line_callback=callback,

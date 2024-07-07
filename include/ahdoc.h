@@ -14,7 +14,7 @@
 typedef struct AhCtx AhCtx;
 typedef struct AhCurl AhCurl;
 
-typedef int (*AhUserLineCallback)(AhCtx* ctx, const char*);
+typedef int (*AhUserLineCallback)(AhCtx* ctx, char*);
 
 typedef struct {
     const char* url;
@@ -24,7 +24,7 @@ typedef struct {
 
 typedef struct AhCtx {
     AhCurl* ahcurl;
-    int (*user_line_callback)(AhCtx* ctx, const char*);
+    int (*user_line_callback)(AhCtx* ctx, char*);
     AhDoc* ahdoc;
     bool quit;
 } AhCtx;
