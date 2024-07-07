@@ -9,12 +9,12 @@
 #include <user-interface.h>
 #include <ahdoc.h>
 
-void print_help(const char* program) { printf("usage: %s [-b (lxb|tidy)] <url>\n", program); }
+void print_help(char* program) { printf("usage: %s [-b (lxb|tidy)] <url>\n", program); }
 
 typedef enum { LxbBe, TidyBe } BeLib;
 
 
-int loop_lexbor(const char* url) {
+int loop_lexbor(char* url) {
     AhCtx* ctx = AhCtxCreate(url, ah_process_line);
     if (!ctx) {
         /* TODO: do not ext, ask for another url instead */

@@ -19,76 +19,60 @@ int ah_read_line_from_user(AhCtx ctx[static 1]) {
     return 0;
 }
 
-char* str_match(char* s, const char* cmd) {
+char* substr_match(char* s, size_t len, const char* cmd) {
     if (!*s) { return 0x0; }
-	for (; *s && !isspace(*s); ++s, ++cmd) {
+	for (; *s && !isspace(*s); ++s, ++cmd, (len?--len:len)) {
 		if (*s != *cmd) { return 0x0; }
 	}
-	return s;
+	return len ? 0x0 : s;
 }
 
-size_t cmd_match(char* str, char* cmd) {
-	size_t len = strlen(cmd);
-	size_t space = 0;
-	for (; space < len && str[space] && !isspace(str[space]); ++space) {
-		if (str[space] != cmd[space]) { return false; }
-	}
-	bool res = space > 0  && (isspace(str[space]) || (str[space] && isspace(str[space+1])));
-	if (res) {
-		printf("'%s' matched\n", cmd);
-		return space + 1;
-	}
-	return 0;
+bool substr_match_all(char* s, size_t len, const char* cmd) {
+    return (s=substr_match(s, len, cmd)) && !*skip_space(s);
+}
+
+int ah_re_url(AhCtx ctx[static 1], char* url) {
+    puts("url");
+    url = skip_space(url);
+    if (*url) {
+        url = ah_urldup(url);
+        if (!url) { return ah_log_error("urldup error", ErrMem); }
+        AhDocUpdateUrl(ctx->ahdoc, url);
+        printf("set with url: %s\n", url);
+    } else {
+       printf("url: %s\n",  ctx->ahdoc->url ? ctx->ahdoc->url : "<no url>");
+    }
+    return 0;
+}
+
+int ah_re_fetch(AhCtx ctx[static 1], char* url) {
+    url = skip_space(url);
+    if (*url) { ah_re_url(ctx, url); } 
+    ErrStr err_str =  AhDocFetch(ctx->ahcurl, ctx->ahdoc);
+    if (err_str) { return ah_log_error(err_str, ErrCurl); }
+    return Ok;
 }
 
 int ah_re_cmd(AhCtx ctx[static 1], char* line) {
     line = skip_space(line);
     char* rest = 0x0;
-    if ((rest = str_match(line, "url"))) {
-        puts("url");
-        if (!*skip_space(line)) {
-           printf("url: %s\n",  ctx->ahdoc->url ? ctx->ahdoc->url : "<no url>");
-        } else {
-            printf("set with url: %s\n", rest);
-        }
-        return 0;
-    }
 
-    if (!ctx->ahdoc->url) { ah_log_info("no document"); return 0;
-    } else if ((rest = str_match(line, "fetch"))) {
-        puts("fetch");
-    } else if ((rest = str_match(line, "tag"))) {
-        puts("tag");
-        lexbor_print_tag(line, ctx->ahdoc->doc);
-    } else if ((rest = str_match(line, "attr"))) {
-        puts("attr");
-    } else if ((rest = str_match(line, "class"))) {
-        puts("class");
-    } else if ((rest = str_match(line, "ahre"))) {
-        puts("ahre");
-            if (!*skip_space(rest)) {
-                lexbor_print_a_href(ctx->ahdoc->doc);
-            }
-    }
+    if ((rest = substr_match(line, 1, "url"))) { ah_re_url(ctx, rest); }
+
+    if (!ctx->ahdoc->url) { ah_log_info("no document"); return 0; }
+
+    else if ((rest = substr_match(line, 2, "ahre"))) { puts("ahre"); if (!*skip_space(rest)) { lexbor_print_a_href(ctx->ahdoc->doc); } }
+    else if ((rest = substr_match(line, 2, "attr"))) { puts("attr"); }
+    else if ((rest = substr_match(line, 1, "class"))) { puts("class"); }
+    else if ((rest = substr_match(line, 1, "fetch"))) { ah_re_fetch(ctx, rest); }
+    else if ((rest = substr_match(line, 1, "tag"))) { puts("tag"); lexbor_print_tag(rest, ctx->ahdoc->doc); }
     return 0;
 }
 
 int ah_ed_cmd(AhCtx ctx[static 1], char* line) {
-    if (strcmp("q", line) == 0) { ctx->quit = true; }
-    else if (strcmp("p", line) == 0) {
-            print_html(ctx->ahdoc->doc);
-    } else if (strncmp("e ", line, 2) == 0) {
-            line = skip_space(line + 2);
-            const char* url = ah_urldup(line);
-            if (url) {
-                AhDocUpdateUrl(ctx->ahdoc, url);
-                ErrStr err_str =  AhDocFetch(ctx->ahcurl, ctx->ahdoc);
-                if (err_str) { fprintf(stderr, "Error fetching document: %s\n", err_str); }
-            } else {
-                    ah_log_error("url error", ErrMem);
-            }
-
-    }
+    char* rest = 0x0;
+    if (substr_match_all(line, 1, "quit")) { ctx->quit = true; }
+    else if ((rest = substr_match(line, 1, "print"))) { print_html(ctx->ahdoc->doc); }
     return 0;
 }
 

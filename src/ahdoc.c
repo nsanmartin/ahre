@@ -23,7 +23,7 @@ bool is_url_too_long(const char* url) {
     return (p - url) > ah_max_url_len;
 }
 
-const char* ah_urldup(const char* url) {
+char* ah_urldup(char* url) {
 	if (!url) { return 0x0; }
         if (!*url || is_url_too_long(url)) {
                 perror("url too long");
@@ -32,7 +32,7 @@ const char* ah_urldup(const char* url) {
         return ah_strndup(url, ah_max_url_len);
 }
 
-AhDoc* AhDocCreate(const char* url) {
+AhDoc* AhDocCreate(char* url) {
     AhDoc* rv = ah_malloc(sizeof(AhDoc));
     if (!rv) { goto exit_fail; }
     url = ah_urldup(url);
@@ -60,14 +60,9 @@ void AhDocFree(AhDoc* ahdoc) {
 
 ErrStr AhDocFetch(AhCurl ahcurl[static 1], AhDoc ad[static 1]) {
     return lexbor_read_doc_from_url_or_file (ahcurl, ad);
-    //if (Ok != lexbor_read_doc_from_url_or_file (ahcurl, ad)) {
-    //    perror("Error fetching doc");
-    //    return 1;
-    //}
-    //return 0;
 }
 
-AhCtx* AhCtxCreate(const char* url, AhUserLineCallback callback) {
+AhCtx* AhCtxCreate(char* url, AhUserLineCallback callback) {
     AhCtx* rv = ah_malloc(sizeof(AhCtx));
     if (!rv) {
         perror("Mem error");
@@ -79,10 +74,12 @@ AhCtx* AhCtxCreate(const char* url, AhUserLineCallback callback) {
     AhDoc* ahdoc = AhDocCreate(url);
     if (!ahdoc) { goto free_ahcurl; }
 
-    ErrStr err = AhDocFetch(ahcurl, ahdoc);
-    if (err) {
-        ah_log_error(err, ErrCurl);
-        goto free_ahcurl;
+    if (url) {
+        ErrStr err = AhDocFetch(ahcurl, ahdoc);
+        if (err) {
+            ah_log_error(err, ErrCurl);
+            goto free_ahcurl;
+        }
     }
     *rv = (AhCtx) {
         .ahcurl=ahcurl,

@@ -30,16 +30,16 @@ typedef struct AhCtx {
 } AhCtx;
 
 
-AhCtx* AhCtxCreate(const char* url, AhUserLineCallback callback);
+AhCtx* AhCtxCreate(char* url, AhUserLineCallback callback);
 void AhCtxFree(AhCtx* ctx) ;
 
-AhDoc* AhDocCreate(const char* url);
+AhDoc* AhDocCreate(char* url);
 void AhDocFree(AhDoc* ctx) ;
 
-static inline void AhDocUpdateUrl(AhDoc ad[static 1], const char* url) {
+static inline void AhDocUpdateUrl(AhDoc ad[static 1], char* url) {
         ah_free((char*)ad->url);
         ad->url = url;
 }
 ErrStr AhDocFetch(AhCurl ahcurl[static 1], AhDoc ad[static 1]) ;
-const char* ah_urldup(const char* url) ;
+char* ah_urldup(char* url) ;
 #endif

@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-typedef const char* ErrStr;
+typedef char* ErrStr;
 typedef enum { Ok = 0, ErrMem, ErrLxb, ErrCurl, ErrFile } Error;
 
 #endif
