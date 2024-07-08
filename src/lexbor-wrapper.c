@@ -123,3 +123,11 @@ size_t chunk_callback(char *in, size_t size, size_t nmemb, void* outstream) {
     return  LXB_STATUS_OK == lxb_html_document_parse_chunk(document, (lxb_char_t*)in, r) ? r : 0;
 }
 
+void lexbor_print_html_text(lxb_html_document_t* document) {
+    lxb_dom_node_t *node = lxb_dom_interface_node(document->body);
+    size_t len = 0x0;
+    lxb_char_t* text = lxb_dom_node_text_content(node, &len);
+    fwrite(text, 1, len, stdout);
+    fwrite("\n", 1, 1, stdout);
+    return;
+}
