@@ -24,7 +24,7 @@ char* substr_match(char* s, size_t len, const char* cmd) {
 	for (; *s && !isspace(*s); ++s, ++cmd, (len?--len:len)) {
 		if (*s != *cmd) { return 0x0; }
 	}
-	return len ? 0x0 : s;
+	return len ? 0x0 : skip_space(s);
 }
 
 bool substr_match_all(char* s, size_t len, const char* cmd) {
@@ -57,7 +57,7 @@ int ah_re_cmd(AhCtx ctx[static 1], char* line) {
     line = skip_space(line);
     char* rest = 0x0;
 
-    if ((rest = substr_match(line, 1, "url"))) { ah_re_url(ctx, rest); }
+    if ((rest = substr_match(line, 1, "url"))) { return ah_re_url(ctx, rest); }
 
     if (!ctx->ahdoc->url) { ah_log_info("no document"); return 0; }
 
@@ -71,7 +71,8 @@ int ah_re_cmd(AhCtx ctx[static 1], char* line) {
 
 int ah_ed_cmd(AhCtx ctx[static 1], char* line) {
     char* rest = 0x0;
-    if (substr_match_all(line, 1, "quit")) { ctx->quit = true; }
+    if (!line) { return 0; }
+    else if ((rest = substr_match(line, 1, "quit")) && !*rest) { ctx->quit = true; }
     else if ((rest = substr_match(line, 1, "print"))) { print_html(ctx->ahdoc->doc); }
     return 0;
 }
