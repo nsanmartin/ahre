@@ -63,7 +63,8 @@ int ah_re_cmd(AhCtx ctx[static 1], char* line) {
     else if ((rest = substr_match(line, 1, "class"))) { puts("class"); }
     else if ((rest = substr_match(line, 1, "fetch"))) { ah_re_fetch(ctx, rest); }
     else if ((rest = substr_match(line, 1, "print"))) { print_html(ctx->ahdoc->doc); }
-    else if ((rest = substr_match(line, 1, "tag"))) { puts("tag"); lexbor_print_tag(rest, ctx->ahdoc->doc); }
+    else if ((rest = substr_match(line, 2, "tag"))) { puts("tag"); lexbor_print_tag(rest, ctx->ahdoc->doc); }
+    else if ((rest = substr_match(line, 2, "text"))) { lexbor_print_html_text(ctx->ahdoc->doc); }
     else if ((rest = substr_match(line, 2, "ahre"))) { puts("ahre"); if (!*skip_space(rest)) { lexbor_print_a_href(ctx->ahdoc->doc); } }
     else if ((rest = substr_match(line, 2, "attr"))) { puts("attr"); }
     return 0;
@@ -73,7 +74,6 @@ int ah_ed_cmd(AhCtx ctx[static 1], char* line) {
     char* rest = 0x0;
     if (!line) { return 0; }
     else if ((rest = substr_match(line, 1, "quit")) && !*rest) { ctx->quit = true; }
-    else if ((rest = substr_match(line, 1, "print"))) { lexbor_print_html_text(ctx->ahdoc->doc); }
     return 0;
 }
 
