@@ -14,6 +14,11 @@ AHRE_OBJ=$(AHRE_SRCS:src/%.c=$(AHRE_OBJDIR)/%.o)
 
 ahre-tags: $(AHRE) tags
 
+test_arl:
+	$(CC) $(CFLAGS) \
+		-I$(INCLUDE) \
+		tests/test_arl.c -o build/$@
+
 $(AHRE): $(AHRE_OBJ)
 	$(CC) $(CFLAGS) \
 		-I$(INCLUDE) \

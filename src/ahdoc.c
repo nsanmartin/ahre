@@ -8,7 +8,7 @@
 #include <ahdoc.h>
 
 // this is just a "random" bound. TODO: think it better
-enum { ah_max_url_len = 1024 };
+enum { ah_max_url_len = 1024, ah_initial_buf_sz };
 
 
 ErrStr lexbor_read_doc_from_url_or_file (AhCurl ahcurl[static 1], AhDoc ad[static 1]); 
@@ -32,6 +32,16 @@ char* ah_urldup(char* url) {
         return ah_strndup(url, ah_max_url_len);
 }
 
+//int AhBufInit(AhBuf buf[static 1]) {
+//    char* buffer = ah_malloc(ah_initial_buf_sz);
+//    if (!buffer) { return 1; }
+//    *buf = (AhBuf) {
+//        .data=buffer,
+//        .len=ah_initial_buf_sz
+//    };
+//    return 0;
+//}
+
 AhDoc* AhDocCreate(char* url) {
     AhDoc* rv = ah_malloc(sizeof(AhDoc));
     if (!rv) { goto exit_fail; }
@@ -41,9 +51,12 @@ AhDoc* AhDocCreate(char* url) {
         perror("Lxb failed to create html document");
         goto free_url;
     }
-    *rv = (AhDoc) { .url=url, .doc=document };
+    *rv = (AhDoc) { .url=url, .doc=document, .buf={0} };
+    //if (AhBufInit(&rv->buf)) { goto free_doc; };
     return rv;
 
+//free_doc:
+//    lxb_html_document_destroy(document);
 free_url:
     ah_free((char*)url);
     ah_free(rv);
@@ -143,4 +156,10 @@ ErrStr lexbor_read_doc_from_url_or_file (AhCurl ahcurl[static 1], AhDoc ad[stati
         return lexbor_read_doc_from_file(ad);
     }
     return curl_lexbor_fetch_document(ahcurl, ad);
+}
+
+int ah_ed_cmd_print(AhCtx ctx[static 1]) {
+    if (!ctx || !ctx->ahdoc || !ctx->ahdoc->buf.data) { return -1; }
+    fwrite(ctx->ahdoc->buf.data, 1, ctx->ahdoc->buf.len, stdout);
+    return 0;
 }

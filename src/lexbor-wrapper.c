@@ -92,6 +92,12 @@ lxb_inline lxb_status_t serializer_callback(const lxb_char_t *data, size_t len, 
     return len == fwrite(data, 1, len, stdout) ? LXB_STATUS_OK : LXB_STATUS_ERROR;
 }
 
+lxb_inline lxb_status_t serializer_copy_callback(const lxb_char_t *data, size_t len, void *ctx) {
+    AhBuf* buf = ctx;
+    if (AhBufAppend(buf, (char*)data, len)) { return LXB_STATUS_ERROR; }
+    return LXB_STATUS_OK;
+}
+
 
 lxb_inline void
 serialize_node(lxb_dom_node_t *node)
@@ -117,6 +123,13 @@ void print_html(lxb_html_document_t* document) {
         serialize(lxb_dom_interface_node(document));
 }
 
+void lexbor_cp_html(lxb_html_document_t* document, AhBuf out[static 1]) {
+    //TODO: return err
+    lxb_html_serialize_pretty_tree_cb(
+        lxb_dom_interface_node(document), LXB_HTML_SERIALIZE_OPT_UNDEF, 0, serializer_copy_callback, out
+    );
+}
+
 size_t chunk_callback(char *in, size_t size, size_t nmemb, void* outstream) {
     lxb_html_document_t* document = outstream;
     size_t r = size * nmemb;
@@ -130,4 +143,16 @@ void lexbor_print_html_text(lxb_html_document_t* document) {
     fwrite(text, 1, len, stdout);
     fwrite("\n", 1, 1, stdout);
     return;
+}
+
+int lexbor_append_html_text(lxb_html_document_t* document, AhBuf dest[static 1]) {
+    lxb_dom_node_t *node = lxb_dom_interface_node(document->body);
+    size_t len = 0x0;
+    lxb_char_t* text = lxb_dom_node_text_content(node, &len);
+    size_t prev_end = dest->len;
+    dest->len += len;
+    dest->data = realloc(dest->data, dest->len);
+    if (!dest->data) { perror("Mem Err"); return 1; }
+    memcpy(dest->data + prev_end, text, len);
+    return 0;
 }

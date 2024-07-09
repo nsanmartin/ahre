@@ -8,6 +8,8 @@
 #include <user-interface.h>
 
 
+void lexbor_cp_html(lxb_html_document_t* document, AhBuf out[static 1]);
+
 
 int ah_read_line_from_user(AhCtx ctx[static 1]) {
     char* line = 0x0;
@@ -52,9 +54,13 @@ int ah_re_fetch(AhCtx ctx[static 1], char* url) {
     return Ok;
 }
 
+enum { AhDefaultReCmdBufLen = 1024 };
+
 int ah_re_cmd(AhCtx ctx[static 1], char* line) {
-    line = skip_space(line);
+    AhBuf b = {0}; //{.data=malloc(AhDefaultReCmdBufLen), .len=AhDefaultReCmdBufLen};
+    //if (!b.data) { return -1; }
     char* rest = 0x0;
+    line = skip_space(line);
 
     if ((rest = substr_match(line, 1, "url"))) { return ah_re_url(ctx, rest); }
 
@@ -62,24 +68,34 @@ int ah_re_cmd(AhCtx ctx[static 1], char* line) {
 
     else if ((rest = substr_match(line, 1, "class"))) { puts("class"); }
     else if ((rest = substr_match(line, 1, "fetch"))) { ah_re_fetch(ctx, rest); }
-    else if ((rest = substr_match(line, 1, "print"))) { print_html(ctx->ahdoc->doc); }
+    //else if ((rest = substr_match(line, 1, "print"))) { print_html(ctx->ahdoc->doc); }
+    else if ((rest = substr_match(line, 1, "print"))) { lexbor_cp_html(ctx->ahdoc->doc, &b); }
     else if ((rest = substr_match(line, 2, "tag"))) { puts("tag"); lexbor_print_tag(rest, ctx->ahdoc->doc); }
     else if ((rest = substr_match(line, 2, "text"))) { lexbor_print_html_text(ctx->ahdoc->doc); }
     else if ((rest = substr_match(line, 2, "ahre"))) { puts("ahre"); if (!*skip_space(rest)) { lexbor_print_a_href(ctx->ahdoc->doc); } }
     else if ((rest = substr_match(line, 2, "attr"))) { puts("attr"); }
+
+    if (b.data) {
+        fwrite(b.data, 1, b.len, stdout);
+        free(b.data);
+        puts("ah re cmo buf");
+    }
+
     return 0;
 }
 
 int ah_ed_cmd(AhCtx ctx[static 1], char* line) {
     char* rest = 0x0;
     if (!line) { return 0; }
-    else if ((rest = substr_match(line, 1, "quit")) && !*rest) { ctx->quit = true; }
+    else if ((rest = substr_match(line, 1, "quit")) && !*rest) { ctx->quit = true; return 0;}
+    else if ((rest = substr_match(line, 1, "print")) && !*rest) { return ah_ed_cmd_print(ctx); }
+    puts("unknown command");
     return 0;
 }
 
 int ah_process_line(AhCtx ctx[static 1], char* line) {
-    if (!line) { ctx->quit = true; return 0; }
-    line = skip_space(line);
+        if (!line) { ctx->quit = true; return 0; }
+        line = skip_space(line);
 
     if (!*line) { return 0; }
 
