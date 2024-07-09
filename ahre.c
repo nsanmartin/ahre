@@ -1,7 +1,5 @@
 #include <stdbool.h>
 #include <stdio.h>
-#include <tidy/tidy.h>
-#include <tidy/tidybuffio.h>
 #include <curl/curl.h>
 #include <lexbor/html/html.h>
  
@@ -9,9 +7,7 @@
 #include <user-interface.h>
 #include <ahdoc.h>
 
-void print_help(char* program) { printf("usage: %s [-b (lxb|tidy)] <url>\n", program); }
-
-typedef enum { LxbBe, TidyBe } BeLib;
+void print_help(char* program) { printf("usage: %s <url>\n", program); }
 
 
 int loop_lexbor(char* url) {
@@ -31,38 +27,11 @@ int loop_lexbor(char* url) {
 
 
 int main(int argc, char **argv) {
-    bool bad_input = false;
-    if (argc != 1 && argc != 2 && argc != 4) { goto exit_error; }
-
-    BeLib be_lib = LxbBe; /* default is lexbor */
-
-    size_t param = 1;
-    if  (argc == 4) {
-        if (strcmp("-b", argv[param]) == 0) {
-            if (strcmp("lxb", argv[param+1]) == 0) {
-                be_lib = LxbBe;
-                goto opt_read;
-            } else if (strcmp("tidy", argv[param+1]) == 0) {
-                be_lib = TidyBe;
-                goto opt_read;
-            } 
-        } 
-exit_error:
+    if (argc > 2) { 
         print_help(argv[0]);
         exit(EXIT_FAILURE); 
-opt_read:
-        param += 2;
     }
 
-    if (!bad_input) {
-        switch (be_lib) {
-            case LxbBe: {
-                return loop_lexbor(argv[param]);
-            }
-            case TidyBe: { return ah_tidy(argv[param]); }
-            default: { goto exit_error; }
-        }
-    }
-
+    return loop_lexbor(argv[1]);
 }
 

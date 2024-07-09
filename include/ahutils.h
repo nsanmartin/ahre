@@ -1,6 +1,7 @@
 #ifndef __UTILS_AHRE_H__
 #define __UTILS_AHRE_H__
 
+#include <ctype.h>
 #include <stddef.h>
 #include <stdio.h>
 

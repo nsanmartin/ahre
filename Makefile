@@ -14,14 +14,21 @@ AHRE_OBJ=$(AHRE_SRCS:src/%.c=$(AHRE_OBJDIR)/%.o)
 
 ahre-tags: $(AHRE) tags
 
-
 $(AHRE): $(AHRE_OBJ)
+	$(CC) $(CFLAGS) \
+		-I$(INCLUDE) \
+		$(AHRE).c -o build/$(AHRE) \
+		$^  \
+		-lcurl -llexbor -lreadline
+
+
+$(AHRE)2: $(AHRE_OBJ)
 	$(CC) $(CFLAGS) \
 		-I$(INCLUDE) \
 		-L$(LIB) \
 		$(AHRE).c -o build/$(AHRE) \
 		$^  \
-		-lcurl -llexbor -ltidy -lreadline
+		-lcurl -llexbor -lreadline
 
 
 $(AHRE_OBJDIR)/%.o: $(AHRE_SRCDIR)/%.c $(AHRE_HEADERS)
@@ -30,18 +37,16 @@ $(AHRE_OBJDIR)/%.o: $(AHRE_SRCDIR)/%.c $(AHRE_HEADERS)
 		-L$(LIB) \
 		-c -o $@ \
 		$< \
-		-lcurl -llexbor -ltidy 
+		-lcurl -llexbor
 
 #TODO: add lexbor as submodule too
-debug: curl/lib/.libs tidy-html5/build/cmake/libtidy.a
+debug: curl/lib/.libs 
 	$(CC) $(CFLAGS) \
-		-I./tidy-html5/include \
 		-I$(INCLUDE)\
 		-L./curl/lib/.libs \
-		-L./tidy-html5/build/cmake \
 		-L$(LIB) \
-		$(AHRE).c -o build/$(@) -lcurl -llexbor -ltidy \
-		-Wl,-rpath=./tidy-html5/build/cmake
+		$(AHRE).c -o build/$(@) -lcurl -llexbor 
+
 
 curl/configure:
 	cd curl \
@@ -54,13 +59,6 @@ curl/configure:
 
 curl/lib/.libs: curl/configure
 	$(MAKE) -C curl
-
-tidy-html5/build/cmake/Makefile:
-	cd tidy-html5/build/cmake \
-		&& cmake ../.. -DCMAKE_BUILD_TYPE=Debug
-
-tidy-html5/build/cmake/libtidy.a: tidy-html5/build/cmake/Makefile
-	$(MAKE) -C tidy-html5/build/cmake
 
 tags:
 	ctags --languages=c -R .
