@@ -1,0 +1,3 @@
+[submodule "hashi"]
+	path = hashi
+	url = git@github.com:nsanmartin/hashi

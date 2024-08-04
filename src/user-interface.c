@@ -58,6 +58,7 @@ enum { AhDefaultReCmdBufLen = 1024 };
 
 int ah_re_cmd(AhCtx ctx[static 1], char* line) {
     AhBuf b = {0}; //{.data=malloc(AhDefaultReCmdBufLen), .len=AhDefaultReCmdBufLen};
+
     //if (!b.data) { return -1; }
     char* rest = 0x0;
     line = skip_space(line);
