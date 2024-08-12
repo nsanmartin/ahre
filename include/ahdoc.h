@@ -9,6 +9,7 @@
 #include <wrappers.h>
 #include <mem.h>
 #include <aherror.h>
+#include <ahdoc_cache.h>
 
 
 typedef struct AhCtx AhCtx;
@@ -16,14 +17,14 @@ typedef struct AhCurl AhCurl;
 
 typedef int (*AhUserLineCallback)(AhCtx* ctx, char*);
 
-typedef struct { char* data; size_t len; } AhBuf;
-
-typedef struct { AhBuf* bufs; size_t len; } AhBufLst;
+#define BT char
+#include <buf.h>
 
 typedef struct {
     const char* url;
     lxb_html_document_t* doc;
-    AhBuf buf;
+    BufOf(char) buf;
+    AhDocCache cache;
 } AhDoc;
 
 
@@ -35,11 +36,29 @@ typedef struct AhCtx {
 } AhCtx;
 
 
+static inline void AhDocReset(AhDoc* ahdoc) {
+    AhDocCacheCleanup(&ahdoc->cache);
+    lxb_html_document_clean(ahdoc->doc);
+    ah_free((char*)ahdoc->url);
+}
+
+static inline void AhDocCleanup(AhDoc* ahdoc) {
+    AhDocCacheCleanup(&ahdoc->cache);
+    lxb_html_document_destroy(ahdoc->doc);
+    ah_free((char*)ahdoc->url);
+}
+
+static inline void AhDocFree(AhDoc* ahdoc) {
+    AhDocCleanup(ahdoc);
+    ah_free(ahdoc);
+}
+
+int AhDocInit(AhDoc d[static 1], char* url);
+
 AhCtx* AhCtxCreate(char* url, AhUserLineCallback callback);
 void AhCtxFree(AhCtx* ctx) ;
 
 AhDoc* AhDocCreate(char* url);
-void AhDocFree(AhDoc* ctx) ;
 
 static inline void AhDocUpdateUrl(AhDoc ad[static 1], char* url) {
         ah_free((char*)ad->url);
@@ -48,21 +67,7 @@ static inline void AhDocUpdateUrl(AhDoc ad[static 1], char* url) {
 ErrStr AhDocFetch(AhCurl ahcurl[static 1], AhDoc ad[static 1]) ;
 char* ah_urldup(char* url) ;
 
-// static inline int buflst_append_buffer(BufLst* bl) { }
 
 int ah_ed_cmd_print(AhCtx ctx[static 1]);
 
-static inline int AhBufInit(AhBuf b[static 1], size_t len) {
-    *b = (AhBuf) {.data=ah_malloc(len), .len=len};
-    if (!b->data) { return -1; }
-    return 0;
-}
-
-static inline int AhBufAppend(AhBuf b[static 1], const char* data, size_t len) {
-    b->data = realloc(b->data, b->len + len);
-    if (!b->data) { return -1; }
-    memcpy(b->data + b->len, data, len);
-    b->len += len;
-    return 0;
-}
 #endif

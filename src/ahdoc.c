@@ -32,42 +32,34 @@ char* ah_urldup(char* url) {
         return ah_strndup(url, ah_max_url_len);
 }
 
-//int AhBufInit(AhBuf buf[static 1]) {
-//    char* buffer = ah_malloc(ah_initial_buf_sz);
-//    if (!buffer) { return 1; }
-//    *buf = (AhBuf) {
-//        .data=buffer,
-//        .len=ah_initial_buf_sz
-//    };
-//    return 0;
-//}
 
-AhDoc* AhDocCreate(char* url) {
-    AhDoc* rv = ah_malloc(sizeof(AhDoc));
-    if (!rv) { goto exit_fail; }
-    url = ah_urldup(url);
+int AhDocInit(AhDoc d[static 1], char* url) {
+    if (!d) { return -1; }
     lxb_html_document_t* document = lxb_html_document_create();
     if (!document) {
         perror("Lxb failed to create html document");
-        goto free_url;
+        return -1;
     }
-    *rv = (AhDoc) { .url=url, .doc=document, .buf={0} };
-    //if (AhBufInit(&rv->buf)) { goto free_doc; };
-    return rv;
 
-//free_doc:
-//    lxb_html_document_destroy(document);
-free_url:
-    ah_free((char*)url);
-    ah_free(rv);
-exit_fail:
-    return 0x0;
+    if (url){
+        url = ah_urldup(url);
+        if (!url) {
+            lxb_html_document_destroy(d->doc);
+            return -1;
+        }
+    }
+
+    *d = (AhDoc) { .url=url, .doc=document, .buf={0} };
+    return 0;
 }
 
-void AhDocFree(AhDoc* ahdoc) {
-    lxb_html_document_destroy(ahdoc->doc);
-    ah_free((char*)ahdoc->url);
-    ah_free(ahdoc);
+AhDoc* AhDocCreate(char* url) {
+    AhDoc* rv = ah_malloc(sizeof(AhDoc));
+    if (AhDocInit(rv, url)) {
+        ah_free(rv);
+        return NULL;
+    }
+    return rv;
 }
 
 
@@ -77,6 +69,7 @@ ErrStr AhDocFetch(AhCurl ahcurl[static 1], AhDoc ad[static 1]) {
 
 AhCtx* AhCtxCreate(char* url, AhUserLineCallback callback) {
     AhCtx* rv = ah_malloc(sizeof(AhCtx));
+    *rv = (AhCtx){0};
     if (!rv) {
         perror("Mem error");
         goto exit_fail;
@@ -87,11 +80,11 @@ AhCtx* AhCtxCreate(char* url, AhUserLineCallback callback) {
     AhDoc* ahdoc = AhDocCreate(url);
     if (!ahdoc) { goto free_ahcurl; }
 
-    if (url) {
+    if (url && ahdoc->doc) {
         ErrStr err = AhDocFetch(ahcurl, ahdoc);
         if (err) {
             ah_log_error(err, ErrCurl);
-            goto free_ahcurl;
+            goto free_ahdoc;
         }
     }
     *rv = (AhCtx) {
@@ -103,6 +96,8 @@ AhCtx* AhCtxCreate(char* url, AhUserLineCallback callback) {
 
     return rv;
 
+free_ahdoc:
+    AhDocFree(ahdoc);
 free_ahcurl:
     AhCurlFree(ahcurl);
 free_rv:
@@ -159,7 +154,7 @@ ErrStr lexbor_read_doc_from_url_or_file (AhCurl ahcurl[static 1], AhDoc ad[stati
 }
 
 int ah_ed_cmd_print(AhCtx ctx[static 1]) {
-    if (!ctx || !ctx->ahdoc || !ctx->ahdoc->buf.data) { return -1; }
-    fwrite(ctx->ahdoc->buf.data, 1, ctx->ahdoc->buf.len, stdout);
+    if (!ctx || !ctx->ahdoc || !ctx->ahdoc->buf.items) { return -1; }
+    fwrite(ctx->ahdoc->buf.items, 1, ctx->ahdoc->buf.len, stdout);
     return 0;
 }

@@ -1,6 +1,6 @@
 INCLUDE:=$(HOME)/usr/include
 LIB:=$(HOME)/usr/lib
-CFLAGS:=-g  -Wall -Wextra -Werror -pedantic -Wold-style-definition -Iinclude
+CFLAGS:=-g  -Wall -Wextra -Werror -pedantic -Wold-style-definition -Iinclude -Ihashi/include
 
 AHRE:=ahre
 
@@ -14,10 +14,6 @@ AHRE_OBJ=$(AHRE_SRCS:src/%.c=$(AHRE_OBJDIR)/%.o)
 
 ahre-tags: $(AHRE) tags
 
-test_arl:
-	$(CC) $(CFLAGS) \
-		-I$(INCLUDE) \
-		tests/test_arl.c -o build/$@
 
 $(AHRE): $(AHRE_OBJ)
 	$(CC) $(CFLAGS) \

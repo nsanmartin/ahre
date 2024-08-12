@@ -8,7 +8,7 @@
 #include <user-interface.h>
 
 
-void lexbor_cp_html(lxb_html_document_t* document, AhBuf out[static 1]);
+void lexbor_cp_html(lxb_html_document_t* document, BufOf(char) out[static 1]);
 
 
 int ah_read_line_from_user(AhCtx ctx[static 1]) {
@@ -20,25 +20,41 @@ int ah_read_line_from_user(AhCtx ctx[static 1]) {
     return 0;
 }
 
-char* substr_match(char* s, size_t len, const char* cmd) {
+char* substr_match(char* s, const char* cmd, size_t len) {
     if (!*s) { return 0x0; }
 	for (; *s && !isspace(*s); ++s, ++cmd, (len?--len:len)) {
 		if (*s != *cmd) { return 0x0; }
 	}
-	return len ? 0x0 : skip_space(s);
+    if (len) { 
+        printf("...%s?\n", cmd);
+        return 0x0;
+    }
+	return skip_space(s);
 }
 
 bool substr_match_all(char* s, size_t len, const char* cmd) {
-    return (s=substr_match(s, len, cmd)) && !*skip_space(s);
+    return (s=substr_match(s, cmd, len)) && !*skip_space(s);
 }
 
 int ah_re_url(AhCtx ctx[static 1], char* url) {
     puts("url");
-    url = skip_space(url);
-    if (*url) {
-        url = ah_urldup(url);
-        if (!url) { return ah_log_error("urldup error", ErrMem); }
-        AhDocUpdateUrl(ctx->ahdoc, url);
+    url = trim_space(url);
+    if (*url && (!ctx->ahdoc->url || strcmp(url, ctx->ahdoc->url))) {
+        AhDocCleanup(ctx->ahdoc);
+        if (AhDocInit(ctx->ahdoc, url)) {
+            puts("Doc init error");
+            return -1;
+        }
+
+        if (url) {
+            ErrStr err = AhDocFetch(ctx->ahcurl, ctx->ahdoc);
+            if (err) {
+                //ah_log_error(err, ErrCurl);
+                puts("TODO:cleanup");
+                puts("error fetching url");
+                return -1;
+            }
+        }
         printf("set with url: %s\n", url);
     } else {
        printf("url: %s\n",  ctx->ahdoc->url ? ctx->ahdoc->url : "<no url>");
@@ -46,40 +62,43 @@ int ah_re_url(AhCtx ctx[static 1], char* url) {
     return 0;
 }
 
-int ah_re_fetch(AhCtx ctx[static 1], char* url) {
-    url = skip_space(url);
-    if (*url) { ah_re_url(ctx, url); } 
-    ErrStr err_str =  AhDocFetch(ctx->ahcurl, ctx->ahdoc);
-    if (err_str) { return ah_log_error(err_str, ErrCurl); }
-    return Ok;
+int ah_re_fetch(AhCtx ctx[static 1]) {
+    if (ctx->ahdoc->url) {
+        ErrStr err_str = AhDocFetch(ctx->ahcurl, ctx->ahdoc);
+        if (err_str) { return ah_log_error(err_str, ErrCurl); }
+        return Ok;
+    }
+    puts("Not url to fech");
+    return -1;
 }
 
-enum { AhDefaultReCmdBufLen = 1024 };
 
 int ah_re_cmd(AhCtx ctx[static 1], char* line) {
-    AhBuf b = {0}; //{.data=malloc(AhDefaultReCmdBufLen), .len=AhDefaultReCmdBufLen};
+    BufOf(char)* b = &(BufOf(char)){0};
 
-    //if (!b.data) { return -1; }
     char* rest = 0x0;
     line = skip_space(line);
 
-    if ((rest = substr_match(line, 1, "url"))) { return ah_re_url(ctx, rest); }
+    if ((rest = substr_match(line, "url", 1))) { return ah_re_url(ctx, rest); }
 
-    if (!ctx->ahdoc->url) { ah_log_info("no document"); return 0; }
+    if (!ctx->ahdoc->url || !ctx->ahdoc->url || !ctx->ahcurl) {
+        ah_log_info("no document"); return 0;
+    }
 
-    else if ((rest = substr_match(line, 1, "class"))) { puts("class"); }
-    else if ((rest = substr_match(line, 1, "fetch"))) { ah_re_fetch(ctx, rest); }
-    //else if ((rest = substr_match(line, 1, "print"))) { print_html(ctx->ahdoc->doc); }
-    else if ((rest = substr_match(line, 1, "print"))) { lexbor_cp_html(ctx->ahdoc->doc, &b); }
-    else if ((rest = substr_match(line, 2, "tag"))) { puts("tag"); lexbor_print_tag(rest, ctx->ahdoc->doc); }
-    else if ((rest = substr_match(line, 2, "text"))) { lexbor_print_html_text(ctx->ahdoc->doc); }
-    else if ((rest = substr_match(line, 2, "ahre"))) { puts("ahre"); if (!*skip_space(rest)) { lexbor_print_a_href(ctx->ahdoc->doc); } }
-    else if ((rest = substr_match(line, 2, "attr"))) { puts("attr"); }
+    else if ((rest = substr_match(line, "ahre", 2))) { puts("ahre"); if (!*skip_space(rest)) { lexbor_href_write(ctx->ahdoc->doc, &ctx->ahdoc->cache.hrefs, b); } }
+    else if ((rest = substr_match(line, "attr", 2))) { puts("attr"); }
+    else if ((rest = substr_match(line, "class", 1))) { puts("class"); }
+    else if ((rest = substr_match(line, "fetch", 1))) { ah_re_fetch(ctx); }
+    else if ((rest = substr_match(line, "print", 1))) { b = &ctx->ahdoc->buf; }
+    //else if ((rest = substr_match(line, "print", 1))) { lexbor_cp_html(ctx->ahdoc->doc, &b); }
+    else if ((rest = substr_match(line, "tag", 2))) { puts("tag"); lexbor_print_tag(rest, ctx->ahdoc->doc); }
+    else if ((rest = substr_match(line, "text", 2))) { lexbor_print_html_text(ctx->ahdoc->doc); }
+    else if ((rest = substr_match(line, "write", 1))) { lexbor_cp_html(ctx->ahdoc->doc, &ctx->ahdoc->buf); }
 
-    if (b.data) {
-        fwrite(b.data, 1, b.len, stdout);
-        free(b.data);
-        puts("ah re cmo buf");
+    if (b) {
+        fwrite(b->items, 1, b->len, stdout);
+        free(b->items);
+        //puts("ah re cmo buf");
     }
 
     return 0;
@@ -88,8 +107,8 @@ int ah_re_cmd(AhCtx ctx[static 1], char* line) {
 int ah_ed_cmd(AhCtx ctx[static 1], char* line) {
     char* rest = 0x0;
     if (!line) { return 0; }
-    else if ((rest = substr_match(line, 1, "quit")) && !*rest) { ctx->quit = true; return 0;}
-    else if ((rest = substr_match(line, 1, "print")) && !*rest) { return ah_ed_cmd_print(ctx); }
+    else if ((rest = substr_match(line, "quit", 1)) && !*rest) { ctx->quit = true; return 0;}
+    else if ((rest = substr_match(line, "print", 1)) && !*rest) { return ah_ed_cmd_print(ctx); }
     puts("unknown command");
     return 0;
 }

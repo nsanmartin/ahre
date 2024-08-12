@@ -62,6 +62,42 @@ int lexbor_print_tag(const char* tag, lxb_html_document_t* document) {
 
 }
 
+int lexbor_href_write(
+    lxb_html_document_t* document,
+    lxb_dom_collection_t** hrefs,
+    BufOf(char)* buf
+) {
+    if (!*hrefs) {
+        *hrefs = lxb_dom_collection_make(&document->dom_document, 128);
+        if (!*hrefs) { FAILED("Failed to create Collection object"); }
+
+        if (LXB_STATUS_OK != lxb_dom_elements_by_tag_name(
+                                lxb_dom_interface_element(document->body),
+                                *hrefs,
+                                (const lxb_char_t *) "a",
+                                1
+                            )
+        ) { FAILED("Failed to get elements by name"); }
+    }
+
+    for (size_t i = 0; i < lxb_dom_collection_length(*hrefs); i++) {
+        lxb_dom_element_t* element = lxb_dom_collection_element(*hrefs, i);
+
+        //TODO: store in a buffer
+        size_t value_len = 0;
+        const lxb_char_t * value = lxb_dom_element_get_attribute(
+            element, (const lxb_char_t*)"href", 4, &value_len
+        );
+        if (buffn(char,append)(buf, (char*)value, value_len)) { return -1; }
+        if (buffn(char,append)(buf, (char*)"\n", 1)) { return -1; }
+        //fwrite(value, 1, value_len, stdout);
+        //fwrite("\n", 1, 1, stdout);
+    }
+
+    //lxb_dom_collection_destroy(collection, true);
+    return 0;
+}
+
 int lexbor_print_a_href(lxb_html_document_t* document) {
     lxb_dom_collection_t* collection = lxb_dom_collection_make(&document->dom_document, 128);
     if (collection == NULL) {
@@ -93,8 +129,9 @@ lxb_inline lxb_status_t serializer_callback(const lxb_char_t *data, size_t len, 
 }
 
 lxb_inline lxb_status_t serializer_copy_callback(const lxb_char_t *data, size_t len, void *ctx) {
-    AhBuf* buf = ctx;
-    if (AhBufAppend(buf, (char*)data, len)) { return LXB_STATUS_ERROR; }
+    BufOf(char)* buf = ctx;
+    //if (AhBufAppend(buf, (char*)data, len)) { return LXB_STATUS_ERROR; }
+    if (buffn(char,append)(buf, (char*)data, len)) { return LXB_STATUS_ERROR; }
     return LXB_STATUS_OK;
 }
 
@@ -123,7 +160,8 @@ void print_html(lxb_html_document_t* document) {
         serialize(lxb_dom_interface_node(document));
 }
 
-void lexbor_cp_html(lxb_html_document_t* document, AhBuf out[static 1]) {
+void
+lexbor_cp_html(lxb_html_document_t* document, BufOf(char) out[static 1]) {
     //TODO: return err
     lxb_html_serialize_pretty_tree_cb(
         lxb_dom_interface_node(document), LXB_HTML_SERIALIZE_OPT_UNDEF, 0, serializer_copy_callback, out
@@ -145,14 +183,16 @@ void lexbor_print_html_text(lxb_html_document_t* document) {
     return;
 }
 
-int lexbor_append_html_text(lxb_html_document_t* document, AhBuf dest[static 1]) {
+int lexbor_append_html_text(
+    lxb_html_document_t* document, BufOf(char) dest[static 1]
+) {
     lxb_dom_node_t *node = lxb_dom_interface_node(document->body);
     size_t len = 0x0;
     lxb_char_t* text = lxb_dom_node_text_content(node, &len);
     size_t prev_end = dest->len;
     dest->len += len;
-    dest->data = realloc(dest->data, dest->len);
-    if (!dest->data) { perror("Mem Err"); return 1; }
-    memcpy(dest->data + prev_end, text, len);
+    dest->items = realloc(dest->items, dest->len);
+    if (!dest->items) { perror("Mem Err"); return 1; }
+    memcpy(dest->items + prev_end, text, len);
     return 0;
 }
