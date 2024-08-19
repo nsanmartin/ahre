@@ -8,17 +8,14 @@
 
 #include <wrappers.h>
 #include <mem.h>
+//#include <ahctx.h>
 #include <aherror.h>
-#include <ahdoc_cache.h>
+#include <ahdoc-cache.h>
 
 
-typedef struct AhCtx AhCtx;
+//typedef struct AhCtx AhCtx;
 typedef struct AhCurl AhCurl;
 
-typedef int (*AhUserLineCallback)(AhCtx* ctx, char*);
-
-#define BT char
-#include <buf.h>
 
 typedef struct {
     const char* url;
@@ -26,14 +23,6 @@ typedef struct {
     BufOf(char) buf;
     AhDocCache cache;
 } AhDoc;
-
-
-typedef struct AhCtx {
-    AhCurl* ahcurl;
-    int (*user_line_callback)(AhCtx* ctx, char*);
-    AhDoc* ahdoc;
-    bool quit;
-} AhCtx;
 
 
 static inline void AhDocReset(AhDoc* ahdoc) {
@@ -55,8 +44,6 @@ static inline void AhDocFree(AhDoc* ahdoc) {
 
 int AhDocInit(AhDoc d[static 1], char* url);
 
-AhCtx* AhCtxCreate(char* url, AhUserLineCallback callback);
-void AhCtxFree(AhCtx* ctx) ;
 
 AhDoc* AhDocCreate(char* url);
 
@@ -67,7 +54,6 @@ static inline void AhDocUpdateUrl(AhDoc ad[static 1], char* url) {
 ErrStr AhDocFetch(AhCurl ahcurl[static 1], AhDoc ad[static 1]) ;
 char* ah_urldup(char* url) ;
 
-
-int ah_ed_cmd_print(AhCtx ctx[static 1]);
+int ahdoc_buffer_summary(AhDoc ahdoc[static 1], BufOf(char)* buf) ;
 
 #endif

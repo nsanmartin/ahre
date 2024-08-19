@@ -13,7 +13,90 @@ enum { ah_max_url_len = 1024, ah_initial_buf_sz };
 
 ErrStr lexbor_read_doc_from_url_or_file (AhCurl ahcurl[static 1], AhDoc ad[static 1]); 
 
+/*
+ * Functions that append summary of the contet for ebugging purposes
+ */
+int ahdoc_buffer_summary(AhDoc ahdoc[static 1], BufOf(char)* buf) {
 
+    buf_append_lit("AhDoc: ", buf);
+    if (buf_append_hexp(ahdoc, buf)) { return -1; }
+    buf_append_lit("\n", buf);
+
+    if (ahdoc->url) {
+        buf_append_lit(" url: ", buf);
+       if (buffn(char,append)(buf, (char*)ahdoc->url, strlen(ahdoc->url))) {
+           return -1;
+       }
+       buf_append_lit("\n", buf);
+
+    } else {
+       buf_append_lit(" none\n", buf);
+
+    }
+    if (ahdoc->doc) {
+        buf_append_lit(" doc: ", buf);
+        if (buf_append_hexp(ahdoc->doc, buf)) { return -1; }
+        buf_append_lit("\n", buf);
+
+    }
+    return 0;
+}
+
+
+///int ahcurl_print_summary(AhCurl ahcurl[static 1], FILE f[static 1]) {
+///   fprintf(f, "AhCurl: %p\n", (void*)ahcurl);
+///   if (ahcurl->curl) {
+///       fprintf(f, " curl: %p\n", (void*)ahcurl->curl);
+///       if (ahcurl->errbuf[0]) {
+///           fprintf(f, " curl errbuf: %s\n", ahcurl->errbuf);
+///       }
+///   } else {
+///       fprintf(f, " not curl\n");
+///   }
+///   return 0;
+///}
+///
+///int ahdoc_print_summary(AhDoc ahdoc[static 1], FILE f[static 1]) {
+///    fprintf(f, "AhDoc: %p\n", (void*)ahdoc);
+///    if (ahdoc->url) {
+///        fprintf(f," url: %s\n", ahdoc->url);
+///    } else {
+///        fprintf(f, " none\n");
+///    }
+///    if (ahdoc->doc) {
+///        fprintf(f, " doc: %p\n", (void*)ahdoc->doc);
+///    }
+///    return 0;
+///}
+///
+///int ahdoc_cache_print_summary(AhDocCache c[static 1], FILE f[static 1]) {
+///    fprintf(f, "AhDocCache: %p\n", (void*)c);
+///    if (c->hrefs) {
+///        fprintf(f," hrefsp: %p\n", (void*)c->hrefs);
+///        if (c->hrefs) {
+///            if(lexbor_foreach_href(c->hrefs, ahre_print_href, 0x0)) {
+///                return -1;
+///            }
+///        }
+///    } else {
+///        fprintf(f, " no hrefs\n");
+///    }
+///    return 0;
+///}
+///
+///int ahctx_print_summary(AhCtx ctx[static 1], FILE f[static 1]) {
+///    if (ctx->ahcurl) {
+///        if(ahcurl_print_summary(ctx->ahcurl, f)) { return -1; }
+///    } else { fprintf(f, "Not ahcurl\n"); }
+///
+///    if (ctx->ahdoc) {
+///        ahdoc_print_summary(ctx->ahdoc, f);
+///        ahdoc_cache_print_summary(&ctx->ahdoc->cache, f);
+///    } else { fprintf(f, "Not ahcdoc\n"); }
+///
+///    return 0;
+///}
+// _summary fns
 
 bool is_url_too_long(const char* url) {
     if (!url) { return true; }
@@ -67,50 +150,6 @@ ErrStr AhDocFetch(AhCurl ahcurl[static 1], AhDoc ad[static 1]) {
     return lexbor_read_doc_from_url_or_file (ahcurl, ad);
 }
 
-AhCtx* AhCtxCreate(char* url, AhUserLineCallback callback) {
-    AhCtx* rv = ah_malloc(sizeof(AhCtx));
-    *rv = (AhCtx){0};
-    if (!rv) {
-        perror("Mem error");
-        goto exit_fail;
-    }
-    AhCurl* ahcurl = AhCurlCreate();
-    if (!ahcurl) { goto free_rv; }
-
-    AhDoc* ahdoc = AhDocCreate(url);
-    if (!ahdoc) { goto free_ahcurl; }
-
-    if (url && ahdoc->doc) {
-        ErrStr err = AhDocFetch(ahcurl, ahdoc);
-        if (err) {
-            ah_log_error(err, ErrCurl);
-            goto free_ahdoc;
-        }
-    }
-    *rv = (AhCtx) {
-        .ahcurl=ahcurl,
-        .user_line_callback=callback,
-        .ahdoc=ahdoc,
-        .quit=false
-    };
-
-    return rv;
-
-free_ahdoc:
-    AhDocFree(ahdoc);
-free_ahcurl:
-    AhCurlFree(ahcurl);
-free_rv:
-    ah_free(rv);
-exit_fail:
-    return 0x0;
-}
-
-void AhCtxFree(AhCtx* ah) {
-    AhDocFree(ah->ahdoc);
-    AhCurlFree(ah->ahcurl);
-    ah_free(ah);
-}
 
 bool file_exists(const char* path) { return access(path, F_OK) == 0; }
 
@@ -153,8 +192,3 @@ ErrStr lexbor_read_doc_from_url_or_file (AhCurl ahcurl[static 1], AhDoc ad[stati
     return curl_lexbor_fetch_document(ahcurl, ad);
 }
 
-int ah_ed_cmd_print(AhCtx ctx[static 1]) {
-    if (!ctx || !ctx->ahdoc || !ctx->ahdoc->buf.items) { return -1; }
-    fwrite(ctx->ahdoc->buf.items, 1, ctx->ahdoc->buf.len, stdout);
-    return 0;
-}

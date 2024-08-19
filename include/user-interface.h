@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-#include <ahdoc.h>
+#include <ahctx.h>
 #include <ahutils.h>
 
 int ah_read_line_from_user(AhCtx ctx[static 1]);

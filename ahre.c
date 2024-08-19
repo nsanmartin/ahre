@@ -18,7 +18,11 @@ int loop_lexbor(char* url) {
     }
 
     while (!ctx->quit) {
-        ah_read_line_from_user(ctx);
+        int err = ah_read_line_from_user(ctx);
+        if (err) {
+            fprintf(stderr, "Ah re: error reading line, aborting.\n");
+            return EXIT_FAILURE;
+        }
     }
 
     AhCtxFree(ctx);

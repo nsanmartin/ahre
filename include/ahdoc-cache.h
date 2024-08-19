@@ -1,5 +1,7 @@
 #ifndef __AH_DOC_CACHE_AHRE_H__
 #define __AH_DOC_CACHE_AHRE_H__
+#include <lexbor/html/html.h>
+#include <ahutils.h>
 
 typedef struct {
     lxb_dom_collection_t* hrefs;
@@ -10,4 +12,5 @@ static inline void AhDocCacheCleanup(AhDocCache* c) {
     *c = (AhDocCache){0};
 }
 
+int ahdoc_cache_buffer_summary(AhDocCache c[static 1], BufOf(char)* buf) ;
 #endif

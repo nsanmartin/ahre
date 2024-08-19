@@ -49,12 +49,6 @@ int lexbor_print_tag(const char* tag, lxb_html_document_t* document) {
         if (status != LXB_STATUS_OK) {
             FAILED("Failed to serialization HTML tree");
         }
-
-        ////TODO: store in a buffer
-        //size_t value_len = 0;
-        //const lxb_char_t * value = lxb_dom_element_get_attribute(element, (const lxb_char_t*)"href", 4, &value_len);
-        //fwrite(value, 1, value_len, stdout);
-        //fwrite("\n", 1, 1, stdout);
     }
 
     lxb_dom_collection_destroy(collection, true);
@@ -62,50 +56,88 @@ int lexbor_print_tag(const char* tag, lxb_html_document_t* document) {
 
 }
 
+lxb_dom_collection_t* lexbor_anchor_collection_from_doc(
+    lxb_html_document_t document[static 1]
+) {
+    lxb_dom_collection_t* hrefs = lxb_dom_collection_make(&document->dom_document, 128);
+    if (!hrefs) { RETERR("Failed to create Collection object", NULL); }
+
+    if (LXB_STATUS_OK != lxb_dom_elements_by_tag_name(
+                            lxb_dom_interface_element(document->body),
+                            hrefs,
+                            (const lxb_char_t *) "a",
+                            1
+                        )
+    ) { RETERR("Failed to get elements by name", NULL); }
+    return hrefs;
+}
+
+int lexbor_foreach_href(
+    lxb_dom_collection_t collection[static 1],
+    int (*callback)(lxb_dom_element_t* element, void* ctx),
+    void* ctx
+) {
+    for (size_t i = 0; i < lxb_dom_collection_length(collection); i++) {
+        lxb_dom_element_t* element = lxb_dom_collection_element(collection, i);
+
+        if (callback(element, ctx)) { return -1; };
+    }
+    return 0;
+}
+
+int ahre_print_href(lxb_dom_element_t* element, void* ctx) {
+    (void)ctx;
+    size_t value_len = 0;
+    const lxb_char_t * value = lxb_dom_element_get_attribute(
+        element, (const lxb_char_t*)"href", 4, &value_len
+    );
+    fwrite(value, 1, value_len, stdout);
+    fwrite("\n", 1, 1, stdout);
+    return 0;
+}
+
+int ahre_append_href(lxb_dom_element_t* element, void* ctx) {
+    BufOf(char)* buf = ctx;
+    size_t value_len = 0;
+    const lxb_char_t * value = lxb_dom_element_get_attribute(
+        element, (const lxb_char_t*)"href", 4, &value_len
+    );
+    if (buffn(char,append)(buf, (char*)value, value_len)) { return -1; }
+    if (buffn(char,append)(buf, (char*)"\n", 1)) { return -1; }
+    return 0;
+}
+
 int lexbor_href_write(
-    lxb_html_document_t* document,
+    lxb_html_document_t document[static 1],
     lxb_dom_collection_t** hrefs,
     BufOf(char)* buf
 ) {
     if (!*hrefs) {
-        *hrefs = lxb_dom_collection_make(&document->dom_document, 128);
-        if (!*hrefs) { FAILED("Failed to create Collection object"); }
-
-        if (LXB_STATUS_OK != lxb_dom_elements_by_tag_name(
-                                lxb_dom_interface_element(document->body),
-                                *hrefs,
-                                (const lxb_char_t *) "a",
-                                1
-                            )
-        ) { FAILED("Failed to get elements by name"); }
+        if(!(*hrefs = lexbor_anchor_collection_from_doc(document))) {
+            return -1;
+        }
     }
 
-    for (size_t i = 0; i < lxb_dom_collection_length(*hrefs); i++) {
-        lxb_dom_element_t* element = lxb_dom_collection_element(*hrefs, i);
-
-        //TODO: store in a buffer
-        size_t value_len = 0;
-        const lxb_char_t * value = lxb_dom_element_get_attribute(
-            element, (const lxb_char_t*)"href", 4, &value_len
-        );
-        if (buffn(char,append)(buf, (char*)value, value_len)) { return -1; }
-        if (buffn(char,append)(buf, (char*)"\n", 1)) { return -1; }
-        //fwrite(value, 1, value_len, stdout);
-        //fwrite("\n", 1, 1, stdout);
+    if(lexbor_foreach_href(*hrefs, ahre_append_href, (void*)buf)) {
+        return -1;
     }
-
-    //lxb_dom_collection_destroy(collection, true);
     return 0;
 }
 
 int lexbor_print_a_href(lxb_html_document_t* document) {
-    lxb_dom_collection_t* collection = lxb_dom_collection_make(&document->dom_document, 128);
+    lxb_dom_collection_t* collection = lxb_dom_collection_make(
+        &document->dom_document, 128
+    );
     if (collection == NULL) {
         FAILED("Failed to create Collection object");
     }
 
-    if (LXB_STATUS_OK !=
-        lxb_dom_elements_by_tag_name(lxb_dom_interface_element(document->body), collection, (const lxb_char_t *) "a", 1)
+    if (LXB_STATUS_OK != lxb_dom_elements_by_tag_name(
+                            lxb_dom_interface_element(document->body),
+                            collection,
+                            (const lxb_char_t *) "a",
+                            1
+                        )
     ) { FAILED("Failed to get elements by name"); }
 
     for (size_t i = 0; i < lxb_dom_collection_length(collection); i++) {

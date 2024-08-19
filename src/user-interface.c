@@ -6,6 +6,7 @@
 #include <ahutils.h>
 #include <wrappers.h>
 #include <user-interface.h>
+#include <user-cmd.h>
 
 
 void lexbor_cp_html(lxb_html_document_t* document, BufOf(char) out[static 1]);
@@ -74,7 +75,7 @@ int ah_re_fetch(AhCtx ctx[static 1]) {
 
 
 int ah_re_cmd(AhCtx ctx[static 1], char* line) {
-    BufOf(char)* b = &(BufOf(char)){0};
+    //BufOf(char)* b = &(BufOf(char)){0};
 
     char* rest = 0x0;
     line = skip_space(line);
@@ -85,19 +86,22 @@ int ah_re_cmd(AhCtx ctx[static 1], char* line) {
         ah_log_info("no document"); return 0;
     }
 
-    else if ((rest = substr_match(line, "ahre", 2))) { puts("ahre"); if (!*skip_space(rest)) { lexbor_href_write(ctx->ahdoc->doc, &ctx->ahdoc->cache.hrefs, b); } }
+    else if ((rest = substr_match(line, "ahre", 2))) { if (!*skip_space(rest)) { lexbor_href_write(ctx->ahdoc->doc, &ctx->ahdoc->cache.hrefs, &ctx->buf); } }
+    else if ((rest = substr_match(line, "append", 2))) { ahre_cmd_w(rest, &ctx->buf); }
+//        lexbor_cp_html(ctx->ahdoc->doc, &ctx->ahdoc->buf); }
     else if ((rest = substr_match(line, "attr", 2))) { puts("attr"); }
     else if ((rest = substr_match(line, "class", 1))) { puts("class"); }
     else if ((rest = substr_match(line, "fetch", 1))) { ah_re_fetch(ctx); }
-    else if ((rest = substr_match(line, "print", 1))) { b = &ctx->ahdoc->buf; }
+    //else if ((rest = substr_match(line, "print", 1))) { ctx->buf = &ctx->ahdoc->buf; }
+    else if ((rest = substr_match(line, "summary", 1))) { ahctx_buffer_summary(ctx, &ctx->buf); }
+    //else if ((rest = substr_match(line, "summary", 1))) { ahctx_print_summary(ctx, stdout); }
     //else if ((rest = substr_match(line, "print", 1))) { lexbor_cp_html(ctx->ahdoc->doc, &b); }
     else if ((rest = substr_match(line, "tag", 2))) { puts("tag"); lexbor_print_tag(rest, ctx->ahdoc->doc); }
     else if ((rest = substr_match(line, "text", 2))) { lexbor_print_html_text(ctx->ahdoc->doc); }
-    else if ((rest = substr_match(line, "write", 1))) { lexbor_cp_html(ctx->ahdoc->doc, &ctx->ahdoc->buf); }
 
-    if (b) {
-        fwrite(b->items, 1, b->len, stdout);
-        free(b->items);
+    if (ctx->buf.len) {
+        fwrite(ctx->buf.items, 1, ctx->buf.len, stdout);
+        //free(b->items);
         //puts("ah re cmo buf");
     }
 
