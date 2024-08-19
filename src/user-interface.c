@@ -86,11 +86,11 @@ int ah_re_cmd(AhCtx ctx[static 1], char* line) {
         ah_log_info("no document"); return 0;
     }
 
-    else if ((rest = substr_match(line, "ahre", 2))) { if (!*skip_space(rest)) { lexbor_href_write(ctx->ahdoc->doc, &ctx->ahdoc->cache.hrefs, &ctx->buf); } }
+    else if ((rest = substr_match(line, "ahre", 2)) && !*skip_space(rest)) { return ahre_cmd_ahre(ctx); }
     else if ((rest = substr_match(line, "append", 2))) { ahre_cmd_w(rest, &ctx->buf); }
-//        lexbor_cp_html(ctx->ahdoc->doc, &ctx->ahdoc->buf); }
     else if ((rest = substr_match(line, "attr", 2))) { puts("attr"); }
-    else if ((rest = substr_match(line, "class", 1))) { puts("class"); }
+    else if ((rest = substr_match(line, "class", 2))) { puts("class"); }
+    else if ((rest = substr_match(line, "clear", 2))) { ahre_cmd_clear(ctx); }
     else if ((rest = substr_match(line, "fetch", 1))) { ah_re_fetch(ctx); }
     //else if ((rest = substr_match(line, "print", 1))) { ctx->buf = &ctx->ahdoc->buf; }
     else if ((rest = substr_match(line, "summary", 1))) { ahctx_buffer_summary(ctx, &ctx->buf); }
@@ -99,11 +99,7 @@ int ah_re_cmd(AhCtx ctx[static 1], char* line) {
     else if ((rest = substr_match(line, "tag", 2))) { puts("tag"); lexbor_print_tag(rest, ctx->ahdoc->doc); }
     else if ((rest = substr_match(line, "text", 2))) { lexbor_print_html_text(ctx->ahdoc->doc); }
 
-    if (ctx->buf.len) {
-        fwrite(ctx->buf.items, 1, ctx->buf.len, stdout);
-        //free(b->items);
-        //puts("ah re cmo buf");
-    }
+    //if (ctx->buf.len) { fwrite(ctx->buf.items, 1, ctx->buf.len, stdout); }
 
     return 0;
 }
@@ -112,20 +108,26 @@ int ah_ed_cmd(AhCtx ctx[static 1], char* line) {
     char* rest = 0x0;
     if (!line) { return 0; }
     else if ((rest = substr_match(line, "quit", 1)) && !*rest) { ctx->quit = true; return 0;}
-    else if ((rest = substr_match(line, "print", 1)) && !*rest) { return ah_ed_cmd_print(ctx); }
+    else if ((rest = substr_match(line, "print", 1)) && !*rest) { return ahed_cmd_print(ctx); }
     puts("unknown command");
     return 0;
 }
 
 int ah_process_line(AhCtx ctx[static 1], char* line) {
-        if (!line) { ctx->quit = true; return 0; }
-        line = skip_space(line);
+    if (!line) { ctx->quit = true; return 0; }
+    line = skip_space(line);
 
     if (!*line) { return 0; }
 
-    if (*line == '\\') { return ah_re_cmd(ctx, line + 1); }
-    return ah_ed_cmd(ctx, line);
+    if (*line == '\\') {
+        if (ah_re_cmd(ctx, line + 1)) { return -1; }
+        if (ctx->buf.len) {
+            fwrite(ctx->buf.items, 1, ctx->buf.len, stdout);
+        }
 
+    } else {
+        return ah_ed_cmd(ctx, line);
+    }
 
     return 0;
 }

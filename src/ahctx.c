@@ -55,11 +55,7 @@ exit_fail:
 void AhCtxFree(AhCtx* ah) {
     AhDocFree(ah->ahdoc);
     AhCurlFree(ah->ahcurl);
+    buffn(char,clean)(&ah->buf);
     ah_free(ah);
 }
 
-int ah_ed_cmd_print(AhCtx ctx[static 1]) {
-    if (!ctx || !ctx->ahdoc || !ctx->ahdoc->buf.items) { return -1; }
-    fwrite(ctx->ahdoc->buf.items, 1, ctx->ahdoc->buf.len, stdout);
-    return 0;
-}
