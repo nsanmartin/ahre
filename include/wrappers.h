@@ -10,7 +10,7 @@
 
 
 int lexbor_print_a_href(lxb_html_document_t* document);
-int lexbor_print_tag(const char* tag, lxb_html_document_t* document);
+int lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* buf);
 
 int curl_set_all_options(CURL* curl, const char* url, char* errbuf);
 int curl_set_callback_and_buffer(CURL* curl, curl_write_callback callback, void* docbuf);
@@ -26,5 +26,13 @@ int lexbor_foreach_href(
     int (*callback)(lxb_dom_element_t* element, void* ctx),
     void* ctx
 );
+
+lxb_inline lxb_status_t append_to_buf_callback(const lxb_char_t *data, size_t len, void *ctx) {
+    BufOf(char)* buf = ctx;
+    //if (AhBufAppend(buf, (char*)data, len)) { return LXB_STATUS_ERROR; }
+    if (buffn(char,append)(buf, (char*)data, len)) { return LXB_STATUS_ERROR; }
+    return LXB_STATUS_OK;
+}
+
 #endif
 

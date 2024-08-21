@@ -55,7 +55,7 @@ exit_fail:
 void AhCtxFree(AhCtx* ah) {
     AhDocFree(ah->ahdoc);
     AhCurlFree(ah->ahcurl);
-    buffn(char,clean)(&ah->buf);
+    if (ah->buf.len) { buffn(char,clean)(&ah->buf); }
     ah_free(ah);
 }
 

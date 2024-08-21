@@ -22,7 +22,7 @@ static inline char* trim_space(char* l) {
 }
 
 void print_html(lxb_html_document_t* document);
-void lexbor_print_html_text(lxb_html_document_t* document);
+int lexbor_print_html_text(lxb_html_document_t* document, BufOf(char)* buf);
 
 int lexbor_href_write(
     lxb_html_document_t* document,

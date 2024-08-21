@@ -62,7 +62,7 @@ curl/lib/.libs: curl/configure
 	$(MAKE) -C curl
 
 tags:
-	ctags --languages=c -R .
+	ctags -R .
 
 cscope:
 	cscope -b -k -R

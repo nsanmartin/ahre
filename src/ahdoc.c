@@ -175,7 +175,6 @@ ErrStr lexbor_read_doc_from_file(AhDoc ahdoc[static 1]) {
             return "Failed to parse HTML chunk";
         }
     }
-    //if (ferror(fp)) { perror("error reading file"); fclose(fp); return ErrFile; }
     if (ferror(fp)) { fclose(fp); return strerror(errno); }
     fclose(fp);
 

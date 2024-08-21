@@ -3,13 +3,6 @@
 #include <wrappers.h>
 
 
-lxb_inline lxb_status_t
-print_tag_callback(const lxb_char_t *data, size_t len, void *ctx) {
-    (void)ctx;
-    fwrite(data, 1, len, stdout);
-    return LXB_STATUS_OK;
-}
-
 Str next_word(const char* s) {
     if (!s || !*s) { return (Str){0}; }
     while (*s && isspace(*s)) { ++s; }
@@ -19,7 +12,7 @@ Str next_word(const char* s) {
     return (Str){.s=s, .len=end-s};
 }
 
-int lexbor_print_tag(const char* tag, lxb_html_document_t* document) {
+int lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* buf) {
     Str tags = next_word(tag);
     if (tags.len == 0) { puts("Ah, invalid tag"); return 0; }
 
@@ -43,8 +36,8 @@ int lexbor_print_tag(const char* tag, lxb_html_document_t* document) {
             lxb_dom_interface_node(element),
             LXB_HTML_SERIALIZE_OPT_UNDEF,
             0,
-            print_tag_callback,
-            NULL
+            append_to_buf_callback,
+            buf
         );
         if (status != LXB_STATUS_OK) {
             FAILED("Failed to serialization HTML tree");
@@ -160,13 +153,6 @@ lxb_inline lxb_status_t serializer_callback(const lxb_char_t *data, size_t len, 
     return len == fwrite(data, 1, len, stdout) ? LXB_STATUS_OK : LXB_STATUS_ERROR;
 }
 
-lxb_inline lxb_status_t serializer_copy_callback(const lxb_char_t *data, size_t len, void *ctx) {
-    BufOf(char)* buf = ctx;
-    //if (AhBufAppend(buf, (char*)data, len)) { return LXB_STATUS_ERROR; }
-    if (buffn(char,append)(buf, (char*)data, len)) { return LXB_STATUS_ERROR; }
-    return LXB_STATUS_OK;
-}
-
 
 lxb_inline void
 serialize_node(lxb_dom_node_t *node)
@@ -196,7 +182,7 @@ void
 lexbor_cp_html(lxb_html_document_t* document, BufOf(char) out[static 1]) {
     //TODO: return err
     lxb_html_serialize_pretty_tree_cb(
-        lxb_dom_interface_node(document), LXB_HTML_SERIALIZE_OPT_UNDEF, 0, serializer_copy_callback, out
+        lxb_dom_interface_node(document), LXB_HTML_SERIALIZE_OPT_UNDEF, 0, append_to_buf_callback, out
     );
 }
 
@@ -206,13 +192,13 @@ size_t chunk_callback(char *in, size_t size, size_t nmemb, void* outstream) {
     return  LXB_STATUS_OK == lxb_html_document_parse_chunk(document, (lxb_char_t*)in, r) ? r : 0;
 }
 
-void lexbor_print_html_text(lxb_html_document_t* document) {
+int lexbor_print_html_text(lxb_html_document_t* document, BufOf(char)* buf) {
     lxb_dom_node_t *node = lxb_dom_interface_node(document->body);
     size_t len = 0x0;
     lxb_char_t* text = lxb_dom_node_text_content(node, &len);
-    fwrite(text, 1, len, stdout);
-    fwrite("\n", 1, 1, stdout);
-    return;
+    if (buffn(char,append)(buf, (char*)text, len)) { return -1; }
+    if (buffn(char,append)(buf, (char*)"\n", 1)) { return -1; }
+    return 0;
 }
 
 int lexbor_append_html_text(

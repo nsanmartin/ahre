@@ -33,6 +33,13 @@ char* substr_match(char* s, const char* cmd, size_t len) {
 	return skip_space(s);
 }
 
+char* subword_match(char* s, const char* cmd, size_t len) {
+    char* rest = substr_match(s, cmd, len);
+    if (!rest) { return 0x0; }
+    rest = skip_space(rest);
+    return !*rest ? rest : 0x0;
+}
+
 bool substr_match_all(char* s, size_t len, const char* cmd) {
     return (s=substr_match(s, cmd, len)) && !*skip_space(s);
 }
@@ -63,20 +70,8 @@ int ah_re_url(AhCtx ctx[static 1], char* url) {
     return 0;
 }
 
-int ah_re_fetch(AhCtx ctx[static 1]) {
-    if (ctx->ahdoc->url) {
-        ErrStr err_str = AhDocFetch(ctx->ahcurl, ctx->ahdoc);
-        if (err_str) { return ah_log_error(err_str, ErrCurl); }
-        return Ok;
-    }
-    puts("Not url to fech");
-    return -1;
-}
 
-
-int ah_re_cmd(AhCtx ctx[static 1], char* line) {
-    //BufOf(char)* b = &(BufOf(char)){0};
-
+int ah_re_cmd(AhCtx ctx[static 1], char* line, BufOf(char)* buf) {
     char* rest = 0x0;
     line = skip_space(line);
 
@@ -86,20 +81,17 @@ int ah_re_cmd(AhCtx ctx[static 1], char* line) {
         ah_log_info("no document"); return 0;
     }
 
-    else if ((rest = substr_match(line, "ahre", 2)) && !*skip_space(rest)) { return ahre_cmd_ahre(ctx); }
-    else if ((rest = substr_match(line, "append", 2))) { ahre_cmd_w(rest, &ctx->buf); }
-    else if ((rest = substr_match(line, "attr", 2))) { puts("attr"); }
-    else if ((rest = substr_match(line, "class", 2))) { puts("class"); }
-    else if ((rest = substr_match(line, "clear", 2))) { ahre_cmd_clear(ctx); }
-    else if ((rest = substr_match(line, "fetch", 1))) { ah_re_fetch(ctx); }
-    //else if ((rest = substr_match(line, "print", 1))) { ctx->buf = &ctx->ahdoc->buf; }
-    else if ((rest = substr_match(line, "summary", 1))) { ahctx_buffer_summary(ctx, &ctx->buf); }
-    //else if ((rest = substr_match(line, "summary", 1))) { ahctx_print_summary(ctx, stdout); }
-    //else if ((rest = substr_match(line, "print", 1))) { lexbor_cp_html(ctx->ahdoc->doc, &b); }
-    else if ((rest = substr_match(line, "tag", 2))) { puts("tag"); lexbor_print_tag(rest, ctx->ahdoc->doc); }
-    else if ((rest = substr_match(line, "text", 2))) { lexbor_print_html_text(ctx->ahdoc->doc); }
+    else if ((rest = subword_match(line, "ahref", 2))) { return ahre_cmd_ahre(ctx, buf); }
+    //else if ((rest = substr_match(line, "append", 2))) { ahre_cmd_w(rest, buf); }
+    else if ((rest = substr_match(line, "attr", 2))) { puts("TODO: attr"); }
+    else if ((rest = substr_match(line, "class", 3))) { puts("TODO: class"); }
+    else if ((rest = substr_match(line, "clear", 3))) { return ahre_cmd_clear(buf); }
+    else if ((rest = substr_match(line, "fetch", 1))) { return ahre_fetch(ctx); }
+    else if ((rest = substr_match(line, "summary", 1))) { return ahctx_buffer_summary(ctx, buf); }
+    else if ((rest = substr_match(line, "tag", 2))) { return ahre_cmd_tag(rest, ctx, buf); }
+    //else if ((rest = substr_match(line, "text", 2))) { lexbor_print_html_text(ctx->ahdoc->doc); }
+    else if ((rest = substr_match(line, "text", 2))) { return ahre_cmd_text(ctx, buf); }
 
-    //if (ctx->buf.len) { fwrite(ctx->buf.items, 1, ctx->buf.len, stdout); }
 
     return 0;
 }
@@ -120,7 +112,7 @@ int ah_process_line(AhCtx ctx[static 1], char* line) {
     if (!*line) { return 0; }
 
     if (*line == '\\') {
-        if (ah_re_cmd(ctx, line + 1)) { return -1; }
+        if (ah_re_cmd(ctx, line + 1, &ctx->buf)) { return -1; }
         if (ctx->buf.len) {
             fwrite(ctx->buf.items, 1, ctx->buf.len, stdout);
         }
