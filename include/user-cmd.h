@@ -2,7 +2,6 @@
 #define __AHRE_USER_CMD_H__
 int ahre_cmd_w(char* fname, BufOf(char) buf[static 1]);
 int ahre_cmd_ahre(AhCtx ctx[static 1], BufOf(char)* buf);
-int ahed_cmd_print(AhCtx ctx[static 1]) ;
 
 int ahre_fetch(AhCtx ctx[static 1]);
 static inline int ahre_cmd_clear(BufOf(char)* buf) {
@@ -18,5 +17,14 @@ static inline int ahre_cmd_text(AhCtx* ctx, BufOf(char)*buf) {
     return lexbor_print_html_text(ctx->ahdoc->doc, buf);
 }
 
+static inline int ahed_cmd_print(BufOf(char)* buf) {
+    if (buf->len) {
+        fwrite(buf->items, 1, buf->len, stdout);
+    }
+    return 0;
+}
+
+
+int ahed_cmd_write(char* rest, BufOf(char)* buf);
 #endif
 

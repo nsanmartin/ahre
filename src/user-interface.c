@@ -33,13 +33,6 @@ char* substr_match(char* s, const char* cmd, size_t len) {
 	return skip_space(s);
 }
 
-char* subword_match(char* s, const char* cmd, size_t len) {
-    char* rest = substr_match(s, cmd, len);
-    if (!rest) { return 0x0; }
-    rest = skip_space(rest);
-    return !*rest ? rest : 0x0;
-}
-
 bool substr_match_all(char* s, size_t len, const char* cmd) {
     return (s=substr_match(s, cmd, len)) && !*skip_space(s);
 }
@@ -81,26 +74,24 @@ int ah_re_cmd(AhCtx ctx[static 1], char* line, BufOf(char)* buf) {
         ah_log_info("no document"); return 0;
     }
 
-    else if ((rest = subword_match(line, "ahref", 2))) { return ahre_cmd_ahre(ctx, buf); }
-    //else if ((rest = substr_match(line, "append", 2))) { ahre_cmd_w(rest, buf); }
-    else if ((rest = substr_match(line, "attr", 2))) { puts("TODO: attr"); }
-    else if ((rest = substr_match(line, "class", 3))) { puts("TODO: class"); }
-    else if ((rest = substr_match(line, "clear", 3))) { return ahre_cmd_clear(buf); }
-    else if ((rest = substr_match(line, "fetch", 1))) { return ahre_fetch(ctx); }
-    else if ((rest = substr_match(line, "summary", 1))) { return ahctx_buffer_summary(ctx, buf); }
-    else if ((rest = substr_match(line, "tag", 2))) { return ahre_cmd_tag(rest, ctx, buf); }
-    //else if ((rest = substr_match(line, "text", 2))) { lexbor_print_html_text(ctx->ahdoc->doc); }
-    else if ((rest = substr_match(line, "text", 2))) { return ahre_cmd_text(ctx, buf); }
-
+    if ((rest = substr_match(line, "ahref", 2)) && !*rest) { return ahre_cmd_ahre(ctx, buf); }
+    if ((rest = substr_match(line, "attr", 2))) { puts("TODO: attr"); }
+    if ((rest = substr_match(line, "class", 3))) { puts("TODO: class"); }
+    if ((rest = substr_match(line, "clear", 3))) { return ahre_cmd_clear(buf); }
+    if ((rest = substr_match(line, "fetch", 1))) { return ahre_fetch(ctx); }
+    if ((rest = substr_match(line, "summary", 1))) { return ahctx_buffer_summary(ctx, buf); }
+    if ((rest = substr_match(line, "tag", 2))) { return ahre_cmd_tag(rest, ctx, buf); }
+    if ((rest = substr_match(line, "text", 2))) { return ahre_cmd_text(ctx, buf); }
 
     return 0;
 }
 
-int ah_ed_cmd(AhCtx ctx[static 1], char* line) {
+int ah_ed_cmd(AhCtx ctx[static 1], char* line, BufOf(char)* buf) {
     char* rest = 0x0;
     if (!line) { return 0; }
-    else if ((rest = substr_match(line, "quit", 1)) && !*rest) { ctx->quit = true; return 0;}
-    else if ((rest = substr_match(line, "print", 1)) && !*rest) { return ahed_cmd_print(ctx); }
+    if ((rest = substr_match(line, "quit", 1)) && !*rest) { ctx->quit = true; return 0;}
+    if ((rest = substr_match(line, "print", 1)) && !*rest) { return ahed_cmd_print(buf); }
+    if ((rest = substr_match(line, "write", 1))) { return ahed_cmd_write(rest, buf); }
     puts("unknown command");
     return 0;
 }
@@ -118,7 +109,7 @@ int ah_process_line(AhCtx ctx[static 1], char* line) {
         }
 
     } else {
-        return ah_ed_cmd(ctx, line);
+        return ah_ed_cmd(ctx, line, &ctx->buf);
     }
 
     return 0;
