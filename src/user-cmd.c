@@ -3,13 +3,9 @@
 #include <user-interface.h>
 
 /* ah cmds */
-int ahre_cmd_ahre(AhCtx ctx[static 1], BufOf(char)* buf) {
-    return lexbor_href_write(
-        ctx->ahdoc->doc, &ctx->ahdoc->cache.hrefs, buf
-    );
-}
 
-int ahre_cmd_w(char* fname, BufOf(char) buf[static 1]) {
+int ahcmd_w(char* fname, AhCtx ctx[static 1]) {
+    BufOf(char)* buf = &ahctx_current_buf(ctx)->buf;
     if (fname && *(fname = skip_space(fname))) {
         FILE* fp = fopen(fname, "a");
         if (!fp) {
@@ -26,19 +22,10 @@ int ahre_cmd_w(char* fname, BufOf(char) buf[static 1]) {
     return -1;
 }
 
-int ahre_fetch(AhCtx ctx[static 1]) {
-    if (ctx->ahdoc->url) {
-        ErrStr err_str = AhDocFetch(ctx->ahcurl, ctx->ahdoc);
-        if (err_str) { return ah_log_error(err_str, ErrCurl); }
-        return Ok;
-    }
-    puts("Not url to fech");
-    return -1;
-}
-
 
 /* ed cmds */
-int ahed_cmd_write(char* rest, BufOf(char)* buf) {
+int aecmd_write(char* rest, AhCtx ctx[static 1]) {
+    BufOf(char)* buf = &ahctx_current_buf(ctx)->buf;
     if (!rest || !*rest) { puts("cannot write without file arg"); return 0; }
     FILE* fp = fopen(rest, "w");
     if (!fp) {

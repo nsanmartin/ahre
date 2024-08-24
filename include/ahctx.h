@@ -13,15 +13,21 @@ typedef int (*AhUserLineCallback)(AhCtx* ctx, char*);
 typedef struct AhCtx {
     AhCurl* ahcurl;
     AhDoc* ahdoc;
-    BufOf(char) buf;
+    //BufOf(char) buf;
     bool quit;
     int (*user_line_callback)(AhCtx* ctx, char*);
 } AhCtx;
+
+static inline AeBuf* ahctx_current_buf(AhCtx ctx[static 1]) {
+    return &ctx->ahdoc->aebuf;
+}
+
+static inline AhDoc* ahctx_current_doc(AhCtx ctx[static 1]) { return ctx->ahdoc; }
 
 AhCtx* AhCtxCreate(char* url, AhUserLineCallback callback);
 void AhCtxFree(AhCtx* ctx) ;
 int ah_ed_cmd_print(AhCtx ctx[static 1]);
 
 int ahctx_print_summary(AhCtx ctx[static 1], FILE f[static 1]) ;
-int ahctx_buffer_summary(AhCtx ctx[static 1], BufOf(char)*buf) ;
+int ahctx_buffer_summary(AhCtx ctx[static 1]);
 #endif

@@ -7,6 +7,7 @@
 #include <wrappers.h>
 #include <user-interface.h>
 #include <user-cmd.h>
+#include <ae-ranges.h>
 
 
 void lexbor_cp_html(lxb_html_document_t* document, BufOf(char) out[static 1]);
@@ -64,7 +65,7 @@ int ah_re_url(AhCtx ctx[static 1], char* url) {
 }
 
 
-int ah_re_cmd(AhCtx ctx[static 1], char* line, BufOf(char)* buf) {
+int ah_re_cmd(AhCtx ctx[static 1], char* line) {
     char* rest = 0x0;
     line = skip_space(line);
 
@@ -74,24 +75,29 @@ int ah_re_cmd(AhCtx ctx[static 1], char* line, BufOf(char)* buf) {
         ah_log_info("no document"); return 0;
     }
 
-    if ((rest = substr_match(line, "ahref", 2)) && !*rest) { return ahre_cmd_ahre(ctx, buf); }
+    if ((rest = substr_match(line, "ahref", 2)) && !*rest) { return ahcmd_ahre(ctx); }
     if ((rest = substr_match(line, "attr", 2))) { puts("TODO: attr"); }
     if ((rest = substr_match(line, "class", 3))) { puts("TODO: class"); }
-    if ((rest = substr_match(line, "clear", 3))) { return ahre_cmd_clear(buf); }
-    if ((rest = substr_match(line, "fetch", 1))) { return ahre_fetch(ctx); }
-    if ((rest = substr_match(line, "summary", 1))) { return ahctx_buffer_summary(ctx, buf); }
-    if ((rest = substr_match(line, "tag", 2))) { return ahre_cmd_tag(rest, ctx, buf); }
-    if ((rest = substr_match(line, "text", 2))) { return ahre_cmd_text(ctx, buf); }
+    if ((rest = substr_match(line, "clear", 3))) { return ahcmd_clear(ctx); }
+    if ((rest = substr_match(line, "fetch", 1))) { return ahcmd_fetch(ctx); }
+    if ((rest = substr_match(line, "summary", 1))) { return ahctx_buffer_summary(ctx); }
+    if ((rest = substr_match(line, "tag", 2))) { return ahcmd_tag(rest, ctx); }
+    if ((rest = substr_match(line, "text", 2))) { return ahcmd_text(ctx); }
 
     return 0;
 }
 
-int ah_ed_cmd(AhCtx ctx[static 1], char* line, BufOf(char)* buf) {
+int ah_ed_cmd(AhCtx ctx[static 1], char* line) {
     char* rest = 0x0;
     if (!line) { return 0; }
+    AeRange range;
+    rest = ad_range_parse(line, ctx, &range);
+    if (rest) {
+        printf("range: %ld, %ld\n", range.beg, range.end);
+    }
     if ((rest = substr_match(line, "quit", 1)) && !*rest) { ctx->quit = true; return 0;}
-    if ((rest = substr_match(line, "print", 1)) && !*rest) { return ahed_cmd_print(buf); }
-    if ((rest = substr_match(line, "write", 1))) { return ahed_cmd_write(rest, buf); }
+    if ((rest = substr_match(line, "print", 1)) && !*rest) { return aecmd_print(ctx); }
+    if ((rest = substr_match(line, "write", 1))) { return aecmd_write(rest, ctx); }
     puts("unknown command");
     return 0;
 }
@@ -103,13 +109,11 @@ int ah_process_line(AhCtx ctx[static 1], char* line) {
     if (!*line) { return 0; }
 
     if (*line == '\\') {
-        if (ah_re_cmd(ctx, line + 1, &ctx->buf)) { return -1; }
-        if (ctx->buf.len) {
-            fwrite(ctx->buf.items, 1, ctx->buf.len, stdout);
-        }
+        if (ah_re_cmd(ctx, line + 1)) { return -1; }
+        //if (ctx->buf.len) { fwrite(ctx->ahdoc->buf.items, 1, ctx->ahdoc->buf.len, stdout); }
 
     } else {
-        return ah_ed_cmd(ctx, line, &ctx->buf);
+        return ah_ed_cmd(ctx, line);
     }
 
     return 0;

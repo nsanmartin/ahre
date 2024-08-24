@@ -1,6 +1,7 @@
 #include <ahctx.h>
 
-int ahctx_buffer_summary(AhCtx ctx[static 1], BufOf(char)*buf) {
+int ahctx_buffer_summary(AhCtx ctx[static 1]) {
+    BufOf(char)* buf = &ahctx_current_buf(ctx)->buf;
     if (ctx->ahcurl) {
         if(ahcurl_buffer_summary(ctx->ahcurl, buf)) { return -1; }
     } else { buf_append_lit("Not ahcurl\n", buf); }
@@ -55,7 +56,6 @@ exit_fail:
 void AhCtxFree(AhCtx* ah) {
     AhDocFree(ah->ahdoc);
     AhCurlFree(ah->ahcurl);
-    if (ah->buf.len) { buffn(char,clean)(&ah->buf); }
     ah_free(ah);
 }
 

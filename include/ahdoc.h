@@ -8,9 +8,10 @@
 
 #include <wrappers.h>
 #include <mem.h>
-//#include <ahctx.h>
+
 #include <aherror.h>
 #include <ahdoc-cache.h>
+#include <ae-buf.h>
 
 
 //typedef struct AhCtx AhCtx;
@@ -20,7 +21,8 @@ typedef struct AhCurl AhCurl;
 typedef struct {
     const char* url;
     lxb_html_document_t* doc;
-    BufOf(char) buf;
+    //BufOf(char) buf;
+    AeBuf aebuf;
     AhDocCache cache;
 } AhDoc;
 
@@ -28,12 +30,14 @@ typedef struct {
 static inline void AhDocReset(AhDoc* ahdoc) {
     AhDocCacheCleanup(&ahdoc->cache);
     lxb_html_document_clean(ahdoc->doc);
+    AeBufReset(&ahdoc->aebuf);
     ah_free((char*)ahdoc->url);
 }
 
 static inline void AhDocCleanup(AhDoc* ahdoc) {
     AhDocCacheCleanup(&ahdoc->cache);
     lxb_html_document_destroy(ahdoc->doc);
+    AeBufCleanup(&ahdoc->aebuf);
     ah_free((char*)ahdoc->url);
 }
 

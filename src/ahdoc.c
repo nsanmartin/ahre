@@ -6,12 +6,66 @@
 
 #include <ahutils.h>
 #include <ahdoc.h>
+#include <ae-buf.h>
 
 // this is just a "random" bound. TODO: think it better
 enum { ah_max_url_len = 1024, ah_initial_buf_sz };
 
 
 ErrStr lexbor_read_doc_from_url_or_file (AhCurl ahcurl[static 1], AhDoc ad[static 1]); 
+
+
+bool is_url_too_long(const char* url) {
+    if (!url) { return true; }
+    const char* p = url;
+    for (; (p - url) < ah_max_url_len && *p; ++p)
+        ;
+    return (p - url) > ah_max_url_len;
+}
+
+char* ah_urldup(char* url) {
+	if (!url) { return 0x0; }
+        if (!*url || is_url_too_long(url)) {
+                perror("url too long");
+                return 0x0;
+        }
+        return ah_strndup(url, ah_max_url_len);
+}
+
+
+int AhDocInit(AhDoc d[static 1], char* url) {
+    if (!d) { return -1; }
+    lxb_html_document_t* document = lxb_html_document_create();
+    if (!document) {
+        perror("Lxb failed to create html document");
+        return -1;
+    }
+
+    if (url){
+        url = ah_urldup(url);
+        if (!url) {
+            lxb_html_document_destroy(d->doc);
+            return -1;
+        }
+    }
+
+    *d = (AhDoc){ .url=url, .doc=document };
+    return 0;
+}
+
+AhDoc* AhDocCreate(char* url) {
+    AhDoc* rv = ah_malloc(sizeof(AhDoc));
+    if (AhDocInit(rv, url)) {
+        ah_free(rv);
+        return NULL;
+    }
+    return rv;
+}
+
+
+ErrStr AhDocFetch(AhCurl ahcurl[static 1], AhDoc ad[static 1]) {
+    return lexbor_read_doc_from_url_or_file (ahcurl, ad);
+}
 
 /*
  * Functions that append summary of the contet for ebugging purposes
@@ -97,59 +151,6 @@ int ahdoc_buffer_summary(AhDoc ahdoc[static 1], BufOf(char)* buf) {
 ///    return 0;
 ///}
 // _summary fns
-
-bool is_url_too_long(const char* url) {
-    if (!url) { return true; }
-    const char* p = url;
-    for (; (p - url) < ah_max_url_len && *p; ++p)
-        ;
-    return (p - url) > ah_max_url_len;
-}
-
-char* ah_urldup(char* url) {
-	if (!url) { return 0x0; }
-        if (!*url || is_url_too_long(url)) {
-                perror("url too long");
-                return 0x0;
-        }
-        return ah_strndup(url, ah_max_url_len);
-}
-
-
-int AhDocInit(AhDoc d[static 1], char* url) {
-    if (!d) { return -1; }
-    lxb_html_document_t* document = lxb_html_document_create();
-    if (!document) {
-        perror("Lxb failed to create html document");
-        return -1;
-    }
-
-    if (url){
-        url = ah_urldup(url);
-        if (!url) {
-            lxb_html_document_destroy(d->doc);
-            return -1;
-        }
-    }
-
-    *d = (AhDoc) { .url=url, .doc=document, .buf={0} };
-    return 0;
-}
-
-AhDoc* AhDocCreate(char* url) {
-    AhDoc* rv = ah_malloc(sizeof(AhDoc));
-    if (AhDocInit(rv, url)) {
-        ah_free(rv);
-        return NULL;
-    }
-    return rv;
-}
-
-
-ErrStr AhDocFetch(AhCurl ahcurl[static 1], AhDoc ad[static 1]) {
-    return lexbor_read_doc_from_url_or_file (ahcurl, ad);
-}
-
 
 bool file_exists(const char* path) { return access(path, F_OK) == 0; }
 
