@@ -32,83 +32,122 @@ char* ad_parse_ull(char* tk, long long unsigned* ullp) {
     char* endptr = 0x0;
     *ullp = strtoll(tk, &endptr, 10);
     if (ERANGE == errno && ULLONG_MAX == *ullp) { return NULL; }
-    return endptr;
+    return endptr == tk ? NULL: endptr;
 }
 
-char* ad_range_parse_addr_num(char* tk, unsigned long long num, unsigned long long maximum, size_t* out) {
+char* ae_range_parse_addr_num(char* tk, unsigned long long num, unsigned long long maximum, size_t* out) {
     unsigned long long ull;
     if (*tk == '+') {
         ++tk;
         char* rest = ad_parse_ull(tk, &ull);
         if (!rest) { ull = 1; }
+        else { tk = rest; }
         num += ull; 
         if (num < ull || num > maximum) { return NULL; }
-        tk = rest;
     } else if (*tk == '-') {
         ++tk;
         char* rest = ad_parse_ull(tk, &ull);
         if (!rest) { ull = 1; }
+        else { tk = rest; }
         if (ull > num) { return NULL; }
         num -= ull; 
         if (num > maximum) { return NULL; }
-        tk = rest;
     }
     *out = num;
     return tk;
 }
 
-char* ad_range_parse_addr(char* tk, AhCtx ctx[static 1], size_t* out) {
-    AeBuf* aeb = ahctx_current_buf(ctx);
+_Static_assert(sizeof(size_t) <= sizeof(unsigned long long), "range parser requires this precondition");
+
+char* ae_range_parse_addr(char* tk, unsigned long long curr, unsigned long long max, size_t* out) {
     if (!tk || !*tk) { return NULL; }
-    unsigned long long linenum = aeb->current_line;
-    unsigned long long maximum = aeb->buf.len ? aeb->buf.len - 1 : 0;
-    if (*tk == '.')  {
-        ++tk;
-        char* rest = ad_range_parse_addr_num(tk, linenum, maximum, out);
+    if (*tk == '.' || *tk == '+' || *tk == '-')  {
+        if (*tk == '.') { ++tk; }
+        char* rest = ae_range_parse_addr_num(tk, curr, max, out);
         if (rest) { tk = rest; }
         return tk;
-    }
-    if (*tk == '$') {
+    } else if (*tk == '$') {
         ++tk;
-        char* rest = ad_range_parse_addr_num(tk, maximum, maximum, out);
+        char* rest = ae_range_parse_addr_num(tk, max, max, out);
         if (rest) { tk = rest; }
         return tk;
-    }
-    if (isdigit(*tk)) {
+    } else if (isdigit(*tk)) {
         // tk does not start neither with - nor +
-        char* rest = ad_parse_ull(tk, &linenum);
-        if (!rest /* overflow */ || linenum > maximum) { return NULL; }
-        *out = linenum;
+        char* rest = ad_parse_ull(tk, &curr);
+        if (!rest /* overflow  || curr > max*/) { return NULL; }
+        *out = curr;
+        if (*tk == '+' || *tk == '-') {
+            char* rest = ae_range_parse_addr_num(tk+1, curr, max, out);
+            if (rest) { return rest; }
+        }
         return rest;
+    } 
+
+    if (*tk == '+' || *tk == '-') {
+        char* rest = ae_range_parse_addr_num(tk+1, curr, max, out);
+        if (rest) { return rest; }
     }
     return NULL;
 }
 
-//int ad_range_parse_end(char* tk, size_t* end) {
-//}
-//
 
 char* ad_range_parse(char* tk, AhCtx ctx[static 1], AeRange* range) {
-    if (!tk || !*tk) { return NULL; }
-    if (*tk == '%') {
-        ++tk;
-        size_t len = ahctx_current_buf(ctx)->buf.len;
-        if (!len) { return NULL; }
-        *range = (AeRange){.beg=0, .end=len-1};
+    size_t current_line = ahctx_current_buf(ctx)->current_line;
+    size_t len          = ahctx_current_buf(ctx)->buf.len;
+    size_t maximum      = SIZE_MAX;
+
+    // invalid input
+    if (!tk) { return NULL; }
+    tk = skip_space(tk);
+
+    // empty string
+    if (!*tk) { 
+        range->end = range->beg = current_line;
         return tk;
     }
 
-    char* rest = ad_range_parse_addr(tk, ctx, &range->beg);
-    if (!rest) { return NULL; }
-    rest = skip_space(rest);
-    tk = rest;
-    if (*tk == ',')  {
+    // full range
+    if (*tk == '%') {
         ++tk;
-        rest = ad_range_parse_addr(tk, ctx, &range->end);
-        if (!rest) { range->end = ahctx_current_buf(ctx)->current_line; }
-        tk = rest;
-    } else {
-        range->end = range->beg;
+        *range = (AeRange){.beg=0, .end=(len?len-1:0)};
+        return tk;
+    } 
+
+    // ,Addr?
+    if (*tk == ',') {
+        ++tk;
+        range->beg = current_line;
+        range->end = current_line;
+        char* rest = ae_range_parse_addr(tk, current_line, maximum, &range->end);
+        return rest? rest : tk;
     }
-    return rest;
+            
+
+    char* rest = ae_range_parse_addr(tk, current_line, maximum, &range->beg);
+    if (rest) { 
+        //Addr...
+        tk = skip_space(rest);
+        if (*tk == ',') {
+            ++tk;
+            //Addr,...
+            rest = ae_range_parse_addr(tk, current_line, maximum, &range->end);
+            if (rest) {
+                //Addr,AddrEOF
+                return rest;
+            } else {
+                //Addr,EOF
+                range->end = current_line;
+                return tk;
+            }
+        } else {
+            //AddrEOF
+            range->end = range->beg;
+            return tk;
+        }
+    } else {
+        // emptyEOF
+        *range = (AeRange){.beg=current_line, .end=current_line};
+        return tk;
+    }
+
 }

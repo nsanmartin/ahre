@@ -93,7 +93,10 @@ int ah_ed_cmd(AhCtx ctx[static 1], char* line) {
     AeRange range;
     rest = ad_range_parse(line, ctx, &range);
     if (rest) {
-        printf("range: %ld, %ld\n", range.beg, range.end);
+        printf("range: %lu, %lu\n", range.beg, range.end);
+        ahctx_current_buf(ctx)->current_line = range.end;
+    } else {
+        puts("invalid range");
     }
     if ((rest = substr_match(line, "quit", 1)) && !*rest) { ctx->quit = true; return 0;}
     if ((rest = substr_match(line, "print", 1)) && !*rest) { return aecmd_print(ctx); }
