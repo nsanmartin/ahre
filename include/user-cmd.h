@@ -1,6 +1,8 @@
 #ifndef __AHRE_USER_CMD_H__
 #define __AHRE_USER_CMD_H__
 
+#include <ae-ranges.h>
+
 int ahcmd_w(char* fname, AhCtx ctx[static 1]);
 int ahcmd_fetch(AhCtx ctx[static 1]) {
     AhDoc* ahdoc = ahctx_current_doc(ctx);
@@ -35,11 +37,35 @@ static inline int ahcmd_text(AhCtx* ctx) {
     return lexbor_print_html_text(ahdoc->doc, &ahdoc->aebuf.buf);
 }
 
-static inline int aecmd_print(AhCtx ctx[static 1]) {
+static inline int aecmd_print(AhCtx ctx[static 1], AeRange range[static 1]) {
     BufOf(char)* buf = &ahctx_current_buf(ctx)->buf;
-    if (buf->len) {
-        fwrite(buf->items, 1, buf->len, stdout);
+    if (!buf->len) { return 0; }
+    char* beg = buf->items;
+    size_t beg_line = range->beg;
+
+    while (beg_line--) {
+        beg = strchr(beg, '\n');
+        if (!beg) {
+            puts("invalid line. TODO: compute #lines in buffer");
+            exit(1);
+        }
+        ++beg;
     }
+    char* end = beg;
+    //TODO
+    size_t end_line = range->end + 1;
+    end_line -= range->beg;
+    while (end_line--) {
+        end = strchr(end, '\n');
+        if (!end) {
+            puts("invalid line. TODO: compute #lines in buffer");
+            exit(1);
+        }
+        ++end;
+    }
+
+    fwrite(beg, 1, end-beg, stdout);
+    //if (buf->len) { fwrite(buf->items, 1, buf->len, stdout); }
     return 0;
 }
 

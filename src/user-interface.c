@@ -87,19 +87,26 @@ int ah_re_cmd(AhCtx ctx[static 1], char* line) {
     return 0;
 }
 
+bool is_range_valid(AhCtx ctx[static 1], AeRange r[static 1]) {
+    size_t blen = ahctx_current_buf(ctx)->buf.len;
+    return r->beg <= r->end && r->end <= blen;
+}
+
 int ah_ed_cmd(AhCtx ctx[static 1], char* line) {
     char* rest = 0x0;
     if (!line) { return 0; }
     AeRange range;
     rest = ad_range_parse(line, ctx, &range);
-    if (rest) {
-        printf("range: %lu, %lu\n", range.beg, range.end);
-        ahctx_current_buf(ctx)->current_line = range.end;
-    } else {
+    if (!rest || !is_range_valid(ctx, &range)) {
         puts("invalid range");
+        return 0;
     }
+    line = rest;
+    printf("range: %lu, %lu\n", range.beg, range.end);
+    ahctx_current_buf(ctx)->current_line = range.end;
+
     if ((rest = substr_match(line, "quit", 1)) && !*rest) { ctx->quit = true; return 0;}
-    if ((rest = substr_match(line, "print", 1)) && !*rest) { return aecmd_print(ctx); }
+    if ((rest = substr_match(line, "print", 1)) && !*rest) { return aecmd_print(ctx, &range); }
     if ((rest = substr_match(line, "write", 1))) { return aecmd_write(rest, ctx); }
     puts("unknown command");
     return 0;
