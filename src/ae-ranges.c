@@ -27,7 +27,7 @@
 //    return endptr;
 //}
 
-char* ad_parse_ull(char* tk, long long unsigned* ullp) {
+static char* ad_parse_ull(char* tk, long long unsigned* ullp) {
     if (!tk || !*tk) { return NULL; }
     char* endptr = 0x0;
     *ullp = strtoll(tk, &endptr, 10);
@@ -35,7 +35,7 @@ char* ad_parse_ull(char* tk, long long unsigned* ullp) {
     return endptr == tk ? NULL: endptr;
 }
 
-char* ae_range_parse_addr_num(char* tk, unsigned long long num, unsigned long long maximum, size_t* out) {
+static char* ae_range_parse_addr_num(char* tk, unsigned long long num, unsigned long long maximum, size_t* out) {
     unsigned long long ull;
     if (*tk == '+') {
         ++tk;
@@ -59,7 +59,7 @@ char* ae_range_parse_addr_num(char* tk, unsigned long long num, unsigned long lo
 
 _Static_assert(sizeof(size_t) <= sizeof(unsigned long long), "range parser requires this precondition");
 
-char* ae_range_parse_addr(char* tk, unsigned long long curr, unsigned long long max, size_t* out) {
+static char* ae_range_parse_addr(char* tk, unsigned long long curr, unsigned long long max, size_t* out) {
     if (!tk || !*tk) { return NULL; }
     if (*tk == '.' || *tk == '+' || *tk == '-')  {
         if (*tk == '.') { ++tk; }
@@ -91,9 +91,9 @@ char* ae_range_parse_addr(char* tk, unsigned long long curr, unsigned long long 
 }
 
 
-char* ad_range_parse(char* tk, AhCtx ctx[static 1], AeRange* range) {
-    size_t current_line = ahctx_current_buf(ctx)->current_line;
-    size_t len          = ahctx_current_buf(ctx)->buf.len;
+char* ad_range_parse_impl(
+    char* tk, size_t current_line, size_t len, AeRange* range
+) {
     size_t maximum      = SIZE_MAX;
 
     // invalid input
@@ -109,7 +109,7 @@ char* ad_range_parse(char* tk, AhCtx ctx[static 1], AeRange* range) {
     // full range
     if (*tk == '%') {
         ++tk;
-        *range = (AeRange){.beg=0, .end=(len?len-1:0)};
+        *range = (AeRange){.beg=1, .end=len};
         return tk;
     } 
 
@@ -136,7 +136,7 @@ char* ad_range_parse(char* tk, AhCtx ctx[static 1], AeRange* range) {
                 return rest;
             } else {
                 //Addr,EOF
-                range->end = current_line;
+                range->end = len;
                 return tk;
             }
         } else {
@@ -150,4 +150,11 @@ char* ad_range_parse(char* tk, AhCtx ctx[static 1], AeRange* range) {
         return tk;
     }
 
+}
+
+inline char*
+ad_range_parse(char* tk, AhCtx ctx[static 1], AeRange* range) {
+    size_t current_line = ahctx_current_buf(ctx)->current_line;
+    size_t nlines       = ahctx_current_buf(ctx)->nlines;
+    return ad_range_parse_impl(tk, current_line, nlines, range);
 }

@@ -11,7 +11,8 @@ int ah_process_line(AhCtx ctx[static 1], char* line);
 
 
 void print_html(lxb_html_document_t* document);
-int lexbor_print_html_text(lxb_html_document_t* document, BufOf(char)* buf);
+int
+lexbor_html_text_append(lxb_html_document_t* document, AeBuf* buf);
 
 int lexbor_href_write(
     lxb_html_document_t* document,

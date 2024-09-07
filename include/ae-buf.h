@@ -22,11 +22,16 @@ static inline void AeBufFree(AeBuf* b) {
 
 static inline size_t
 str_count_ocurrencies(char* data, size_t len, char c) {
-    //TODO: consider using strchr
+    char* end = data + len;
     size_t count = 0;
-    for (size_t i = 0; i < len; ++i) {
-        count += data[i] == c ? 1 : 0;
+
+    for(;;) {
+        data = memchr(data, c, end-data);
+        if (!data || data >= end) { break; }
+        ++count;
+        ++data;
     }
+
     return count;
 }
 

@@ -61,6 +61,11 @@ curl/configure:
 curl/lib/.libs: curl/configure
 	$(MAKE) -C curl
 
+test_range: utests/test_range.c $(AHRE_OBJ)
+	$(CC) $(CFLAGS) -I$(INCLUDE) -Iutests -o build/$@ $^ \
+		-lcurl -llexbor -lreadline
+
+
 tags:
 	ctags -R .
 

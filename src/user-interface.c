@@ -105,6 +105,8 @@ int ah_ed_cmd(AhCtx ctx[static 1], char* line) {
     printf("range: %lu, %lu\n", range.beg, range.end);
     ahctx_current_buf(ctx)->current_line = range.end;
 
+    if ((rest = substr_match(line, "a", 1)) && !*rest) { return aecmd_print_all(ctx); }
+    if ((rest = substr_match(line, "n", 1)) && !*rest) { return aecmd_print_all_lines_nums(ctx); }
     if ((rest = substr_match(line, "quit", 1)) && !*rest) { ctx->quit = true; return 0;}
     if ((rest = substr_match(line, "print", 1)) && !*rest) { return aecmd_print(ctx, &range); }
     if ((rest = substr_match(line, "write", 1))) { return aecmd_write(rest, ctx); }

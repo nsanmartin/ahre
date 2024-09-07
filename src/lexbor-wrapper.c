@@ -3,7 +3,7 @@
 #include <wrappers.h>
 
 
-Str next_word(const char* s) {
+static Str next_word(const char* s) {
     if (!s || !*s) { return (Str){0}; }
     while (*s && isspace(*s)) { ++s; }
     const char* end = s;
@@ -192,6 +192,18 @@ size_t chunk_callback(char *in, size_t size, size_t nmemb, void* outstream) {
     return  LXB_STATUS_OK == lxb_html_document_parse_chunk(document, (lxb_char_t*)in, r) ? r : 0;
 }
 
+
+int
+lexbor_html_text_append(lxb_html_document_t* document, AeBuf* buf) {
+    lxb_dom_node_t *node = lxb_dom_interface_node(document->body);
+    size_t len = 0x0;
+    lxb_char_t* text = lxb_dom_node_text_content(node, &len);
+    if (AeBufAppend(buf, (char*)text, len)) { return -1; }
+    //if (buffn(char,append)(buf, (char*)text, len)) { return -1; }
+    //if (buffn(char,append)(buf, (char*)"\n", 1)) { return -1; }
+    return 0;
+}
+/* deprecated*/
 int lexbor_print_html_text(lxb_html_document_t* document, BufOf(char)* buf) {
     lxb_dom_node_t *node = lxb_dom_interface_node(document->body);
     size_t len = 0x0;
