@@ -10,18 +10,22 @@
 #define BT char
 #include <buf.h>
 
+#define T size_t
+#include <arl.h>
+
+
 #define buf_append_lit(LitStr, Buf_) do{\
    if (buffn(char,append)(Buf_, (char*)LitStr, sizeof(LitStr))) {\
        return -1; }}while(0)
 
 static inline int buf_append_hexp(void* p, BufOf(char)*buf) {
-    char num_buff[256]; //TODO: what if pointer may be bigger than 10^256?
+    char num_buff[256];
     int len = snprintf(num_buff, 256, "%p", p);
-    if (len) {
-       if (buffn(char,append)(buf, num_buff, len)) {
-           return -1;
-       }
+    if (len >= 256) {
+        fprintf(stdout, "truncating pointer address!\n");
+        return -1;
     }
+    if (buffn(char,append)(buf, num_buff, len)) { return -1; }
     return 0;
 }
 

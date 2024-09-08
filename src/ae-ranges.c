@@ -19,13 +19,6 @@
  * + \& the next line in which the previous substitute pattern matches 
 */
 
-//char* ad_parse_ll(char* tk, long long* llp) {
-//    char* endptr = 0x0;
-//    long long ll = strtoll(tk, &endptr, 10);
-//    if (ERANGE == errno && (LONG_MAX == ll || LONG_MIN == ll)) { return NULL; }
-//    *llp = ll;
-//    return endptr;
-//}
 
 static char* ad_parse_ull(char* tk, long long unsigned* ullp) {
     if (!tk || !*tk) { return NULL; }
@@ -72,7 +65,7 @@ static char* ae_range_parse_addr(char* tk, unsigned long long curr, unsigned lon
         if (rest) { tk = rest; }
         return tk;
     } else if (isdigit(*tk)) {
-        // tk does not start neither with - nor +
+        /* tk does not start neither with - nor + */
         char* rest = ad_parse_ull(tk, &curr);
         if (!rest /* overflow  || curr > max*/) { return NULL; }
         *out = curr;
@@ -96,24 +89,24 @@ char* ad_range_parse_impl(
 ) {
     size_t maximum      = SIZE_MAX;
 
-    // invalid input
+    /* invalid input */
     if (!tk) { return NULL; }
     tk = skip_space(tk);
 
-    // empty string
+    /* empty string */
     if (!*tk) { 
         range->end = range->beg = current_line;
         return tk;
     }
 
-    // full range
+    /* full range */
     if (*tk == '%') {
         ++tk;
         *range = (AeRange){.beg=1, .end=len};
         return tk;
     } 
 
-    // ,Addr?
+    /* ,Addr? */
     if (*tk == ',') {
         ++tk;
         range->beg = current_line;
@@ -125,27 +118,27 @@ char* ad_range_parse_impl(
 
     char* rest = ae_range_parse_addr(tk, current_line, maximum, &range->beg);
     if (rest) { 
-        //Addr...
+        /* Addr... */
         tk = skip_space(rest);
         if (*tk == ',') {
             ++tk;
-            //Addr,...
+            /* Addr,... */
             rest = ae_range_parse_addr(tk, current_line, maximum, &range->end);
             if (rest) {
-                //Addr,AddrEOF
+                /* Addr,AddrEOF */
                 return rest;
             } else {
-                //Addr,EOF
+                /* Addr,EOF */
                 range->end = len;
                 return tk;
             }
         } else {
-            //AddrEOF
+            /* AddrEOF */
             range->end = range->beg;
             return tk;
         }
     } else {
-        // emptyEOF
+        /* emptyEOF */
         *range = (AeRange){.beg=current_line, .end=current_line};
         return tk;
     }
@@ -154,7 +147,8 @@ char* ad_range_parse_impl(
 
 inline char*
 ad_range_parse(char* tk, AhCtx ctx[static 1], AeRange* range) {
-    size_t current_line = ahctx_current_buf(ctx)->current_line;
-    size_t nlines       = ahctx_current_buf(ctx)->nlines;
+    AeBuf* aeb = ahctx_current_buf(ctx);
+    size_t current_line = aeb->current_line;
+    size_t nlines       = AeBufNLines(aeb);
     return ad_range_parse_impl(tk, current_line, nlines, range);
 }

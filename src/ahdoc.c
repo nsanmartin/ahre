@@ -8,8 +8,7 @@
 #include <ahdoc.h>
 #include <ae-buf.h>
 
-// this is just a "random" bound. TODO: think it better
-enum { ah_max_url_len = 1024, ah_initial_buf_sz };
+enum { ah_max_url_len = 2048 };
 
 
 ErrStr lexbor_read_doc_from_url_or_file (AhCurl ahcurl[static 1], AhDoc ad[static 1]); 
@@ -49,7 +48,7 @@ int AhDocInit(AhDoc d[static 1], char* url) {
         }
     }
 
-    *d = (AhDoc){ .url=url, .doc=document };
+    *d = (AhDoc){ .url=url, .doc=document, .aebuf={.current_line=1} };
     return 0;
 }
 
@@ -96,61 +95,6 @@ int ahdoc_buffer_summary(AhDoc ahdoc[static 1], BufOf(char)* buf) {
     return 0;
 }
 
-
-///int ahcurl_print_summary(AhCurl ahcurl[static 1], FILE f[static 1]) {
-///   fprintf(f, "AhCurl: %p\n", (void*)ahcurl);
-///   if (ahcurl->curl) {
-///       fprintf(f, " curl: %p\n", (void*)ahcurl->curl);
-///       if (ahcurl->errbuf[0]) {
-///           fprintf(f, " curl errbuf: %s\n", ahcurl->errbuf);
-///       }
-///   } else {
-///       fprintf(f, " not curl\n");
-///   }
-///   return 0;
-///}
-///
-///int ahdoc_print_summary(AhDoc ahdoc[static 1], FILE f[static 1]) {
-///    fprintf(f, "AhDoc: %p\n", (void*)ahdoc);
-///    if (ahdoc->url) {
-///        fprintf(f," url: %s\n", ahdoc->url);
-///    } else {
-///        fprintf(f, " none\n");
-///    }
-///    if (ahdoc->doc) {
-///        fprintf(f, " doc: %p\n", (void*)ahdoc->doc);
-///    }
-///    return 0;
-///}
-///
-///int ahdoc_cache_print_summary(AhDocCache c[static 1], FILE f[static 1]) {
-///    fprintf(f, "AhDocCache: %p\n", (void*)c);
-///    if (c->hrefs) {
-///        fprintf(f," hrefsp: %p\n", (void*)c->hrefs);
-///        if (c->hrefs) {
-///            if(lexbor_foreach_href(c->hrefs, ahre_print_href, 0x0)) {
-///                return -1;
-///            }
-///        }
-///    } else {
-///        fprintf(f, " no hrefs\n");
-///    }
-///    return 0;
-///}
-///
-///int ahctx_print_summary(AhCtx ctx[static 1], FILE f[static 1]) {
-///    if (ctx->ahcurl) {
-///        if(ahcurl_print_summary(ctx->ahcurl, f)) { return -1; }
-///    } else { fprintf(f, "Not ahcurl\n"); }
-///
-///    if (ctx->ahdoc) {
-///        ahdoc_print_summary(ctx->ahdoc, f);
-///        ahdoc_cache_print_summary(&ctx->ahdoc->cache, f);
-///    } else { fprintf(f, "Not ahcdoc\n"); }
-///
-///    return 0;
-///}
-// _summary fns
 
 bool file_exists(const char* path) { return access(path, F_OK) == 0; }
 

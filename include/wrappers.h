@@ -9,7 +9,6 @@
 #define FAILED(msg) { perror(msg); exit(EXIT_FAILURE); }
 
 
-int lexbor_print_a_href(lxb_html_document_t* document);
 int lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* buf);
 
 int curl_set_all_options(CURL* curl, const char* url, char* errbuf);

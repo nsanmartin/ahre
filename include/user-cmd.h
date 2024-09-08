@@ -18,7 +18,7 @@ int ahcmd_fetch(AhCtx ctx[static 1]) {
 
 static inline int ahcmd_ahre(AhCtx ctx[static 1]) {
     AhDoc* ad = ahctx_current_doc(ctx);
-    return lexbor_href_write(ad->doc, &ad->cache.hrefs, &ad->aebuf.buf);
+    return lexbor_href_write(ad->doc, &ad->cache.hrefs, &ad->aebuf);
 }
 
 static inline int ahcmd_clear(AhCtx ctx[static 1]) {
@@ -37,15 +37,86 @@ static inline int ahcmd_text(AhCtx* ctx) {
     return lexbor_html_text_append(ahdoc->doc, &ahdoc->aebuf);
 }
 
+static inline int
+line_num_to_left_offset(size_t lnum, AeBuf* aebuf, size_t* out) {
+    ArlOf(size_t)* offs = &aebuf->lines_offs;
+
+    if (lnum == 0 || lnum > offs->len) { return -1; }
+    if (lnum == 1) { *out = 0; return 0; }
+
+    size_t* tmp = arlfn(size_t, at)(offs, lnum-2);
+    if (tmp) {
+        *out = *tmp;
+        return 0;
+    }
+
+    return -1;
+}
+
+static inline int
+line_num_to_right_offset(size_t lnum, AeBuf* aebuf, size_t* out) {
+    ArlOf(size_t)* offs = &aebuf->lines_offs;
+
+    if (lnum == 0 || lnum > offs->len) { return -1; }
+    if (lnum == offs->len+1) {
+        *out = aebuf->buf.len;
+        return 0;
+    }
+
+    size_t* tmp = arlfn(size_t, at)(offs, lnum-1);
+    if (tmp) {
+        *out = *tmp;
+        return 0;
+    }
+
+    return -1;
+}
+
 static inline int aecmd_print(AhCtx ctx[static 1], AeRange range[static 1]) {
-    BufOf(char)* buf = &ahctx_current_buf(ctx)->buf;
+    if (!range->beg  || range->beg > range->end) {
+        fprintf(stderr, "! bad range\n");
+        return -1;
+    }
+
+    AeBuf* aebuf = ahctx_current_buf(ctx);
+    if (AeBufIsEmpty(aebuf)) {
+        fprintf(stderr, "? empty buffer\n");
+        return -1;
+    }
+
+    size_t beg_off_p;
+    if (line_num_to_left_offset(range->beg, aebuf, &beg_off_p)) {
+        fprintf(stderr, "? bag range beg\n");
+        return -1;
+    }
+    size_t end_off_p;
+    if (line_num_to_right_offset(range->end, aebuf, &end_off_p)) {
+        fprintf(stderr, "? bag range end\n");
+        return -1;
+    }
+
+    if (beg_off_p >= end_off_p || end_off_p > aebuf->buf.len) {
+        fprintf(stderr, "!Error check offsets");
+        return -1;
+    }
+    fwrite(aebuf->buf.items + beg_off_p, 1, end_off_p-beg_off_p, stdout);
+    fwrite("\n", 1, 1, stdout);
+    return 0;
+}
+static inline int aecmd_print_(AhCtx ctx[static 1], AeRange range[static 1]) {
+    AeBuf* aebuf = ahctx_current_buf(ctx);
+    if (AeBufIsEmpty(aebuf)) {
+        fprintf(stderr, "? empty buffer\n");
+        return -1;
+    }
+    BufOf(char)* buf = &aebuf->buf;
     if (!buf->len) { return 0; }
     char* beg = buf->items;
     size_t max_len = buf->len;
     const char* eobuf = beg + max_len;
     size_t beg_line = range->beg;
 
-    // find first char
+    /* find first line offset */
     for (;(const char*)beg < eobuf && beg_line; beg_line--) {
         char* next = memchr(beg, '\n', max_len);
         if (!next) {
@@ -56,11 +127,11 @@ static inline int aecmd_print(AhCtx ctx[static 1], AeRange range[static 1]) {
         beg = next + 1;
     }
     char* end = beg;
-    //TODO
-    size_t end_line = range->end;
-    end_line -= range->beg;
 
-    // find last char
+    size_t end_line = range->end;
+    end_line -= range->beg - 1;
+
+    /* find last line end offset */
     for (;(const char*)end < eobuf && end_line; end_line--) {
         char* next = memchr(end, '\n', max_len);
         if (!end) {

@@ -10,9 +10,6 @@
 #include <ae-ranges.h>
 
 
-void lexbor_cp_html(lxb_html_document_t* document, BufOf(char) out[static 1]);
-
-
 int ah_read_line_from_user(AhCtx ctx[static 1]) {
     char* line = 0x0;
     line = readline("> ");
@@ -38,7 +35,7 @@ bool substr_match_all(char* s, size_t len, const char* cmd) {
     return (s=substr_match(s, cmd, len)) && !*skip_space(s);
 }
 
-int ah_re_url(AhCtx ctx[static 1], char* url) {
+int ahcmd_set_url(AhCtx ctx[static 1], char* url) {
     puts("url");
     url = trim_space(url);
     if (*url && (!ctx->ahdoc->url || strcmp(url, ctx->ahdoc->url))) {
@@ -51,9 +48,8 @@ int ah_re_url(AhCtx ctx[static 1], char* url) {
         if (url) {
             ErrStr err = AhDocFetch(ctx->ahcurl, ctx->ahdoc);
             if (err) {
-                //ah_log_error(err, ErrCurl);
                 puts("TODO:cleanup");
-                puts("error fetching url");
+                fprintf(stderr, "error fetching url: %s\n", err);
                 return -1;
             }
         }
@@ -65,11 +61,11 @@ int ah_re_url(AhCtx ctx[static 1], char* url) {
 }
 
 
-int ah_re_cmd(AhCtx ctx[static 1], char* line) {
+int ahcmd(AhCtx ctx[static 1], char* line) {
     char* rest = 0x0;
     line = skip_space(line);
 
-    if ((rest = substr_match(line, "url", 1))) { return ah_re_url(ctx, rest); }
+    if ((rest = substr_match(line, "url", 1))) { return ahcmd_set_url(ctx, rest); }
 
     if (!ctx->ahdoc->url || !ctx->ahdoc->url || !ctx->ahcurl) {
         ah_log_info("no document"); return 0;
@@ -121,8 +117,7 @@ int ah_process_line(AhCtx ctx[static 1], char* line) {
     if (!*line) { return 0; }
 
     if (*line == '\\') {
-        if (ah_re_cmd(ctx, line + 1)) { return -1; }
-        //if (ctx->buf.len) { fwrite(ctx->ahdoc->buf.items, 1, ctx->ahdoc->buf.len, stdout); }
+        if (ahcmd(ctx, line + 1)) { return -1; }
 
     } else {
         return ah_ed_cmd(ctx, line);

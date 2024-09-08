@@ -65,6 +65,10 @@ test_range: utests/test_range.c $(AHRE_OBJ)
 	$(CC) $(CFLAGS) -I$(INCLUDE) -Iutests -o build/$@ $^ \
 		-lcurl -llexbor -lreadline
 
+test_aebuf: utests/test_aebuf.c $(AHRE_OBJ)
+	$(CC) $(CFLAGS) -I$(INCLUDE) -Iutests -o build/$@ $^ \
+		-lcurl -llexbor -lreadline
+
 
 tags:
 	ctags -R .

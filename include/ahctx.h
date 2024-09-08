@@ -6,14 +6,13 @@
 #include <wrappers.h>
 
 typedef struct AhCtx AhCtx;
-//typedef struct AhDoc AhDoc;
+
 typedef int (*AhUserLineCallback)(AhCtx* ctx, char*);
 
 
 typedef struct AhCtx {
     AhCurl* ahcurl;
     AhDoc* ahdoc;
-    //BufOf(char) buf;
     bool quit;
     int (*user_line_callback)(AhCtx* ctx, char*);
 } AhCtx;

@@ -21,7 +21,6 @@ typedef struct AhCurl AhCurl;
 typedef struct {
     const char* url;
     lxb_html_document_t* doc;
-    //BufOf(char) buf;
     AeBuf aebuf;
     AhDocCache cache;
 } AhDoc;
