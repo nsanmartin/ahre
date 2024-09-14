@@ -25,7 +25,7 @@ static inline int buf_append_hexp(void* p, BufOf(char)*buf) {
         fprintf(stdout, "truncating pointer address!\n");
         return -1;
     }
-    if (buffn(char,append)(buf, num_buff, len)) { return -1; }
+    if (!buffn(char,append)(buf, num_buff, len)) { return -1; }
     return 0;
 }
 

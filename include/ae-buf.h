@@ -42,11 +42,11 @@ str_get_lines_offs(char* data, size_t len, ArlOf(size_t)* ptrs) {
     char* end = data + len;
     char* it = data;
 
-    for(;;) {
+    for(; it < end;) {
         it = memchr(it, '\n', end-data);
         if (!it || it >= end) { break; }
         size_t off = it - data;
-        if(arlfn(size_t, append)(ptrs, &off)) { return -1; }
+        if(NULL == arlfn(size_t, append)(ptrs, &off)) { return -1; }
         ++it;
     }
 
@@ -56,7 +56,7 @@ str_get_lines_offs(char* data, size_t len, ArlOf(size_t)* ptrs) {
 
 static inline int
 AeBufAppend(AeBuf ab[static 1], char* data, size_t len) {
-    if (buffn(char,append)(&ab->buf, (char*)data, len)) { return -1; }
+    if (NULL == buffn(char,append)(&ab->buf, (char*)data, len)) { return -1; }
     char* beg = ab->buf.items + ab->buf.len - len;
     if (str_get_lines_offs(beg, len, &ab->lines_offs)) { return -1; }
     return 0;
@@ -64,9 +64,9 @@ AeBufAppend(AeBuf ab[static 1], char* data, size_t len) {
 
 static inline int
 AeBufAppendLn(AeBuf ab[static 1], char* data, size_t len) {
-    if (buffn(char,append)(&ab->buf, (char*)data, len)) { return -1; }
-    if(arlfn(size_t, append)(&ab->lines_offs, &ab->buf.len)) { return -1; }
-    if (buffn(char,append)(&ab->buf, (char*)"\n", 1)) { return -1; }
+    if (!buffn(char,append)(&ab->buf, (char*)data, len)) { return -1; }
+    if (!arlfn(size_t, append)(&ab->lines_offs, &ab->buf.len)) { return -1; }
+    if (!buffn(char,append)(&ab->buf, (char*)"\n", 1)) { return -1; }
     return 0;
 }
 #define AeBufReset AeBufCleanup

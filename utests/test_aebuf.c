@@ -13,8 +13,8 @@ int test_0(void) {
     size_t count = str_count_ocurrencies(str, len, '\n');
     utest_assert(count == 2, fail);
 
-    ArlOf(size_t)* ptrs = &(ArlOf(char_ptr)){0};
-    utest_assert(!str_get_lines(str, len, ptrs), fail);
+    ArlOf(size_t)* ptrs = &(ArlOf(size_t)){0};
+    utest_assert(!str_get_lines_offs(str, len, ptrs), fail);
     utest_assert(count == ptrs->len, fail);
 
     return 0;
