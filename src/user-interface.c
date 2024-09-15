@@ -84,13 +84,17 @@ int ahcmd(AhCtx ctx[static 1], char* line) {
 }
 
 bool is_range_valid(AhCtx ctx[static 1], AeRange r[static 1]) {
-    size_t blen = ahctx_current_buf(ctx)->buf.len;
+    size_t blen = AhCtxCurrentBuf(ctx)->buf.len;
     return r->beg <= r->end && r->end <= blen;
 }
 
 int ah_ed_cmd(AhCtx ctx[static 1], char* line) {
     char* rest = 0x0;
     if (!line) { return 0; }
+    if (AeBufIsEmpty(AhCtxCurrentBuf(ctx))) { 
+        puts("empty buffer");
+        return 0;
+    }
     AeRange range;
     rest = ad_range_parse(line, ctx, &range);
     if (!rest || !is_range_valid(ctx, &range)) {
@@ -99,7 +103,7 @@ int ah_ed_cmd(AhCtx ctx[static 1], char* line) {
     }
     line = rest;
     printf("range: %lu, %lu\n", range.beg, range.end);
-    ahctx_current_buf(ctx)->current_line = range.end;
+    AhCtxCurrentBuf(ctx)->current_line = range.end;
 
     if ((rest = substr_match(line, "a", 1)) && !*rest) { return aecmd_print_all(ctx); }
     if ((rest = substr_match(line, "n", 1)) && !*rest) { return aecmd_print_all_lines_nums(ctx); }

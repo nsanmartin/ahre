@@ -147,7 +147,7 @@ char* ad_range_parse_impl(
 
 inline char*
 ad_range_parse(char* tk, AhCtx ctx[static 1], AeRange* range) {
-    AeBuf* aeb = ahctx_current_buf(ctx);
+    AeBuf* aeb = AhCtxCurrentBuf(ctx);
     size_t current_line = aeb->current_line;
     size_t nlines       = AeBufNLines(aeb);
     return ad_range_parse_impl(tk, current_line, nlines, range);

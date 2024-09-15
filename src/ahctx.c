@@ -1,7 +1,7 @@
 #include <ahctx.h>
 
 int ahctx_buffer_summary(AhCtx ctx[static 1]) {
-    BufOf(char)* buf = &ahctx_current_buf(ctx)->buf;
+    BufOf(char)* buf = &AhCtxCurrentBuf(ctx)->buf;
     if (ctx->ahcurl) {
         if(ahcurl_buffer_summary(ctx->ahcurl, buf)) { return -1; }
     } else { buf_append_lit("Not ahcurl\n", buf); }

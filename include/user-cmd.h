@@ -22,7 +22,7 @@ static inline int ahcmd_ahre(AhCtx ctx[static 1]) {
 }
 
 static inline int ahcmd_clear(AhCtx ctx[static 1]) {
-    BufOf(char)* buf = &ahctx_current_buf(ctx)->buf;
+    BufOf(char)* buf = &AhCtxCurrentBuf(ctx)->buf;
     if (buf->len) { free(buf->items); *buf = (BufOf(char)){0}; }
     return 0;
 }
@@ -78,7 +78,7 @@ static inline int aecmd_print(AhCtx ctx[static 1], AeRange range[static 1]) {
         return -1;
     }
 
-    AeBuf* aebuf = ahctx_current_buf(ctx);
+    AeBuf* aebuf = AhCtxCurrentBuf(ctx);
     if (AeBufIsEmpty(aebuf)) {
         fprintf(stderr, "? empty buffer\n");
         return -1;
@@ -104,7 +104,7 @@ static inline int aecmd_print(AhCtx ctx[static 1], AeRange range[static 1]) {
     return 0;
 }
 static inline int aecmd_print_(AhCtx ctx[static 1], AeRange range[static 1]) {
-    AeBuf* aebuf = ahctx_current_buf(ctx);
+    AeBuf* aebuf = AhCtxCurrentBuf(ctx);
     if (AeBufIsEmpty(aebuf)) {
         fprintf(stderr, "? empty buffer\n");
         return -1;
@@ -149,13 +149,13 @@ static inline int aecmd_print_(AhCtx ctx[static 1], AeRange range[static 1]) {
 }
 
 static inline int aecmd_print_all(AhCtx ctx[static 1]) {
-    BufOf(char)* buf = &ahctx_current_buf(ctx)->buf;
+    BufOf(char)* buf = &AhCtxCurrentBuf(ctx)->buf;
     fwrite(buf->items, 1, buf->len, stdout);
     return 0;
 }
 
 static inline int aecmd_print_all_lines_nums(AhCtx ctx[static 1]) {
-    BufOf(char)* buf = &ahctx_current_buf(ctx)->buf;
+    BufOf(char)* buf = &AhCtxCurrentBuf(ctx)->buf;
     char* items = buf->items;
     size_t len = buf->len;
 

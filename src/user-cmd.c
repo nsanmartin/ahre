@@ -5,7 +5,7 @@
 /* ah cmds */
 
 int ahcmd_w(char* fname, AhCtx ctx[static 1]) {
-    BufOf(char)* buf = &ahctx_current_buf(ctx)->buf;
+    BufOf(char)* buf = &AhCtxCurrentBuf(ctx)->buf;
     if (fname && *(fname = skip_space(fname))) {
         FILE* fp = fopen(fname, "a");
         if (!fp) {
@@ -25,7 +25,7 @@ int ahcmd_w(char* fname, AhCtx ctx[static 1]) {
 
 /* ed cmds */
 int aecmd_write(char* rest, AhCtx ctx[static 1]) {
-    BufOf(char)* buf = &ahctx_current_buf(ctx)->buf;
+    BufOf(char)* buf = &AhCtxCurrentBuf(ctx)->buf;
     if (!rest || !*rest) { puts("cannot write without file arg"); return 0; }
     FILE* fp = fopen(rest, "w");
     if (!fp) {
