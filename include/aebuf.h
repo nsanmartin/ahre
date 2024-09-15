@@ -75,8 +75,7 @@ static inline bool AeBufIsEmpty(AeBuf ab[static 1]) {
     return !ab->buf.len;
 }
 
-static inline size_t AeBufNLines(AeBuf ab [static 1]) {
-    return ab->lines_offs.len;
-}
+//static inline size_t AeBufNLines(AeBuf ab [static 1]) { return ab->lines_offs.len; }
+size_t AeBufNLines(AeBuf ab [static 1]);
 
 #endif

@@ -65,7 +65,7 @@ line_num_to_right_offset(size_t lnum, AeBuf* aebuf, size_t* out) {
 
     size_t* tmp = arlfn(size_t, at)(offs, lnum-1);
     if (tmp) {
-        *out = *tmp;
+        *out = 1 + *tmp;
         return 0;
     }
 
@@ -155,14 +155,18 @@ static inline int aecmd_print_all(AhCtx ctx[static 1]) {
 }
 
 static inline int aecmd_print_all_lines_nums(AhCtx ctx[static 1]) {
-    BufOf(char)* buf = &AhCtxCurrentBuf(ctx)->buf;
+    AeBuf* ab = AhCtxCurrentBuf(ctx);
+    BufOf(char)* buf = &ab->buf;
     char* items = buf->items;
     size_t len = buf->len;
 
     
 
-    for (size_t lnum = 1; items && len && lnum < 40; ++lnum) {
+    for (size_t lnum = 1; /*items && len && lnum < 40*/ ; ++lnum) {
         char* next = memchr(items, '\n', len);
+        if (next >= buf->items + buf->len) {
+            fprintf(stderr, "Error: print all lines nums\n");
+        }
         printf("%ld: ", lnum);
 
         if (next) {
@@ -172,6 +176,7 @@ static inline int aecmd_print_all_lines_nums(AhCtx ctx[static 1]) {
             len -= line_len;
         } else {
             fwrite(items, 1, len, stdout);
+            break;
         }
     }
     return 0;

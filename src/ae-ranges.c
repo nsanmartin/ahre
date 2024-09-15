@@ -4,7 +4,7 @@
 
 #include <ahutils.h>
 #include <ahctx.h>
-#include <ae-buf.h>
+#include <aebuf.h>
 #include <ae-ranges.h>
 
 /*
@@ -85,9 +85,9 @@ static char* ae_range_parse_addr(char* tk, unsigned long long curr, unsigned lon
 
 
 char* ad_range_parse_impl(
-    char* tk, size_t current_line, size_t len, AeRange* range
+    char* tk, size_t current_line, size_t nlines, AeRange* range
 ) {
-    size_t maximum      = SIZE_MAX;
+    range->no_range = false;
 
     /* invalid input */
     if (!tk) { return NULL; }
@@ -95,14 +95,16 @@ char* ad_range_parse_impl(
 
     /* empty string */
     if (!*tk) { 
+        puts("TODO: this does not happend 0");
         range->end = range->beg = current_line;
+        range->no_range = true;
         return tk;
     }
 
     /* full range */
     if (*tk == '%') {
         ++tk;
-        *range = (AeRange){.beg=1, .end=len};
+        *range = (AeRange){.beg=1, .end=nlines};
         return tk;
     } 
 
@@ -110,26 +112,25 @@ char* ad_range_parse_impl(
     if (*tk == ',') {
         ++tk;
         range->beg = current_line;
-        range->end = current_line;
-        char* rest = ae_range_parse_addr(tk, current_line, maximum, &range->end);
+        char* rest = ae_range_parse_addr(tk, current_line, nlines, &range->end);
         return rest? rest : tk;
     }
             
 
-    char* rest = ae_range_parse_addr(tk, current_line, maximum, &range->beg);
+    char* rest = ae_range_parse_addr(tk, current_line, nlines, &range->beg);
     if (rest) { 
         /* Addr... */
         tk = skip_space(rest);
         if (*tk == ',') {
             ++tk;
             /* Addr,... */
-            rest = ae_range_parse_addr(tk, current_line, maximum, &range->end);
+            rest = ae_range_parse_addr(tk, current_line, nlines, &range->end);
             if (rest) {
                 /* Addr,AddrEOF */
                 return rest;
             } else {
                 /* Addr,EOF */
-                range->end = len;
+                range->end = nlines;
                 return tk;
             }
         } else {
@@ -140,6 +141,7 @@ char* ad_range_parse_impl(
     } else {
         /* emptyEOF */
         *range = (AeRange){.beg=current_line, .end=current_line};
+        range->no_range = true;
         return tk;
     }
 

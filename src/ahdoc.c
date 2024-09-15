@@ -6,7 +6,7 @@
 
 #include <ahutils.h>
 #include <ahdoc.h>
-#include <ae-buf.h>
+#include <aebuf.h>
 
 enum { ah_max_url_len = 2048 };
 
@@ -48,7 +48,7 @@ int AhDocInit(AhDoc d[static 1], char* url) {
         }
     }
 
-    *d = (AhDoc){ .url=url, .doc=document, .aebuf={.current_line=1} };
+    *d = (AhDoc){ .url=url, .doc=document, .aebuf=(AeBuf){.current_line=1} };
     return 0;
 }
 

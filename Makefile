@@ -78,4 +78,5 @@ cscope:
 
 clean:
 	find build -type f -delete
+	find . -type f -name tags -delete
 	if [ -f tags ]; then rm tags; fi

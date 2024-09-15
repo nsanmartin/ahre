@@ -8,6 +8,7 @@
 typedef struct {
     size_t beg;
     size_t end;
+    bool no_range;
 } AeRange;
 
 char* ad_range_parse(char* tk, AhCtx ctx[static 1], AeRange* range);

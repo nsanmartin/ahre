@@ -83,31 +83,34 @@ int ahcmd(AhCtx ctx[static 1], char* line) {
     return 0;
 }
 
-bool is_range_valid(AhCtx ctx[static 1], AeRange r[static 1]) {
-    size_t blen = AhCtxCurrentBuf(ctx)->buf.len;
-    return r->beg <= r->end && r->end <= blen;
+bool is_range_valid_or_no_range(AhCtx ctx[static 1], AeRange r[static 1]) {
+    AeBuf* buf = AhCtxCurrentBuf(ctx);
+    size_t nlines = AeBufNLines(buf);
+    return (r->beg <= r->end && r->end <= nlines)
+        || r->no_range;
 }
 
 int ah_ed_cmd(AhCtx ctx[static 1], char* line) {
     char* rest = 0x0;
     if (!line) { return 0; }
+    AeRange range = {0};
+    line = ad_range_parse(line, ctx, &range);
+    if (!line || !is_range_valid_or_no_range(ctx, &range)) {
+        puts("invalid range");
+        return 0;
+    }
+
+    if ((rest = substr_match(line, "quit", 1)) && !*rest) { ctx->quit = true; return 0;}
     if (AeBufIsEmpty(AhCtxCurrentBuf(ctx))) { 
         puts("empty buffer");
         return 0;
     }
-    AeRange range;
-    rest = ad_range_parse(line, ctx, &range);
-    if (!rest || !is_range_valid(ctx, &range)) {
-        puts("invalid range");
-        return 0;
-    }
-    line = rest;
+
     printf("range: %lu, %lu\n", range.beg, range.end);
     AhCtxCurrentBuf(ctx)->current_line = range.end;
 
     if ((rest = substr_match(line, "a", 1)) && !*rest) { return aecmd_print_all(ctx); }
-    if ((rest = substr_match(line, "n", 1)) && !*rest) { return aecmd_print_all_lines_nums(ctx); }
-    if ((rest = substr_match(line, "quit", 1)) && !*rest) { ctx->quit = true; return 0;}
+    if ((rest = substr_match(line, "l", 1)) && !*rest) { return aecmd_print_all_lines_nums(ctx); }
     if ((rest = substr_match(line, "print", 1)) && !*rest) { return aecmd_print(ctx, &range); }
     if ((rest = substr_match(line, "write", 1))) { return aecmd_write(rest, ctx); }
     puts("unknown command");

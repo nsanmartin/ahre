@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #include <utests.h>
-#include <ae-buf.h>
+#include <aebuf.h>
 
 
 
