@@ -3,6 +3,8 @@
 
 #include <ae-ranges.h>
 
+int aecmd_global(AhCtx ctx[static 1],  const char* rest);
+
 int ahcmd_w(char* fname, AhCtx ctx[static 1]);
 int ahcmd_fetch(AhCtx ctx[static 1]) {
     AhDoc* ahdoc = ahctx_current_doc(ctx);
@@ -27,7 +29,7 @@ static inline int ahcmd_clear(AhCtx ctx[static 1]) {
     return 0;
 }
 
-static inline int ahcmd_tag(char* rest, AhCtx ctx[static 1]) {
+static inline int ahcmd_tag(const char* rest, AhCtx ctx[static 1]) {
     AhDoc* ahdoc = ahctx_current_doc(ctx);
     return lexbor_cp_tag(rest, ahdoc->doc, &ahdoc->aebuf.buf);
 }
@@ -154,34 +156,8 @@ static inline int aecmd_print_all(AhCtx ctx[static 1]) {
     return 0;
 }
 
-static inline int aecmd_print_all_lines_nums(AhCtx ctx[static 1]) {
-    AeBuf* ab = AhCtxCurrentBuf(ctx);
-    BufOf(char)* buf = &ab->buf;
-    char* items = buf->items;
-    size_t len = buf->len;
+int aecmd_print_all_lines_nums(AhCtx ctx[static 1]);
+int aecmd_write(const char* rest, AhCtx ctx[static 1]);
 
-    
-
-    for (size_t lnum = 1; /*items && len && lnum < 40*/ ; ++lnum) {
-        char* next = memchr(items, '\n', len);
-        if (next >= buf->items + buf->len) {
-            fprintf(stderr, "Error: print all lines nums\n");
-        }
-        printf("%ld: ", lnum);
-
-        if (next) {
-            size_t line_len = 1+next-items;
-            fwrite(items, 1, line_len, stdout);
-            items += line_len;
-            len -= line_len;
-        } else {
-            fwrite(items, 1, len, stdout);
-            break;
-        }
-    }
-    return 0;
-}
-
-int aecmd_write(char* rest, AhCtx ctx[static 1]);
 #endif
 

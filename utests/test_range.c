@@ -4,7 +4,7 @@
 #include <ae-ranges.h>
 
 
-char* ad_range_parse_impl(char* tk, size_t current_line, size_t len, AeRange* range);
+const char* ad_range_parse_impl(char* tk, size_t current_line, size_t len, AeRange* range);
 
 int test_0(void) {
     size_t current_line = 0;

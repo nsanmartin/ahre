@@ -7,14 +7,14 @@
 
 typedef struct AhCtx AhCtx;
 
-typedef int (*AhUserLineCallback)(AhCtx* ctx, char*);
+typedef int (*AhUserLineCallback)(AhCtx* ctx, const char*);
 
 
 typedef struct AhCtx {
     AhCurl* ahcurl;
     AhDoc* ahdoc;
     bool quit;
-    int (*user_line_callback)(AhCtx* ctx, char*);
+    int (*user_line_callback)(AhCtx* ctx, const char*);
 } AhCtx;
 
 static inline AeBuf* AhCtxCurrentBuf(AhCtx ctx[static 1]) {

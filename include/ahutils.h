@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #include <aherror.h>
 
@@ -34,21 +35,21 @@ typedef struct {
 	size_t len;
 } Str;
 
+bool StrIsEmpty(const Str* s);
 static inline void ah_log_info(const char* msg) { puts(msg); }
 static inline Error ah_log_error(const char* msg, Error e) {
     perror(msg); return e;
 }
 
-static inline char* skip_space(char* s) { for (; *s && isspace(*s); ++s); return s; }
-static inline char* next_space(char* l) {
+static inline const char* skip_space(const char* s) { for (; *s && isspace(*s); ++s); return s; }
+static inline const char* next_space(const char* l) {
     while (*l && !isspace(*l)) { ++l; }
     return l;
 }
-static inline char* trim_space(char* l) {
-    l = skip_space(l);
-    char* r = next_space(l);
-    *r = '\0';
-    return l;
+//static inline const char* trim_space(const char* l) {
+static inline void trim_space(Str* l) {
+    l->s = skip_space(l->s);
+    l->len = next_space(l->s) - l->s;
 }
 
 #endif

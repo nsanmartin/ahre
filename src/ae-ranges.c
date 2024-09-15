@@ -20,7 +20,7 @@
 */
 
 
-static char* ad_parse_ull(char* tk, long long unsigned* ullp) {
+static const char* ad_parse_ull(const char* tk, long long unsigned* ullp) {
     if (!tk || !*tk) { return NULL; }
     char* endptr = 0x0;
     *ullp = strtoll(tk, &endptr, 10);
@@ -28,18 +28,18 @@ static char* ad_parse_ull(char* tk, long long unsigned* ullp) {
     return endptr == tk ? NULL: endptr;
 }
 
-static char* ae_range_parse_addr_num(char* tk, unsigned long long num, unsigned long long maximum, size_t* out) {
+static const char* ae_range_parse_addr_num(const char* tk, unsigned long long num, unsigned long long maximum, size_t* out) {
     unsigned long long ull;
     if (*tk == '+') {
         ++tk;
-        char* rest = ad_parse_ull(tk, &ull);
+        const char* rest = ad_parse_ull(tk, &ull);
         if (!rest) { ull = 1; }
         else { tk = rest; }
         num += ull; 
         if (num < ull || num > maximum) { return NULL; }
     } else if (*tk == '-') {
         ++tk;
-        char* rest = ad_parse_ull(tk, &ull);
+        const char* rest = ad_parse_ull(tk, &ull);
         if (!rest) { ull = 1; }
         else { tk = rest; }
         if (ull > num) { return NULL; }
@@ -52,40 +52,40 @@ static char* ae_range_parse_addr_num(char* tk, unsigned long long num, unsigned 
 
 _Static_assert(sizeof(size_t) <= sizeof(unsigned long long), "range parser requires this precondition");
 
-static char* ae_range_parse_addr(char* tk, unsigned long long curr, unsigned long long max, size_t* out) {
+static const char* ae_range_parse_addr(const char* tk, unsigned long long curr, unsigned long long max, size_t* out) {
     if (!tk || !*tk) { return NULL; }
     if (*tk == '.' || *tk == '+' || *tk == '-')  {
         if (*tk == '.') { ++tk; }
-        char* rest = ae_range_parse_addr_num(tk, curr, max, out);
+        const char* rest = ae_range_parse_addr_num(tk, curr, max, out);
         if (rest) { tk = rest; }
         return tk;
     } else if (*tk == '$') {
         ++tk;
-        char* rest = ae_range_parse_addr_num(tk, max, max, out);
+        const char* rest = ae_range_parse_addr_num(tk, max, max, out);
         if (rest) { tk = rest; }
         return tk;
     } else if (isdigit(*tk)) {
         /* tk does not start neither with - nor + */
-        char* rest = ad_parse_ull(tk, &curr);
+        const char* rest = ad_parse_ull(tk, &curr);
         if (!rest /* overflow  || curr > max*/) { return NULL; }
         *out = curr;
         if (*tk == '+' || *tk == '-') {
-            char* rest = ae_range_parse_addr_num(tk+1, curr, max, out);
+            const char* rest = ae_range_parse_addr_num(tk+1, curr, max, out);
             if (rest) { return rest; }
         }
         return rest;
     } 
 
     if (*tk == '+' || *tk == '-') {
-        char* rest = ae_range_parse_addr_num(tk+1, curr, max, out);
+        const char* rest = ae_range_parse_addr_num(tk+1, curr, max, out);
         if (rest) { return rest; }
     }
     return NULL;
 }
 
 
-char* ad_range_parse_impl(
-    char* tk, size_t current_line, size_t nlines, AeRange* range
+const char* ad_range_parse_impl(
+    const char* tk, size_t current_line, size_t nlines, AeRange* range
 ) {
     range->no_range = false;
 
@@ -112,12 +112,12 @@ char* ad_range_parse_impl(
     if (*tk == ',') {
         ++tk;
         range->beg = current_line;
-        char* rest = ae_range_parse_addr(tk, current_line, nlines, &range->end);
+        const char* rest = ae_range_parse_addr(tk, current_line, nlines, &range->end);
         return rest? rest : tk;
     }
             
 
-    char* rest = ae_range_parse_addr(tk, current_line, nlines, &range->beg);
+    const char* rest = ae_range_parse_addr(tk, current_line, nlines, &range->beg);
     if (rest) { 
         /* Addr... */
         tk = skip_space(rest);
@@ -147,8 +147,8 @@ char* ad_range_parse_impl(
 
 }
 
-inline char*
-ad_range_parse(char* tk, AhCtx ctx[static 1], AeRange* range) {
+inline const char*
+ad_range_parse(const char* tk, AhCtx ctx[static 1], AeRange* range) {
     AeBuf* aeb = AhCtxCurrentBuf(ctx);
     size_t current_line = aeb->current_line;
     size_t nlines       = AeBufNLines(aeb);

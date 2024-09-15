@@ -45,7 +45,7 @@ static inline void AhDocFree(AhDoc* ahdoc) {
     ah_free(ahdoc);
 }
 
-int AhDocInit(AhDoc d[static 1], char* url);
+int AhDocInit(AhDoc d[static 1], const Str* url);
 
 
 AhDoc* AhDocCreate(char* url);
@@ -55,7 +55,7 @@ static inline void AhDocUpdateUrl(AhDoc ad[static 1], char* url) {
         ad->url = url;
 }
 ErrStr AhDocFetch(AhCurl ahcurl[static 1], AhDoc ad[static 1]) ;
-char* ah_urldup(char* url) ;
+//char* ah_urldup(Str* url) ;
 
 int ahdoc_buffer_summary(AhDoc ahdoc[static 1], BufOf(char)* buf) ;
 
