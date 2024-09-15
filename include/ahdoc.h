@@ -50,6 +50,10 @@ int AhDocInit(AhDoc d[static 1], const Str* url);
 
 AhDoc* AhDocCreate(char* url);
 
+static inline bool AhDocHasUrl(AhDoc ad[static 1]) {
+    return ad->url != NULL;
+}
+
 static inline void AhDocUpdateUrl(AhDoc ad[static 1], char* url) {
         ah_free((char*)ad->url);
         ad->url = url;

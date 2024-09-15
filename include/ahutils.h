@@ -35,6 +35,11 @@ typedef struct {
 	size_t len;
 } Str;
 
+static inline int StrInit(Str s[static 1], const char* cs) {
+    *s = (Str){.s=cs, .len=cs?strlen(cs):0};
+    return cs && !s->len ? -1 : 0;
+}
+
 bool StrIsEmpty(const Str* s);
 static inline void ah_log_info(const char* msg) { puts(msg); }
 static inline Error ah_log_error(const char* msg, Error e) {

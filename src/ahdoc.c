@@ -40,7 +40,7 @@ int AhDocInit(AhDoc d[static 1], const Str* url) {
     const char* u = NULL;
     if (!StrIsEmpty(url)){
         u = ah_urldup(url);
-        if (!url) {
+        if (!u) {
             lxb_html_document_destroy(d->doc);
             return -1;
         }
@@ -52,7 +52,8 @@ int AhDocInit(AhDoc d[static 1], const Str* url) {
 
 AhDoc* AhDocCreate(char* url) {
     AhDoc* rv = ah_malloc(sizeof(AhDoc));
-    Str u = (Str){.s=url, .len=strlen(url)};
+    Str u;
+    if (StrInit(&u, url)) { return NULL; }
     if (AhDocInit(rv, &u)) {
         ah_free(rv);
         return NULL;

@@ -38,7 +38,9 @@ bool substr_match_all(const char* s, size_t len, const char* cmd) {
 
 int ahcmd_set_url(AhCtx ctx[static 1], const char* url) {
     puts("url");
-    Str u = (Str){.s=url, .len=strlen(url)};
+    //Str u = (Str){.s=url, .len=strlen(url)};
+    Str u;
+    if(StrInit(&u, url)) { return -1; }
     trim_space(&u);
     if (!StrIsEmpty(&u) && (!ctx->ahdoc->url || strncmp(u.s, ctx->ahdoc->url, u.len))) {
         AhDocCleanup(ctx->ahdoc);
@@ -47,8 +49,9 @@ int ahcmd_set_url(AhCtx ctx[static 1], const char* url) {
             return -1;
         }
 
-        if (url) {
-            ErrStr err = AhDocFetch(ctx->ahcurl, ctx->ahdoc);
+        AhDoc* doc = AhCtxCurrentDoc(ctx);
+        if (AhDocHasUrl(doc)) {
+            ErrStr err = AhDocFetch(ctx->ahcurl, doc);
             if (err) {
                 puts("TODO:cleanup");
                 fprintf(stderr, "error fetching url: %s\n", err);

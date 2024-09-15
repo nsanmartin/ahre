@@ -21,6 +21,10 @@ static inline AeBuf* AhCtxCurrentBuf(AhCtx ctx[static 1]) {
     return &ctx->ahdoc->aebuf;
 }
 
+static inline AhDoc* AhCtxCurrentDoc(AhCtx ctx[static 1]) {
+    return ctx->ahdoc;
+}
+
 static inline AhDoc* ahctx_current_doc(AhCtx ctx[static 1]) { return ctx->ahdoc; }
 
 AhCtx* AhCtxCreate(char* url, AhUserLineCallback callback);
