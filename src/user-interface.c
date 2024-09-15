@@ -12,7 +12,7 @@
 
 int ah_read_line_from_user(AhCtx ctx[static 1]) {
     char* line = 0x0;
-    line = readline("> ");
+    line = readline("");
     ctx->user_line_callback(ctx, line);
     add_history(line);
     ah_free(line);
