@@ -14,7 +14,7 @@ int test_0(void) {
     utest_assert(count == 2, fail);
 
     ArlOf(size_t)* ptrs = &(ArlOf(size_t)){0};
-    utest_assert(!str_get_lines_offs(str, len, ptrs), fail);
+    utest_assert(!str_get_lines_offs(str, 0, len, ptrs), fail);
     utest_assert(count == ptrs->len, fail);
 
     return 0;

@@ -1,6 +1,6 @@
 INCLUDE:=$(HOME)/usr/include
 LIB:=$(HOME)/usr/lib
-CFLAGS:=-g  -Wall -Wextra -Werror -pedantic -Wold-style-definition -Iinclude -Ihashi/include
+CFLAGS:=-g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition -Iinclude -Ihashi/include
 
 AHRE:=ahre
 
@@ -11,9 +11,7 @@ AHRE_HEADERS=$(wildcard $(AHRE_INCLUDE)/*.h)
 AHRE_SRCS=$(wildcard $(AHRE_SRCDIR)/*.c)
 AHRE_OBJ=$(AHRE_SRCS:src/%.c=$(AHRE_OBJDIR)/%.o)
 
-
-ahre-tags: $(AHRE) tags
-
+all: ahre tests
 
 $(AHRE): $(AHRE_OBJ)
 	$(CC) $(CFLAGS) \
@@ -21,6 +19,8 @@ $(AHRE): $(AHRE_OBJ)
 		$(AHRE).c -o build/$(AHRE) \
 		$^  \
 		-lcurl -llexbor -lreadline
+
+tests: test_range test_aebuf
 
 
 $(AHRE)2: $(AHRE_OBJ)

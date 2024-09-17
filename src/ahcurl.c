@@ -1,3 +1,4 @@
+#include <string.h>
 #include <ahcurl.h>
 
 int ahcurl_buffer_summary(AhCurl ahcurl[static 1], BufOf(char)*buf) {
@@ -11,11 +12,9 @@ int ahcurl_buffer_summary(AhCurl ahcurl[static 1], BufOf(char)*buf) {
        buf_append_lit("\n", buf);
 
        if (ahcurl->errbuf[0]) {
-           if (buffn(char,append)(
-                        buf,
-                        ahcurl->errbuf,
-                        strnlen(ahcurl->errbuf, CURL_ERROR_SIZE)
-                    )) {
+           size_t slen = strlen(ahcurl->errbuf);
+           if (slen > CURL_ERROR_SIZE) { slen = CURL_ERROR_SIZE; }
+           if (buffn(char,append)(buf, ahcurl->errbuf, slen)) {
                return -1;
            }
            buf_append_lit("\n", buf);

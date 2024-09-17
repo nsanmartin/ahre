@@ -8,7 +8,7 @@
 #include <ahdoc.h>
 #include <aebuf.h>
 
-const size_t ah_max_url_len = 2048;
+constexpr size_t ah_max_url_len = 2048;
 
 
 ErrStr lexbor_read_doc_from_url_or_file (AhCurl ahcurl[static 1], AhDoc ad[static 1]); 
@@ -98,7 +98,7 @@ int ahdoc_buffer_summary(AhDoc ahdoc[static 1], BufOf(char)* buf) {
 
 bool file_exists(const char* path) { return access(path, F_OK) == 0; }
 
-enum { READ_FROM_FILE_BUFFER_LEN = 4096 };
+static constexpr size_t READ_FROM_FILE_BUFFER_LEN = 4096;
 unsigned char _read_from_file_bufer[READ_FROM_FILE_BUFFER_LEN] = {0};
 
 ErrStr lexbor_read_doc_from_file(AhDoc ahdoc[static 1]) {
