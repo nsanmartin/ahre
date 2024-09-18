@@ -17,7 +17,7 @@ typedef struct AhCtx {
     int (*user_line_callback)(AhCtx* ctx, const char*);
 } AhCtx;
 
-static inline AeBuf* AhCtxCurrentBuf(AhCtx ctx[static 1]) {
+static inline AhBuf* AhCtxCurrentBuf(AhCtx ctx[static 1]) {
     return &ctx->ahdoc->aebuf;
 }
 

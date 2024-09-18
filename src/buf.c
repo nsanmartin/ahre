@@ -1,36 +1,35 @@
 #include <ah/buf.h>
 
 /* static functions */
-static int AhBufAppendLinesIndexes(AeBuf ab[static 1], char* data, size_t len);
+static int AhBufAppendLinesIndexes(AhBuf ab[static 1], char* data, size_t len);
 
 
-inline void AeBufCleanup(AeBuf* b) {
+inline void AhBufCleanup(AhBuf b[static 1]) {
     buffn(char, clean)(&b->buf);
-    *b = (AeBuf){.current_line=1};
+    *b = (AhBuf){.current_line=1};
 }
 
 
-inline void AeBufFree(AeBuf* b) {
-    AeBufCleanup(b);
+inline void AhBufFree(AhBuf* b) {
+    AhBufCleanup(b);
     ah_free(b);
 }
 
 
-inline size_t AhBufLen(AeBuf ab[static 1]) { return ab->buf.len; }
+inline size_t AhBufLen(AhBuf ab[static 1]) { return ab->buf.len; }
 
-inline size_t AeBufNLines(AeBuf ab[static 1]) {
+inline size_t AhBufNLines(AhBuf ab[static 1]) {
     return ab->lines_offs.len;
 }
 
 
-inline int AeBufAppend(AeBuf ab[static 1], char* data, size_t len) {
-
-    //if (str_get_indexes(data, len, offset, '\n', &ab->lines_offs)) { return -1; }
-    if (AhBufAppendLinesIndexes(ab, data, len)) { return -1; }
-    return buffn(char,append)(&ab->buf, (char*)data, len) == NULL;
+inline int AhBufAppend(AhBuf ab[static 1], char* data, size_t len) {
+    return AhBufAppendLinesIndexes(ab, data, len)
+        || !buffn(char,append)(&ab->buf, (char*)data, len);
 }
 
-static int AhBufAppendLinesIndexes(AeBuf ab[static 1], char* data, size_t len) {
+
+static int AhBufAppendLinesIndexes(AhBuf ab[static 1], char* data, size_t len) {
     char* end = data + len;
     char* it = data;
 

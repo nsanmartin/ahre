@@ -46,7 +46,7 @@ int AhDocInit(AhDoc d[static 1], const Str* url) {
         }
     }
 
-    *d = (AhDoc){ .url=u, .doc=document, .aebuf=(AeBuf){.current_line=1} };
+    *d = (AhDoc){ .url=u, .doc=document, .aebuf=(AhBuf){.current_line=1} };
     return 0;
 }
 

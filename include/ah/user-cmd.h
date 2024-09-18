@@ -40,7 +40,7 @@ static inline int ahcmd_text(AhCtx* ctx) {
 }
 
 static inline int
-line_num_to_left_offset(size_t lnum, AeBuf* aebuf, size_t* out) {
+line_num_to_left_offset(size_t lnum, AhBuf* aebuf, size_t* out) {
     ArlOf(size_t)* offs = &aebuf->lines_offs;
 
     if (lnum == 0 || lnum > offs->len) { return -1; }
@@ -56,7 +56,7 @@ line_num_to_left_offset(size_t lnum, AeBuf* aebuf, size_t* out) {
 }
 
 static inline int
-line_num_to_right_offset(size_t lnum, AeBuf* aebuf, size_t* out) {
+line_num_to_right_offset(size_t lnum, AhBuf* aebuf, size_t* out) {
     ArlOf(size_t)* offs = &aebuf->lines_offs;
 
     if (lnum == 0 || lnum > offs->len) { return -1; }
@@ -80,8 +80,8 @@ static inline int aecmd_print(AhCtx ctx[static 1], AeRange range[static 1]) {
         return -1;
     }
 
-    AeBuf* aebuf = AhCtxCurrentBuf(ctx);
-    if (AeBufIsEmpty(aebuf)) {
+    AhBuf* aebuf = AhCtxCurrentBuf(ctx);
+    if (AhBufIsEmpty(aebuf)) {
         fprintf(stderr, "? empty buffer\n");
         return -1;
     }
@@ -106,8 +106,8 @@ static inline int aecmd_print(AhCtx ctx[static 1], AeRange range[static 1]) {
     return 0;
 }
 static inline int aecmd_print_(AhCtx ctx[static 1], AeRange range[static 1]) {
-    AeBuf* aebuf = AhCtxCurrentBuf(ctx);
-    if (AeBufIsEmpty(aebuf)) {
+    AhBuf* aebuf = AhCtxCurrentBuf(ctx);
+    if (AhBufIsEmpty(aebuf)) {
         fprintf(stderr, "? empty buffer\n");
         return -1;
     }

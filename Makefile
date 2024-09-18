@@ -13,6 +13,11 @@ AHRE_OBJ=$(AHRE_SRCS:src/%.c=$(AHRE_OBJDIR)/%.o)
 
 all: ahre tests
 
+run_tests: tests
+	./build/test_buf
+	./build/test_range
+
+
 $(AHRE): $(AHRE_OBJ)
 	$(CC) $(CFLAGS) \
 		-I$(INCLUDE) \

@@ -89,8 +89,8 @@ int ahcmd(AhCtx ctx[static 1], const char* line) {
 }
 
 bool is_range_valid_or_no_range(AhCtx ctx[static 1], AeRange r[static 1]) {
-    AeBuf* buf = AhCtxCurrentBuf(ctx);
-    size_t nlines = AeBufNLines(buf);
+    AhBuf* buf = AhCtxCurrentBuf(ctx);
+    size_t nlines = AhBufNLines(buf);
     return (r->beg <= r->end && r->end <= nlines)
         || r->no_range;
 }
@@ -106,7 +106,7 @@ int ah_ed_cmd(AhCtx ctx[static 1], const char* line) {
     }
 
     if ((rest = substr_match(line, "quit", 1)) && !*rest) { ctx->quit = true; return 0;}
-    if (AeBufIsEmpty(AhCtxCurrentBuf(ctx))) { 
+    if (AhBufIsEmpty(AhCtxCurrentBuf(ctx))) { 
         puts("empty buffer");
         return 0;
     }

@@ -21,7 +21,7 @@ typedef struct AhCurl AhCurl;
 typedef struct {
     const char* url;
     lxb_html_document_t* doc;
-    AeBuf aebuf;
+    AhBuf aebuf;
     AhDocCache cache;
 } AhDoc;
 
@@ -29,14 +29,14 @@ typedef struct {
 static inline void AhDocReset(AhDoc* ahdoc) {
     AhDocCacheCleanup(&ahdoc->cache);
     lxb_html_document_clean(ahdoc->doc);
-    AeBufReset(&ahdoc->aebuf);
+    AhBufReset(&ahdoc->aebuf);
     ah_free((char*)ahdoc->url);
 }
 
 static inline void AhDocCleanup(AhDoc* ahdoc) {
     AhDocCacheCleanup(&ahdoc->cache);
     lxb_html_document_destroy(ahdoc->doc);
-    AeBufCleanup(&ahdoc->aebuf);
+    AhBufCleanup(&ahdoc->aebuf);
     ah_free((char*)ahdoc->url);
 }
 
