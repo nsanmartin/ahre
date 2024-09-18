@@ -7,7 +7,7 @@ int aecmd_global(AhCtx ctx[static 1],  const char* rest);
 
 int ahcmd_w(char* fname, AhCtx ctx[static 1]);
 int ahcmd_fetch(AhCtx ctx[static 1]) {
-    AhDoc* ahdoc = ahctx_current_doc(ctx);
+    AhDoc* ahdoc = AhCtxCurrentDoc(ctx);
     if (ahdoc->url) {
         ErrStr err_str = AhDocFetch(ctx->ahcurl, ahdoc);
         if (err_str) { return ah_log_error(err_str, ErrCurl); }
@@ -19,7 +19,7 @@ int ahcmd_fetch(AhCtx ctx[static 1]) {
 
 
 static inline int ahcmd_ahre(AhCtx ctx[static 1]) {
-    AhDoc* ad = ahctx_current_doc(ctx);
+    AhDoc* ad = AhCtxCurrentDoc(ctx);
     return lexbor_href_write(ad->doc, &ad->cache.hrefs, &ad->aebuf);
 }
 
@@ -30,12 +30,12 @@ static inline int ahcmd_clear(AhCtx ctx[static 1]) {
 }
 
 static inline int ahcmd_tag(const char* rest, AhCtx ctx[static 1]) {
-    AhDoc* ahdoc = ahctx_current_doc(ctx);
+    AhDoc* ahdoc = AhCtxCurrentDoc(ctx);
     return lexbor_cp_tag(rest, ahdoc->doc, &ahdoc->aebuf.buf);
 }
 
 static inline int ahcmd_text(AhCtx* ctx) {
-    AhDoc* ahdoc = ahctx_current_doc(ctx);
+    AhDoc* ahdoc = AhCtxCurrentDoc(ctx);
     return lexbor_html_text_append(ahdoc->doc, &ahdoc->aebuf);
 }
 

@@ -81,7 +81,7 @@ int ahcmd(AhCtx ctx[static 1], const char* line) {
     if ((rest = substr_match(line, "class", 3))) { puts("TODO: class"); }
     if ((rest = substr_match(line, "clear", 3))) { return ahcmd_clear(ctx); }
     if ((rest = substr_match(line, "fetch", 1))) { return ahcmd_fetch(ctx); }
-    if ((rest = substr_match(line, "summary", 1))) { return ahctx_buffer_summary(ctx); }
+    if ((rest = substr_match(line, "summary", 1))) { return AhCtxBufSummary(ctx); }
     if ((rest = substr_match(line, "tag", 2))) { return ahcmd_tag(rest, ctx); }
     if ((rest = substr_match(line, "text", 2))) { return ahcmd_text(ctx); }
 

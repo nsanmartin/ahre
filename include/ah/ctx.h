@@ -17,20 +17,12 @@ typedef struct AhCtx {
     int (*user_line_callback)(AhCtx* ctx, const char*);
 } AhCtx;
 
-static inline AhBuf* AhCtxCurrentBuf(AhCtx ctx[static 1]) {
-    return &ctx->ahdoc->aebuf;
-}
-
-static inline AhDoc* AhCtxCurrentDoc(AhCtx ctx[static 1]) {
-    return ctx->ahdoc;
-}
-
-static inline AhDoc* ahctx_current_doc(AhCtx ctx[static 1]) { return ctx->ahdoc; }
+AhBuf* AhCtxCurrentBuf(AhCtx ctx[static 1]);
+AhDoc* AhCtxCurrentDoc(AhCtx ctx[static 1]);
 
 AhCtx* AhCtxCreate(char* url, AhUserLineCallback callback);
 void AhCtxFree(AhCtx* ctx) ;
 int ah_ed_cmd_print(AhCtx ctx[static 1]);
 
-int ahctx_print_summary(AhCtx ctx[static 1], FILE f[static 1]) ;
-int ahctx_buffer_summary(AhCtx ctx[static 1]);
+int AhCtxBufSummary(AhCtx ctx[static 1]);
 #endif

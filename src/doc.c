@@ -11,7 +11,7 @@
 constexpr size_t ah_max_url_len = 2048;
 
 
-ErrStr lexbor_read_doc_from_url_or_file (AhCurl ahcurl[static 1], AhDoc ad[static 1]); 
+static ErrStr lexbor_read_doc_from_url_or_file (AhCurl ahcurl[static 1], AhDoc ad[static 1]); 
 
 
 char* ah_urldup(const Str* url) {
@@ -67,9 +67,9 @@ ErrStr AhDocFetch(AhCurl ahcurl[static 1], AhDoc ad[static 1]) {
 }
 
 /*
- * Functions that append summary of the contet for ebugging purposes
+ * Functions that append summary of the content for debugging purposes
  */
-int ahdoc_buffer_summary(AhDoc ahdoc[static 1], BufOf(char)* buf) {
+int AhDocBufSummary(AhDoc ahdoc[static 1], BufOf(char)* buf) {
 
     buf_append_lit("AhDoc: ", buf);
     if (buf_append_hexp(ahdoc, buf)) { return -1; }
@@ -96,12 +96,12 @@ int ahdoc_buffer_summary(AhDoc ahdoc[static 1], BufOf(char)* buf) {
 }
 
 
-bool file_exists(const char* path) { return access(path, F_OK) == 0; }
+static bool file_exists(const char* path) { return access(path, F_OK) == 0; }
 
 static constexpr size_t READ_FROM_FILE_BUFFER_LEN = 4096;
 unsigned char _read_from_file_bufer[READ_FROM_FILE_BUFFER_LEN] = {0};
 
-ErrStr lexbor_read_doc_from_file(AhDoc ahdoc[static 1]) {
+static ErrStr lexbor_read_doc_from_file(AhDoc ahdoc[static 1]) {
     FILE* fp = fopen(ahdoc->url, "r");
     if  (!fp) { return strerror(errno); }
 
@@ -129,7 +129,7 @@ ErrStr lexbor_read_doc_from_file(AhDoc ahdoc[static 1]) {
     return Ok;
 }
 
-ErrStr lexbor_read_doc_from_url_or_file (AhCurl ahcurl[static 1], AhDoc ad[static 1]) {
+static ErrStr lexbor_read_doc_from_url_or_file (AhCurl ahcurl[static 1], AhDoc ad[static 1]) {
     if (file_exists(ad->url)) {
         return lexbor_read_doc_from_file(ad);
     }

@@ -1,18 +1,14 @@
 #include <ah/ctx.h>
 
-int ahctx_buffer_summary(AhCtx ctx[static 1]) {
-    BufOf(char)* buf = &AhCtxCurrentBuf(ctx)->buf;
-    if (ctx->ahcurl) {
-        if(ahcurl_buffer_summary(ctx->ahcurl, buf)) { return -1; }
-    } else { buf_append_lit("Not ahcurl\n", buf); }
 
-    if (ctx->ahdoc) {
-        ahdoc_buffer_summary(ctx->ahdoc, buf);
-        ahdoc_cache_buffer_summary(&ctx->ahdoc->cache, buf);
-    } else { buf_append_lit("Not ahdoc\n", buf); }
-
-    return 0;
+inline AhDoc* AhCtxCurrentDoc(AhCtx ctx[static 1]) {
+    return ctx->ahdoc;
 }
+
+inline AhBuf* AhCtxCurrentBuf(AhCtx ctx[static 1]) {
+    return &AhCtxCurrentDoc(ctx)->aebuf;
+}
+
 
 AhCtx* AhCtxCreate(char* url, AhUserLineCallback callback) {
     AhCtx* rv = ah_malloc(sizeof(AhCtx));
@@ -59,3 +55,18 @@ void AhCtxFree(AhCtx* ah) {
     ah_free(ah);
 }
 
+
+/* debug function */
+int AhCtxBufSummary(AhCtx ctx[static 1]) {
+    BufOf(char)* buf = &AhCtxCurrentBuf(ctx)->buf;
+    if (ctx->ahcurl) {
+        if(AhCurlBufSummary(ctx->ahcurl, buf)) { return -1; }
+    } else { buf_append_lit("Not ahcurl\n", buf); }
+
+    if (ctx->ahdoc) {
+        AhDocBufSummary(ctx->ahdoc, buf);
+        ahdoc_cache_buffer_summary(&ctx->ahdoc->cache, buf);
+    } else { buf_append_lit("Not ahdoc\n", buf); }
+
+    return 0;
+}

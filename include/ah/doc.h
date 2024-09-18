@@ -6,15 +6,13 @@
 
 #include <lexbor/html/html.h>
 
-#include <ah/wrappers.h>
-#include <ah/mem.h>
-
-#include <ah/error.h>
-#include <ah/doc-cache.h>
 #include <ah/buf.h>
+#include <ah/doc-cache.h>
+#include <ah/error.h>
+#include <ah/mem.h>
+#include <ah/wrappers.h>
 
 
-//typedef struct AhCtx AhCtx;
 typedef struct AhCurl AhCurl;
 
 
@@ -59,8 +57,7 @@ static inline void AhDocUpdateUrl(AhDoc ad[static 1], char* url) {
         ad->url = url;
 }
 ErrStr AhDocFetch(AhCurl ahcurl[static 1], AhDoc ad[static 1]) ;
-//char* ah_urldup(Str* url) ;
 
-int ahdoc_buffer_summary(AhDoc ahdoc[static 1], BufOf(char)* buf) ;
+int AhDocBufSummary(AhDoc ahdoc[static 1], BufOf(char)* buf) ;
 
 #endif
