@@ -1,7 +1,8 @@
 #include <stdio.h>
 
 #include <utests.h>
-#include <ah/buf.h>
+//#include <ah/buf.h>
+#include <src/buf.c>
 
 
 
@@ -13,9 +14,11 @@ int test_0(void) {
     size_t count = str_count_ocurrencies(str, len, '\n');
     utest_assert(count == 2, fail);
 
-    ArlOf(size_t)* ptrs = &(ArlOf(size_t)){0};
-    utest_assert(!str_get_lines_offs(str, 0, len, ptrs), fail);
-    utest_assert(count == ptrs->len, fail);
+    AeBuf buf;
+    AhBufInit(&buf);
+    int err = AhBufAppendLinesIndexes(&buf, str, len);
+    utest_assert(!err, fail);
+    utest_assert(count == buf.lines_offs.len, fail);
 
     return 0;
 fail:

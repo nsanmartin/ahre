@@ -13,26 +13,27 @@ typedef struct {
     ArlOf(size_t) lines_offs;
 } AeBuf;
 
+#define AeBufReset AeBufCleanup
 void AeBufCleanup(AeBuf* b);
 void AeBufFree(AeBuf* b);
 int AeBufAppend(AeBuf ab[static 1], char* data, size_t len);
-
+static inline int AhBufInit(AeBuf ab[static 1]) { *ab = (AeBuf){.current_line=1}; return 0; }
+size_t AhBufLen(AeBuf ab[static 1]);
 
 
 static inline int
 AeBufAppendLn(AeBuf ab[static 1], char* data, size_t len) {
-    if (!buffn(char,append)(&ab->buf, (char*)data, len)) { return -1; }
-    if (!arlfn(size_t, append)(&ab->lines_offs, &ab->buf.len)) { return -1; }
-    if (!buffn(char,append)(&ab->buf, (char*)"\n", 1)) { return -1; }
-    return 0;
+    return buffn(char,append)(&ab->buf, (char*)data, len)
+        && arlfn(size_t, append)(&ab->lines_offs, &ab->buf.len)
+        && buffn(char,append)(&ab->buf, (char*)"\n", 1)
+        ? 0 : -1;
 }
-#define AeBufReset AeBufCleanup
+
 
 static inline bool AeBufIsEmpty(AeBuf ab[static 1]) {
     return !ab->buf.len;
 }
 
-//static inline size_t AeBufNLines(AeBuf ab [static 1]) { return ab->lines_offs.len; }
 size_t AeBufNLines(AeBuf ab [static 1]);
 
 #endif

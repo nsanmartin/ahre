@@ -20,7 +20,7 @@ $(AHRE): $(AHRE_OBJ)
 		$^  \
 		-lcurl -llexbor -lreadline
 
-tests: test_range test_aebuf
+tests: test_range test_buf
 
 
 $(AHRE)2: $(AHRE_OBJ)
@@ -65,8 +65,8 @@ test_range: utests/test_range.c $(AHRE_OBJ)
 	$(CC) $(CFLAGS) -I$(INCLUDE) -Iutests -o build/$@ $^ \
 		-lcurl -llexbor -lreadline
 
-test_aebuf: utests/test_aebuf.c $(AHRE_OBJ)
-	$(CC) $(CFLAGS) -I$(INCLUDE) -Iutests -o build/$@ $^ \
+test_buf: utests/test_buf.c build/str.o
+	$(CC) $(CFLAGS) -I. -I$(INCLUDE) -Iutests -o build/$@ $^ \
 		-lcurl -llexbor -lreadline
 
 
