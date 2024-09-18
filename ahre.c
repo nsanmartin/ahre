@@ -3,9 +3,9 @@
 #include <curl/curl.h>
 #include <lexbor/html/html.h>
  
-#include <wrappers.h>
-#include <user-interface.h>
-#include <ahdoc.h>
+#include <ah/wrappers.h>
+#include <ah/user-interface.h>
+#include <ah/doc.h>
 
 void print_help(char* program) { printf("usage: %s <url>\n", program); }
 

@@ -1,5 +1,5 @@
 #include <string.h>
-#include <ahcurl.h>
+#include <ah/curl.h>
 
 int ahcurl_buffer_summary(AhCurl ahcurl[static 1], BufOf(char)*buf) {
    buf_append_lit("AhCurl: ", buf);

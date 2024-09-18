@@ -1,12 +1,12 @@
 #include <unistd.h>
-#include <aherror.h>
-#include <curl-lxb.h>
-#include <mem.h>
-#include <wrappers.h>
 
-#include <ahutils.h>
-#include <ahdoc.h>
-#include <aebuf.h>
+#include <ah/buf.h>
+#include <ah/curl-lxb.h>
+#include <ah/doc.h>
+#include <ah/error.h>
+#include <ah/mem.h>
+#include <ah/utils.h>
+#include <ah/wrappers.h>
 
 constexpr size_t ah_max_url_len = 2048;
 

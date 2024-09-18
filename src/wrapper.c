@@ -1,9 +1,9 @@
-#include <mem.h>
-#include <wrappers.h>
+#include <ah/mem.h>
+#include <ah/wrappers.h>
 
-#include <ahutils.h>
-#include <ahdoc.h>
-#include <aherror.h>
+#include <ah/utils.h>
+#include <ah/doc.h>
+#include <ah/error.h>
 
 
 ErrStr curl_lexbor_fetch_document(AhCurl ahcurl[static 1], AhDoc* ahdoc) {

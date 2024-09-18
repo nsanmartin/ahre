@@ -1,4 +1,4 @@
-#include <ahctx.h>
+#include <ah/ctx.h>
 
 int ahctx_buffer_summary(AhCtx ctx[static 1]) {
     BufOf(char)* buf = &AhCtxCurrentBuf(ctx)->buf;

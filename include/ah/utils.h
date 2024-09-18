@@ -6,13 +6,14 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include <aherror.h>
-
 #define BT char
 #include <buf.h>
 
 #define T size_t
 #include <arl.h>
+
+#include <ah/str.h>
+#include <ah/error.h>
 
 
 #define buf_append_lit(LitStr, Buf_) do{\
@@ -30,17 +31,6 @@ static inline int buf_append_hexp(void* p, BufOf(char)*buf) {
     return 0;
 }
 
-typedef struct {
-	const char* s;
-	size_t len;
-} Str;
-
-static inline int StrInit(Str s[static 1], const char* cs) {
-    *s = (Str){.s=cs, .len=cs?strlen(cs):0};
-    return cs && !s->len ? -1 : 0;
-}
-
-bool StrIsEmpty(const Str* s);
 static inline void ah_log_info(const char* msg) { puts(msg); }
 static inline Error ah_log_error(const char* msg, Error e) {
     perror(msg); return e;

@@ -3,11 +3,11 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-#include <ahutils.h>
-#include <wrappers.h>
-#include <user-interface.h>
-#include <user-cmd.h>
-#include <ae-ranges.h>
+#include <ah/utils.h>
+#include <ah/wrappers.h>
+#include <ah/user-interface.h>
+#include <ah/user-cmd.h>
+#include <ah/ranges.h>
 
 
 int ah_read_line_from_user(AhCtx ctx[static 1]) {

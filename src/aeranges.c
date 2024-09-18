@@ -2,10 +2,10 @@
 #include <errno.h>
 #include <ctype.h>
 
-#include <ahutils.h>
-#include <ahctx.h>
-#include <aebuf.h>
-#include <ae-ranges.h>
+#include <ah/utils.h>
+#include <ah/ctx.h>
+#include <ah/buf.h>
+#include <ah/ranges.h>
 
 /*
  * + . current line,

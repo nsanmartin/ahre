@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <lexbor/html/html.h>
 
-#include <ahcurl.h>
+#include <ah/curl.h>
 
 #define FAILED(msg) { perror(msg); exit(EXIT_FAILURE); }
 

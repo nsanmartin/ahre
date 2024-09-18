@@ -1,5 +1,5 @@
-#include <ahdoc-cache.h>
-#include <wrappers.h>
+#include <ah/doc-cache.h>
+#include <ah/wrappers.h>
 
 int ahdoc_cache_buffer_summary(AhDocCache c[static 1], BufOf(char)* buf) {
     buf_append_lit("AhDocCache: ", buf);

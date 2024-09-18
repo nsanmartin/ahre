@@ -2,7 +2,7 @@
 #define __AHRE_AHCURL_H__
 
 #include <curl/curl.h>
-#include <ahutils.h>
+#include <ah/utils.h>
 
 typedef struct AhCurl {
     CURL* curl;

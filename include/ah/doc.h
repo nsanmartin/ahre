@@ -6,12 +6,12 @@
 
 #include <lexbor/html/html.h>
 
-#include <wrappers.h>
-#include <mem.h>
+#include <ah/wrappers.h>
+#include <ah/mem.h>
 
-#include <aherror.h>
-#include <ahdoc-cache.h>
-#include <aebuf.h>
+#include <ah/error.h>
+#include <ah/doc-cache.h>
+#include <ah/buf.h>
 
 
 //typedef struct AhCtx AhCtx;

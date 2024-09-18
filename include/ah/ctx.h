@@ -1,9 +1,9 @@
 #ifndef __AHRE_Ctx_H__
 #define __AHRE_Ctx_H__
 
-#include <ahutils.h>
-#include <ahdoc.h>
-#include <wrappers.h>
+#include <ah/utils.h>
+#include <ah/doc.h>
+#include <ah/wrappers.h>
 
 typedef struct AhCtx AhCtx;
 
