@@ -41,7 +41,7 @@ static inline int ahcmd_text(AhCtx* ctx) {
 
 static inline int
 line_num_to_left_offset(size_t lnum, AhBuf* aebuf, size_t* out) {
-    ArlOf(size_t)* offs = &aebuf->lines_offs;
+    ArlOf(size_t)* offs = &aebuf->eols;
 
     if (lnum == 0 || lnum > offs->len) { return -1; }
     if (lnum == 1) { *out = 0; return 0; }
@@ -57,7 +57,7 @@ line_num_to_left_offset(size_t lnum, AhBuf* aebuf, size_t* out) {
 
 static inline int
 line_num_to_right_offset(size_t lnum, AhBuf* aebuf, size_t* out) {
-    ArlOf(size_t)* offs = &aebuf->lines_offs;
+    ArlOf(size_t)* offs = &aebuf->eols;
 
     if (lnum == 0 || lnum > offs->len) { return -1; }
     if (lnum == offs->len+1) {

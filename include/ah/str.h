@@ -20,7 +20,7 @@ static inline int StrInit(Str s[static 1], const char* cs) {
 bool StrIsEmpty(const Str* s);
 
 /* str_ prefix is for char* + size_t fns */
-//int str_get_lines_offs(char* data, size_t base_off, size_t len, ArlOf(size_t)* ptrs);
+//int str_get_eols(char* data, size_t base_off, size_t len, ArlOf(size_t)* ptrs);
 size_t str_count_ocurrencies(char* data, size_t len, char c);
 
 #endif

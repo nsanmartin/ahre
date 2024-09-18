@@ -10,7 +10,7 @@
 typedef struct {
     BufOf(char) buf;
     size_t current_line;
-    ArlOf(size_t) eol_idxs;
+    ArlOf(size_t) eols;
 } AhBuf;
 
 #define AhBufReset AhBufCleanup
@@ -24,7 +24,7 @@ size_t AhBufLen(AhBuf ab[static 1]);
 static inline int
 AhBufAppendLn(AhBuf ab[static 1], char* data, size_t len) {
     return buffn(char,append)(&ab->buf, (char*)data, len)
-        && arlfn(size_t, append)(&ab->lines_offs, &ab->buf.len)
+        && arlfn(size_t, append)(&ab->eols, &ab->buf.len)
         && buffn(char,append)(&ab->buf, (char*)"\n", 1)
         ? 0 : -1;
 }

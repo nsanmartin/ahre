@@ -19,7 +19,7 @@ inline void AhBufFree(AhBuf* b) {
 inline size_t AhBufLen(AhBuf ab[static 1]) { return ab->buf.len; }
 
 inline size_t AhBufNLines(AhBuf ab[static 1]) {
-    return ab->lines_offs.len;
+    return ab->eols.len;
 }
 
 
@@ -37,7 +37,7 @@ static int AhBufAppendLinesIndexes(AhBuf ab[static 1], char* data, size_t len) {
         it = memchr(it, '\n', end-it);
         if (!it || it >= end) { break; }
         size_t index = AhBufLen(ab) + (it - data);
-        if(NULL == arlfn(size_t, append)(&ab->lines_offs, &index)) { return -1; }
+        if(NULL == arlfn(size_t, append)(&ab->eols, &index)) { return -1; }
         ++it;
     }
 

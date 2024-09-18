@@ -33,7 +33,7 @@ int str_get_indexes(char* data, size_t len, size_t offset, char c, ArlOf(size_t)
 
 
 //inline int
-//str_get_lines_offs(char* data, size_t base_off, size_t len, ArlOf(size_t)* ptrs) {
+//str_get_eols(char* data, size_t base_off, size_t len, ArlOf(size_t)* ptrs) {
 //    char* end = data + len;
 //    char* it = data;
 //

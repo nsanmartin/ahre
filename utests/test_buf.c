@@ -18,7 +18,7 @@ int test_0(void) {
     AhBufInit(&buf);
     int err = AhBufAppendLinesIndexes(&buf, str, len);
     utest_assert(!err, fail);
-    utest_assert(count == buf.lines_offs.len, fail);
+    utest_assert(count == buf.eols.len, fail);
 
     return 0;
 fail:
