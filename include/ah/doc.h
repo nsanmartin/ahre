@@ -13,51 +13,51 @@
 #include <ah/wrappers.h>
 
 
-typedef struct AhCurl AhCurl;
+typedef struct UrlClient UrlClient;
 
 
 typedef struct {
     const char* url;
     lxb_html_document_t* doc;
     TextBuf aebuf;
-    AhDocCache cache;
-} AhDoc;
+    DocCache cache;
+} Doc;
 
 
-static inline void AhDocReset(AhDoc* ahdoc) {
-    AhDocCacheCleanup(&ahdoc->cache);
+static inline void doc_reset(Doc* ahdoc) {
+    doc_cache_cleanup(&ahdoc->cache);
     lxb_html_document_clean(ahdoc->doc);
     textbuf_reset(&ahdoc->aebuf);
     destroy((char*)ahdoc->url);
 }
 
-static inline void AhDocCleanup(AhDoc* ahdoc) {
-    AhDocCacheCleanup(&ahdoc->cache);
+static inline void doc_cleanup(Doc* ahdoc) {
+    doc_cache_cleanup(&ahdoc->cache);
     lxb_html_document_destroy(ahdoc->doc);
     textbuf_cleanup(&ahdoc->aebuf);
     destroy((char*)ahdoc->url);
 }
 
-static inline void AhDocFree(AhDoc* ahdoc) {
-    AhDocCleanup(ahdoc);
+static inline void doc_destroy(Doc* ahdoc) {
+    doc_cleanup(ahdoc);
     destroy(ahdoc);
 }
 
-int AhDocInit(AhDoc d[static 1], const Str* url);
+int doc_init(Doc d[static 1], const Str* url);
 
 
-AhDoc* AhDocCreate(char* url);
+Doc* doc_create(char* url);
 
-static inline bool AhDocHasUrl(AhDoc ad[static 1]) {
+static inline bool doc_has_url(Doc ad[static 1]) {
     return ad->url != NULL;
 }
 
-static inline void AhDocUpdateUrl(AhDoc ad[static 1], char* url) {
+static inline void doc_update_url(Doc ad[static 1], char* url) {
         destroy((char*)ad->url);
         ad->url = url;
 }
-ErrStr AhDocFetch(AhCurl ahcurl[static 1], AhDoc ad[static 1]) ;
+ErrStr doc_fetch(UrlClient ahcurl[static 1], Doc ad[static 1]) ;
 
-int AhDocBufSummary(AhDoc ahdoc[static 1], BufOf(char)* buf) ;
+int AhDocBufSummary(Doc ahdoc[static 1], BufOf(char)* buf) ;
 
 #endif

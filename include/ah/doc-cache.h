@@ -5,12 +5,12 @@
 
 typedef struct {
     lxb_dom_collection_t* hrefs;
-} AhDocCache;
+} DocCache;
 
-static inline void AhDocCacheCleanup(AhDocCache* c) {
+static inline void doc_cache_cleanup(DocCache* c) {
     lxb_dom_collection_destroy(c->hrefs, true);
-    *c = (AhDocCache){0};
+    *c = (DocCache){0};
 }
 
-int ahdoc_cache_buffer_summary(AhDocCache c[static 1], BufOf(char)* buf) ;
+int ahdoc_cache_buffer_summary(DocCache c[static 1], BufOf(char)* buf) ;
 #endif

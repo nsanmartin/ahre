@@ -1,8 +1,8 @@
 #include <ah/doc-cache.h>
 #include <ah/wrappers.h>
 
-int ahdoc_cache_buffer_summary(AhDocCache c[static 1], BufOf(char)* buf) {
-    buf_append_lit("AhDocCache: ", buf);
+int ahdoc_cache_buffer_summary(DocCache c[static 1], BufOf(char)* buf) {
+    buf_append_lit("DocCache: ", buf);
     if (buf_append_hexp(c, buf)) { return -1; }
     buf_append_lit("\n", buf);
 

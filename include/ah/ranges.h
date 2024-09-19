@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-#include<ah/ctx.h>
+#include<ah/session.h>
 
 typedef struct {
     size_t beg;
@@ -11,5 +11,5 @@ typedef struct {
     bool no_range;
 } AeRange;
 
-const char* ad_range_parse(const char* tk, AhCtx ctx[static 1], AeRange* range);
+const char* ad_range_parse(const char* tk, Session session[static 1], AeRange* range);
 #endif

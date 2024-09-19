@@ -11,7 +11,7 @@
 constexpr size_t ah_max_url_len = 2048;
 
 
-static ErrStr lexbor_read_doc_from_url_or_file (AhCurl ahcurl[static 1], AhDoc ad[static 1]); 
+static ErrStr lexbor_read_doc_from_url_or_file (UrlClient ahcurl[static 1], Doc ad[static 1]); 
 
 
 char* ah_urldup(const Str* url) {
@@ -29,7 +29,7 @@ char* ah_urldup(const Str* url) {
 }
 
 
-int AhDocInit(AhDoc d[static 1], const Str* url) {
+int doc_init(Doc d[static 1], const Str* url) {
     if (!d) { return -1; }
     lxb_html_document_t* document = lxb_html_document_create();
     if (!document) {
@@ -46,15 +46,15 @@ int AhDocInit(AhDoc d[static 1], const Str* url) {
         }
     }
 
-    *d = (AhDoc){ .url=u, .doc=document, .aebuf=(TextBuf){.current_line=1} };
+    *d = (Doc){ .url=u, .doc=document, .aebuf=(TextBuf){.current_line=1} };
     return 0;
 }
 
-AhDoc* AhDocCreate(char* url) {
-    AhDoc* rv = ah_malloc(sizeof(AhDoc));
+Doc* doc_create(char* url) {
+    Doc* rv = ah_malloc(sizeof(Doc));
     Str u;
     if (StrInit(&u, url)) { return NULL; }
-    if (AhDocInit(rv, &u)) {
+    if (doc_init(rv, &u)) {
         destroy(rv);
         return NULL;
     }
@@ -62,16 +62,16 @@ AhDoc* AhDocCreate(char* url) {
 }
 
 
-ErrStr AhDocFetch(AhCurl ahcurl[static 1], AhDoc ad[static 1]) {
+ErrStr doc_fetch(UrlClient ahcurl[static 1], Doc ad[static 1]) {
     return lexbor_read_doc_from_url_or_file (ahcurl, ad);
 }
 
 /*
  * Functions that append summary of the content for debugging purposes
  */
-int AhDocBufSummary(AhDoc ahdoc[static 1], BufOf(char)* buf) {
+int AhDocBufSummary(Doc ahdoc[static 1], BufOf(char)* buf) {
 
-    buf_append_lit("AhDoc: ", buf);
+    buf_append_lit("Doc: ", buf);
     if (buf_append_hexp(ahdoc, buf)) { return -1; }
     buf_append_lit("\n", buf);
 
@@ -101,7 +101,7 @@ static bool file_exists(const char* path) { return access(path, F_OK) == 0; }
 static constexpr size_t READ_FROM_FILE_BUFFER_LEN = 4096;
 unsigned char _read_from_file_bufer[READ_FROM_FILE_BUFFER_LEN] = {0};
 
-static ErrStr lexbor_read_doc_from_file(AhDoc ahdoc[static 1]) {
+static ErrStr lexbor_read_doc_from_file(Doc ahdoc[static 1]) {
     FILE* fp = fopen(ahdoc->url, "r");
     if  (!fp) { return strerror(errno); }
 
@@ -129,7 +129,7 @@ static ErrStr lexbor_read_doc_from_file(AhDoc ahdoc[static 1]) {
     return Ok;
 }
 
-static ErrStr lexbor_read_doc_from_url_or_file (AhCurl ahcurl[static 1], AhDoc ad[static 1]) {
+static ErrStr lexbor_read_doc_from_url_or_file (UrlClient ahcurl[static 1], Doc ad[static 1]) {
     if (file_exists(ad->url)) {
         return lexbor_read_doc_from_file(ad);
     }

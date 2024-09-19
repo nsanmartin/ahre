@@ -1,14 +1,14 @@
 #include <string.h>
-#include <ah/curl.h>
+#include <ah/url-client.h>
 
 
-AhCurl* AhCurlCreate(void) {
-    AhCurl* rv = ah_malloc(sizeof(AhCurl));
+UrlClient* url_client_create(void) {
+    UrlClient* rv = ah_malloc(sizeof(UrlClient));
     if (!rv) { perror("Mem Error"); goto exit_fail; }
     CURL* handle = curl_easy_init();
     if (!handle) { perror("Curl init error"); goto free_rv; }
 
-    *rv = (AhCurl) { .curl=handle, .errbuf={0} };
+    *rv = (UrlClient) { .curl=handle, .errbuf={0} };
 
     /* default options to curl */
     if (curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, rv->errbuf)
@@ -28,15 +28,15 @@ exit_fail:
 }
 
 
-void AhCurlFree(AhCurl* ac) {
+void url_client_destroy(UrlClient* ac) {
     curl_easy_cleanup(ac->curl);
     destroy(ac);
 }
 
 
 /* debug */
-int AhCurlBufSummary(AhCurl ahcurl[static 1], BufOf(char)*buf) {
-   buf_append_lit("AhCurl: ", buf);
+int AhCurlBufSummary(UrlClient ahcurl[static 1], BufOf(char)*buf) {
+   buf_append_lit("UrlClient: ", buf);
    if (buf_append_hexp(ahcurl, buf)) { return -1; }
    buf_append_lit("\n", buf);
 

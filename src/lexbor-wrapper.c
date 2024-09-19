@@ -67,19 +67,19 @@ lxb_dom_collection_t* lexbor_anchor_collection_from_doc(
 
 int lexbor_foreach_href(
     lxb_dom_collection_t collection[static 1],
-    int (*callback)(lxb_dom_element_t* element, void* ctx),
-    void* ctx
+    int (*callback)(lxb_dom_element_t* element, void* session),
+    void* session
 ) {
     for (size_t i = 0; i < lxb_dom_collection_length(collection); i++) {
         lxb_dom_element_t* element = lxb_dom_collection_element(collection, i);
 
-        if (callback(element, ctx)) { return -1; };
+        if (callback(element, session)) { return -1; };
     }
     return 0;
 }
 
-int ahre_print_href(lxb_dom_element_t* element, void* ctx) {
-    (void)ctx;
+int ahre_print_href(lxb_dom_element_t* element, void* session) {
+    (void)session;
     size_t value_len = 0;
     const lxb_char_t * value = lxb_dom_element_get_attribute(
         element, (const lxb_char_t*)"href", 4, &value_len
@@ -119,8 +119,8 @@ int lexbor_href_write(
 }
 
 
-lxb_inline lxb_status_t serializer_callback(const lxb_char_t *data, size_t len, void *ctx) {
-    (void)ctx;
+lxb_inline lxb_status_t serializer_callback(const lxb_char_t *data, size_t len, void *session) {
+    (void)session;
     return len == fwrite(data, 1, len, stdout) ? LXB_STATUS_OK : LXB_STATUS_ERROR;
 }
 

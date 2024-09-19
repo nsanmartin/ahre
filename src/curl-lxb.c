@@ -6,7 +6,7 @@
 #include <ah/error.h>
 
 
-ErrStr curl_lexbor_fetch_document(AhCurl ahcurl[static 1], AhDoc* ahdoc) {
+ErrStr curl_lexbor_fetch_document(UrlClient ahcurl[static 1], Doc* ahdoc) {
     if (curl_easy_setopt(ahcurl->curl, CURLOPT_WRITEFUNCTION, chunk_callback)
         || curl_easy_setopt(ahcurl->curl, CURLOPT_WRITEDATA, ahdoc->doc)) { return "Error configuring curl write fn/data"; }
     if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(ahdoc->doc)) { return "Lex failed to init html document"; }

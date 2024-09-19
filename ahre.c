@@ -11,7 +11,7 @@ void print_help(char* program) { printf("usage: %s <url>\n", program); }
 
 
 int loop_lexbor(char* url) {
-    AhCtx* ctx = AhCtxCreate(url, ah_process_line);
+    Session* ctx = AhCtxCreate(url, ah_process_line);
     if (!ctx) {
         /* TODO: do not ext, ask for another url instead */
         return EXIT_FAILURE;

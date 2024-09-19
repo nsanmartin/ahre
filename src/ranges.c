@@ -3,7 +3,7 @@
 #include <ctype.h>
 
 #include <ah/utils.h>
-#include <ah/ctx.h>
+#include <ah/session.h>
 #include <ah/buf.h>
 #include <ah/ranges.h>
 
@@ -148,8 +148,8 @@ const char* ad_range_parse_impl(
 }
 
 inline const char*
-ad_range_parse(const char* tk, AhCtx ctx[static 1], AeRange* range) {
-    TextBuf* aeb = AhCtxCurrentBuf(ctx);
+ad_range_parse(const char* tk, Session session[static 1], AeRange* range) {
+    TextBuf* aeb = AhCtxCurrentBuf(session);
     size_t current_line = aeb->current_line;
     size_t nlines       = textbuf_line_count(aeb);
     return ad_range_parse_impl(tk, current_line, nlines, range);
