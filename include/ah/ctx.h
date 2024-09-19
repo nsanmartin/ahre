@@ -17,7 +17,7 @@ typedef struct AhCtx {
     int (*user_line_callback)(AhCtx* ctx, const char*);
 } AhCtx;
 
-AhBuf* AhCtxCurrentBuf(AhCtx ctx[static 1]);
+TextBuf* AhCtxCurrentBuf(AhCtx ctx[static 1]);
 AhDoc* AhCtxCurrentDoc(AhCtx ctx[static 1]);
 
 AhCtx* AhCtxCreate(char* url, AhUserLineCallback callback);

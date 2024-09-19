@@ -14,9 +14,9 @@ int test_0(void) {
     size_t count = str_count_ocurrencies(str, len, '\n');
     utest_assert(count == 2, fail);
 
-    AhBuf buf;
-    AhBufInit(&buf);
-    int err = AhBufAppendLinesIndexes(&buf, str, len);
+    TextBuf buf;
+    textbuf_init(&buf);
+    int err = textbuf_append_line_indexes(&buf, str, len);
     utest_assert(!err, fail);
     utest_assert(count == buf.eols.len, fail);
 

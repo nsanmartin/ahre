@@ -26,7 +26,7 @@ int lexbor_foreach_href(
 
 lxb_inline lxb_status_t append_to_buf_callback(const lxb_char_t *data, size_t len, void *ctx) {
     BufOf(char)* buf = ctx;
-    //if (AhBufAppend(buf, (char*)data, len)) { return LXB_STATUS_ERROR; }
+    //if (textbuf_append(buf, (char*)data, len)) { return LXB_STATUS_ERROR; }
     if (buffn(char,append)(buf, (char*)data, len)) { return LXB_STATUS_ERROR; }
     return LXB_STATUS_OK;
 }

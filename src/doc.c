@@ -46,7 +46,7 @@ int AhDocInit(AhDoc d[static 1], const Str* url) {
         }
     }
 
-    *d = (AhDoc){ .url=u, .doc=document, .aebuf=(AhBuf){.current_line=1} };
+    *d = (AhDoc){ .url=u, .doc=document, .aebuf=(TextBuf){.current_line=1} };
     return 0;
 }
 
@@ -55,7 +55,7 @@ AhDoc* AhDocCreate(char* url) {
     Str u;
     if (StrInit(&u, url)) { return NULL; }
     if (AhDocInit(rv, &u)) {
-        ah_free(rv);
+        destroy(rv);
         return NULL;
     }
     return rv;

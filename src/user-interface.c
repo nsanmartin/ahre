@@ -15,7 +15,7 @@ int ah_read_line_from_user(AhCtx ctx[static 1]) {
     line = readline("");
     ctx->user_line_callback(ctx, line);
     add_history(line);
-    ah_free(line);
+    destroy(line);
     return 0;
 }
 
@@ -89,8 +89,8 @@ int ahcmd(AhCtx ctx[static 1], const char* line) {
 }
 
 bool is_range_valid_or_no_range(AhCtx ctx[static 1], AeRange r[static 1]) {
-    AhBuf* buf = AhCtxCurrentBuf(ctx);
-    size_t nlines = AhBufNLines(buf);
+    TextBuf* buf = AhCtxCurrentBuf(ctx);
+    size_t nlines = textbuf_line_count(buf);
     return (r->beg <= r->end && r->end <= nlines)
         || r->no_range;
 }
@@ -106,7 +106,7 @@ int ah_ed_cmd(AhCtx ctx[static 1], const char* line) {
     }
 
     if ((rest = substr_match(line, "quit", 1)) && !*rest) { ctx->quit = true; return 0;}
-    if (AhBufIsEmpty(AhCtxCurrentBuf(ctx))) { 
+    if (textbuf_is_empty(AhCtxCurrentBuf(ctx))) { 
         puts("empty buffer");
         return 0;
     }

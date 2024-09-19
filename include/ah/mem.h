@@ -4,6 +4,6 @@
 #include <stdlib.h>
 
 #define ah_malloc malloc
-#define ah_free free
+#define destroy free
 #define ah_strndup strndup
 #endif

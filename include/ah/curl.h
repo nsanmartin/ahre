@@ -13,7 +13,6 @@ typedef struct AhCurl {
 
 
 AhCurl* AhCurlCreate(void);
-AhCurl* AhCurlCreate(void);
 void AhCurlFree(AhCurl* ac);
 
 int AhCurlBufSummary(AhCurl ahcurl[static 1], BufOf(char)*buf) ;

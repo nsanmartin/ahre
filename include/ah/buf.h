@@ -11,18 +11,19 @@ typedef struct {
     BufOf(char) buf;
     size_t current_line;
     ArlOf(size_t) eols;
-} AhBuf;
+} TextBuf;
 
-#define AhBufReset AhBufCleanup
-void AhBufCleanup(AhBuf b[static 1]);
-void AhBufFree(AhBuf* b);
-int AhBufAppend(AhBuf ab[static 1], char* data, size_t len);
-static inline int AhBufInit(AhBuf ab[static 1]) { *ab = (AhBuf){.current_line=1}; return 0; }
-size_t AhBufLen(AhBuf ab[static 1]);
+#define textbuf_reset textbuf_cleanup
+void textbuf_cleanup(TextBuf b[static 1]);
+void textbuf_destroy(TextBuf* b);
+static inline int textbuf_init(TextBuf ab[static 1]) { *ab = (TextBuf){.current_line=1}; return 0; }
+
+int textbuf_append(TextBuf ab[static 1], char* data, size_t len);
+size_t textbuf_len(TextBuf ab[static 1]);
 
 
 static inline int
-AhBufAppendLn(AhBuf ab[static 1], char* data, size_t len) {
+textbuf_append_line(TextBuf ab[static 1], char* data, size_t len) {
     return buffn(char,append)(&ab->buf, (char*)data, len)
         && arlfn(size_t, append)(&ab->eols, &ab->buf.len)
         && buffn(char,append)(&ab->buf, (char*)"\n", 1)
@@ -30,10 +31,10 @@ AhBufAppendLn(AhBuf ab[static 1], char* data, size_t len) {
 }
 
 
-static inline bool AhBufIsEmpty(AhBuf ab[static 1]) {
+static inline bool textbuf_is_empty(TextBuf ab[static 1]) {
     return !ab->buf.len;
 }
 
-size_t AhBufNLines(AhBuf ab [static 1]);
+size_t textbuf_line_count(TextBuf ab [static 1]);
 
 #endif

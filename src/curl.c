@@ -22,7 +22,7 @@ AhCurl* AhCurlCreate(void) {
 cleanup_curl:
     curl_easy_cleanup(handle);
 free_rv:
-    ah_free(rv);
+    destroy(rv);
 exit_fail:
     return 0x0;
 }
@@ -30,7 +30,7 @@ exit_fail:
 
 void AhCurlFree(AhCurl* ac) {
     curl_easy_cleanup(ac->curl);
-    ah_free(ac);
+    destroy(ac);
 }
 
 

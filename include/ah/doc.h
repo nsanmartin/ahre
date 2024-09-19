@@ -19,7 +19,7 @@ typedef struct AhCurl AhCurl;
 typedef struct {
     const char* url;
     lxb_html_document_t* doc;
-    AhBuf aebuf;
+    TextBuf aebuf;
     AhDocCache cache;
 } AhDoc;
 
@@ -27,20 +27,20 @@ typedef struct {
 static inline void AhDocReset(AhDoc* ahdoc) {
     AhDocCacheCleanup(&ahdoc->cache);
     lxb_html_document_clean(ahdoc->doc);
-    AhBufReset(&ahdoc->aebuf);
-    ah_free((char*)ahdoc->url);
+    textbuf_reset(&ahdoc->aebuf);
+    destroy((char*)ahdoc->url);
 }
 
 static inline void AhDocCleanup(AhDoc* ahdoc) {
     AhDocCacheCleanup(&ahdoc->cache);
     lxb_html_document_destroy(ahdoc->doc);
-    AhBufCleanup(&ahdoc->aebuf);
-    ah_free((char*)ahdoc->url);
+    textbuf_cleanup(&ahdoc->aebuf);
+    destroy((char*)ahdoc->url);
 }
 
 static inline void AhDocFree(AhDoc* ahdoc) {
     AhDocCleanup(ahdoc);
-    ah_free(ahdoc);
+    destroy(ahdoc);
 }
 
 int AhDocInit(AhDoc d[static 1], const Str* url);
@@ -53,7 +53,7 @@ static inline bool AhDocHasUrl(AhDoc ad[static 1]) {
 }
 
 static inline void AhDocUpdateUrl(AhDoc ad[static 1], char* url) {
-        ah_free((char*)ad->url);
+        destroy((char*)ad->url);
         ad->url = url;
 }
 ErrStr AhDocFetch(AhCurl ahcurl[static 1], AhDoc ad[static 1]) ;

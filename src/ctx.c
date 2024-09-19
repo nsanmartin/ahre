@@ -5,7 +5,7 @@ inline AhDoc* AhCtxCurrentDoc(AhCtx ctx[static 1]) {
     return ctx->ahdoc;
 }
 
-inline AhBuf* AhCtxCurrentBuf(AhCtx ctx[static 1]) {
+inline TextBuf* AhCtxCurrentBuf(AhCtx ctx[static 1]) {
     return &AhCtxCurrentDoc(ctx)->aebuf;
 }
 
@@ -44,7 +44,7 @@ free_ahdoc:
 free_ahcurl:
     AhCurlFree(ahcurl);
 free_rv:
-    ah_free(rv);
+    destroy(rv);
 exit_fail:
     return 0x0;
 }
@@ -52,7 +52,7 @@ exit_fail:
 void AhCtxFree(AhCtx* ah) {
     AhDocFree(ah->ahdoc);
     AhCurlFree(ah->ahcurl);
-    ah_free(ah);
+    destroy(ah);
 }
 
 

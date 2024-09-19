@@ -90,12 +90,12 @@ int ahre_print_href(lxb_dom_element_t* element, void* ctx) {
 }
 
 int ahre_append_href(lxb_dom_element_t* element, void* aeBuf) {
-    AhBuf* buf = aeBuf;
+    TextBuf* buf = aeBuf;
     size_t value_len = 0;
     const lxb_char_t * value = lxb_dom_element_get_attribute(
         element, (const lxb_char_t*)"href", 4, &value_len
     );
-    if (AhBufAppendLn(buf, (char*)value, value_len)) { return -1; }
+    if (textbuf_append_line(buf, (char*)value, value_len)) { return -1; }
     //if (buffn(char,append)(buf, (char*)value, value_len)) { return -1; }
     //if (buffn(char,append)(buf, (char*)"\n", 1)) { return -1; }
     return 0;
@@ -104,7 +104,7 @@ int ahre_append_href(lxb_dom_element_t* element, void* aeBuf) {
 int lexbor_href_write(
     lxb_html_document_t document[static 1],
     lxb_dom_collection_t** hrefs,
-    AhBuf* buf
+    TextBuf* buf
 ) {
     if (!*hrefs) {
         if(!(*hrefs = lexbor_anchor_collection_from_doc(document))) {
@@ -158,11 +158,11 @@ size_t chunk_callback(char *in, size_t size, size_t nmemb, void* outstream) {
 
 
 int
-lexbor_html_text_append(lxb_html_document_t* document, AhBuf* buf) {
+lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf) {
     lxb_dom_node_t *node = lxb_dom_interface_node(document->body);
     size_t len = 0;
     lxb_char_t* text = lxb_dom_node_text_content(node, &len);
-    if (AhBufAppend(buf, (char*)text, len)) { return -1; }
+    if (textbuf_append(buf, (char*)text, len)) { return -1; }
     return 0;
 }
 

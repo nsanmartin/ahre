@@ -54,7 +54,7 @@ int aecmd_write(const char* rest, AhCtx ctx[static 1]) {
 }
 
 int aecmd_print_all_lines_nums(AhCtx ctx[static 1]) {
-    AhBuf* ab = AhCtxCurrentBuf(ctx);
+    TextBuf* ab = AhCtxCurrentBuf(ctx);
     BufOf(char)* buf = &ab->buf;
     char* items = buf->items;
     size_t len = buf->len;
