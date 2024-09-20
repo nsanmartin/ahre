@@ -1,6 +1,6 @@
 #include <ah/debug.h>
 
-int aecmd_print_all_lines_nums(Session session[static 1]) {
+int dbg_print_all_lines_nums(Session session[static 1]) {
     TextBuf* ab = session_current_buf(session);
     BufOf(char)* buf = &ab->buf;
     char* items = buf->items;
@@ -31,7 +31,7 @@ int aecmd_print_all_lines_nums(Session session[static 1]) {
 /*
  * Functions that append summary of the content for debugging purposes
  */
-int AhDocBufSummary(Doc ahdoc[static 1], BufOf(char)* buf) {
+static int textbuf_summary(Doc ahdoc[static 1], BufOf(char)* buf) {
 
     buf_append_lit("Doc: ", buf);
     if (buf_append_hexp(ahdoc, buf)) { return -1; }
@@ -57,23 +57,7 @@ int AhDocBufSummary(Doc ahdoc[static 1], BufOf(char)* buf) {
     return 0;
 }
 
-
-int AhCtxBufSummary(Session session[static 1]) {
-    BufOf(char)* buf = &session_current_buf(session)->buf;
-    if (session->ahcurl) {
-        if(AhCurlBufSummary(session->ahcurl, buf)) { return -1; }
-    } else { buf_append_lit("Not ahcurl\n", buf); }
-
-    if (session->ahdoc) {
-        AhDocBufSummary(session->ahdoc, buf);
-        ahdoc_cache_buffer_summary(&session->ahdoc->cache, buf);
-    } else { buf_append_lit("Not ahdoc\n", buf); }
-
-    return 0;
-}
-
-
-int AhCurlBufSummary(UrlClient ahcurl[static 1], BufOf(char)*buf) {
+int url_client_summary(UrlClient ahcurl[static 1], BufOf(char)*buf) {
    buf_append_lit("UrlClient: ", buf);
    if (buf_append_hexp(ahcurl, buf)) { return -1; }
    buf_append_lit("\n", buf);
@@ -96,4 +80,20 @@ int AhCurlBufSummary(UrlClient ahcurl[static 1], BufOf(char)*buf) {
    }
    return 0;
 }
+
+
+int dbg_session_summary(Session session[static 1]) {
+    BufOf(char)* buf = &session_current_buf(session)->buf;
+    if (session->ahcurl) {
+        if(url_client_summary(session->ahcurl, buf)) { return -1; }
+    } else { buf_append_lit("Not ahcurl\n", buf); }
+
+    if (session->ahdoc) {
+        textbuf_summary(session->ahdoc, buf);
+        ahdoc_cache_buffer_summary(&session->ahdoc->cache, buf);
+    } else { buf_append_lit("Not ahdoc\n", buf); }
+
+    return 0;
+}
+
 

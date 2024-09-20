@@ -37,7 +37,7 @@ bool substr_match_all(const char* s, size_t len, const char* cmd) {
 }
 
 
-int ahcmd_set_url(Session session[static 1], const char* url) {
+int cmd_set_url(Session session[static 1], const char* url) {
     puts("url");
     //Str u = (Str){.s=url, .len=strlen(url)};
     Str u;
@@ -71,7 +71,7 @@ int ahcmd(Session session[static 1], const char* line) {
     const char* rest = 0x0;
     line = skip_space(line);
 
-    if ((rest = substr_match(line, "url", 1))) { return ahcmd_set_url(session, rest); }
+    if ((rest = substr_match(line, "url", 1))) { return cmd_set_url(session, rest); }
 
     if (!session->ahdoc->url || !session->ahdoc->url || !session->ahcurl) {
         ah_log_info("no document"); return 0;
@@ -82,18 +82,11 @@ int ahcmd(Session session[static 1], const char* line) {
     if ((rest = substr_match(line, "class", 3))) { puts("TODO: class"); }
     if ((rest = substr_match(line, "clear", 3))) { return ahcmd_clear(session); }
     if ((rest = substr_match(line, "fetch", 1))) { return ahcmd_fetch(session); }
-    if ((rest = substr_match(line, "summary", 1))) { return AhCtxBufSummary(session); }
+    if ((rest = substr_match(line, "summary", 1))) { return dbg_session_summary(session); }
     if ((rest = substr_match(line, "tag", 2))) { return ahcmd_tag(rest, session); }
     if ((rest = substr_match(line, "text", 2))) { return ahcmd_text(session); }
 
     return 0;
-}
-
-bool is_range_valid_or_no_range(Session session[static 1], Range r[static 1]) {
-    TextBuf* buf = session_current_buf(session);
-    size_t nlines = textbuf_line_count(buf);
-    return (r->beg <= r->end && r->end <= nlines)
-        || range_has_no_end(r);
 }
 
 int ah_ed_cmd(Session session[static 1], const char* line) {
@@ -101,7 +94,8 @@ int ah_ed_cmd(Session session[static 1], const char* line) {
     if (!line) { return 0; }
     Range range = {0};
     line = range_parse(line, session, &range);
-    if (!line || !is_range_valid_or_no_range(session, &range)) {
+    //if (!line || !is_range_valid_or_no_range(session, &range)) {
+    if (!line) { // || (!range_has_no_end(&range) && !isrange_valid(&range, 0))) { //!is_range_valid_or_no_range(session, &range)) {
         puts("invalid range");
         return 0;
     } else if (range.end == 0) range.end = range.beg; 
@@ -116,7 +110,7 @@ int ah_ed_cmd(Session session[static 1], const char* line) {
     session_current_buf(session)->current_line = range.end;
 
     if ((rest = substr_match(line, "a", 1)) && !*rest) { return aecmd_print_all(session); }
-    if ((rest = substr_match(line, "l", 1)) && !*rest) { return aecmd_print_all_lines_nums(session); }
+    if ((rest = substr_match(line, "l", 1)) && !*rest) { return dbg_print_all_lines_nums(session); }
     if ((rest = substr_match(line, "g", 1)) && *rest) { return edcmd_global(session, rest); }
     if ((rest = substr_match(line, "print", 1)) && !*rest) { return aecmd_print(session, &range); }
     if ((rest = substr_match(line, "write", 1))) { return edcmd_write(rest, session); }

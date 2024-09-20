@@ -15,5 +15,5 @@ typedef struct UrlClient {
 UrlClient* url_client_create(void);
 void url_client_destroy(UrlClient* ac);
 
-int AhCurlBufSummary(UrlClient ahcurl[static 1], BufOf(char)*buf) ;
+//int AhCurlBufSummary(UrlClient ahcurl[static 1], BufOf(char)*buf) ;
 #endif

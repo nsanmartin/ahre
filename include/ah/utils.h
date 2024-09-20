@@ -41,7 +41,7 @@ static inline const char* next_space(const char* l) {
     while (*l && !isspace(*l)) { ++l; }
     return l;
 }
-//static inline const char* trim_space(const char* l) {
+
 static inline void trim_space(Str* l) {
     l->s = skip_space(l->s);
     l->len = next_space(l->s) - l->s;

@@ -8,5 +8,5 @@ static inline int aecmd_print_all(Session session[static 1]) {
     fwrite(buf->items, 1, buf->len, stdout);
     return 0;
 }
-int aecmd_print_all_lines_nums(Session session[static 1]);
+int dbg_print_all_lines_nums(Session session[static 1]);
 #endif

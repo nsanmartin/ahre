@@ -12,11 +12,9 @@
 int lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* buf);
 
 int curl_set_all_options(CURL* curl, const char* url, char* errbuf);
-//int curl_set_callback_and_buffer(CURL* curl, curl_write_callback callback, void* docbuf);
 
-size_t chunk_callback(char *en, size_t size, size_t nmemb, void* outstream);
+size_t lexbor_parse_chunk_callback(char *en, size_t size, size_t nmemb, void* outstream);
 
-int ahre_print_href(lxb_dom_element_t* element, void* session) ;
 int ahre_append_href(lxb_dom_element_t* element, void* session) ;
 int lexbor_foreach_href(
     lxb_dom_collection_t collection[static 1],

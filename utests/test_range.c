@@ -1,10 +1,11 @@
 #include <stdio.h>
 
 #include <utests.h>
-#include <ah/ranges.h>
+//#include <ah/ranges.h>
+#include <src/ranges.c>
 
 
-const char* range_parse_impl(char* tk, size_t current_line, size_t len, Range* range);
+//const char* range_parse_impl(char* tk, size_t current_line, size_t len, Range* range);
 
 int test_0(void) {
     size_t current_line = 0;

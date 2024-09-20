@@ -24,5 +24,5 @@ Session* session_create(char* url, UserLineCallback callback);
 void session_destroy(Session* session) ;
 int edcmd_print(Session session[static 1]);
 
-int AhCtxBufSummary(Session session[static 1]);
+int dbg_session_summary(Session session[static 1]);
 #endif

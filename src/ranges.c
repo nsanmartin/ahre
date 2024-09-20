@@ -84,7 +84,7 @@ static const char* range_parse_addr(const char* tk, unsigned long long curr, uns
 }
 
 
-const char* range_parse_impl(const char* tk, size_t current_line, size_t nlines, Range* range) {
+static const char* range_parse_impl(const char* tk, size_t current_line, size_t nlines, Range* range) {
     /* invalid input */
     if (!tk) { return NULL; }
     tk = skip_space(tk);
@@ -140,10 +140,22 @@ const char* range_parse_impl(const char* tk, size_t current_line, size_t nlines,
 
 }
 
+static inline bool is_range_valid(Range r[static 1], size_t nlines) {
+    return r->beg <= r->end && r->end <= nlines;
+}
+
+static inline bool range_has_no_end(Range r[static 1]) { return r->end == 0; }
+
+/* external linkage */
+
 inline const char*
 range_parse(const char* tk, Session session[static 1], Range* range) {
     TextBuf* aeb = session_current_buf(session);
     size_t current_line = aeb->current_line;
     size_t nlines       = textbuf_line_count(aeb);
-    return range_parse_impl(tk, current_line, nlines, range);
+    tk =  range_parse_impl(tk, current_line, nlines, range);
+    if (!tk || (!range_has_no_end(range) && is_range_valid(range, 0))) { return NULL; }
+    else if (range->end == 0) range->end = range->beg; 
+    return tk;
 }
+
