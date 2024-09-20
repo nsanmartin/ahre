@@ -57,20 +57,20 @@ static int textbuf_summary(Doc ahdoc[static 1], BufOf(char)* buf) {
     return 0;
 }
 
-int url_client_summary(UrlClient ahcurl[static 1], BufOf(char)*buf) {
+int url_client_summary(UrlClient url_client[static 1], BufOf(char)*buf) {
    buf_append_lit("UrlClient: ", buf);
-   if (buf_append_hexp(ahcurl, buf)) { return -1; }
+   if (buf_append_hexp(url_client, buf)) { return -1; }
    buf_append_lit("\n", buf);
 
-   if (ahcurl->curl) {
+   if (url_client->curl) {
        buf_append_lit(" curl: ", buf);
-       if (buf_append_hexp(ahcurl->curl, buf)) { return -1; }
+       if (buf_append_hexp(url_client->curl, buf)) { return -1; }
        buf_append_lit("\n", buf);
 
-       if (ahcurl->errbuf[0]) {
-           size_t slen = strlen(ahcurl->errbuf);
+       if (url_client->errbuf[0]) {
+           size_t slen = strlen(url_client->errbuf);
            if (slen > CURL_ERROR_SIZE) { slen = CURL_ERROR_SIZE; }
-           if (buffn(char,append)(buf, ahcurl->errbuf, slen)) {
+           if (buffn(char,append)(buf, url_client->errbuf, slen)) {
                return -1;
            }
            buf_append_lit("\n", buf);
@@ -84,9 +84,9 @@ int url_client_summary(UrlClient ahcurl[static 1], BufOf(char)*buf) {
 
 int dbg_session_summary(Session session[static 1]) {
     BufOf(char)* buf = &session_current_buf(session)->buf;
-    if (session->ahcurl) {
-        if(url_client_summary(session->ahcurl, buf)) { return -1; }
-    } else { buf_append_lit("Not ahcurl\n", buf); }
+    if (session->url_client) {
+        if(url_client_summary(session->url_client, buf)) { return -1; }
+    } else { buf_append_lit("Not url_client\n", buf); }
 
     if (session->ahdoc) {
         textbuf_summary(session->ahdoc, buf);

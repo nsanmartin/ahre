@@ -1,6 +1,6 @@
 #include <unistd.h>
 
-#include <ah/buf.h>
+#include <ah/textbuf.h>
 #include <ah/curl-lxb.h>
 #include <ah/doc.h>
 #include <ah/error.h>
@@ -14,7 +14,7 @@ static constexpr size_t READ_FROM_FILE_BUFFER_LEN = 4096;
 static unsigned char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {0};
 
 
-static ErrStr lexbor_read_doc_from_url_or_file (UrlClient ahcurl[static 1], Doc ad[static 1]); 
+static ErrStr lexbor_read_doc_from_url_or_file (UrlClient url_client[static 1], Doc ad[static 1]); 
 
 
 static char* str_url_dup(const Str* url) {
@@ -62,11 +62,11 @@ static ErrStr lexbor_read_doc_from_file(Doc ahdoc[static 1]) {
     return Ok;
 }
 
-static ErrStr lexbor_read_doc_from_url_or_file (UrlClient ahcurl[static 1], Doc ad[static 1]) {
+static ErrStr lexbor_read_doc_from_url_or_file (UrlClient url_client[static 1], Doc ad[static 1]) {
     if (file_exists(ad->url)) {
         return lexbor_read_doc_from_file(ad);
     }
-    return curl_lexbor_fetch_document(ahcurl, ad);
+    return curl_lexbor_fetch_document(url_client, ad);
 }
 
 
@@ -94,7 +94,7 @@ int doc_init(Doc d[static 1], const Str* url) {
 }
 
 Doc* doc_create(char* url) {
-    Doc* rv = ah_malloc(sizeof(Doc));
+    Doc* rv = std_malloc(sizeof(Doc));
     Str u;
     if (str_init(&u, url)) { return NULL; }
     if (doc_init(rv, &u)) {
@@ -104,9 +104,31 @@ Doc* doc_create(char* url) {
     return rv;
 }
 
+inline void doc_reset(Doc* ahdoc) {
+    doc_cache_cleanup(&ahdoc->cache);
+    lxb_html_document_clean(ahdoc->doc);
+    textbuf_reset(&ahdoc->aebuf);
+    destroy((char*)ahdoc->url);
+}
 
-ErrStr doc_fetch(UrlClient ahcurl[static 1], Doc ad[static 1]) {
-    return lexbor_read_doc_from_url_or_file (ahcurl, ad);
+inline void doc_cleanup(Doc* ahdoc) {
+    doc_cache_cleanup(&ahdoc->cache);
+    lxb_html_document_destroy(ahdoc->doc);
+    textbuf_cleanup(&ahdoc->aebuf);
+    destroy((char*)ahdoc->url);
+}
+
+inline void doc_destroy(Doc* ahdoc) {
+    doc_cleanup(ahdoc);
+    destroy(ahdoc);
+}
+
+ErrStr doc_fetch(UrlClient url_client[static 1], Doc ad[static 1]) {
+    return lexbor_read_doc_from_url_or_file (url_client, ad);
 }
 
 
+inline void doc_update_url(Doc ad[static 1], char* url) {
+        destroy((char*)ad->url);
+        ad->url = url;
+}

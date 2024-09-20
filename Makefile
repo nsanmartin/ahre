@@ -66,7 +66,7 @@ curl/configure:
 curl/lib/.libs: curl/configure
 	$(MAKE) -C curl
 
-test_range: utests/test_range.c build/session.o build/buf.o build/url-client.o \
+test_range: utests/test_range.c build/session.o build/textbuf.o build/url-client.o \
 	build/doc.o build/str.o build/curl-lxb.o build/lexbor-wrapper.o
 	$(CC) $(CFLAGS) -I. -I$(INCLUDE) -Iutests -o build/$@ $^ \
 		-lcurl -llexbor -lreadline

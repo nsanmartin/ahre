@@ -1,4 +1,6 @@
-#include <ah/buf.h>
+#include <ah/mem.h>
+
+#include <ah/textbuf.h>
 
 /*  internal linkage */
 static int textbuf_append_line_indexes(TextBuf ab[static 1], char* data, size_t len);

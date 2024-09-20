@@ -1,8 +1,7 @@
 #include <stdio.h>
 
 #include <utests.h>
-//#include <ah/buf.h>
-#include <src/buf.c>
+#include <src/textbuf.c>
 
 
 

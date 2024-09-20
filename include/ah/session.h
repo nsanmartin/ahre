@@ -11,7 +11,7 @@ typedef int (*UserLineCallback)(Session* session, const char*);
 
 
 typedef struct Session {
-    UrlClient* ahcurl;
+    UrlClient* url_client;
     Doc* ahdoc;
     bool quit;
     int (*user_line_callback)(Session* session, const char*);

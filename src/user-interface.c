@@ -4,6 +4,7 @@
 #include <readline/history.h>
 
 #include <ah/debug.h>
+#include <ah/mem.h>
 #include <ah/ranges.h>
 #include <ah/user-cmd.h>
 #include <ah/user-interface.h>
@@ -52,7 +53,7 @@ int cmd_set_url(Session session[static 1], const char* url) {
 
         Doc* doc = session_current_doc(session);
         if (doc_has_url(doc)) {
-            ErrStr err = doc_fetch(session->ahcurl, doc);
+            ErrStr err = doc_fetch(session->url_client, doc);
             if (err) {
                 puts("TODO:cleanup");
                 fprintf(stderr, "error fetching url: %s\n", err);
@@ -73,7 +74,7 @@ int ahcmd(Session session[static 1], const char* line) {
 
     if ((rest = substr_match(line, "url", 1))) { return cmd_set_url(session, rest); }
 
-    if (!session->ahdoc->url || !session->ahdoc->url || !session->ahcurl) {
+    if (!session->ahdoc->url || !session->ahdoc->url || !session->url_client) {
         ah_log_info("no document"); return 0;
     }
 

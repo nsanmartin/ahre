@@ -10,7 +10,7 @@ int ahcmd_write(char* fname, Session session[static 1]);
 int ahcmd_fetch(Session session[static 1]) {
     Doc* ahdoc = session_current_doc(session);
     if (ahdoc->url) {
-        ErrStr err_str = doc_fetch(session->ahcurl, ahdoc);
+        ErrStr err_str = doc_fetch(session->url_client, ahdoc);
         if (err_str) { return ah_log_error(err_str, ErrCurl); }
         return Ok;
     }

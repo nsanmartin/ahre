@@ -1,9 +1,11 @@
 #include <string.h>
+
+#include <ah/mem.h>
 #include <ah/url-client.h>
 
 
 UrlClient* url_client_create(void) {
-    UrlClient* rv = ah_malloc(sizeof(UrlClient));
+    UrlClient* rv = std_malloc(sizeof(UrlClient));
     if (!rv) { perror("Mem Error"); goto exit_fail; }
     CURL* handle = curl_easy_init();
     if (!handle) { perror("Curl init error"); goto free_rv; }

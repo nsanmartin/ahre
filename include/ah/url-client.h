@@ -3,7 +3,6 @@
 
 #include <curl/curl.h>
 
-#include <ah/mem.h>
 #include <ah/utils.h>
 
 typedef struct UrlClient {
@@ -15,5 +14,4 @@ typedef struct UrlClient {
 UrlClient* url_client_create(void);
 void url_client_destroy(UrlClient* ac);
 
-//int AhCurlBufSummary(UrlClient ahcurl[static 1], BufOf(char)*buf) ;
 #endif

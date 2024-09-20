@@ -4,7 +4,7 @@
 
 #include <ah/utils.h>
 #include <ah/session.h>
-#include <ah/buf.h>
+#include <ah/textbuf.h>
 #include <ah/ranges.h>
 
 /*
