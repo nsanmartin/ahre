@@ -50,10 +50,10 @@ exit_fail:
     return 0x0;
 }
 
-void session_destroy(Session* ah) {
-    doc_destroy(ah->ahdoc);
-    url_client_destroy(ah->url_client);
-    destroy(ah);
+void session_destroy(Session* session) {
+    doc_destroy(session->ahdoc);
+    url_client_destroy(session->url_client);
+    std_free(session);
 }
 
 

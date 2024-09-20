@@ -13,11 +13,11 @@
 #include <ah/textbuf.h>
 
 #define destroy(Ptr) _Generic((Ptr), \
-    TextBuf:   textbuf_destroy, \
-    UrlClient: url_client_destroy, \
-    Doc:       doc_destroy, \
-    Session:   session_destroy, \
-    default:   std_free \
+    TextBuf*:   textbuf_destroy, \
+    UrlClient*: url_client_destroy, \
+    Doc*:       doc_destroy, \
+    Session*:   session_destroy, \
+    char*:     std_free \
 )(Ptr)
 
 #endif

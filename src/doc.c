@@ -120,7 +120,7 @@ inline void doc_cleanup(Doc* ahdoc) {
 
 inline void doc_destroy(Doc* ahdoc) {
     doc_cleanup(ahdoc);
-    destroy(ahdoc);
+    std_free(ahdoc);
 }
 
 ErrStr doc_fetch(UrlClient url_client[static 1], Doc ad[static 1]) {

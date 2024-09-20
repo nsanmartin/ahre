@@ -30,7 +30,7 @@ inline void textbuf_cleanup(TextBuf b[static 1]) {
 
 inline void textbuf_destroy(TextBuf* b) {
     textbuf_cleanup(b);
-    destroy(b);
+    std_free(b);
 }
 
 

@@ -3,9 +3,10 @@
 #include <curl/curl.h>
 #include <lexbor/html/html.h>
  
-#include <ah/wrappers.h>
-#include <ah/user-interface.h>
 #include <ah/doc.h>
+#include <ah/mem.h>
+#include <ah/user-interface.h>
+#include <ah/wrappers.h>
 
 void print_help(char* program) { printf("usage: %s <url>\n", program); }
 
@@ -25,7 +26,7 @@ int loop_lexbor(char* url) {
         }
     }
 
-    session_destroy(ctx);
+    destroy(ctx);
     return EXIT_SUCCESS;
 }
 

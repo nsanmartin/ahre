@@ -32,7 +32,7 @@ exit_fail:
 
 void url_client_destroy(UrlClient* ac) {
     curl_easy_cleanup(ac->curl);
-    destroy(ac);
+    std_free(ac);
 }
 
 
