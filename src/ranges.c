@@ -20,7 +20,7 @@
 */
 
 
-static const char* ad_parse_ull(const char* tk, long long unsigned* ullp) {
+static const char* parse_ull(const char* tk, long long unsigned* ullp) {
     if (!tk || !*tk) { return NULL; }
     char* endptr = 0x0;
     *ullp = strtoll(tk, &endptr, 10);
@@ -28,18 +28,18 @@ static const char* ad_parse_ull(const char* tk, long long unsigned* ullp) {
     return endptr == tk ? NULL: endptr;
 }
 
-static const char* ae_range_parse_addr_num(const char* tk, unsigned long long num, unsigned long long maximum, size_t* out) {
+static const char* range_parse_addr_num(const char* tk, unsigned long long num, unsigned long long maximum, size_t* out) {
     unsigned long long ull;
     if (*tk == '+') {
         ++tk;
-        const char* rest = ad_parse_ull(tk, &ull);
+        const char* rest = parse_ull(tk, &ull);
         if (!rest) { ull = 1; }
         else { tk = rest; }
         num += ull; 
         if (num < ull || num > maximum) { return NULL; }
     } else if (*tk == '-') {
         ++tk;
-        const char* rest = ad_parse_ull(tk, &ull);
+        const char* rest = parse_ull(tk, &ull);
         if (!rest) { ull = 1; }
         else { tk = rest; }
         if (ull > num) { return NULL; }
@@ -52,59 +52,54 @@ static const char* ae_range_parse_addr_num(const char* tk, unsigned long long nu
 
 _Static_assert(sizeof(size_t) <= sizeof(unsigned long long), "range parser requires this precondition");
 
-static const char* ae_range_parse_addr(const char* tk, unsigned long long curr, unsigned long long max, size_t* out) {
+static const char* range_parse_addr(const char* tk, unsigned long long curr, unsigned long long max, size_t* out) {
     if (!tk || !*tk) { return NULL; }
     if (*tk == '.' || *tk == '+' || *tk == '-')  {
         if (*tk == '.') { ++tk; }
-        const char* rest = ae_range_parse_addr_num(tk, curr, max, out);
+        const char* rest = range_parse_addr_num(tk, curr, max, out);
         if (rest) { tk = rest; }
         return tk;
     } else if (*tk == '$') {
         ++tk;
-        const char* rest = ae_range_parse_addr_num(tk, max, max, out);
+        const char* rest = range_parse_addr_num(tk, max, max, out);
         if (rest) { tk = rest; }
         return tk;
     } else if (isdigit(*tk)) {
         /* tk does not start neither with - nor + */
-        const char* rest = ad_parse_ull(tk, &curr);
+        const char* rest = parse_ull(tk, &curr);
         if (!rest /* overflow  || curr > max*/) { return NULL; }
         *out = curr;
         if (*tk == '+' || *tk == '-') {
-            const char* rest = ae_range_parse_addr_num(tk+1, curr, max, out);
+            const char* rest = range_parse_addr_num(tk+1, curr, max, out);
             if (rest) { return rest; }
         }
         return rest;
     } 
 
     if (*tk == '+' || *tk == '-') {
-        const char* rest = ae_range_parse_addr_num(tk+1, curr, max, out);
+        const char* rest = range_parse_addr_num(tk+1, curr, max, out);
         if (rest) { return rest; }
     }
     return NULL;
 }
 
 
-const char* ad_range_parse_impl(
-    const char* tk, size_t current_line, size_t nlines, AeRange* range
-) {
-    range->no_range = false;
-
+const char* range_parse_impl(const char* tk, size_t current_line, size_t nlines, Range* range) {
     /* invalid input */
     if (!tk) { return NULL; }
     tk = skip_space(tk);
 
     /* empty string */
     if (!*tk) { 
-        puts("TODO: this does not happend 0");
-        range->end = range->beg = current_line;
-        range->no_range = true;
+        range->beg = current_line;
+        range->end = 0;
         return tk;
     }
 
     /* full range */
     if (*tk == '%') {
         ++tk;
-        *range = (AeRange){.beg=1, .end=nlines};
+        *range = (Range){.beg=1, .end=nlines};
         return tk;
     } 
 
@@ -112,25 +107,24 @@ const char* ad_range_parse_impl(
     if (*tk == ',') {
         ++tk;
         range->beg = current_line;
-        const char* rest = ae_range_parse_addr(tk, current_line, nlines, &range->end);
+        const char* rest = range_parse_addr(tk, current_line, nlines, &range->end);
         return rest? rest : tk;
     }
             
-
-    const char* rest = ae_range_parse_addr(tk, current_line, nlines, &range->beg);
+    const char* rest = range_parse_addr(tk, current_line, nlines, &range->beg);
     if (rest) { 
         /* Addr... */
         tk = skip_space(rest);
         if (*tk == ',') {
             ++tk;
             /* Addr,... */
-            rest = ae_range_parse_addr(tk, current_line, nlines, &range->end);
+            rest = range_parse_addr(tk, current_line, nlines, &range->end);
             if (rest) {
                 /* Addr,AddrEOF */
                 return rest;
             } else {
                 /* Addr,EOF */
-                range->end = nlines;
+                range->end = 0;
                 return tk;
             }
         } else {
@@ -140,17 +134,16 @@ const char* ad_range_parse_impl(
         }
     } else {
         /* emptyEOF */
-        *range = (AeRange){.beg=current_line, .end=current_line};
-        range->no_range = true;
+        *range = (Range){.beg=current_line, .end=0};
         return tk;
     }
 
 }
 
 inline const char*
-ad_range_parse(const char* tk, Session session[static 1], AeRange* range) {
+range_parse(const char* tk, Session session[static 1], Range* range) {
     TextBuf* aeb = AhCtxCurrentBuf(session);
     size_t current_line = aeb->current_line;
     size_t nlines       = textbuf_line_count(aeb);
-    return ad_range_parse_impl(tk, current_line, nlines, range);
+    return range_parse_impl(tk, current_line, nlines, range);
 }

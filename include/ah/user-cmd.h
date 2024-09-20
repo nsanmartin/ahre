@@ -74,7 +74,7 @@ line_num_to_right_offset(size_t lnum, TextBuf* aebuf, size_t* out) {
     return -1;
 }
 
-static inline int aecmd_print(Session session[static 1], AeRange range[static 1]) {
+static inline int aecmd_print(Session session[static 1], Range range[static 1]) {
     if (!range->beg  || range->beg > range->end) {
         fprintf(stderr, "! bad range\n");
         return -1;
@@ -105,7 +105,7 @@ static inline int aecmd_print(Session session[static 1], AeRange range[static 1]
     fwrite("\n", 1, 1, stdout);
     return 0;
 }
-static inline int aecmd_print_(Session session[static 1], AeRange range[static 1]) {
+static inline int aecmd_print_(Session session[static 1], Range range[static 1]) {
     TextBuf* aebuf = AhCtxCurrentBuf(session);
     if (textbuf_is_empty(aebuf)) {
         fprintf(stderr, "? empty buffer\n");

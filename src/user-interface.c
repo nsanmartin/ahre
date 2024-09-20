@@ -88,22 +88,22 @@ int ahcmd(Session session[static 1], const char* line) {
     return 0;
 }
 
-bool is_range_valid_or_no_range(Session session[static 1], AeRange r[static 1]) {
+bool is_range_valid_or_no_range(Session session[static 1], Range r[static 1]) {
     TextBuf* buf = AhCtxCurrentBuf(session);
     size_t nlines = textbuf_line_count(buf);
     return (r->beg <= r->end && r->end <= nlines)
-        || r->no_range;
+        || range_has_no_end(r);
 }
 
 int ah_ed_cmd(Session session[static 1], const char* line) {
     const char* rest = 0x0;
     if (!line) { return 0; }
-    AeRange range = {0};
-    line = ad_range_parse(line, session, &range);
+    Range range = {0};
+    line = range_parse(line, session, &range);
     if (!line || !is_range_valid_or_no_range(session, &range)) {
         puts("invalid range");
         return 0;
-    }
+    } else if (range.end == 0) range.end = range.beg; 
 
     if ((rest = substr_match(line, "quit", 1)) && !*rest) { session->quit = true; return 0;}
     if (textbuf_is_empty(AhCtxCurrentBuf(session))) { 
