@@ -20,6 +20,8 @@
 */
 
 
+/* internal linkage */
+
 static const char* parse_ull(const char* tk, long long unsigned* ullp) {
     if (!tk || !*tk) { return NULL; }
     char* endptr = 0x0;
