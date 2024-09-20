@@ -3,6 +3,8 @@
 #include <ah/wrappers.h>
 
 
+/* internal linkage */
+
 static Str next_word(const char* s) {
     if (!s || !*s) { return (Str){0}; }
     while (*s && isspace(*s)) { ++s; }
@@ -11,6 +13,9 @@ static Str next_word(const char* s) {
     if (s == end) { return (Str){0}; }
     return (Str){.s=s, .len=end-s};
 }
+
+
+/* external linkage */
 
 int lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* buf) {
     Str tags = next_word(tag);

@@ -1,7 +1,22 @@
 #include <ah/buf.h>
 
-/* static functions */
+/*  internal linkage */
 static int textbuf_append_line_indexes(TextBuf ab[static 1], char* data, size_t len);
+
+static int textbuf_append_line_indexes(TextBuf ab[static 1], char* data, size_t len) {
+    char* end = data + len;
+    char* it = data;
+
+    for(;it < end;) {
+        it = memchr(it, '\n', end-it);
+        if (!it || it >= end) { break; }
+        size_t index = textbuf_len(ab) + (it - data);
+        if(NULL == arlfn(size_t, append)(&ab->eols, &index)) { return -1; }
+        ++it;
+    }
+
+    return 0;
+}
 
 /* external linkage  */
 
@@ -29,18 +44,3 @@ inline int textbuf_append(TextBuf ab[static 1], char* data, size_t len) {
         || !buffn(char,append)(&ab->buf, (char*)data, len);
 }
 
-
-static int textbuf_append_line_indexes(TextBuf ab[static 1], char* data, size_t len) {
-    char* end = data + len;
-    char* it = data;
-
-    for(;it < end;) {
-        it = memchr(it, '\n', end-it);
-        if (!it || it >= end) { break; }
-        size_t index = textbuf_len(ab) + (it - data);
-        if(NULL == arlfn(size_t, append)(&ab->eols, &index)) { return -1; }
-        ++it;
-    }
-
-    return 0;
-}

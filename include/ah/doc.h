@@ -58,6 +58,4 @@ static inline void doc_update_url(Doc ad[static 1], char* url) {
 }
 ErrStr doc_fetch(UrlClient ahcurl[static 1], Doc ad[static 1]) ;
 
-int AhDocBufSummary(Doc ahdoc[static 1], BufOf(char)* buf) ;
-
 #endif

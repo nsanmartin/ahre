@@ -8,15 +8,18 @@
 #include <ah/utils.h>
 #include <ah/wrappers.h>
 
-constexpr size_t ah_max_url_len = 2048;
+/* internal linkage */
+static constexpr size_t MAX_URL_LEN = 2048;
+static constexpr size_t READ_FROM_FILE_BUFFER_LEN = 4096;
+static unsigned char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {0};
 
 
 static ErrStr lexbor_read_doc_from_url_or_file (UrlClient ahcurl[static 1], Doc ad[static 1]); 
 
 
-char* ah_urldup(const Str* url) {
+static char* str_url_dup(const Str* url) {
     if (str_is_empty(url)) { return 0x0; }
-    if (url->len >= ah_max_url_len) {
+    if (url->len >= MAX_URL_LEN) {
             perror("url too long");
             return 0x0;
     }
@@ -29,6 +32,46 @@ char* ah_urldup(const Str* url) {
 }
 
 
+static bool file_exists(const char* path) { return access(path, F_OK) == 0; }
+
+static ErrStr lexbor_read_doc_from_file(Doc ahdoc[static 1]) {
+    FILE* fp = fopen(ahdoc->url, "r");
+    if  (!fp) { return strerror(errno); }
+
+    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(ahdoc->doc)) {
+        return "Lex failed to init html document";
+    }
+
+    size_t bytes_read = 0;
+    while ((bytes_read = fread(read_from_file_buffer, 1, READ_FROM_FILE_BUFFER_LEN, fp))) {
+        if (LXB_STATUS_OK != lxb_html_document_parse_chunk(
+                ahdoc->doc,
+                read_from_file_buffer,
+                bytes_read
+            )
+        ) {
+            return "Failed to parse HTML chunk";
+        }
+    }
+    if (ferror(fp)) { fclose(fp); return strerror(errno); }
+    fclose(fp);
+
+    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_end(ahdoc->doc)) {
+        return "Lbx failed to parse html";
+    }
+    return Ok;
+}
+
+static ErrStr lexbor_read_doc_from_url_or_file (UrlClient ahcurl[static 1], Doc ad[static 1]) {
+    if (file_exists(ad->url)) {
+        return lexbor_read_doc_from_file(ad);
+    }
+    return curl_lexbor_fetch_document(ahcurl, ad);
+}
+
+
+/* external linkage */
+
 int doc_init(Doc d[static 1], const Str* url) {
     if (!d) { return -1; }
     lxb_html_document_t* document = lxb_html_document_create();
@@ -39,7 +82,7 @@ int doc_init(Doc d[static 1], const Str* url) {
 
     const char* u = NULL;
     if (!str_is_empty(url)){
-        u = ah_urldup(url);
+        u = str_url_dup(url);
         if (!u) {
             lxb_html_document_destroy(d->doc);
             return -1;
@@ -66,44 +109,4 @@ ErrStr doc_fetch(UrlClient ahcurl[static 1], Doc ad[static 1]) {
     return lexbor_read_doc_from_url_or_file (ahcurl, ad);
 }
 
-
-static bool file_exists(const char* path) { return access(path, F_OK) == 0; }
-
-static constexpr size_t READ_FROM_FILE_BUFFER_LEN = 4096;
-unsigned char _read_from_file_bufer[READ_FROM_FILE_BUFFER_LEN] = {0};
-
-static ErrStr lexbor_read_doc_from_file(Doc ahdoc[static 1]) {
-    FILE* fp = fopen(ahdoc->url, "r");
-    if  (!fp) { return strerror(errno); }
-
-    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(ahdoc->doc)) {
-        return "Lex failed to init html document";
-    }
-
-    size_t bytes_read = 0;
-    while ((bytes_read = fread(_read_from_file_bufer, 1, READ_FROM_FILE_BUFFER_LEN, fp))) {
-        if (LXB_STATUS_OK != lxb_html_document_parse_chunk(
-                ahdoc->doc,
-                _read_from_file_bufer,
-                bytes_read
-            )
-        ) {
-            return "Failed to parse HTML chunk";
-        }
-    }
-    if (ferror(fp)) { fclose(fp); return strerror(errno); }
-    fclose(fp);
-
-    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_end(ahdoc->doc)) {
-        return "Lbx failed to parse html";
-    }
-    return Ok;
-}
-
-static ErrStr lexbor_read_doc_from_url_or_file (UrlClient ahcurl[static 1], Doc ad[static 1]) {
-    if (file_exists(ad->url)) {
-        return lexbor_read_doc_from_file(ad);
-    }
-    return curl_lexbor_fetch_document(ahcurl, ad);
-}
 
