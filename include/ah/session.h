@@ -7,7 +7,7 @@
 
 typedef struct Session Session;
 
-typedef int (*AhUserLineCallback)(Session* session, const char*);
+typedef int (*UserLineCallback)(Session* session, const char*);
 
 
 typedef struct Session {
@@ -17,12 +17,12 @@ typedef struct Session {
     int (*user_line_callback)(Session* session, const char*);
 } Session;
 
-TextBuf* AhCtxCurrentBuf(Session session[static 1]);
-Doc* AhCtxCurrentDoc(Session session[static 1]);
+TextBuf* session_current_buf(Session session[static 1]);
+Doc* session_current_doc(Session session[static 1]);
 
-Session* AhCtxCreate(char* url, AhUserLineCallback callback);
-void AhCtxFree(Session* session) ;
-int ah_ed_cmd_print(Session session[static 1]);
+Session* session_create(char* url, UserLineCallback callback);
+void session_destroy(Session* session) ;
+int edcmd_print(Session session[static 1]);
 
 int AhCtxBufSummary(Session session[static 1]);
 #endif

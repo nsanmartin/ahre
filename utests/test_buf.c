@@ -11,7 +11,7 @@ int test_0(void) {
     char* str = "01\n02\n03";
     size_t len = 8;
 
-    size_t count = str_count_ocurrencies(str, len, '\n');
+    size_t count = mem_count_ocurrencies(str, len, '\n');
     utest_assert(count == 2, fail);
 
     TextBuf buf;

@@ -3,14 +3,15 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+#include <ah/debug.h>
+#include <ah/ranges.h>
+#include <ah/user-cmd.h>
+#include <ah/user-interface.h>
 #include <ah/utils.h>
 #include <ah/wrappers.h>
-#include <ah/user-interface.h>
-#include <ah/user-cmd.h>
-#include <ah/ranges.h>
 
 
-int ah_read_line_from_user(Session session[static 1]) {
+int read_line_from_user(Session session[static 1]) {
     char* line = 0x0;
     line = readline("");
     session->user_line_callback(session, line);
@@ -40,16 +41,16 @@ int ahcmd_set_url(Session session[static 1], const char* url) {
     puts("url");
     //Str u = (Str){.s=url, .len=strlen(url)};
     Str u;
-    if(StrInit(&u, url)) { return -1; }
+    if(str_init(&u, url)) { return -1; }
     trim_space(&u);
-    if (!StrIsEmpty(&u) && (!session->ahdoc->url || strncmp(u.s, session->ahdoc->url, u.len))) {
+    if (!str_is_empty(&u) && (!session->ahdoc->url || strncmp(u.s, session->ahdoc->url, u.len))) {
         doc_cleanup(session->ahdoc);
         if (doc_init(session->ahdoc, &u)) {
             puts("Doc init error");
             return -1;
         }
 
-        Doc* doc = AhCtxCurrentDoc(session);
+        Doc* doc = session_current_doc(session);
         if (doc_has_url(doc)) {
             ErrStr err = doc_fetch(session->ahcurl, doc);
             if (err) {
@@ -89,7 +90,7 @@ int ahcmd(Session session[static 1], const char* line) {
 }
 
 bool is_range_valid_or_no_range(Session session[static 1], Range r[static 1]) {
-    TextBuf* buf = AhCtxCurrentBuf(session);
+    TextBuf* buf = session_current_buf(session);
     size_t nlines = textbuf_line_count(buf);
     return (r->beg <= r->end && r->end <= nlines)
         || range_has_no_end(r);
@@ -106,24 +107,24 @@ int ah_ed_cmd(Session session[static 1], const char* line) {
     } else if (range.end == 0) range.end = range.beg; 
 
     if ((rest = substr_match(line, "quit", 1)) && !*rest) { session->quit = true; return 0;}
-    if (textbuf_is_empty(AhCtxCurrentBuf(session))) { 
+    if (textbuf_is_empty(session_current_buf(session))) { 
         puts("empty buffer");
         return 0;
     }
 
     printf("range: %lu, %lu\n", range.beg, range.end);
-    AhCtxCurrentBuf(session)->current_line = range.end;
+    session_current_buf(session)->current_line = range.end;
 
     if ((rest = substr_match(line, "a", 1)) && !*rest) { return aecmd_print_all(session); }
     if ((rest = substr_match(line, "l", 1)) && !*rest) { return aecmd_print_all_lines_nums(session); }
-    if ((rest = substr_match(line, "g", 1)) && *rest) { return aecmd_global(session, rest); }
+    if ((rest = substr_match(line, "g", 1)) && *rest) { return edcmd_global(session, rest); }
     if ((rest = substr_match(line, "print", 1)) && !*rest) { return aecmd_print(session, &range); }
-    if ((rest = substr_match(line, "write", 1))) { return aecmd_write(rest, session); }
+    if ((rest = substr_match(line, "write", 1))) { return edcmd_write(rest, session); }
     puts("unknown command");
     return 0;
 }
 
-int ah_process_line(Session session[static 1], const char* line) {
+int process_line(Session session[static 1], const char* line) {
     if (!line) { session->quit = true; return 0; }
     line = skip_space(line);
 

@@ -2,12 +2,13 @@
 #define __AHRE_USER_CMD_H__
 
 #include <ah/ranges.h>
+#include <ah/user-interface.h>
 
-int aecmd_global(Session session[static 1],  const char* rest);
+int edcmd_global(Session session[static 1],  const char* rest);
 
-int ahcmd_w(char* fname, Session session[static 1]);
+int ahcmd_write(char* fname, Session session[static 1]);
 int ahcmd_fetch(Session session[static 1]) {
-    Doc* ahdoc = AhCtxCurrentDoc(session);
+    Doc* ahdoc = session_current_doc(session);
     if (ahdoc->url) {
         ErrStr err_str = doc_fetch(session->ahcurl, ahdoc);
         if (err_str) { return ah_log_error(err_str, ErrCurl); }
@@ -19,23 +20,23 @@ int ahcmd_fetch(Session session[static 1]) {
 
 
 static inline int ahcmd_ahre(Session session[static 1]) {
-    Doc* ad = AhCtxCurrentDoc(session);
+    Doc* ad = session_current_doc(session);
     return lexbor_href_write(ad->doc, &ad->cache.hrefs, &ad->aebuf);
 }
 
 static inline int ahcmd_clear(Session session[static 1]) {
-    BufOf(char)* buf = &AhCtxCurrentBuf(session)->buf;
+    BufOf(char)* buf = &session_current_buf(session)->buf;
     if (buf->len) { free(buf->items); *buf = (BufOf(char)){0}; }
     return 0;
 }
 
 static inline int ahcmd_tag(const char* rest, Session session[static 1]) {
-    Doc* ahdoc = AhCtxCurrentDoc(session);
+    Doc* ahdoc = session_current_doc(session);
     return lexbor_cp_tag(rest, ahdoc->doc, &ahdoc->aebuf.buf);
 }
 
 static inline int ahcmd_text(Session* session) {
-    Doc* ahdoc = AhCtxCurrentDoc(session);
+    Doc* ahdoc = session_current_doc(session);
     return lexbor_html_text_append(ahdoc->doc, &ahdoc->aebuf);
 }
 
@@ -80,7 +81,7 @@ static inline int aecmd_print(Session session[static 1], Range range[static 1]) 
         return -1;
     }
 
-    TextBuf* aebuf = AhCtxCurrentBuf(session);
+    TextBuf* aebuf = session_current_buf(session);
     if (textbuf_is_empty(aebuf)) {
         fprintf(stderr, "? empty buffer\n");
         return -1;
@@ -106,7 +107,7 @@ static inline int aecmd_print(Session session[static 1], Range range[static 1]) 
     return 0;
 }
 static inline int aecmd_print_(Session session[static 1], Range range[static 1]) {
-    TextBuf* aebuf = AhCtxCurrentBuf(session);
+    TextBuf* aebuf = session_current_buf(session);
     if (textbuf_is_empty(aebuf)) {
         fprintf(stderr, "? empty buffer\n");
         return -1;
@@ -150,14 +151,8 @@ static inline int aecmd_print_(Session session[static 1], Range range[static 1])
     return 0;
 }
 
-static inline int aecmd_print_all(Session session[static 1]) {
-    BufOf(char)* buf = &AhCtxCurrentBuf(session)->buf;
-    fwrite(buf->items, 1, buf->len, stdout);
-    return 0;
-}
 
-int aecmd_print_all_lines_nums(Session session[static 1]);
-int aecmd_write(const char* rest, Session session[static 1]);
+int edcmd_write(const char* rest, Session session[static 1]);
 
 #endif
 

@@ -15,7 +15,7 @@ static ErrStr lexbor_read_doc_from_url_or_file (UrlClient ahcurl[static 1], Doc 
 
 
 char* ah_urldup(const Str* url) {
-    if (StrIsEmpty(url)) { return 0x0; }
+    if (str_is_empty(url)) { return 0x0; }
     if (url->len >= ah_max_url_len) {
             perror("url too long");
             return 0x0;
@@ -38,7 +38,7 @@ int doc_init(Doc d[static 1], const Str* url) {
     }
 
     const char* u = NULL;
-    if (!StrIsEmpty(url)){
+    if (!str_is_empty(url)){
         u = ah_urldup(url);
         if (!u) {
             lxb_html_document_destroy(d->doc);
@@ -53,7 +53,7 @@ int doc_init(Doc d[static 1], const Str* url) {
 Doc* doc_create(char* url) {
     Doc* rv = ah_malloc(sizeof(Doc));
     Str u;
-    if (StrInit(&u, url)) { return NULL; }
+    if (str_init(&u, url)) { return NULL; }
     if (doc_init(rv, &u)) {
         destroy(rv);
         return NULL;
@@ -64,35 +64,6 @@ Doc* doc_create(char* url) {
 
 ErrStr doc_fetch(UrlClient ahcurl[static 1], Doc ad[static 1]) {
     return lexbor_read_doc_from_url_or_file (ahcurl, ad);
-}
-
-/*
- * Functions that append summary of the content for debugging purposes
- */
-int AhDocBufSummary(Doc ahdoc[static 1], BufOf(char)* buf) {
-
-    buf_append_lit("Doc: ", buf);
-    if (buf_append_hexp(ahdoc, buf)) { return -1; }
-    buf_append_lit("\n", buf);
-
-    if (ahdoc->url) {
-        buf_append_lit(" url: ", buf);
-       if (buffn(char,append)(buf, (char*)ahdoc->url, strlen(ahdoc->url))) {
-           return -1;
-       }
-       buf_append_lit("\n", buf);
-
-    } else {
-       buf_append_lit(" none\n", buf);
-
-    }
-    if (ahdoc->doc) {
-        buf_append_lit(" doc: ", buf);
-        if (buf_append_hexp(ahdoc->doc, buf)) { return -1; }
-        buf_append_lit("\n", buf);
-
-    }
-    return 0;
 }
 
 

@@ -1,16 +1,16 @@
 #include <ah/session.h>
 
 
-inline Doc* AhCtxCurrentDoc(Session session[static 1]) {
+inline Doc* session_current_doc(Session session[static 1]) {
     return session->ahdoc;
 }
 
-inline TextBuf* AhCtxCurrentBuf(Session session[static 1]) {
-    return &AhCtxCurrentDoc(session)->aebuf;
+inline TextBuf* session_current_buf(Session session[static 1]) {
+    return &session_current_doc(session)->aebuf;
 }
 
 
-Session* AhCtxCreate(char* url, AhUserLineCallback callback) {
+Session* session_create(char* url, UserLineCallback callback) {
     Session* rv = ah_malloc(sizeof(Session));
     *rv = (Session){0};
     if (!rv) {
@@ -49,24 +49,10 @@ exit_fail:
     return 0x0;
 }
 
-void AhCtxFree(Session* ah) {
+void session_destroy(Session* ah) {
     doc_destroy(ah->ahdoc);
     url_client_destroy(ah->ahcurl);
     destroy(ah);
 }
 
 
-/* debug function */
-int AhCtxBufSummary(Session session[static 1]) {
-    BufOf(char)* buf = &AhCtxCurrentBuf(session)->buf;
-    if (session->ahcurl) {
-        if(AhCurlBufSummary(session->ahcurl, buf)) { return -1; }
-    } else { buf_append_lit("Not ahcurl\n", buf); }
-
-    if (session->ahdoc) {
-        AhDocBufSummary(session->ahdoc, buf);
-        ahdoc_cache_buffer_summary(&session->ahdoc->cache, buf);
-    } else { buf_append_lit("Not ahdoc\n", buf); }
-
-    return 0;
-}

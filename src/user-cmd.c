@@ -18,10 +18,11 @@ Str parse_pattern(const char* tk) {
     }
     return res;
 }
+
 /* ah cmds */
 
-int ahcmd_w(const char* fname, Session session[static 1]) {
-    BufOf(char)* buf = &AhCtxCurrentBuf(session)->buf;
+int ahcmd_write(const char* fname, Session session[static 1]) {
+    BufOf(char)* buf = &session_current_buf(session)->buf;
     if (fname && *(fname = skip_space(fname))) {
         FILE* fp = fopen(fname, "a");
         if (!fp) {
@@ -40,8 +41,8 @@ int ahcmd_w(const char* fname, Session session[static 1]) {
 
 
 /* ed cmds */
-int aecmd_write(const char* rest, Session session[static 1]) {
-    BufOf(char)* buf = &AhCtxCurrentBuf(session)->buf;
+int edcmd_write(const char* rest, Session session[static 1]) {
+    BufOf(char)* buf = &session_current_buf(session)->buf;
     if (!rest || !*rest) { puts("cannot write without file arg"); return 0; }
     FILE* fp = fopen(rest, "w");
     if (!fp) {
@@ -53,40 +54,14 @@ int aecmd_write(const char* rest, Session session[static 1]) {
     return 0;
 }
 
-int aecmd_print_all_lines_nums(Session session[static 1]) {
-    TextBuf* ab = AhCtxCurrentBuf(session);
-    BufOf(char)* buf = &ab->buf;
-    char* items = buf->items;
-    size_t len = buf->len;
 
-    
-
-    for (size_t lnum = 1; /*items && len && lnum < 40*/ ; ++lnum) {
-        char* next = memchr(items, '\n', len);
-        if (next >= buf->items + buf->len) {
-            fprintf(stderr, "Error: print all lines nums\n");
-        }
-        printf("%ld: ", lnum);
-
-        if (next) {
-            size_t line_len = 1+next-items;
-            fwrite(items, 1, line_len, stdout);
-            items += line_len;
-            len -= line_len;
-        } else {
-            fwrite(items, 1, len, stdout);
-            break;
-        }
-    }
-    return 0;
-}
-
-int aecmd_global(Session session[static 1],  const char* rest) {
+int edcmd_global(Session session[static 1],  const char* rest) {
     (void)session;
     Str pattern = parse_pattern(rest);
     if (!pattern.s || !pattern.len) { return -1; }
     printf("pattern: %s\n", pattern.s);
     return 0;
 }
+
 
 

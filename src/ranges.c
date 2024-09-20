@@ -142,7 +142,7 @@ const char* range_parse_impl(const char* tk, size_t current_line, size_t nlines,
 
 inline const char*
 range_parse(const char* tk, Session session[static 1], Range* range) {
-    TextBuf* aeb = AhCtxCurrentBuf(session);
+    TextBuf* aeb = session_current_buf(session);
     size_t current_line = aeb->current_line;
     size_t nlines       = textbuf_line_count(aeb);
     return range_parse_impl(tk, current_line, nlines, range);
