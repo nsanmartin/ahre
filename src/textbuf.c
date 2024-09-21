@@ -22,7 +22,7 @@ static int textbuf_append_line_indexes(TextBuf ab[static 1], char* data, size_t 
 
 /* external linkage  */
 
-inline void textbuf_cleanup(TextBuf b[static 1]) {
+void textbuf_cleanup(TextBuf b[static 1]) {
     buffn(char, clean)(&b->buf);
     *b = (TextBuf){.current_line=1};
 }
@@ -41,7 +41,7 @@ inline size_t textbuf_line_count(TextBuf ab[static 1]) {
 }
 
 
-inline int textbuf_append(TextBuf ab[static 1], char* data, size_t len) {
+int textbuf_append(TextBuf ab[static 1], char* data, size_t len) {
     return textbuf_append_line_indexes(ab, data, len)
         || !buffn(char,append)(&ab->buf, (char*)data, len);
 }

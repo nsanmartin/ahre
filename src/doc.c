@@ -34,18 +34,18 @@ static char* str_url_dup(const Str* url) {
 
 static bool file_exists(const char* path) { return access(path, F_OK) == 0; }
 
-static ErrStr lexbor_read_doc_from_file(Doc ahdoc[static 1]) {
-    FILE* fp = fopen(ahdoc->url, "r");
+static ErrStr lexbor_read_doc_from_file(Doc doc[static 1]) {
+    FILE* fp = fopen(doc->url, "r");
     if  (!fp) { return strerror(errno); }
 
-    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(ahdoc->doc)) {
+    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(doc->lxbdoc)) {
         return "Lex failed to init html document";
     }
 
     size_t bytes_read = 0;
     while ((bytes_read = fread(read_from_file_buffer, 1, READ_FROM_FILE_BUFFER_LEN, fp))) {
         if (LXB_STATUS_OK != lxb_html_document_parse_chunk(
-                ahdoc->doc,
+                doc->lxbdoc,
                 read_from_file_buffer,
                 bytes_read
             )
@@ -56,10 +56,10 @@ static ErrStr lexbor_read_doc_from_file(Doc ahdoc[static 1]) {
     if (ferror(fp)) { fclose(fp); return strerror(errno); }
     fclose(fp);
 
-    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_end(ahdoc->doc)) {
+    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_end(doc->lxbdoc)) {
         return "Lbx failed to parse html";
     }
-    return Ok;
+    return 0x0;
 }
 
 static ErrStr lexbor_read_doc_from_url_or_file (UrlClient url_client[static 1], Doc ad[static 1]) {
@@ -72,7 +72,7 @@ static ErrStr lexbor_read_doc_from_url_or_file (UrlClient url_client[static 1], 
 
 /* external linkage */
 
-int doc_init(Doc d[static 1], const Str* url) {
+int doc_init(Doc d[static 1], const Str url[static 1]) {
     if (!d) { return -1; }
     lxb_html_document_t* document = lxb_html_document_create();
     if (!document) {
@@ -84,12 +84,12 @@ int doc_init(Doc d[static 1], const Str* url) {
     if (!str_is_empty(url)){
         u = str_url_dup(url);
         if (!u) {
-            lxb_html_document_destroy(d->doc);
+            lxb_html_document_destroy(d->lxbdoc);
             return -1;
         }
     }
 
-    *d = (Doc){ .url=u, .doc=document, .aebuf=(TextBuf){.current_line=1} };
+    *d = (Doc){ .url=u, .lxbdoc=document, .textbuf=(TextBuf){.current_line=1} };
     return 0;
 }
 
@@ -104,23 +104,23 @@ Doc* doc_create(char* url) {
     return rv;
 }
 
-inline void doc_reset(Doc* ahdoc) {
-    doc_cache_cleanup(&ahdoc->cache);
-    lxb_html_document_clean(ahdoc->doc);
-    textbuf_reset(&ahdoc->aebuf);
-    destroy((char*)ahdoc->url);
+void doc_reset(Doc doc[static 1]) {
+    doc_cache_cleanup(&doc->cache);
+    lxb_html_document_clean(doc->lxbdoc);
+    textbuf_reset(&doc->textbuf);
+    destroy((char*)doc->url);
 }
 
-inline void doc_cleanup(Doc* ahdoc) {
-    doc_cache_cleanup(&ahdoc->cache);
-    lxb_html_document_destroy(ahdoc->doc);
-    textbuf_cleanup(&ahdoc->aebuf);
-    destroy((char*)ahdoc->url);
+void doc_cleanup(Doc doc[static 1]) {
+    doc_cache_cleanup(&doc->cache);
+    lxb_html_document_destroy(doc->lxbdoc);
+    textbuf_cleanup(&doc->textbuf);
+    destroy((char*)doc->url);
 }
 
-inline void doc_destroy(Doc* ahdoc) {
-    doc_cleanup(ahdoc);
-    std_free(ahdoc);
+inline void doc_destroy(Doc* doc) {
+    doc_cleanup(doc);
+    std_free(doc);
 }
 
 ErrStr doc_fetch(UrlClient url_client[static 1], Doc ad[static 1]) {

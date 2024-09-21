@@ -1,2 +1,9 @@
 Retrieve anchor's href attribute's values from html documents
 
+Build
+=====
+
+git clone
+git submodule update --init
+
+

@@ -12,6 +12,6 @@ typedef struct UrlClient {
 
 
 UrlClient* url_client_create(void);
-void url_client_destroy(UrlClient* ac);
+void url_client_destroy(UrlClient* url_client);
 
 #endif

@@ -7,5 +7,5 @@
 
 typedef struct { size_t beg; size_t end; } Range;
 
-const char* range_parse(const char* tk, Session session[static 1], Range* range);
+const char* parse_range(const char* tk, Session session[static 1], Range range[static 1]);
 #endif

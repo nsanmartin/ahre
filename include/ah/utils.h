@@ -36,7 +36,11 @@ static inline Error ah_log_error(const char* msg, Error e) {
     perror(msg); return e;
 }
 
-static inline const char* skip_space(const char* s) { for (; *s && isspace(*s); ++s); return s; }
+static inline const char* skip_space(const char* s) {
+    for (; *s && isspace(*s); ++s);
+    return s;
+}
+
 static inline const char* next_space(const char* l) {
     while (*l && !isspace(*l)) { ++l; }
     return l;

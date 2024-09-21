@@ -31,15 +31,15 @@ int dbg_print_all_lines_nums(Session session[static 1]) {
 /*
  * Functions that append summary of the content for debugging purposes
  */
-static int textbuf_summary(Doc ahdoc[static 1], BufOf(char)* buf) {
+static int textbuf_summary(Doc doc[static 1], BufOf(char)* buf) {
 
     buf_append_lit("Doc: ", buf);
-    if (buf_append_hexp(ahdoc, buf)) { return -1; }
+    if (buf_append_hexp(doc, buf)) { return -1; }
     buf_append_lit("\n", buf);
 
-    if (ahdoc->url) {
+    if (doc->url) {
         buf_append_lit(" url: ", buf);
-       if (buffn(char,append)(buf, (char*)ahdoc->url, strlen(ahdoc->url))) {
+       if (buffn(char,append)(buf, (char*)doc->url, strlen(doc->url))) {
            return -1;
        }
        buf_append_lit("\n", buf);
@@ -48,9 +48,9 @@ static int textbuf_summary(Doc ahdoc[static 1], BufOf(char)* buf) {
        buf_append_lit(" none\n", buf);
 
     }
-    if (ahdoc->doc) {
-        buf_append_lit(" doc: ", buf);
-        if (buf_append_hexp(ahdoc->doc, buf)) { return -1; }
+    if (doc->lxbdoc) {
+        buf_append_lit(" lxbdoc: ", buf);
+        if (buf_append_hexp(doc->lxbdoc, buf)) { return -1; }
         buf_append_lit("\n", buf);
 
     }
@@ -88,10 +88,10 @@ int dbg_session_summary(Session session[static 1]) {
         if(url_client_summary(session->url_client, buf)) { return -1; }
     } else { buf_append_lit("Not url_client\n", buf); }
 
-    if (session->ahdoc) {
-        textbuf_summary(session->ahdoc, buf);
-        ahdoc_cache_buffer_summary(&session->ahdoc->cache, buf);
-    } else { buf_append_lit("Not ahdoc\n", buf); }
+    if (session->doc) {
+        textbuf_summary(session->doc, buf);
+        doc_cache_buffer_summary(&session->doc->cache, buf);
+    } else { buf_append_lit("Not doc\n", buf); }
 
     return 0;
 }

@@ -18,26 +18,26 @@ typedef struct UrlClient UrlClient;
 
 typedef struct {
     const char* url;
-    lxb_html_document_t* doc;
-    TextBuf aebuf;
+    lxb_html_document_t* lxbdoc;
+    TextBuf textbuf;
     DocCache cache;
 } Doc;
 
 
-void doc_reset(Doc* ahdoc) ;
-void doc_cleanup(Doc* ahdoc) ;
-void doc_destroy(Doc* ahdoc) ;
+void doc_reset(Doc doc[static 1]) ;
+void doc_cleanup(Doc doc[static 1]) ;
+void doc_destroy(Doc* doc) ;
 
-int doc_init(Doc d[static 1], const Str* url);
+int doc_init(Doc d[static 1], const Str url[static 1]);
 
 
 Doc* doc_create(char* url);
 
-static inline bool doc_has_url(Doc ad[static 1]) {
-    return ad->url != NULL;
+static inline bool doc_has_url(Doc doc[static 1]) {
+    return doc->url != NULL;
 }
 
-void doc_update_url(Doc ad[static 1], char* url) ;
-ErrStr doc_fetch(UrlClient url_client[static 1], Doc ad[static 1]) ;
+void doc_update_url(Doc doc[static 1], char* url) ;
+ErrStr doc_fetch(UrlClient url_client[static 1], Doc doc[static 1]) ;
 
 #endif

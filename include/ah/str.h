@@ -17,7 +17,7 @@ static inline int str_init(Str s[static 1], const char* cs) {
     return cs && !s->len ? -1 : 0;
 }
 
-bool str_is_empty(const Str* s);
+bool str_is_empty(const Str s[static 1]);
 
 size_t mem_count_ocurrencies(char* data, size_t len, char c);
 

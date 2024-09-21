@@ -44,16 +44,16 @@ int cmd_set_url(Session session[static 1], const char* url) {
     Str u;
     if(str_init(&u, url)) { return -1; }
     trim_space(&u);
-    if (!str_is_empty(&u) && (!session->ahdoc->url || strncmp(u.s, session->ahdoc->url, u.len))) {
-        doc_cleanup(session->ahdoc);
-        if (doc_init(session->ahdoc, &u)) {
+    if (!str_is_empty(&u) && (!session->doc->url || strncmp(u.s, session->doc->url, u.len))) {
+        doc_cleanup(session->doc);
+        if (doc_init(session->doc, &u)) {
             puts("Doc init error");
             return -1;
         }
 
-        Doc* doc = session_current_doc(session);
-        if (doc_has_url(doc)) {
-            ErrStr err = doc_fetch(session->url_client, doc);
+        Doc* lxbdoc = session_current_doc(session);
+        if (doc_has_url(lxbdoc)) {
+            ErrStr err = doc_fetch(session->url_client, lxbdoc);
             if (err) {
                 puts("TODO:cleanup");
                 fprintf(stderr, "error fetching url: %s\n", err);
@@ -62,7 +62,7 @@ int cmd_set_url(Session session[static 1], const char* url) {
         }
         printf("set with url: %s\n", url);
     } else {
-       printf("url: %s\n",  session->ahdoc->url ? session->ahdoc->url : "<no url>");
+       printf("url: %s\n",  session->doc->url ? session->doc->url : "<no url>");
     }
     return 0;
 }
@@ -74,29 +74,28 @@ int ahcmd(Session session[static 1], const char* line) {
 
     if ((rest = substr_match(line, "url", 1))) { return cmd_set_url(session, rest); }
 
-    if (!session->ahdoc->url || !session->ahdoc->url || !session->url_client) {
+    if (!session->doc->url || !session->doc->url || !session->url_client) {
         ah_log_info("no document"); return 0;
     }
 
-    if ((rest = substr_match(line, "ahref", 2)) && !*rest) { return ahcmd_ahre(session); }
+    if ((rest = substr_match(line, "ahref", 2)) && !*rest) { return cmd_ahre(session); }
     if ((rest = substr_match(line, "attr", 2))) { puts("TODO: attr"); }
     if ((rest = substr_match(line, "class", 3))) { puts("TODO: class"); }
-    if ((rest = substr_match(line, "clear", 3))) { return ahcmd_clear(session); }
-    if ((rest = substr_match(line, "fetch", 1))) { return ahcmd_fetch(session); }
+    if ((rest = substr_match(line, "clear", 3))) { return cmd_clear(session); }
+    if ((rest = substr_match(line, "fetch", 1))) { return cmd_fetch(session); }
     if ((rest = substr_match(line, "summary", 1))) { return dbg_session_summary(session); }
-    if ((rest = substr_match(line, "tag", 2))) { return ahcmd_tag(rest, session); }
-    if ((rest = substr_match(line, "text", 2))) { return ahcmd_text(session); }
+    if ((rest = substr_match(line, "tag", 2))) { return cmd_tag(rest, session); }
+    if ((rest = substr_match(line, "text", 2))) { return cmd_text(session); }
 
     return 0;
 }
 
-int ah_ed_cmd(Session session[static 1], const char* line) {
+int ed_eval(Session session[static 1], const char* line) {
     const char* rest = 0x0;
     if (!line) { return 0; }
     Range range = {0};
-    line = range_parse(line, session, &range);
-    //if (!line || !is_range_valid_or_no_range(session, &range)) {
-    if (!line) { // || (!range_has_no_end(&range) && !isrange_valid(&range, 0))) { //!is_range_valid_or_no_range(session, &range)) {
+    line = parse_range(line, session, &range);
+    if (!line) {
         puts("invalid range");
         return 0;
     } else if (range.end == 0) range.end = range.beg; 
@@ -110,11 +109,11 @@ int ah_ed_cmd(Session session[static 1], const char* line) {
     printf("range: %lu, %lu\n", range.beg, range.end);
     session_current_buf(session)->current_line = range.end;
 
-    if ((rest = substr_match(line, "a", 1)) && !*rest) { return aecmd_print_all(session); }
+    if ((rest = substr_match(line, "a", 1)) && !*rest) { return ed_print_all(session); }
     if ((rest = substr_match(line, "l", 1)) && !*rest) { return dbg_print_all_lines_nums(session); }
-    if ((rest = substr_match(line, "g", 1)) && *rest) { return edcmd_global(session, rest); }
-    if ((rest = substr_match(line, "print", 1)) && !*rest) { return aecmd_print(session, &range); }
-    if ((rest = substr_match(line, "write", 1))) { return edcmd_write(rest, session); }
+    if ((rest = substr_match(line, "g", 1)) && *rest) { return ed_global(session, rest); }
+    if ((rest = substr_match(line, "print", 1)) && !*rest) { return ed_print(session, &range); }
+    if ((rest = substr_match(line, "write", 1))) { return ed_write(rest, session); }
     puts("unknown command");
     return 0;
 }
@@ -129,7 +128,7 @@ int process_line(Session session[static 1], const char* line) {
         if (ahcmd(session, line + 1)) { return -1; }
 
     } else {
-        return ah_ed_cmd(session, line);
+        return ed_eval(session, line);
     }
 
     return 0;

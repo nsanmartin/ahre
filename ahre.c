@@ -12,21 +12,21 @@ void print_help(char* program) { printf("usage: %s <url>\n", program); }
 
 
 int loop_lexbor(char* url) {
-    Session* ctx = session_create(url, process_line);
-    if (!ctx) {
+    Session* session = session_create(url, process_line);
+    if (!session) {
         /* TODO: do not ext, ask for another url instead */
         return EXIT_FAILURE;
     }
 
-    while (!ctx->quit) {
-        int err = read_line_from_user(ctx);
+    while (!session->quit) {
+        int err = read_line_from_user(session);
         if (err) {
             fprintf(stderr, "Ah re: error reading line, aborting.\n");
             return EXIT_FAILURE;
         }
     }
 
-    destroy(ctx);
+    destroy(session);
     return EXIT_SUCCESS;
 }
 

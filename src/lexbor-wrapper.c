@@ -38,20 +38,6 @@ serializer_callback(const lxb_char_t *data, size_t len, void *session) {
 }
 
 
-lxb_inline void
-serialize_node(lxb_dom_node_t *node)
-{
-    lxb_status_t status;
-
-    status = lxb_html_serialize_pretty_cb(node, LXB_HTML_SERIALIZE_OPT_UNDEF,
-                                          0, serializer_callback, NULL);
-    if (status != LXB_STATUS_OK) {
-        FAILED("Failed to serialization HTML tree");
-    }
-}
-
-
-
 lxb_inline lxb_status_t serialize(lxb_dom_node_t *node) {
     return lxb_html_serialize_pretty_tree_cb(
         node, LXB_HTML_SERIALIZE_OPT_UNDEF, 0, serializer_callback, NULL
@@ -127,7 +113,7 @@ int ahre_append_href(lxb_dom_element_t* element, void* aeBuf) {
 int lexbor_href_write(
     lxb_html_document_t document[static 1],
     lxb_dom_collection_t** hrefs,
-    TextBuf* buf
+    TextBuf* textbuf
 ) {
     if (!*hrefs) {
         if(!(*hrefs = lexbor_anchor_collection_from_doc(document))) {
@@ -135,7 +121,7 @@ int lexbor_href_write(
         }
     }
 
-    if(lexbor_foreach_href(*hrefs, ahre_append_href, (void*)buf)) {
+    if(lexbor_foreach_href(*hrefs, ahre_append_href, (void*)textbuf)) {
         return -1;
     }
     return 0;
@@ -152,6 +138,10 @@ void print_html(lxb_html_document_t* document) {
 int
 lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf) {
     lxb_dom_node_t *node = lxb_dom_interface_node(document->body);
+    if (!node) {
+        puts("No lxb doc");
+        return -1;
+    }
     size_t len = 0;
     lxb_char_t* text = lxb_dom_node_text_content(node, &len);
     if (textbuf_append(buf, (char*)text, len)) { return -1; }

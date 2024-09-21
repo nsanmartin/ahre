@@ -30,9 +30,9 @@ exit_fail:
 }
 
 
-void url_client_destroy(UrlClient* ac) {
-    curl_easy_cleanup(ac->curl);
-    std_free(ac);
+void url_client_destroy(UrlClient* url_client) {
+    curl_easy_cleanup(url_client->curl);
+    std_free(url_client);
 }
 
 

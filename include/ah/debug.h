@@ -3,7 +3,7 @@
 
 #include <ah/session.h>
 
-static inline int aecmd_print_all(Session session[static 1]) {
+static inline int ed_print_all(Session session[static 1]) {
     BufOf(char)* buf = &session_current_buf(session)->buf;
     fwrite(buf->items, 1, buf->len, stdout);
     return 0;

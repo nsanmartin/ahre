@@ -21,7 +21,7 @@ Str parse_pattern(const char* tk) {
 
 /* ah cmds */
 
-int ahcmd_write(const char* fname, Session session[static 1]) {
+int cmd_write(const char* fname, Session session[static 1]) {
     BufOf(char)* buf = &session_current_buf(session)->buf;
     if (fname && *(fname = skip_space(fname))) {
         FILE* fp = fopen(fname, "a");
@@ -41,7 +41,7 @@ int ahcmd_write(const char* fname, Session session[static 1]) {
 
 
 /* ed cmds */
-int edcmd_write(const char* rest, Session session[static 1]) {
+int ed_write(const char* rest, Session session[static 1]) {
     BufOf(char)* buf = &session_current_buf(session)->buf;
     if (!rest || !*rest) { puts("cannot write without file arg"); return 0; }
     FILE* fp = fopen(rest, "w");
@@ -55,7 +55,7 @@ int edcmd_write(const char* rest, Session session[static 1]) {
 }
 
 
-int edcmd_global(Session session[static 1],  const char* rest) {
+int ed_global(Session session[static 1],  const char* rest) {
     (void)session;
     Str pattern = parse_pattern(rest);
     if (!pattern.s || !pattern.len) { return -1; }
