@@ -27,16 +27,16 @@ ErrStr cmd_write(const char* fname, Session session[static 1]) {
         FILE* fp = fopen(fname, "a");
         if (!fp) {
             fprintf(stderr, "append: could not open file: %s\n", fname);
-            return -1;
+            return  "append: could not open file";
         }
         if (fwrite(buf->items, 1, buf->len, fp) != buf->len) {
             fprintf(stderr, "append: error writing to file: %s\n", fname);
-            return -1;
+            return "append: error writing to file";
         }
         return 0;
     }
     puts("append: fname missing");
-    return -1;
+    return "append: fname missing";
 }
 
 
