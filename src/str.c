@@ -16,7 +16,7 @@ mem_count_ocurrencies(char* data, size_t len, char c) {
 }
 
 
-ErrStr mem_get_indexes(char* data, size_t len, size_t offset, char c, ArlOf(size_t)* indexes) {
+Err mem_get_indexes(char* data, size_t len, size_t offset, char c, ArlOf(size_t)* indexes) {
     char* end = data + len;
     char* it = data;
 
@@ -28,7 +28,7 @@ ErrStr mem_get_indexes(char* data, size_t len, size_t offset, char c, ArlOf(size
         ++it;
     }
 
-    return NULL;
+    return Ok;
 }
 
 inline bool str_is_empty(const Str s[static 1]) { return !s->s || !s->len; }

@@ -14,7 +14,7 @@ static constexpr size_t READ_FROM_FILE_BUFFER_LEN = 4096;
 static unsigned char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {0};
 
 
-static ErrStr lexbor_read_doc_from_url_or_file (UrlClient url_client[static 1], Doc ad[static 1]); 
+static Err lexbor_read_doc_from_url_or_file (UrlClient url_client[static 1], Doc ad[static 1]); 
 
 
 static char* str_url_dup(const Str* url) {
@@ -34,7 +34,7 @@ static char* str_url_dup(const Str* url) {
 
 static bool file_exists(const char* path) { return access(path, F_OK) == 0; }
 
-static ErrStr lexbor_read_doc_from_file(Doc doc[static 1]) {
+static Err lexbor_read_doc_from_file(Doc doc[static 1]) {
     FILE* fp = fopen(doc->url, "r");
     if  (!fp) { return strerror(errno); }
 
@@ -62,7 +62,7 @@ static ErrStr lexbor_read_doc_from_file(Doc doc[static 1]) {
     return 0x0;
 }
 
-static ErrStr lexbor_read_doc_from_url_or_file (UrlClient url_client[static 1], Doc ad[static 1]) {
+static Err lexbor_read_doc_from_url_or_file (UrlClient url_client[static 1], Doc ad[static 1]) {
     if (file_exists(ad->url)) {
         return lexbor_read_doc_from_file(ad);
     }
@@ -123,7 +123,7 @@ inline void doc_destroy(Doc* doc) {
     std_free(doc);
 }
 
-ErrStr doc_fetch(UrlClient url_client[static 1], Doc ad[static 1]) {
+Err doc_fetch(UrlClient url_client[static 1], Doc ad[static 1]) {
     return lexbor_read_doc_from_url_or_file (url_client, ad);
 }
 

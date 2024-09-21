@@ -75,6 +75,11 @@ test_buf: utests/test_buf.c build/str.o
 	$(CC) $(CFLAGS) -I. -I$(INCLUDE) -Iutests -o build/$@ $^ \
 		-lcurl -llexbor -lreadline
 
+test_error: utests/test_error.c 
+	$(CC) $(CFLAGS) -I. -I$(INCLUDE) -Iutests -o build/$@ $^ \
+		-lcurl -llexbor -lreadline
+
+
 
 tags:
 	ctags -R .

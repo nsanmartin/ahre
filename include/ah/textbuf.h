@@ -18,11 +18,11 @@ void textbuf_cleanup(TextBuf b[static 1]);
 void textbuf_destroy(TextBuf* b);
 static inline int textbuf_init(TextBuf ab[static 1]) { *ab = (TextBuf){.current_line=1}; return 0; }
 
-ErrStr textbuf_append(TextBuf ab[static 1], char* data, size_t len);
+Err textbuf_append(TextBuf ab[static 1], char* data, size_t len);
 size_t textbuf_len(TextBuf ab[static 1]);
 
 
-static inline ErrStr
+static inline Err
 textbuf_append_line(TextBuf ab[static 1], char* data, size_t len) {
     return buffn(char,append)(&ab->buf, (char*)data, len)
         && arlfn(size_t, append)(&ab->eols, &ab->buf.len)

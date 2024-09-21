@@ -38,6 +38,6 @@ static inline bool doc_has_url(Doc doc[static 1]) {
 }
 
 void doc_update_url(Doc doc[static 1], char* url) ;
-ErrStr doc_fetch(UrlClient url_client[static 1], Doc doc[static 1]) ;
+Err doc_fetch(UrlClient url_client[static 1], Doc doc[static 1]) ;
 bool doc_is_valid(Doc doc[static 1]);
 #endif

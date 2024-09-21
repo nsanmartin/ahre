@@ -1,6 +1,6 @@
 #include <ah/debug.h>
 
-ErrStr dbg_print_all_lines_nums(Session session[static 1]) {
+Err dbg_print_all_lines_nums(Session session[static 1]) {
     TextBuf* ab = session_current_buf(session);
     BufOf(char)* buf = &ab->buf;
     char* items = buf->items;
@@ -26,13 +26,13 @@ ErrStr dbg_print_all_lines_nums(Session session[static 1]) {
             break;
         }
     }
-    return NULL;
+    return Ok;
 }
 
 /*
  * Functions that append summary of the content for debugging purposes
  */
-static ErrStr textbuf_summary(Doc doc[static 1], BufOf(char)* buf) {
+static Err textbuf_summary(Doc doc[static 1], BufOf(char)* buf) {
 
     buf_append_lit("Doc: ", buf);
     if (buf_append_hexp(doc, buf)) { return "could not append"; }
@@ -55,10 +55,10 @@ static ErrStr textbuf_summary(Doc doc[static 1], BufOf(char)* buf) {
         buf_append_lit("\n", buf);
 
     }
-    return NULL;
+    return Ok;
 }
 
-ErrStr url_client_summary(UrlClient url_client[static 1], BufOf(char)*buf) {
+Err url_client_summary(UrlClient url_client[static 1], BufOf(char)*buf) {
    buf_append_lit("UrlClient: ", buf);
    if (buf_append_hexp(url_client, buf)) { return  "could not append"; }
    buf_append_lit("\n", buf);
@@ -79,11 +79,11 @@ ErrStr url_client_summary(UrlClient url_client[static 1], BufOf(char)*buf) {
    } else {
        buf_append_lit( " not curl\n", buf);
    }
-   return NULL;
+   return Ok;
 }
 
 
-ErrStr dbg_session_summary(Session session[static 1]) {
+Err dbg_session_summary(Session session[static 1]) {
     BufOf(char)* buf = &session_current_buf(session)->buf;
     if (session->url_client) {
         if(url_client_summary(session->url_client, buf)) { return "could not get url client summary"; }
@@ -94,7 +94,7 @@ ErrStr dbg_session_summary(Session session[static 1]) {
         doc_cache_buffer_summary(&session->doc->cache, buf);
     } else { buf_append_lit("Not doc\n", buf); }
 
-    return NULL;
+    return Ok;
 }
 
 

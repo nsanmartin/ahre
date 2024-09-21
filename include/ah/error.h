@@ -3,10 +3,13 @@
 
 #include <stdio.h>
 
-typedef const char* ErrStr;
-typedef enum { Ok = 0, ErrMem, ErrLxb, ErrCurl, ErrFile } Error;
+
+typedef const char* Err;
+constexpr Err Ok = (Err)0x0;
 
 #define RETERR(ERRMSG,RETVAL) do{ perror(ERRMSG); return RETVAL; } while(0)
+
+Err err_fmt(Err fmt, ...);
 
 #endif
 

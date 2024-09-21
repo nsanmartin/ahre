@@ -30,7 +30,7 @@ lxb_inline lxb_status_t serialize(lxb_dom_node_t *node) {
 
 /* external linkage */
 
-ErrStr lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* buf) {
+Err lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* buf) {
     Str tags = cstr_next_word_view(tag);
     if (tags.len == 0) { return "invalid tag"; }
 
@@ -63,17 +63,17 @@ ErrStr lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)
     }
 
     lxb_dom_collection_destroy(collection, true);
-    return NULL;
+    return Ok;
 
 }
 
 
-ErrStr lexbor_foreach_href(
+Err lexbor_foreach_href(
     lxb_dom_collection_t collection[static 1],
-    ErrStr (*callback)(lxb_dom_element_t* element, void* session),
+    Err (*callback)(lxb_dom_element_t* element, void* session),
     void* session
 ) {
-    ErrStr err = NULL;
+    Err err = Ok;
     for (size_t i = 0; i < lxb_dom_collection_length(collection); i++) {
         lxb_dom_element_t* element = lxb_dom_collection_element(collection, i);
         if ((err=callback(element, session))) { break; };
@@ -83,7 +83,7 @@ ErrStr lexbor_foreach_href(
 }
 
 
-ErrStr ahre_append_href(lxb_dom_element_t* element, void* aeBuf) {
+Err ahre_append_href(lxb_dom_element_t* element, void* aeBuf) {
     TextBuf* buf = aeBuf;
     size_t value_len = 0;
     const lxb_char_t * value = lxb_dom_element_get_attribute(
@@ -93,7 +93,7 @@ ErrStr ahre_append_href(lxb_dom_element_t* element, void* aeBuf) {
 }
 
 
-ErrStr lexbor_href_write(
+Err lexbor_href_write(
     lxb_html_document_t document[static 1],
     lxb_dom_collection_t** hrefs,
     TextBuf* textbuf
@@ -115,7 +115,7 @@ void print_html(lxb_html_document_t* document) {
 }
 
 
-ErrStr
+Err
 lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf) {
     lxb_dom_node_t *node = lxb_dom_interface_node(document->body);
     if (!node) {
