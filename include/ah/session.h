@@ -7,14 +7,14 @@
 
 typedef struct Session Session;
 
-typedef int (*UserLineCallback)(Session* session, const char*);
+typedef ErrStr (*UserLineCallback)(Session* session, const char*);
 
 
 typedef struct Session {
     UrlClient* url_client;
     Doc* doc;
     bool quit;
-    int (*user_line_callback)(Session* session, const char*);
+    ErrStr (*user_line_callback)(Session* session, const char*);
 } Session;
 
 TextBuf* session_current_buf(Session session[static 1]);
@@ -24,5 +24,5 @@ Session* session_create(char* url, UserLineCallback callback);
 void session_destroy(Session* session) ;
 int edcmd_print(Session session[static 1]);
 
-int dbg_session_summary(Session session[static 1]);
+ErrStr dbg_session_summary(Session session[static 1]);
 #endif

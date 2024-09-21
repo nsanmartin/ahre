@@ -30,7 +30,7 @@ static const char* parse_ull(const char* tk, long long unsigned* ullp) {
     return endptr == tk ? NULL: endptr;
 }
 
-static const char* range_parse_addr_num(const char* tk, unsigned long long num, unsigned long long maximum, size_t* out) {
+static const char* parse_range_addr_num(const char* tk, unsigned long long num, unsigned long long maximum, size_t* out) {
     unsigned long long ull;
     if (*tk == '+') {
         ++tk;
@@ -54,16 +54,16 @@ static const char* range_parse_addr_num(const char* tk, unsigned long long num, 
 
 _Static_assert(sizeof(size_t) <= sizeof(unsigned long long), "range parser requires this precondition");
 
-static const char* range_parse_addr(const char* tk, unsigned long long curr, unsigned long long max, size_t* out) {
+static const char* parse_range_addr(const char* tk, unsigned long long curr, unsigned long long max, size_t* out) {
     if (!tk || !*tk) { return NULL; }
     if (*tk == '.' || *tk == '+' || *tk == '-')  {
         if (*tk == '.') { ++tk; }
-        const char* rest = range_parse_addr_num(tk, curr, max, out);
+        const char* rest = parse_range_addr_num(tk, curr, max, out);
         if (rest) { tk = rest; }
         return tk;
     } else if (*tk == '$') {
         ++tk;
-        const char* rest = range_parse_addr_num(tk, max, max, out);
+        const char* rest = parse_range_addr_num(tk, max, max, out);
         if (rest) { tk = rest; }
         return tk;
     } else if (isdigit(*tk)) {
@@ -72,21 +72,21 @@ static const char* range_parse_addr(const char* tk, unsigned long long curr, uns
         if (!rest /* overflow  || curr > max*/) { return NULL; }
         *out = curr;
         if (*tk == '+' || *tk == '-') {
-            const char* rest = range_parse_addr_num(tk+1, curr, max, out);
+            const char* rest = parse_range_addr_num(tk+1, curr, max, out);
             if (rest) { return rest; }
         }
         return rest;
     } 
 
     if (*tk == '+' || *tk == '-') {
-        const char* rest = range_parse_addr_num(tk+1, curr, max, out);
+        const char* rest = parse_range_addr_num(tk+1, curr, max, out);
         if (rest) { return rest; }
     }
     return NULL;
 }
 
 
-static const char* range_parse_impl(const char* tk, size_t current_line, size_t nlines, Range* range) {
+static const char* parse_range_impl(const char* tk, size_t current_line, size_t nlines, Range* range) {
     /* invalid input */
     if (!tk) { return NULL; }
     tk = skip_space(tk);
@@ -109,18 +109,18 @@ static const char* range_parse_impl(const char* tk, size_t current_line, size_t 
     if (*tk == ',') {
         ++tk;
         range->beg = current_line;
-        const char* rest = range_parse_addr(tk, current_line, nlines, &range->end);
+        const char* rest = parse_range_addr(tk, current_line, nlines, &range->end);
         return rest? rest : tk;
     }
             
-    const char* rest = range_parse_addr(tk, current_line, nlines, &range->beg);
+    const char* rest = parse_range_addr(tk, current_line, nlines, &range->beg);
     if (rest) { 
         /* Addr... */
         tk = skip_space(rest);
         if (*tk == ',') {
             ++tk;
             /* Addr,... */
-            rest = range_parse_addr(tk, current_line, nlines, &range->end);
+            rest = parse_range_addr(tk, current_line, nlines, &range->end);
             if (rest) {
                 /* Addr,AddrEOF */
                 return rest;
@@ -155,7 +155,7 @@ parse_range(const char* tk, Session session[static 1], Range range[static 1]) {
     TextBuf* aeb = session_current_buf(session);
     size_t current_line = aeb->current_line;
     size_t nlines       = textbuf_line_count(aeb);
-    tk =  range_parse_impl(tk, current_line, nlines, range);
+    tk =  parse_range_impl(tk, current_line, nlines, range);
     if (!tk || (!range_has_no_end(range) && is_range_valid(range, 0))) { return NULL; }
     else if (range->end == 0) range->end = range->beg; 
     return tk;

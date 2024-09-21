@@ -3,9 +3,9 @@
 #include <ah/textbuf.h>
 
 /*  internal linkage */
-static int textbuf_append_line_indexes(TextBuf ab[static 1], char* data, size_t len);
+static ErrStr textbuf_append_line_indexes(TextBuf ab[static 1], char* data, size_t len);
 
-static int textbuf_append_line_indexes(TextBuf ab[static 1], char* data, size_t len) {
+static ErrStr textbuf_append_line_indexes(TextBuf ab[static 1], char* data, size_t len) {
     char* end = data + len;
     char* it = data;
 
@@ -13,11 +13,11 @@ static int textbuf_append_line_indexes(TextBuf ab[static 1], char* data, size_t 
         it = memchr(it, '\n', end-it);
         if (!it || it >= end) { break; }
         size_t index = textbuf_len(ab) + (it - data);
-        if(NULL == arlfn(size_t, append)(&ab->eols, &index)) { return -1; }
+        if(NULL == arlfn(size_t, append)(&ab->eols, &index)) { return "arlfn failed to append"; }
         ++it;
     }
 
-    return 0;
+    return NULL;
 }
 
 /* external linkage  */
@@ -41,8 +41,21 @@ inline size_t textbuf_line_count(TextBuf ab[static 1]) {
 }
 
 
-int textbuf_append(TextBuf ab[static 1], char* data, size_t len) {
-    return textbuf_append_line_indexes(ab, data, len)
-        || !buffn(char,append)(&ab->buf, (char*)data, len);
+ErrStr textbuf_append_(TextBuf ab[static 1], char* data, size_t len) {
+    ErrStr err = NULL;
+    if ((err=textbuf_append_line_indexes(ab, data, len))) return err;
+    return buffn(char,append)(&ab->buf, (char*)data, len) 
+        ? NULL
+        : "buffn failed to append";
 }
 
+ErrStr textbuf_append(TextBuf ab[static 1], char* data, size_t len) {
+    ErrStr err = NULL;
+    return (err=textbuf_append_line_indexes(ab, data, len))
+        ? err :
+        ( !buffn(char,append)(&ab->buf, (char*)data, len) //buffn_append returns NULL on error
+        ?  "buffn failed to append"
+        : NULL
+        )
+        ;
+}

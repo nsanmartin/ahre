@@ -21,7 +21,7 @@ Str parse_pattern(const char* tk) {
 
 /* ah cmds */
 
-int cmd_write(const char* fname, Session session[static 1]) {
+ErrStr cmd_write(const char* fname, Session session[static 1]) {
     BufOf(char)* buf = &session_current_buf(session)->buf;
     if (fname && *(fname = skip_space(fname))) {
         FILE* fp = fopen(fname, "a");
@@ -41,26 +41,28 @@ int cmd_write(const char* fname, Session session[static 1]) {
 
 
 /* ed cmds */
-int ed_write(const char* rest, Session session[static 1]) {
+ErrStr ed_write(const char* rest, Session session[static 1]) {
     BufOf(char)* buf = &session_current_buf(session)->buf;
-    if (!rest || !*rest) { puts("cannot write without file arg"); return 0; }
+    if (!rest || !*rest) { return "cannot write without file arg"; }
     FILE* fp = fopen(rest, "w");
     if (!fp) {
-        fprintf(stderr, "write: could not open file: %s\n", rest); return -1;
+        fprintf(stderr, "write: could not open file: %s\n", rest); 
+        return  "write: could not open file.";
     }
     if (fwrite(buf->items, 1, buf->len, fp) != buf->len) {
-        fprintf(stderr, "write: error writing to file: %s\n", rest); return -1;
+        fprintf(stderr, "write: error writing to file: %s\n", rest);
+        return "write: error writing to file.";
     }
-    return 0;
+    return NULL;
 }
 
 
-int ed_global(Session session[static 1],  const char* rest) {
+ErrStr ed_global(Session session[static 1],  const char* rest) {
     (void)session;
     Str pattern = parse_pattern(rest);
-    if (!pattern.s || !pattern.len) { return -1; }
+    if (!pattern.s || !pattern.len) { return "Could not read pattern"; }
     printf("pattern: %s\n", pattern.s);
-    return 0;
+    return NULL;
 }
 
 

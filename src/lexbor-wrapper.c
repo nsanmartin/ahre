@@ -15,22 +15,6 @@ static Str cstr_next_word_view(const char* s) {
 }
 
 
-static lxb_dom_collection_t*
-lexbor_anchor_collection_from_doc(lxb_html_document_t document[static 1]) {
-    lxb_dom_collection_t* hrefs = lxb_dom_collection_make(&document->dom_document, 128);
-    if (!hrefs) { RETERR("Failed to create Collection object", NULL); }
-
-    if (LXB_STATUS_OK != lxb_dom_elements_by_tag_name(
-                            lxb_dom_interface_element(document->body),
-                            hrefs,
-                            (const lxb_char_t *) "a",
-                            1
-                        )
-    ) { RETERR("Failed to get elements by name", NULL); }
-    return hrefs;
-}
-
-
 lxb_inline lxb_status_t
 serializer_callback(const lxb_char_t *data, size_t len, void *session) {
     (void)session;
@@ -46,13 +30,13 @@ lxb_inline lxb_status_t serialize(lxb_dom_node_t *node) {
 
 /* external linkage */
 
-int lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* buf) {
+ErrStr lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* buf) {
     Str tags = cstr_next_word_view(tag);
-    if (tags.len == 0) { puts("Ah, invalid tag"); return 0; }
+    if (tags.len == 0) { return "invalid tag"; }
 
     lxb_dom_collection_t* collection = lxb_dom_collection_make(&document->dom_document, 128);
     if (collection == NULL) {
-        FAILED("Failed to create Collection object");
+        return "failed to create lexbor collection object";
     }
 
     if (lxb_dom_elements_by_tag_name(
@@ -61,7 +45,7 @@ int lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* b
             (const lxb_char_t *) tags.s,
             tags.len 
         ) != LXB_STATUS_OK
-    ) { FAILED("Failed to get elements by name"); }
+    ) { return "failed to get elements by name"; }
 
     for (size_t i = 0; i < lxb_dom_collection_length(collection); i++) {
         lxb_dom_element_t* element = lxb_dom_collection_element(collection, i);
@@ -74,59 +58,56 @@ int lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* b
             buf
         );
         if (status != LXB_STATUS_OK) {
-            FAILED("Failed to serialization HTML tree");
+            return "failed to serialization HTML tree";
         }
     }
 
     lxb_dom_collection_destroy(collection, true);
-    return 0;
+    return NULL;
 
 }
 
 
-int lexbor_foreach_href(
+ErrStr lexbor_foreach_href(
     lxb_dom_collection_t collection[static 1],
-    int (*callback)(lxb_dom_element_t* element, void* session),
+    ErrStr (*callback)(lxb_dom_element_t* element, void* session),
     void* session
 ) {
+    ErrStr err = NULL;
     for (size_t i = 0; i < lxb_dom_collection_length(collection); i++) {
         lxb_dom_element_t* element = lxb_dom_collection_element(collection, i);
-
-        if (callback(element, session)) { return -1; };
+        if ((err=callback(element, session))) { break; };
     }
-    return 0;
+
+    return err;
 }
 
 
-int ahre_append_href(lxb_dom_element_t* element, void* aeBuf) {
+ErrStr ahre_append_href(lxb_dom_element_t* element, void* aeBuf) {
     TextBuf* buf = aeBuf;
     size_t value_len = 0;
     const lxb_char_t * value = lxb_dom_element_get_attribute(
         element, (const lxb_char_t*)"href", 4, &value_len
     );
-    if (textbuf_append_line(buf, (char*)value, value_len)) { return -1; }
-    //if (buffn(char,append)(buf, (char*)value, value_len)) { return -1; }
-    //if (buffn(char,append)(buf, (char*)"\n", 1)) { return -1; }
-    return 0;
+    return textbuf_append_line(buf, (char*)value, value_len);
 }
 
-int lexbor_href_write(
+
+ErrStr lexbor_href_write(
     lxb_html_document_t document[static 1],
     lxb_dom_collection_t** hrefs,
     TextBuf* textbuf
 ) {
     if (!*hrefs) {
-        if(!(*hrefs = lexbor_anchor_collection_from_doc(document))) {
-            return -1;
-        }
+        *hrefs = lxb_dom_collection_make(&document->dom_document, 128);
+        if (!*hrefs) { return "failed to create lexbor collection object"; }
+        if (LXB_STATUS_OK != lxb_dom_elements_by_tag_name(
+            lxb_dom_interface_element(document->body), *hrefs, (const lxb_char_t *) "a", 1
+        )) { return "failed to get elements by name"; }
     }
 
-    if(lexbor_foreach_href(*hrefs, ahre_append_href, (void*)textbuf)) {
-        return -1;
-    }
-    return 0;
+    return lexbor_foreach_href(*hrefs, ahre_append_href, (void*)textbuf);
 }
-
 
 
 void print_html(lxb_html_document_t* document) {
@@ -134,18 +115,15 @@ void print_html(lxb_html_document_t* document) {
 }
 
 
-
-int
+ErrStr
 lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf) {
     lxb_dom_node_t *node = lxb_dom_interface_node(document->body);
     if (!node) {
-        puts("No lxb doc");
-        return -1;
+        return "could not get lexbor document body as node";
     }
     size_t len = 0;
     lxb_char_t* text = lxb_dom_node_text_content(node, &len);
-    if (textbuf_append(buf, (char*)text, len)) { return -1; }
-    return 0;
+    return textbuf_append(buf, (char*)text, len);
 }
 
 

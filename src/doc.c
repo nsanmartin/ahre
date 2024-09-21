@@ -132,3 +132,8 @@ inline void doc_update_url(Doc ad[static 1], char* url) {
         destroy((char*)ad->url);
         ad->url = url;
 }
+
+
+bool doc_is_valid(Doc doc[static 1]) {
+    return doc->url && doc->lxbdoc && doc->lxbdoc->body;
+}

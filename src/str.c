@@ -16,7 +16,7 @@ mem_count_ocurrencies(char* data, size_t len, char c) {
 }
 
 
-int mem_get_indexes(char* data, size_t len, size_t offset, char c, ArlOf(size_t)* indexes) {
+ErrStr mem_get_indexes(char* data, size_t len, size_t offset, char c, ArlOf(size_t)* indexes) {
     char* end = data + len;
     char* it = data;
 
@@ -24,11 +24,11 @@ int mem_get_indexes(char* data, size_t len, size_t offset, char c, ArlOf(size_t)
         it = memchr(it, c, end-it);
         if (!it || it >= end) { break; }
         size_t off = offset + (it - data);
-        if(NULL == arlfn(size_t, append)(indexes, &off)) { return -1; }
+        if(NULL == arlfn(size_t, append)(indexes, &off)) { return "arlfn append failed"; }
         ++it;
     }
 
-    return 0;
+    return NULL;
 }
 
 inline bool str_is_empty(const Str s[static 1]) { return !s->s || !s->len; }

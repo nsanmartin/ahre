@@ -4,40 +4,46 @@
 #include <ah/ranges.h>
 #include <ah/user-interface.h>
 
-int ed_global(Session session[static 1],  const char* rest);
+ErrStr ed_global(Session session[static 1],  const char* rest);
 
-int cmd_write(char* fname, Session session[static 1]);
-int cmd_fetch(Session session[static 1]) {
+ErrStr cmd_write(char* fname, Session session[static 1]);
+
+ErrStr cmd_fetch(Session session[static 1]) {
     Doc* doc = session_current_doc(session);
     if (doc->url) {
         ErrStr err_str = doc_fetch(session->url_client, doc);
-        if (err_str) { return ah_log_error(err_str, ErrCurl); }
-        return Ok;
+        if (err_str) { return err_str; }
+        return NULL;
     }
-    puts("Not url to fech");
-    return -1;
+    return "Not url to fech";
 }
 
 
-static inline int cmd_ahre(Session session[static 1]) {
+static inline ErrStr cmd_ahre(Session session[static 1]) {
     Doc* doc = session_current_doc(session);
-    return lexbor_href_write(doc->lxbdoc, &doc->cache.hrefs, &doc->textbuf);
+    return lexbor_href_write(doc->lxbdoc, &doc->cache.hrefs, &doc->textbuf)
+        ? "could not fetch href"
+        : NULL
+        ;
 }
 
-static inline int cmd_clear(Session session[static 1]) {
+static inline ErrStr cmd_clear(Session session[static 1]) {
     BufOf(char)* buf = &session_current_buf(session)->buf;
     if (buf->len) { free(buf->items); *buf = (BufOf(char)){0}; }
-    return 0;
+    return NULL;
 }
 
-static inline int cmd_tag(const char* rest, Session session[static 1]) {
+static inline ErrStr cmd_tag(const char* rest, Session session[static 1]) {
     Doc* doc = session_current_doc(session);
     return lexbor_cp_tag(rest, doc->lxbdoc, &doc->textbuf.buf);
 }
 
-static inline int cmd_text(Session* session) {
+static inline ErrStr cmd_text(Session* session) {
     Doc* doc = session_current_doc(session);
-    return lexbor_html_text_append(doc->lxbdoc, &doc->textbuf);
+    return lexbor_html_text_append(doc->lxbdoc, &doc->textbuf)
+        ? "could not append text"
+        : NULL
+        ;
 }
 
 static inline int
@@ -75,39 +81,39 @@ line_num_to_right_offset(size_t lnum, TextBuf textbuf[static 1], size_t out[stat
     return -1;
 }
 
-static inline int ed_print(Session session[static 1], Range range[static 1]) {
+static inline ErrStr ed_print(Session session[static 1], Range range[static 1]) {
     if (!range->beg  || range->beg > range->end) {
         fprintf(stderr, "! bad range\n");
-        return -1;
+        return  "bad range";
     }
 
     TextBuf* textbuf = session_current_buf(session);
     if (textbuf_is_empty(textbuf)) {
         fprintf(stderr, "? empty buffer\n");
-        return -1;
+        return "empty buffer";
     }
 
     size_t beg_off_p;
     if (line_num_to_left_offset(range->beg, textbuf, &beg_off_p)) {
         fprintf(stderr, "? bag range beg\n");
-        return -1;
+        return "bad range beg";
     }
     size_t end_off_p;
     if (line_num_to_right_offset(range->end, textbuf, &end_off_p)) {
         fprintf(stderr, "? bag range end\n");
-        return -1;
+        return "bad range end";
     }
 
     if (beg_off_p >= end_off_p || end_off_p > textbuf->buf.len) {
         fprintf(stderr, "!Error check offsets");
-        return -1;
+        return "error: check offsets";
     }
     fwrite(textbuf->buf.items + beg_off_p, 1, end_off_p-beg_off_p, stdout);
     fwrite("\n", 1, 1, stdout);
-    return 0;
+    return NULL;
 }
 
 
-int ed_write(const char* rest, Session session[static 1]);
+ErrStr ed_write(const char* rest, Session session[static 1]);
 
 #endif

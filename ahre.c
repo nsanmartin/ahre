@@ -21,8 +21,8 @@ int loop_lexbor(char* url) {
     while (!session->quit) {
         int err = read_line_from_user(session);
         if (err) {
-            fprintf(stderr, "Ah re: error reading line, aborting.\n");
-            return EXIT_FAILURE;
+            fprintf(stderr, "Ah re: error reading line.\n");
+            //return EXIT_FAILURE;
         }
     }
 

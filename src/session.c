@@ -40,8 +40,6 @@ Session* session_create(char* url, UserLineCallback callback) {
 
     return rv;
 
-///free_ahdoc:
-///    doc_destroy(doc);
 free_ahcurl:
     url_client_destroy(url_client);
 free_rv:

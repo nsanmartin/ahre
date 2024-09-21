@@ -15,7 +15,7 @@ int test_0(void) {
 
     TextBuf buf;
     textbuf_init(&buf);
-    int err = textbuf_append_line_indexes(&buf, str, len);
+    ErrStr err = textbuf_append_line_indexes(&buf, str, len);
     utest_assert(!err, fail);
     utest_assert(count == buf.eols.len, fail);
 

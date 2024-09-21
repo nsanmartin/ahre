@@ -18,7 +18,7 @@
 
 #define buf_append_lit(LitStr, Buf_) do{\
    if (buffn(char,append)(Buf_, (char*)LitStr, sizeof(LitStr))) {\
-       return -1; }}while(0)
+       return "could not append"; }}while(0)
 
 static inline int buf_append_hexp(void* p, BufOf(char)*buf) {
     char num_buff[256];
@@ -50,5 +50,8 @@ static inline void trim_space(Str* l) {
     l->s = skip_space(l->s);
     l->len = next_space(l->s) - l->s;
 }
+
+
+#define LENGTH(Ptr) (Ptr)->len
 
 #endif

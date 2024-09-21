@@ -7,7 +7,7 @@
 #include <ah/utils.h>
 
 int read_line_from_user(Session session[static 1]);
-int process_line(Session session[static 1], const char* line);
+ErrStr process_line(Session session[static 1], const char* line);
 
 
 void print_html(lxb_html_document_t* document);

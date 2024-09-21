@@ -12,5 +12,5 @@ static inline void doc_cache_cleanup(DocCache c[static 1]) {
     *c = (DocCache){0};
 }
 
-int doc_cache_buffer_summary(DocCache c[static 1], BufOf(char) buf[static 1]);
+ErrStr doc_cache_buffer_summary(DocCache c[static 1], BufOf(char) buf[static 1]);
 #endif
