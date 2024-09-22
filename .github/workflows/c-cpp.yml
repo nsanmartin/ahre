@@ -18,7 +18,7 @@ jobs:
     - name: lexbor-clone
       run: git clone https://github.com/lexbor/lexbor 
     - name: lexbor-install
-          cd lexbor && cmake . && make && sudo make install
+      run: cd lexbor && cmake . && make && sudo make install
     - name: hashi
       run: git submodule update --init --recursive
     - name: make
