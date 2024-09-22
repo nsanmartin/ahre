@@ -1,4 +1,4 @@
 [submodule "hashi"]
 	path = hashi
-	url = git@github.com:nsanmartin/hashi
+	url = https://github.com/nsanmartin/hashi.git
     branch = dev
