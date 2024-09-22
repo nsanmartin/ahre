@@ -2,9 +2,11 @@
 #include <stdarg.h>
 #include <string.h>
 
+#define thread_local _Thread_local 
 #include <ah/error.h>
 
-static constexpr size_t MAX_MSG_LEN = 512;
+//static constexpr size_t MAX_MSG_LEN = 512;
+#define MAX_MSG_LEN 512
 thread_local size_t ERR_MSG_LEN = 0;
 thread_local char MSGBUF[MAX_MSG_LEN+1] = {0};
 

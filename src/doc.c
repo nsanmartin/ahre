@@ -10,8 +10,10 @@
 #include <ah/wrappers.h>
 
 /* internal linkage */
-static constexpr size_t MAX_URL_LEN = 2048;
-static constexpr size_t READ_FROM_FILE_BUFFER_LEN = 4096;
+//static constexpr size_t MAX_URL_LEN = 2048;
+#define MAX_URL_LEN 2048
+//static constexpr size_t READ_FROM_FILE_BUFFER_LEN = 4096;
+#define READ_FROM_FILE_BUFFER_LEN 4096
 static unsigned char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {0};
 
 
