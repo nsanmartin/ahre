@@ -16,8 +16,7 @@ jobs:
     - name: libcurl
       run: sudo apt update && sudo apt install -y libcurl4-openssl-dev
     - name: lexbor
-      run: curl -O https://lexbor.com/keys/lexbor_signing.key && sudo apt-key add lexbor_signing.key \
-        && apt update && apt install liblexbor && apt install liblexbor-dev
+      run: curl -O https://lexbor.com/keys/lexbor_signing.key && sudo apt-key add lexbor_signing.key && apt update && apt install liblexbor && apt install liblexbor-dev
     - name: hashi
       run: git submodule update --init --recursive
     - name: make
