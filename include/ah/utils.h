@@ -34,7 +34,4 @@ static inline int buf_append_hexp(void* p, BufOf(char)*buf) {
 static inline void log_info(const char* msg) { puts(msg); }
 static inline void log_error(const char* msg) { perror(msg); }
 
-
-#define LENGTH(Ptr) (Ptr)->len
-
 #endif

@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 
+#include <ah/error.h>
 #include <ah/str.h>
 #include <ah/utils.h>
 
@@ -20,14 +21,18 @@ static inline int textbuf_init(TextBuf ab[static 1]) { *ab = (TextBuf){.current_
 
 Err textbuf_append(TextBuf ab[static 1], char* data, size_t len);
 size_t textbuf_len(TextBuf ab[static 1]);
+char* textbuf_items(TextBuf ab[static 1]);
 
+size_t * textbuf_eol_at(TextBuf tb[static 1], size_t i);
+size_t textbuf_line_count(TextBuf textbuf [static 1]);
+size_t textbuf_eol_count(TextBuf textbuf[static 1]);
 
 static inline Err
 textbuf_append_line(TextBuf ab[static 1], char* data, size_t len) {
     return buffn(char,append)(&ab->buf, (char*)data, len)
         && arlfn(size_t, append)(&ab->eols, &ab->buf.len)
         && buffn(char,append)(&ab->buf, (char*)"\n", 1)
-        ? NULL
+        ? Ok
         : __func__
         ;
 }
@@ -36,7 +41,5 @@ textbuf_append_line(TextBuf ab[static 1], char* data, size_t len) {
 static inline bool textbuf_is_empty(TextBuf ab[static 1]) {
     return !ab->buf.len;
 }
-
-size_t textbuf_line_count(TextBuf ab [static 1]);
 
 #endif

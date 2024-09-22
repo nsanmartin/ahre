@@ -4,6 +4,7 @@
 #include <ah/curl-lxb.h>
 #include <ah/doc.h>
 #include <ah/error.h>
+#include <ah/generic.h>
 #include <ah/mem.h>
 #include <ah/utils.h>
 #include <ah/wrappers.h>
@@ -19,15 +20,15 @@ static Err lexbor_read_doc_from_url_or_file (UrlClient url_client[static 1], Doc
 
 static char* str_url_dup(const Str* url) {
     if (str_is_empty(url)) { return 0x0; }
-    if (url->len >= MAX_URL_LEN) {
+    if (len(url) >= MAX_URL_LEN) {
             perror("url too long");
             return 0x0;
     }
 
-    char* res = malloc(url->len + 1);
+    char* res = malloc(len(url) + 1);
     if (!res) { return NULL; }
-    res[url->len] = '\0';
-    memcpy(res, url->s, url->len);
+    res[len(url)] = '\0';
+    memcpy(res, url->s, len(url));
     return res;
 }
 

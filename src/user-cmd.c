@@ -22,13 +22,13 @@ Str parse_pattern(const char* tk) {
 /* ah cmds */
 
 Err cmd_write(const char* fname, Session session[static 1]) {
-    BufOf(char)* buf = &session_current_buf(session)->buf;
+    TextBuf* buf = session_current_buf(session);
     if (fname && *(fname = cstr_skip_space(fname))) {
         FILE* fp = fopen(fname, "a");
         if (!fp) {
             return err_fmt("append: could not open file: %s", fname);
         }
-        if (fwrite(buf->items, 1, buf->len, fp) != buf->len) {
+        if (fwrite(textbuf_items(buf), 1, len(buf), fp) != len(buf)) {
             return err_fmt("append: error writing to file: %s", fname);
         }
         return 0;
@@ -39,13 +39,13 @@ Err cmd_write(const char* fname, Session session[static 1]) {
 
 /* ed cmds */
 Err ed_write(const char* rest, Session session[static 1]) {
-    BufOf(char)* buf = &session_current_buf(session)->buf;
+    TextBuf* buf = session_current_buf(session);
     if (!rest || !*rest) { return "cannot write without file arg"; }
     FILE* fp = fopen(rest, "w");
     if (!fp) {
         return err_fmt("%s: could not open file: %s", __func__, rest); 
     }
-    if (fwrite(buf->items, 1, buf->len, fp) != buf->len) {
+    if (fwrite(textbuf_items(buf), 1, len(buf), fp) != len(buf)) {
         return err_fmt("%s: error writing to file: %s", __func__, rest);
     }
     return Ok;

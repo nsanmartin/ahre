@@ -1,16 +1,16 @@
 #include <ah/debug.h>
+#include <ah/generic.h>
 
 Err dbg_print_all_lines_nums(Session session[static 1]) {
-    TextBuf* ab = session_current_buf(session);
-    BufOf(char)* buf = &ab->buf;
-    char* items = buf->items;
-    size_t len = buf->len;
-
+    TextBuf* textbuf = session_current_buf(session);
+    size_t len = len(textbuf);
+    char* items = textbuf_items(textbuf);
+    char* end = items + len;
     
 
     for (size_t lnum = 1; /*items && len && lnum < 40*/ ; ++lnum) {
         char* next = memchr(items, '\n', len);
-        if (next >= buf->items + buf->len) {
+        if (next >= end) {
             fprintf(stderr, "Error: print all lines nums\n");
             return  "Error: print all lines nums.";
         }

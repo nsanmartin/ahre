@@ -20,31 +20,16 @@ typedef struct {
 	size_t len;
 } Str;
 
-#include <ah/utils.h>
+#include <ah/generic.h>
 
-
-static inline int str_init(Str s[static 1], const char* cs) {
-    *s = (Str){.s=cs, .len=cs?strlen(cs):0};
-    return cs && !s->len ? -1 : 0;
-}
-
+size_t str_len(const Str s[static 1]);
 bool str_is_empty(const Str s[static 1]);
 
+int str_init(Str s[static 1], const char* cs);
+bool str_is_empty(const Str s[static 1]);
 size_t mem_count_ocurrencies(char* data, size_t len, char c);
-
-static inline const char* cstr_skip_space(const char* s) {
-    for (; *s && isspace(*s); ++s);
-    return s;
-}
-
-static inline const char* cstr_next_space(const char* l) {
-    while (*l && !isspace(*l)) { ++l; }
-    return l;
-}
-
-static inline void str_trim_space(Str* l) {
-    l->s = cstr_skip_space(l->s);
-    l->len = cstr_next_space(l->s) - l->s;
-}
+const char* cstr_skip_space(const char* s);
+const char* cstr_next_space(const char* l);
+void str_trim_space(Str* l);
 
 #endif

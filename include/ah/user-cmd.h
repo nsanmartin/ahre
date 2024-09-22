@@ -26,8 +26,7 @@ static inline Err cmd_ahre(Session session[static 1]) {
 }
 
 static inline Err cmd_clear(Session session[static 1]) {
-    BufOf(char)* buf = &session_current_buf(session)->buf;
-    if (buf->len) { free(buf->items); *buf = (BufOf(char)){0}; }
+    textbuf_cleanup(session_current_buf(session));
     return Ok;
 }
 
@@ -46,12 +45,11 @@ static inline Err cmd_text(Session* session) {
 
 static inline int
 line_num_to_left_offset(size_t lnum, TextBuf textbuf[static 1], size_t out[static 1]) {
-    ArlOf(size_t)* offs = &textbuf->eols;
 
-    if (lnum == 0 || lnum > offs->len) { return -1; }
+    if (lnum == 0 || lnum > textbuf_eol_count(textbuf)) { return -1; }
     if (lnum == 1) { *out = 0; return 0; }
 
-    size_t* tmp = arlfn(size_t, at)(offs, lnum-2);
+    size_t* tmp = textbuf_eol_at(textbuf, lnum-2);
     if (tmp) {
         *out = *tmp;
         return 0;
@@ -62,15 +60,14 @@ line_num_to_left_offset(size_t lnum, TextBuf textbuf[static 1], size_t out[stati
 
 static inline int
 line_num_to_right_offset(size_t lnum, TextBuf textbuf[static 1], size_t out[static 1]) {
-    ArlOf(size_t)* offs = &textbuf->eols;
 
-    if (lnum == 0 || lnum > offs->len) { return -1; }
-    if (lnum == offs->len+1) {
-        *out = textbuf->buf.len;
+    if (lnum == 0 || lnum > textbuf_eol_count(textbuf)) { return -1; }
+    if (lnum == textbuf_eol_count(textbuf)+1) {
+        *out = len(textbuf);
         return 0;
     }
 
-    size_t* tmp = arlfn(size_t, at)(offs, lnum-1);
+    size_t* tmp = textbuf_eol_at(textbuf, lnum-1);
     if (tmp) {
         *out = 1 + *tmp;
         return 0;

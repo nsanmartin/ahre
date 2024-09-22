@@ -82,7 +82,7 @@ test_error: utests/test_error.c
 
 
 tags: $(AHRE_HEADERS) $(AHRE_SRCS)
-	ctags -R .
+	ctags -R . 
 
 cscope.files: $(AHRE_HEADERS) $(AHRE_SRCS)
 	find . \( -path "./.git"  -o -path "./hashi" \) ! -prune -o -name "*.[ch]" > $@
@@ -94,5 +94,5 @@ cscope: cscope.files
 clean:
 	find build -type f -delete
 	find . -type f -name tags -delete
-	find . -type f -name cscope.out -delete
+	find . -type f -name "cscope.*" -delete
 	if [ -f tags ]; then rm tags; fi

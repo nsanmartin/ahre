@@ -10,7 +10,6 @@ array_list_compar_int(void* item, void* elem) {
 
 static inline void
 array_list_copy_int(void* item, void* elem) {
-    //memmove(a->items + a->len++ * a->item_sz, ptr, a->item_sz);
     memcpy(item, elem, sizeof(int));
 }
 
