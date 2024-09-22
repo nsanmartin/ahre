@@ -34,21 +34,6 @@ static inline int buf_append_hexp(void* p, BufOf(char)*buf) {
 static inline void log_info(const char* msg) { puts(msg); }
 static inline void log_error(const char* msg) { perror(msg); }
 
-static inline const char* skip_space(const char* s) {
-    for (; *s && isspace(*s); ++s);
-    return s;
-}
-
-static inline const char* next_space(const char* l) {
-    while (*l && !isspace(*l)) { ++l; }
-    return l;
-}
-
-static inline void trim_space(Str* l) {
-    l->s = skip_space(l->s);
-    l->len = next_space(l->s) - l->s;
-}
-
 
 #define LENGTH(Ptr) (Ptr)->len
 

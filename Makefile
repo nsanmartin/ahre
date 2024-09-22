@@ -7,7 +7,7 @@ AHRE:=ahre
 AHRE_OBJDIR=build
 AHRE_SRCDIR=src
 AHRE_INCLUDE=include
-AHRE_HEADERS=$(wildcard $(AHRE_INCLUDE)/*.h)
+AHRE_HEADERS=$(wildcard $(AHRE_INCLUDE)/ah/*.h)
 AHRE_SRCS=$(wildcard $(AHRE_SRCDIR)/*.c)
 AHRE_OBJ=$(AHRE_SRCS:src/%.c=$(AHRE_OBJDIR)/%.o)
 
@@ -81,13 +81,18 @@ test_error: utests/test_error.c
 
 
 
-tags:
+tags: $(AHRE_HEADERS) $(AHRE_SRCS)
 	ctags -R .
 
-cscope:
-	cscope -b -k -R
+cscope.files: $(AHRE_HEADERS) $(AHRE_SRCS)
+	find . \( -path "./.git"  -o -path "./hashi" \) ! -prune -o -name "*.[ch]" > $@
+
+cscope: cscope.files
+	cscope -R -b -i $<
+
 
 clean:
 	find build -type f -delete
 	find . -type f -name tags -delete
+	find . -type f -name cscope.out -delete
 	if [ -f tags ]; then rm tags; fi

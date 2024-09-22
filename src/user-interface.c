@@ -32,18 +32,18 @@ const char* substr_match(const char* s, const char* cmd, size_t len) {
         printf("...%s?\n", cmd);
         return 0x0;
     }
-	return skip_space(s);
+	return cstr_skip_space(s);
 }
 
 bool substr_match_all(const char* s, size_t len, const char* cmd) {
-    return (s=substr_match(s, cmd, len)) && !*skip_space(s);
+    return (s=substr_match(s, cmd, len)) && !*cstr_skip_space(s);
 }
 
 
 Err cmd_set_url(Session session[static 1], const char* url) {
     Str u;
     if(str_init(&u, url)) { return "bad url"; }
-    trim_space(&u);
+    str_trim_space(&u);
     if (!str_is_empty(&u) && (!session->doc->url || strncmp(u.s, session->doc->url, u.len))) {
         doc_cleanup(session->doc);
         if (doc_init(session->doc, &u)) {
@@ -67,7 +67,7 @@ Err cmd_set_url(Session session[static 1], const char* url) {
 
 Err cmd_eval(Session session[static 1], const char* line) {
     const char* rest = 0x0;
-    line = skip_space(line);
+    line = cstr_skip_space(line);
 
     if ((rest = substr_match(line, "url", 1))) { return cmd_set_url(session, rest); }
 
@@ -115,7 +115,7 @@ Err ed_eval(Session session[static 1], const char* line) {
 
 Err process_line(Session session[static 1], const char* line) {
     if (!line) { session->quit = true; return "no input received, exiting"; }
-    line = skip_space(line);
+    line = cstr_skip_space(line);
 
     if (!*line) { return Ok; }
 

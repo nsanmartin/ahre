@@ -89,7 +89,7 @@ static const char* parse_range_addr(const char* tk, unsigned long long curr, uns
 static const char* parse_range_impl(const char* tk, size_t current_line, size_t nlines, Range* range) {
     /* invalid input */
     if (!tk) { return NULL; }
-    tk = skip_space(tk);
+    tk = cstr_skip_space(tk);
 
     /* empty string */
     if (!*tk) { 
@@ -116,7 +116,7 @@ static const char* parse_range_impl(const char* tk, size_t current_line, size_t 
     const char* rest = parse_range_addr(tk, current_line, nlines, &range->beg);
     if (rest) { 
         /* Addr... */
-        tk = skip_space(rest);
+        tk = cstr_skip_space(rest);
         if (*tk == ',') {
             ++tk;
             /* Addr,... */

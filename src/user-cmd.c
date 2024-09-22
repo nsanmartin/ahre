@@ -6,7 +6,7 @@ Str parse_pattern(const char* tk) {
     Str res = {0};
     char delim = '/';
     if (!tk) { return res; }
-    tk = skip_space(tk);
+    tk = cstr_skip_space(tk);
     if (*tk != delim) { return res; }
     ++tk;
     const char* end = strchr(tk, delim);
@@ -23,7 +23,7 @@ Str parse_pattern(const char* tk) {
 
 Err cmd_write(const char* fname, Session session[static 1]) {
     BufOf(char)* buf = &session_current_buf(session)->buf;
-    if (fname && *(fname = skip_space(fname))) {
+    if (fname && *(fname = cstr_skip_space(fname))) {
         FILE* fp = fopen(fname, "a");
         if (!fp) {
             return err_fmt("append: could not open file: %s", fname);
