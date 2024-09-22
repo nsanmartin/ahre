@@ -13,8 +13,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: update-apt
+      run: sudo apt update
+    - name: install-gcc
+      run: sudo apt install -y gcc 
     - name: libcurl
-      run: sudo apt update && sudo apt install -y libcurl4-openssl-dev
+      run: sudo apt install -y libcurl4-openssl-dev
     - name: lexbor-clone
       run: git clone https://github.com/lexbor/lexbor 
     - name: lexbor-install
