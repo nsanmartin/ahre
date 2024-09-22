@@ -1,0 +1,1 @@
+git add . && git ci -m"github worflow: create build dir"

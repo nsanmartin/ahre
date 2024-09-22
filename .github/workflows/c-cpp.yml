@@ -25,6 +25,8 @@ jobs:
       run: cd lexbor && cmake . && make && sudo make install
     - name: hashi
       run: git submodule update --init --recursive
+    - name: create-build-dir
+      run: mkdir build
     - name: make
       run: make
     - name: make tests
