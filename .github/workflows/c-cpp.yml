@@ -13,6 +13,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: libcurl
+      run: apt install libcurl4-openssl-dev
+    - name: lexbor
+      run: curl -O https://lexbor.com/keys/lexbor_signing.key && apt-key add lexbor_signing.key \
+        && apt update && apt install liblexbor && apt install liblexbor-dev
     - name: hashi
       run: git submodule update --init --recursive
     - name: make
