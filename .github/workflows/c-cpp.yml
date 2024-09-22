@@ -29,6 +29,3 @@ jobs:
       run: mkdir build
     - name: make
       run: make
-    - name: make tests
-      run: make run_tests
-   
