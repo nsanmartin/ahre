@@ -50,9 +50,9 @@ Err cmd_set_url(Session session[static 1], const char* url) {
             return "could not init doc";
         }
 
-        Doc* lxbdoc = session_current_doc(session);
-        if (doc_has_url(lxbdoc)) {
-            Err err = doc_fetch(session->url_client, lxbdoc);
+        Doc* doc = session_current_doc(session);
+        if (doc_has_url(doc)) {
+            Err err = doc_fetch(doc, session->url_client);
             if (err) {
                 return err_fmt("\nerror fetching url: '%s': %s", url, err);
             }

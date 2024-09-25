@@ -130,10 +130,6 @@ inline void doc_destroy(Doc* doc) {
     std_free(doc);
 }
 
-Err doc_fetch(UrlClient url_client[static 1], Doc ad[static 1]) {
-    return lexbor_read_doc_from_url_or_file (url_client, ad);
-}
-
 
 inline void doc_update_url(Doc ad[static 1], char* url) {
         destroy((char*)ad->url);
@@ -163,3 +159,9 @@ Err doc_read_from_file(Doc doc[static 1]) {
 
     return NULL;
 }
+
+
+Err doc_fetch(Doc doc[static 1], UrlClient url_client[static 1]) {
+    return lexbor_read_doc_from_url_or_file (url_client, doc);
+}
+

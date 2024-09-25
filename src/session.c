@@ -25,7 +25,7 @@ Session* session_create(char* url, UserLineCallback callback) {
     if (!doc) { goto free_ahcurl; }
 
     if (url && doc->lxbdoc) {
-        Err err = doc_fetch(url_client, doc);
+        Err err = doc_fetch(doc, url_client);
         if (err) { log_error(err); }
     }
     *rv = (Session) {

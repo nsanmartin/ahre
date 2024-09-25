@@ -11,7 +11,7 @@ Err cmd_write(char* fname, Session session[static 1]);
 Err cmd_fetch(Session session[static 1]) {
     Doc* doc = session_current_doc(session);
     if (doc->url) {
-        return doc_fetch(session->url_client, doc);
+        return doc_fetch(doc, session->url_client);
     }
     return "Not url to fech";
 }
