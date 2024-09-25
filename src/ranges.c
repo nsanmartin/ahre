@@ -2,10 +2,10 @@
 #include <errno.h>
 #include <ctype.h>
 
-#include <ah/utils.h>
-#include <ah/session.h>
-#include <ah/textbuf.h>
-#include <ah/ranges.h>
+#include "src/utils.h"
+#include "src/session.h"
+#include "src/textbuf.h"
+#include "src/ranges.h"
 
 /*
  * + . current line,

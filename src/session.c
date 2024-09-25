@@ -1,5 +1,5 @@
-#include <ah/mem.h>
-#include <ah/session.h>
+#include "src/mem.h"
+#include "src/session.h"
 
 
 inline Doc* session_current_doc(Session session[static 1]) {

@@ -1,5 +1,5 @@
-#include <ah/debug.h>
-#include <ah/generic.h>
+#include "src/debug.h"
+#include "src/generic.h"
 
 Err dbg_print_all_lines_nums(Session session[static 1]) {
     TextBuf* textbuf = session_current_buf(session);

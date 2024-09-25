@@ -1,7 +1,7 @@
 #ifndef __AH_DOC_CACHE_AHRE_H__
 #define __AH_DOC_CACHE_AHRE_H__
 #include <lexbor/html/html.h>
-#include <ah/utils.h>
+#include "src/utils.h"
 
 typedef struct {
     lxb_dom_collection_t* hrefs;

@@ -6,11 +6,11 @@
 
 #include <lexbor/html/html.h>
 
-#include <ah/textbuf.h>
-#include <ah/doc-cache.h>
-#include <ah/error.h>
-#include <ah/url-client.h>
-#include <ah/wrappers.h>
+#include "src/textbuf.h"
+#include "src/doc-cache.h"
+#include "src/error.h"
+#include "src/url-client.h"
+#include "src/wrappers.h"
 
 
 typedef struct UrlClient UrlClient;

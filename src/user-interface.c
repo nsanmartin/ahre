@@ -3,13 +3,13 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-#include <ah/debug.h>
-#include <ah/mem.h>
-#include <ah/ranges.h>
-#include <ah/user-cmd.h>
-#include <ah/user-interface.h>
-#include <ah/utils.h>
-#include <ah/wrappers.h>
+#include "src/debug.h"
+#include "src/mem.h"
+#include "src/ranges.h"
+#include "src/user-cmd.h"
+#include "src/user-interface.h"
+#include "src/utils.h"
+#include "src/wrappers.h"
 
 
 Err read_line_from_user(Session session[static 1]) {

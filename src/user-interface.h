@@ -3,8 +3,8 @@
 
 #include <stdbool.h>
 
-#include <ah/session.h>
-#include <ah/utils.h>
+#include "src/session.h"
+#include "src/utils.h"
 
 Err read_line_from_user(Session session[static 1]);
 Err process_line(Session session[static 1], const char* line);

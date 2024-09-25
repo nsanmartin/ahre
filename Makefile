@@ -1,15 +1,16 @@
 INCLUDE:=$(HOME)/usr/include
 LIB:=$(HOME)/usr/lib
-CFLAGS:=-g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition -Iinclude -Ihashi/include
+CFLAGS:=-g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition -I. -Ihashi/include
 
 AHRE:=ahre
 
 AHRE_OBJDIR=build
 AHRE_SRCDIR=src
-AHRE_INCLUDE=include
-AHRE_HEADERS=$(wildcard $(AHRE_INCLUDE)/ah/*.h)
+AHRE_INCLUDE=src
+AHRE_HEADERS=$(wildcard $(AHRE_INCLUDE)/*.h)
 AHRE_SRCS=$(wildcard $(AHRE_SRCDIR)/*.c)
 AHRE_OBJ=$(AHRE_SRCS:src/%.c=$(AHRE_OBJDIR)/%.o)
+AHDOC_SRC= debug.c doc-cache.c doc.c error.c ranges.c session.c str.c textbuf.c user-cmd.c user-interface.c
 
 all: ahre tests
 
@@ -21,11 +22,18 @@ run_tests: tests
 $(AHRE): $(AHRE_OBJ)
 	$(CC) $(CFLAGS) \
 		-I$(INCLUDE) \
-		$(AHRE).c -o build/$(AHRE) \
+		$@.c -o build/$@ \
 		$^  \
 		-lcurl -llexbor -lreadline
 
 tests: test_range test_buf
+
+ahdoc: $(AHRE_OBJ)
+	$(CC) $(CFLAGS) \
+		-I$(INCLUDE) \
+		$@.c -o build/$@ \
+		$^  \
+		-lreadline
 
 
 $(AHRE)2: $(AHRE_OBJ)

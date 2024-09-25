@@ -3,9 +3,9 @@
 
 #include <stdbool.h>
 
-#include <ah/error.h>
-#include <ah/str.h>
-#include <ah/utils.h>
+#include "src/error.h"
+#include "src/str.h"
+#include "src/utils.h"
 
 
 typedef struct {

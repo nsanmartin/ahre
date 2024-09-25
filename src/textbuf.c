@@ -1,7 +1,7 @@
-#include <ah/mem.h>
+#include "src/mem.h"
 
-#include <ah/textbuf.h>
-#include <ah/generic.h>
+#include "src/textbuf.h"
+#include "src/generic.h"
 
 /*  internal linkage */
 static Err textbuf_append_line_indexes(TextBuf ab[static 1], char* data, size_t len);

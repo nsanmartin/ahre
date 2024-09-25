@@ -3,10 +3,10 @@
 #include <curl/curl.h>
 #include <lexbor/html/html.h>
  
-#include <ah/doc.h>
-#include <ah/mem.h>
-#include <ah/user-interface.h>
-#include <ah/wrappers.h>
+#include "src/doc.h"
+#include "src/mem.h"
+#include "src/user-interface.h"
+#include "src/wrappers.h"
 
 void print_help(char* program) { printf("usage: %s <url>\n", program); }
 

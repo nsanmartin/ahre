@@ -20,7 +20,7 @@ typedef struct {
 	size_t len;
 } Str;
 
-#include <ah/generic.h>
+#include "src/generic.h"
 
 size_t str_len(const Str s[static 1]);
 bool str_is_empty(const Str s[static 1]);

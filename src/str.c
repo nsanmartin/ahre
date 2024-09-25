@@ -1,4 +1,18 @@
-#include <ah/str.h>
+#include "src/str.h"
+
+char* str_ndup_cstr(const Str* url, size_t n) {
+    if (str_is_empty(url)) { return NULL; }
+    if (len(url) >= n) {
+        perror("str too long");
+        return NULL;
+    }
+
+    char* res = malloc(len(url) + 1);
+    if (!res) { return NULL; }
+    res[len(url)] = '\0';
+    memcpy(res, url->s, len(url));
+    return res;
+}
 
 size_t
 mem_count_ocurrencies(char* data, size_t len, char c) {

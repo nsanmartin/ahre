@@ -1,9 +1,9 @@
 #ifndef __AHRE_Ctx_H__
 #define __AHRE_Ctx_H__
 
-#include <ah/utils.h>
-#include <ah/doc.h>
-#include <ah/wrappers.h>
+#include "src/utils.h"
+#include "src/doc.h"
+#include "src/wrappers.h"
 
 typedef struct Session Session;
 

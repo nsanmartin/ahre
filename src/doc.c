@@ -1,30 +1,32 @@
 #include <unistd.h>
 
-#include <ah/textbuf.h>
-#include <ah/curl-lxb.h>
-#include <ah/doc.h>
-#include <ah/error.h>
-#include <ah/generic.h>
-#include <ah/mem.h>
-#include <ah/utils.h>
-#include <ah/wrappers.h>
+#include "src/textbuf.h"
+#include "src/curl-lxb.h"
+#include "src/doc.h"
+#include "src/error.h"
+#include "src/generic.h"
+#include "src/mem.h"
+#include "src/utils.h"
+#include "src/wrappers.h"
 
 /* internal linkage */
 //static constexpr size_t MAX_URL_LEN = 2048;
 #define MAX_URL_LEN 2048
 //static constexpr size_t READ_FROM_FILE_BUFFER_LEN = 4096;
 #define READ_FROM_FILE_BUFFER_LEN 4096
-static unsigned char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {0};
+_Thread_local static unsigned char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {0};
 
 
 static Err lexbor_read_doc_from_url_or_file (UrlClient url_client[static 1], Doc ad[static 1]); 
 
+static TextBuf* doc_textbuf(Doc doc[static 1]) { return &doc->textbuf; }
 
+//TODO: use str ndup cstr
 static char* str_url_dup(const Str* url) {
     if (str_is_empty(url)) { return 0x0; }
     if (len(url) >= MAX_URL_LEN) {
-            perror("url too long");
-            return 0x0;
+        perror("url too long");
+        return 0x0;
     }
 
     char* res = malloc(len(url) + 1);
@@ -74,6 +76,8 @@ static Err lexbor_read_doc_from_url_or_file (UrlClient url_client[static 1], Doc
 
 
 /* external linkage */
+
+
 
 int doc_init(Doc d[static 1], const Str url[static 1]) {
     if (!d) { return -1; }
@@ -139,4 +143,23 @@ inline void doc_update_url(Doc ad[static 1], char* url) {
 
 bool doc_is_valid(Doc doc[static 1]) {
     return doc->url && doc->lxbdoc && doc->lxbdoc->body;
+}
+
+Err doc_read_from_file(Doc doc[static 1]) {
+    FILE* fp = fopen(doc->url, "r");
+    if  (!fp) { return strerror(errno); }
+
+    Err err = NULL;
+
+    size_t bytes_read = 0;
+    while ((bytes_read = fread(read_from_file_buffer, 1, READ_FROM_FILE_BUFFER_LEN, fp))) {
+        if ((err = textbuf_append(doc_textbuf(doc), (char*)read_from_file_buffer, READ_FROM_FILE_BUFFER_LEN))) {
+            return err;
+        }
+    }
+    //TODO: free mem?
+    if (ferror(fp)) { fclose(fp); return strerror(errno); }
+    fclose(fp);
+
+    return NULL;
 }

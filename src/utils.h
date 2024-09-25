@@ -12,8 +12,8 @@
 #define T size_t
 #include <arl.h>
 
-#include <ah/str.h>
-#include <ah/error.h>
+#include "src/str.h"
+#include "src/error.h"
 
 
 #define buf_append_lit(LitStr, Buf_) do{\

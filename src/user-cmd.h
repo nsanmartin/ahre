@@ -1,8 +1,8 @@
 #ifndef __AHRE_USER_CMD_H__
 #define __AHRE_USER_CMD_H__
 
-#include <ah/ranges.h>
-#include <ah/user-interface.h>
+#include "src/ranges.h"
+#include "src/user-interface.h"
 
 Err ed_global(Session session[static 1],  const char* rest);
 

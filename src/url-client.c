@@ -1,7 +1,7 @@
 #include <string.h>
 
-#include <ah/mem.h>
-#include <ah/url-client.h>
+#include "src/mem.h"
+#include "src/url-client.h"
 
 
 UrlClient* url_client_create(void) {

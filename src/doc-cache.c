@@ -1,5 +1,5 @@
-#include <ah/doc-cache.h>
-#include <ah/wrappers.h>
+#include "src/doc-cache.h"
+#include "src/wrappers.h"
 
 Err doc_cache_buffer_summary(DocCache c[static 1], BufOf(char) buf[static 1]) {
     Err err = Ok;

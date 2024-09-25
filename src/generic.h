@@ -1,9 +1,9 @@
 #ifndef __GENERIC_AHRE_H__
 #define __GENERIC_AHRE_H__
 
-#include <ah/textbuf.h>
-#include <ah/utils.h>
-#include <ah/str.h>
+#include "src/textbuf.h"
+#include "src/utils.h"
+#include "src/str.h"
 
 
 #define LENGTH(Ptr) (Ptr)->len

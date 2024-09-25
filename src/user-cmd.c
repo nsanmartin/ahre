@@ -1,6 +1,6 @@
-#include <ah/utils.h>
-#include <ah/wrappers.h>
-#include <ah/user-interface.h>
+#include "src/utils.h"
+#include "src/wrappers.h"
+#include "src/user-interface.h"
 
 Str parse_pattern(const char* tk) {
     Str res = {0};
