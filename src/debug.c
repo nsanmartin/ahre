@@ -1,5 +1,8 @@
 #include "src/debug.h"
 #include "src/generic.h"
+#include "src/html-doc.h"
+#include "src/wrappers.h"
+
 
 Err dbg_print_all_lines_nums(Session session[static 1]) {
     TextBuf* textbuf = session_current_buf(session);
@@ -32,15 +35,15 @@ Err dbg_print_all_lines_nums(Session session[static 1]) {
 /*
  * Functions that append summary of the content for debugging purposes
  */
-static Err textbuf_summary(Doc doc[static 1], BufOf(char)* buf) {
+static Err textbuf_summary(HtmlDoc html_doc[static 1], BufOf(char)* buf) {
 
-    buf_append_lit("Doc: ", buf);
-    if (buf_append_hexp(doc, buf)) { return "could not append"; }
+    buf_append_lit("HtmlDoc: ", buf);
+    if (buf_append_hexp(html_doc, buf)) { return "could not append"; }
     buf_append_lit("\n", buf);
 
-    if (doc->url) {
+    if (html_doc->url) {
         buf_append_lit(" url: ", buf);
-       if (buffn(char,append)(buf, (char*)doc->url, strlen(doc->url))) {
+       if (buffn(char,append)(buf, (char*)html_doc->url, strlen(html_doc->url))) {
            return  "could not append";
        }
        buf_append_lit("\n", buf);
@@ -49,9 +52,9 @@ static Err textbuf_summary(Doc doc[static 1], BufOf(char)* buf) {
        buf_append_lit(" none\n", buf);
 
     }
-    if (doc->lxbdoc) {
+    if (html_doc->lxbdoc) {
         buf_append_lit(" lxbdoc: ", buf);
-        if (buf_append_hexp(doc->lxbdoc, buf)) { return  "could not append"; }
+        if (buf_append_hexp(html_doc->lxbdoc, buf)) { return  "could not append"; }
         buf_append_lit("\n", buf);
 
     }
@@ -89,12 +92,32 @@ Err dbg_session_summary(Session session[static 1]) {
         if(url_client_summary(session->url_client, buf)) { return "could not get url client summary"; }
     } else { buf_append_lit("Not url_client\n", buf); }
 
-    if (session->doc) {
-        textbuf_summary(session->doc, buf);
-        doc_cache_buffer_summary(&session->doc->cache, buf);
-    } else { buf_append_lit("Not doc\n", buf); }
+    if (session->html_doc) {
+        textbuf_summary(session->html_doc, buf);
+        doc_cache_buffer_summary(&session->html_doc->cache, buf);
+    } else { buf_append_lit("Not html_doc\n", buf); }
 
     return Ok;
 }
 
 
+Err doc_cache_buffer_summary(DocCache c[static 1], BufOf(char) buf[static 1]) {
+    Err err = Ok;
+    buf_append_lit("DocCache: ", buf);
+    if (buf_append_hexp(c, buf)) { return "could nor append"; }
+    buf_append_lit("\n", buf);
+
+    if (c->hrefs) {
+        buf_append_lit(" hrefs: ", buf);
+        if (buf_append_hexp(c->hrefs, buf)) { return  "could nor append"; }
+        buf_append_lit("\n", buf);
+
+        if (c->hrefs) {
+            if((err=lexbor_foreach_href(c->hrefs, ahre_append_href, buf))) {
+                return err; ///lexbod foreach href";
+            }
+        }
+    } else { buf_append_lit(" no hrefs\n", buf); }
+
+    return err;
+}

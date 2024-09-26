@@ -7,8 +7,8 @@
 
 void print_help(char* program) { printf("usage: %s <url>\n", program); }
 
-Doc* ahdoc_create(const char* fname) {
-    Doc* rv = std_malloc(sizeof(Doc));
+HtmlDoc* ahdoc_create(const char* fname) {
+    HtmlDoc* rv = std_malloc(sizeof(HtmlDoc));
     if (!rv) { perror("Mem error"); goto exit_fail; }
     Str u;
     if (str_init(&u, fname)) { goto free_rv; }
@@ -16,7 +16,7 @@ Doc* ahdoc_create(const char* fname) {
         fname = str_ndup_cstr(&u, 5000);
         if (!fname) { goto free_rv; }
     }
-    *rv = (Doc){ .url=fname, .lxbdoc=NULL, .textbuf=(TextBuf){.current_line=1} };
+    *rv = (HtmlDoc){ .url=fname, .lxbdoc=NULL, .textbuf=(TextBuf){.current_line=1} };
     return rv;
 free_rv:
     destroy(rv);
@@ -29,7 +29,7 @@ Session* ahdoc_session_create(char* fname, UserLineCallback callback) {
     if (!rv) { perror("Mem error"); goto exit_fail; }
     *rv = (Session){0};
 
-    Doc* doc = ahdoc_create(fname);
+    HtmlDoc* doc = ahdoc_create(fname);
     if (!doc) { goto free_rv; }
     Err err = doc_read_from_file(doc);
     if (err) { perror(err); goto free_rv; }

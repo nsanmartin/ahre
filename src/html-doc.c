@@ -2,7 +2,7 @@
 
 #include "src/textbuf.h"
 #include "src/curl-lxb.h"
-#include "src/doc.h"
+#include "src/html-doc.h"
 #include "src/error.h"
 #include "src/generic.h"
 #include "src/mem.h"
@@ -17,9 +17,9 @@
 _Thread_local static unsigned char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {0};
 
 
-static Err lexbor_read_doc_from_url_or_file (UrlClient url_client[static 1], Doc ad[static 1]); 
+static Err lexbor_read_doc_from_url_or_file (UrlClient url_client[static 1], HtmlDoc ad[static 1]); 
 
-static TextBuf* doc_textbuf(Doc doc[static 1]) { return &doc->textbuf; }
+static TextBuf* doc_textbuf(HtmlDoc html_doc[static 1]) { return &html_doc->textbuf; }
 
 //TODO: use str ndup cstr
 static char* str_url_dup(const Str* url) {
@@ -39,18 +39,18 @@ static char* str_url_dup(const Str* url) {
 
 static bool file_exists(const char* path) { return access(path, F_OK) == 0; }
 
-static Err lexbor_read_doc_from_file(Doc doc[static 1]) {
-    FILE* fp = fopen(doc->url, "r");
+static Err lexbor_read_doc_from_file(HtmlDoc html_doc[static 1]) {
+    FILE* fp = fopen(html_doc->url, "r");
     if  (!fp) { return strerror(errno); }
 
-    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(doc->lxbdoc)) {
+    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(html_doc->lxbdoc)) {
         return "Lex failed to init html document";
     }
 
     size_t bytes_read = 0;
     while ((bytes_read = fread(read_from_file_buffer, 1, READ_FROM_FILE_BUFFER_LEN, fp))) {
         if (LXB_STATUS_OK != lxb_html_document_parse_chunk(
-                doc->lxbdoc,
+                html_doc->lxbdoc,
                 read_from_file_buffer,
                 bytes_read
             )
@@ -61,13 +61,13 @@ static Err lexbor_read_doc_from_file(Doc doc[static 1]) {
     if (ferror(fp)) { fclose(fp); return strerror(errno); }
     fclose(fp);
 
-    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_end(doc->lxbdoc)) {
+    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_end(html_doc->lxbdoc)) {
         return "Lbx failed to parse html";
     }
     return 0x0;
 }
 
-static Err lexbor_read_doc_from_url_or_file (UrlClient url_client[static 1], Doc ad[static 1]) {
+static Err lexbor_read_doc_from_url_or_file (UrlClient url_client[static 1], HtmlDoc ad[static 1]) {
     if (file_exists(ad->url)) {
         return lexbor_read_doc_from_file(ad);
     }
@@ -79,7 +79,7 @@ static Err lexbor_read_doc_from_url_or_file (UrlClient url_client[static 1], Doc
 
 
 
-int doc_init(Doc d[static 1], const Str url[static 1]) {
+int doc_init(HtmlDoc d[static 1], const Str url[static 1]) {
     if (!d) { return -1; }
     lxb_html_document_t* document = lxb_html_document_create();
     if (!document) {
@@ -96,12 +96,12 @@ int doc_init(Doc d[static 1], const Str url[static 1]) {
         }
     }
 
-    *d = (Doc){ .url=u, .lxbdoc=document, .textbuf=(TextBuf){.current_line=1} };
+    *d = (HtmlDoc){ .url=u, .lxbdoc=document, .textbuf=(TextBuf){.current_line=1} };
     return 0;
 }
 
-Doc* doc_create(char* url) {
-    Doc* rv = std_malloc(sizeof(Doc));
+HtmlDoc* doc_create(char* url) {
+    HtmlDoc* rv = std_malloc(sizeof(HtmlDoc));
     Str u;
     if (str_init(&u, url)) { return NULL; }
     if (doc_init(rv, &u)) {
@@ -111,45 +111,45 @@ Doc* doc_create(char* url) {
     return rv;
 }
 
-void doc_reset(Doc doc[static 1]) {
-    doc_cache_cleanup(&doc->cache);
-    lxb_html_document_clean(doc->lxbdoc);
-    textbuf_reset(&doc->textbuf);
-    destroy((char*)doc->url);
+void doc_reset(HtmlDoc html_doc[static 1]) {
+    doc_cache_cleanup(&html_doc->cache);
+    lxb_html_document_clean(html_doc->lxbdoc);
+    textbuf_reset(&html_doc->textbuf);
+    destroy((char*)html_doc->url);
 }
 
-void doc_cleanup(Doc doc[static 1]) {
-    doc_cache_cleanup(&doc->cache);
-    lxb_html_document_destroy(doc->lxbdoc);
-    textbuf_cleanup(&doc->textbuf);
-    destroy((char*)doc->url);
+void doc_cleanup(HtmlDoc html_doc[static 1]) {
+    doc_cache_cleanup(&html_doc->cache);
+    lxb_html_document_destroy(html_doc->lxbdoc);
+    textbuf_cleanup(&html_doc->textbuf);
+    destroy((char*)html_doc->url);
 }
 
-inline void doc_destroy(Doc* doc) {
-    doc_cleanup(doc);
-    std_free(doc);
+inline void doc_destroy(HtmlDoc* html_doc) {
+    doc_cleanup(html_doc);
+    std_free(html_doc);
 }
 
 
-inline void doc_update_url(Doc ad[static 1], char* url) {
+inline void doc_update_url(HtmlDoc ad[static 1], char* url) {
         destroy((char*)ad->url);
         ad->url = url;
 }
 
 
-bool doc_is_valid(Doc doc[static 1]) {
-    return doc->url && doc->lxbdoc && doc->lxbdoc->body;
+bool doc_is_valid(HtmlDoc html_doc[static 1]) {
+    return html_doc->url && html_doc->lxbdoc && html_doc->lxbdoc->body;
 }
 
-Err doc_read_from_file(Doc doc[static 1]) {
-    FILE* fp = fopen(doc->url, "r");
+Err doc_read_from_file(HtmlDoc html_doc[static 1]) {
+    FILE* fp = fopen(html_doc->url, "r");
     if  (!fp) { return strerror(errno); }
 
     Err err = NULL;
 
     size_t bytes_read = 0;
     while ((bytes_read = fread(read_from_file_buffer, 1, READ_FROM_FILE_BUFFER_LEN, fp))) {
-        if ((err = textbuf_append(doc_textbuf(doc), (char*)read_from_file_buffer, READ_FROM_FILE_BUFFER_LEN))) {
+        if ((err = textbuf_append(doc_textbuf(html_doc), (char*)read_from_file_buffer, READ_FROM_FILE_BUFFER_LEN))) {
             return err;
         }
     }
@@ -161,7 +161,7 @@ Err doc_read_from_file(Doc doc[static 1]) {
 }
 
 
-Err doc_fetch(Doc doc[static 1], UrlClient url_client[static 1]) {
-    return lexbor_read_doc_from_url_or_file (url_client, doc);
+Err doc_fetch(HtmlDoc html_doc[static 1], UrlClient url_client[static 1]) {
+    return lexbor_read_doc_from_url_or_file (url_client, html_doc);
 }
 

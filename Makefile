@@ -10,7 +10,7 @@ AHRE_INCLUDE=src
 AHRE_HEADERS=$(wildcard $(AHRE_INCLUDE)/*.h)
 AHRE_SRCS=$(wildcard $(AHRE_SRCDIR)/*.c)
 AHRE_OBJ=$(AHRE_SRCS:src/%.c=$(AHRE_OBJDIR)/%.o)
-AHDOC_SRC= debug.c doc-cache.c doc.c error.c ranges.c session.c str.c textbuf.c user-cmd.c user-interface.c
+AHDOC_SRC= debug.c html-doc.c error.c ranges.c session.c str.c textbuf.c user-cmd.c user-interface.c
 
 all: ahre tests
 
@@ -75,7 +75,7 @@ curl/lib/.libs: curl/configure
 	$(MAKE) -C curl
 
 test_range: utests/test_range.c build/session.o build/textbuf.o build/url-client.o \
-	build/doc.o build/str.o build/curl-lxb.o build/lexbor-wrapper.o
+	build/html-doc.o build/str.o build/curl-lxb.o build/lexbor-wrapper.o
 	$(CC) $(CFLAGS) -I. -I$(INCLUDE) -Iutests -o build/$@ $^ \
 		-lcurl -llexbor -lreadline
 

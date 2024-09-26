@@ -9,17 +9,17 @@ Err ed_global(Session session[static 1],  const char* rest);
 Err cmd_write(char* fname, Session session[static 1]);
 
 Err cmd_fetch(Session session[static 1]) {
-    Doc* doc = session_current_doc(session);
-    if (doc->url) {
-        return doc_fetch(doc, session->url_client);
+    HtmlDoc* html_doc = session_current_doc(session);
+    if (html_doc->url) {
+        return doc_fetch(html_doc, session->url_client);
     }
     return "Not url to fech";
 }
 
 
 static inline Err cmd_ahre(Session session[static 1]) {
-    Doc* doc = session_current_doc(session);
-    return lexbor_href_write(doc->lxbdoc, &doc->cache.hrefs, &doc->textbuf)
+    HtmlDoc* html_doc = session_current_doc(session);
+    return lexbor_href_write(html_doc->lxbdoc, &html_doc->cache.hrefs, &html_doc->textbuf)
         ? "could not fetch href"
         : Ok
         ;
@@ -31,13 +31,13 @@ static inline Err cmd_clear(Session session[static 1]) {
 }
 
 static inline Err cmd_tag(const char* rest, Session session[static 1]) {
-    Doc* doc = session_current_doc(session);
-    return lexbor_cp_tag(rest, doc->lxbdoc, &doc->textbuf.buf);
+    HtmlDoc* html_doc = session_current_doc(session);
+    return lexbor_cp_tag(rest, html_doc->lxbdoc, &html_doc->textbuf.buf);
 }
 
 static inline Err cmd_text(Session* session) {
-    Doc* doc = session_current_doc(session);
-    return lexbor_html_text_append(doc->lxbdoc, &doc->textbuf)
+    HtmlDoc* html_doc = session_current_doc(session);
+    return lexbor_html_text_append(html_doc->lxbdoc, &html_doc->textbuf)
         ? "could not append text"
         : Ok
         ;

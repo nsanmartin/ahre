@@ -44,22 +44,22 @@ Err cmd_set_url(Session session[static 1], const char* url) {
     Str u;
     if(str_init(&u, url)) { return "bad url"; }
     str_trim_space(&u);
-    if (!str_is_empty(&u) && (!session->doc->url || strncmp(u.s, session->doc->url, u.len))) {
-        doc_cleanup(session->doc);
-        if (doc_init(session->doc, &u)) {
-            return "could not init doc";
+    if (!str_is_empty(&u) && (!session->html_doc->url || strncmp(u.s, session->html_doc->url, u.len))) {
+        doc_cleanup(session->html_doc);
+        if (doc_init(session->html_doc, &u)) {
+            return "could not init html_doc";
         }
 
-        Doc* doc = session_current_doc(session);
-        if (doc_has_url(doc)) {
-            Err err = doc_fetch(doc, session->url_client);
+        HtmlDoc* html_doc = session_current_doc(session);
+        if (doc_has_url(html_doc)) {
+            Err err = doc_fetch(html_doc, session->url_client);
             if (err) {
                 return err_fmt("\nerror fetching url: '%s': %s", url, err);
             }
         }
         printf("set with url: %s\n", url);
     } else {
-       printf("url: %s\n",  session->doc->url ? session->doc->url : "<no url>");
+       printf("url: %s\n",  session->html_doc->url ? session->html_doc->url : "<no url>");
     }
     return Ok;
 }
