@@ -151,10 +151,7 @@ static inline bool range_has_no_end(Range r[static 1]) { return r->end == 0; }
 /* external linkage */
 
 const char*
-parse_range(const char* tk, Session session[static 1], Range range[static 1]) {
-    TextBuf* aeb = session_current_buf(session);
-    size_t current_line = aeb->current_line;
-    size_t nlines       = textbuf_line_count(aeb);
+parse_range(const char* tk, Range range[static 1], size_t current_line, size_t nlines) {
     tk =  parse_range_impl(tk, current_line, nlines, range);
     if (!tk || (!range_has_no_end(range) && is_range_valid(range, 0))) { return NULL; }
     else if (range->end == 0) range->end = range->beg; 

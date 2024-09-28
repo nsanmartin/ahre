@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 
+#include "src/ranges.h"
 #include "src/session.h"
 #include "src/utils.h"
 
@@ -19,4 +20,7 @@ int lexbor_href_write(
     lxb_dom_collection_t** hrefs,
     TextBuf* buf
 );
+
+const char* substr_match(const char* s, const char* cmd, size_t len);
+Err textbuf_eval_cmd(TextBuf textbuf[static 1], const char* line, Range range[static 1]);
 #endif

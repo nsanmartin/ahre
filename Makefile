@@ -28,7 +28,7 @@ $(AHRE): $(AHRE_OBJ)
 
 tests: test_range test_buf
 
-ahdoc: $(AHRE_OBJ)
+adhoc: $(AHRE_OBJ)
 	$(CC) $(CFLAGS) \
 		-I$(INCLUDE) \
 		$@.c -o build/$@ \
@@ -75,7 +75,7 @@ curl/lib/.libs: curl/configure
 	$(MAKE) -C curl
 
 test_range: utests/test_range.c build/session.o build/textbuf.o build/url-client.o \
-	build/html-doc.o build/str.o build/curl-lxb.o build/lexbor-wrapper.o
+	build/html-doc.o build/str.o build/lexbor-wrapper.o build/lexbor-curl-wrapper.o
 	$(CC) $(CFLAGS) -I. -I$(INCLUDE) -Iutests -o build/$@ $^ \
 		-lcurl -llexbor -lreadline
 

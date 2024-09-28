@@ -4,7 +4,7 @@
 #include "src/ranges.h"
 #include "src/user-interface.h"
 
-Err ed_global(Session session[static 1],  const char* rest);
+Err ed_global(TextBuf textbuf[static 1],  const char* rest);
 
 Err cmd_write(char* fname, Session session[static 1]);
 
@@ -76,13 +76,12 @@ line_num_to_right_offset(size_t lnum, TextBuf textbuf[static 1], size_t out[stat
     return -1;
 }
 
-static inline Err ed_print(Session session[static 1], Range range[static 1]) {
+static inline Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
     if (!range->beg  || range->beg > range->end) {
         fprintf(stderr, "! bad range\n");
         return  "bad range";
     }
 
-    TextBuf* textbuf = session_current_buf(session);
     if (textbuf_is_empty(textbuf)) {
         fprintf(stderr, "? empty buffer\n");
         return "empty buffer";
@@ -109,6 +108,6 @@ static inline Err ed_print(Session session[static 1], Range range[static 1]) {
 }
 
 
-Err ed_write(const char* rest, Session session[static 1]);
+Err ed_write(const char* rest, TextBuf textbuf[static 1]);
 
 #endif

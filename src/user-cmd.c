@@ -1,5 +1,4 @@
 #include "src/utils.h"
-#include "src/wrappers.h"
 #include "src/user-interface.h"
 
 Str parse_pattern(const char* tk) {
@@ -38,22 +37,21 @@ Err cmd_write(const char* fname, Session session[static 1]) {
 
 
 /* ed cmds */
-Err ed_write(const char* rest, Session session[static 1]) {
-    TextBuf* buf = session_current_buf(session);
+Err ed_write(const char* rest, TextBuf textbuf[static 1]) {
     if (!rest || !*rest) { return "cannot write without file arg"; }
     FILE* fp = fopen(rest, "w");
     if (!fp) {
         return err_fmt("%s: could not open file: %s", __func__, rest); 
     }
-    if (fwrite(textbuf_items(buf), 1, len(buf), fp) != len(buf)) {
+    if (fwrite(textbuf_items(textbuf), 1, len(textbuf), fp) != len(textbuf)) {
         return err_fmt("%s: error writing to file: %s", __func__, rest);
     }
     return Ok;
 }
 
 
-Err ed_global(Session session[static 1],  const char* rest) {
-    (void)session;
+Err ed_global(TextBuf textbuf[static 1],  const char* rest) {
+    (void)textbuf;
     Str pattern = parse_pattern(rest);
     if (!pattern.s || !pattern.len) { return "Could not read pattern"; }
     printf("pattern: %s\n", pattern.s);

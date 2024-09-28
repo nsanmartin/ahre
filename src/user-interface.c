@@ -9,7 +9,6 @@
 #include "src/user-cmd.h"
 #include "src/user-interface.h"
 #include "src/utils.h"
-#include "src/wrappers.h"
 
 
 Err read_line_from_user(Session session[static 1]) {
@@ -87,30 +86,36 @@ Err cmd_eval(Session session[static 1], const char* line) {
     return "unknown lxb cmd";
 }
 
-Err ed_eval(Session session[static 1], const char* line) {
+
+Err textbuf_eval_cmd(TextBuf textbuf[static 1], const char* line, Range range[static 1]) {
     const char* rest = 0x0;
+
+    if ((rest = substr_match(line, "a", 1)) && !*rest) { return ed_print_all(textbuf); }
+    if ((rest = substr_match(line, "l", 1)) && !*rest) { return dbg_print_all_lines_nums(textbuf); }
+    if ((rest = substr_match(line, "g", 1)) && *rest) { return ed_global(textbuf, rest); }
+    if ((rest = substr_match(line, "print", 1)) && !*rest) { return ed_print(textbuf, range); }
+    if ((rest = substr_match(line, "write", 1))) { return ed_write(rest, textbuf); }
+    return "unknown command";
+}
+
+
+Err ed_eval(Session session[static 1], const char* line) {
     if (!line) { return Ok; }
+    const char* rest = 0x0;
     Range range = {0};
-    line = parse_range(line, session, &range);
-    if (!line) {
-        puts("invalid range");
-        return 0;
-    } else if (range.end == 0) range.end = range.beg; 
 
     if ((rest = substr_match(line, "quit", 1)) && !*rest) { session->quit = true; return Ok;}
-    if (textbuf_is_empty(session_current_buf(session))) { 
-        return "empty buffer";
-    }
 
-    //printf("range: %lu, %lu\n", range.beg, range.end);
-    session_current_buf(session)->current_line = range.end;
+    TextBuf* textbuf = session_current_buf(session);
+    size_t current_line = textbuf->current_line;
+    size_t nlines       = textbuf_line_count(textbuf);
+    line = parse_range(line, &range, current_line, nlines);
+    if (!line) { return "invalid range"; }
 
-    if ((rest = substr_match(line, "a", 1)) && !*rest) { return ed_print_all(session); }
-    if ((rest = substr_match(line, "l", 1)) && !*rest) { return dbg_print_all_lines_nums(session); }
-    if ((rest = substr_match(line, "g", 1)) && *rest) { return ed_global(session, rest); }
-    if ((rest = substr_match(line, "print", 1)) && !*rest) { return ed_print(session, &range); }
-    if ((rest = substr_match(line, "write", 1))) { return ed_write(rest, session); }
-    return "unknown command";
+    if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
+
+    textbuf->current_line = range.end;
+    return textbuf_eval_cmd(textbuf, line, &range);
 }
 
 Err process_line(Session session[static 1], const char* line) {

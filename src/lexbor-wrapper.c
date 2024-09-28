@@ -1,6 +1,5 @@
 #include "src/utils.h"
 #include "src/html-doc.h"
-#include "src/wrappers.h"
 
 
 /* internal linkage */

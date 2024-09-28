@@ -1,11 +1,9 @@
 #include "src/debug.h"
 #include "src/generic.h"
 #include "src/html-doc.h"
-#include "src/wrappers.h"
 
 
-Err dbg_print_all_lines_nums(Session session[static 1]) {
-    TextBuf* textbuf = session_current_buf(session);
+Err dbg_print_all_lines_nums(TextBuf textbuf[static 1]) {
     size_t len = len(textbuf);
     char* items = textbuf_items(textbuf);
     char* end = items + len;

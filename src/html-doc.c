@@ -1,13 +1,9 @@
-#include <unistd.h>
-
 #include "src/textbuf.h"
-#include "src/curl-lxb.h"
 #include "src/html-doc.h"
 #include "src/error.h"
 #include "src/generic.h"
 #include "src/mem.h"
 #include "src/utils.h"
-#include "src/wrappers.h"
 
 /* internal linkage */
 //static constexpr size_t MAX_URL_LEN = 2048;
@@ -16,8 +12,6 @@
 #define READ_FROM_FILE_BUFFER_LEN 4096
 _Thread_local static unsigned char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {0};
 
-
-static Err lexbor_read_doc_from_url_or_file (UrlClient url_client[static 1], HtmlDoc ad[static 1]); 
 
 static TextBuf* doc_textbuf(HtmlDoc html_doc[static 1]) { return &html_doc->textbuf; }
 
@@ -37,9 +31,12 @@ static char* str_url_dup(const Str* url) {
 }
 
 
-static bool file_exists(const char* path) { return access(path, F_OK) == 0; }
 
-static Err lexbor_read_doc_from_file(HtmlDoc html_doc[static 1]) {
+
+
+/* external linkage */
+
+Err lexbor_read_doc_from_file(HtmlDoc html_doc[static 1]) {
     FILE* fp = fopen(html_doc->url, "r");
     if  (!fp) { return strerror(errno); }
 
@@ -67,15 +64,6 @@ static Err lexbor_read_doc_from_file(HtmlDoc html_doc[static 1]) {
     return 0x0;
 }
 
-static Err lexbor_read_doc_from_url_or_file (UrlClient url_client[static 1], HtmlDoc ad[static 1]) {
-    if (file_exists(ad->url)) {
-        return lexbor_read_doc_from_file(ad);
-    }
-    return curl_lexbor_fetch_document(url_client, ad);
-}
-
-
-/* external linkage */
 
 
 
@@ -160,8 +148,4 @@ Err doc_read_from_file(HtmlDoc html_doc[static 1]) {
     return NULL;
 }
 
-
-Err doc_fetch(HtmlDoc html_doc[static 1], UrlClient url_client[static 1]) {
-    return lexbor_read_doc_from_url_or_file (url_client, html_doc);
-}
 

@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include <lexbor/html/html.h>
 
@@ -10,7 +11,7 @@
 #include "src/error.h"
 #include "src/url-client.h"
 #include "src/utils.h"
-#include "src/wrappers.h"
+#include "src/lexbor-curl-wrapper.h"
 
 
 typedef struct UrlClient UrlClient;
@@ -48,6 +49,15 @@ static inline bool doc_has_url(HtmlDoc html_doc[static 1]) {
 }
 
 void doc_update_url(HtmlDoc html_doc[static 1], char* url) ;
-Err doc_fetch(HtmlDoc html_doc[static 1], UrlClient url_client[static 1]);
 bool doc_is_valid(HtmlDoc html_doc[static 1]);
+
+
+static inline bool file_exists(const char* path) { return access(path, F_OK) == 0; }
+Err lexbor_read_doc_from_file(HtmlDoc html_doc[static 1]) ;
+static inline Err doc_fetch(HtmlDoc html_doc[static 1], UrlClient url_client[static 1]) {
+    if (file_exists(html_doc->url)) {
+        return lexbor_read_doc_from_file(html_doc);
+    }
+    return curl_lexbor_fetch_document(url_client, html_doc->lxbdoc, html_doc->url);
+}
 #endif

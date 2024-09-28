@@ -6,7 +6,7 @@
 #include "src/html-doc.h"
 #include "src/mem.h"
 #include "src/user-interface.h"
-#include "src/wrappers.h"
+
 
 void print_help(char* program) { printf("usage: %s <url>\n", program); }
 
