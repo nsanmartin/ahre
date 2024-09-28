@@ -11,7 +11,7 @@
 #include "src/error.h"
 #include "src/url-client.h"
 #include "src/utils.h"
-#include "src/lexbor-curl-wrapper.h"
+#include "src/wrapper-lexbor-curl.h"
 
 
 typedef struct UrlClient UrlClient;
@@ -54,6 +54,7 @@ bool doc_is_valid(HtmlDoc html_doc[static 1]);
 
 static inline bool file_exists(const char* path) { return access(path, F_OK) == 0; }
 Err lexbor_read_doc_from_file(HtmlDoc html_doc[static 1]) ;
+
 static inline Err doc_fetch(HtmlDoc html_doc[static 1], UrlClient url_client[static 1]) {
     if (file_exists(html_doc->url)) {
         return lexbor_read_doc_from_file(html_doc);

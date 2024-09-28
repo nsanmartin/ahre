@@ -9,7 +9,7 @@
 #include "src/user-cmd.h"
 #include "src/user-interface.h"
 #include "src/utils.h"
-
+#include "src/cmd-ed.h"
 
 Err read_line_from_user(Session session[static 1]) {
     char* line = 0x0;
@@ -20,18 +20,6 @@ Err read_line_from_user(Session session[static 1]) {
     }
     destroy(line);
     return err;
-}
-
-const char* substr_match(const char* s, const char* cmd, size_t len) {
-    if (!*s) { return 0x0; }
-	for (; *s && !isspace(*s); ++s, ++cmd, (len?--len:len)) {
-		if (*s != *cmd) { return 0x0; }
-	}
-    if (len) { 
-        printf("...%s?\n", cmd);
-        return 0x0;
-    }
-	return cstr_skip_space(s);
 }
 
 bool substr_match_all(const char* s, size_t len, const char* cmd) {
@@ -86,17 +74,6 @@ Err cmd_eval(Session session[static 1], const char* line) {
     return "unknown lxb cmd";
 }
 
-
-Err textbuf_eval_cmd(TextBuf textbuf[static 1], const char* line, Range range[static 1]) {
-    const char* rest = 0x0;
-
-    if ((rest = substr_match(line, "a", 1)) && !*rest) { return ed_print_all(textbuf); }
-    if ((rest = substr_match(line, "l", 1)) && !*rest) { return dbg_print_all_lines_nums(textbuf); }
-    if ((rest = substr_match(line, "g", 1)) && *rest) { return ed_global(textbuf, rest); }
-    if ((rest = substr_match(line, "print", 1)) && !*rest) { return ed_print(textbuf, range); }
-    if ((rest = substr_match(line, "write", 1))) { return ed_write(rest, textbuf); }
-    return "unknown command";
-}
 
 
 Err ed_eval(Session session[static 1], const char* line) {

@@ -3,7 +3,7 @@
 
 #include "src/error.h"
 #include "src/url-client.h"
-#include "src/lexbor-wrapper.h"
+#include "src/wrapper-lexbor.h"
 
 
 Err

@@ -68,3 +68,17 @@ inline void str_trim_space(Str* l) {
     l->s = cstr_skip_space(l->s);
     l->len = cstr_next_space(l->s) - l->s;
 }
+
+
+const char* substr_match(const char* s, const char* cmd, size_t len) {
+    if (!*s) { return 0x0; }
+	for (; *s && !isspace(*s); ++s, ++cmd, (len?--len:len)) {
+		if (*s != *cmd) { return 0x0; }
+	}
+    if (len) { 
+        printf("...%s?\n", cmd);
+        return 0x0;
+    }
+	return cstr_skip_space(s);
+}
+

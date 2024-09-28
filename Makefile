@@ -10,9 +10,11 @@ AHRE_INCLUDE=src
 AHRE_HEADERS=$(wildcard $(AHRE_INCLUDE)/*.h)
 AHRE_SRCS=$(wildcard $(AHRE_SRCDIR)/*.c)
 AHRE_OBJ=$(AHRE_SRCS:src/%.c=$(AHRE_OBJDIR)/%.o)
-AHDOC_SRC= debug.c html-doc.c error.c ranges.c session.c str.c textbuf.c user-cmd.c user-interface.c
 
-all: ahre tests
+ADHOC_SRCS := src/error.c src/ranges.c src/str.c src/textbuf.c src/cmd-ed.c
+ADHOC_OBJ=$(ADHOC_SRCS:src/%.c=$(AHRE_OBJDIR)/%.o)
+
+all: tags cscope ahre tests
 
 run_tests: tests
 	./build/test_buf
@@ -28,7 +30,7 @@ $(AHRE): $(AHRE_OBJ)
 
 tests: test_range test_buf
 
-adhoc: $(AHRE_OBJ)
+adhoc: $(ADHOC_OBJ)
 	$(CC) $(CFLAGS) \
 		-I$(INCLUDE) \
 		$@.c -o build/$@ \
@@ -75,7 +77,7 @@ curl/lib/.libs: curl/configure
 	$(MAKE) -C curl
 
 test_range: utests/test_range.c build/session.o build/textbuf.o build/url-client.o \
-	build/html-doc.o build/str.o build/lexbor-wrapper.o build/lexbor-curl-wrapper.o
+	build/html-doc.o build/str.o build/wrapper-lexbor.o build/wrapper-lexbor-curl.o
 	$(CC) $(CFLAGS) -I. -I$(INCLUDE) -Iutests -o build/$@ $^ \
 		-lcurl -llexbor -lreadline
 
@@ -89,18 +91,22 @@ test_error: utests/test_error.c
 
 
 
-tags: $(AHRE_HEADERS) $(AHRE_SRCS)
+tags: $(AHRE_HEADERS) $(AHRE_SRCS) clean-tags
 	ctags -R . 
 
 cscope.files: $(AHRE_HEADERS) $(AHRE_SRCS)
+	if [ -f cscope.files ]; then rm cscope.files; fi
 	find . \( -path "./.git"  -o -path "./hashi" \) ! -prune -o -name "*.[ch]" > $@
 
-cscope: cscope.files
+cscope: cscope.files 
 	cscope -R -b -i $<
 
+clean-tags:
+	if [ -f tags ]; then rm tags; fi
 
-clean:
+clean-cscope:
+	find . -type f -name "cscope.*" -delete
+
+clean: clean-tags clean-cscope
 	find build -type f -delete
 	find . -type f -name tags -delete
-	find . -type f -name "cscope.*" -delete
-	if [ -f tags ]; then rm tags; fi

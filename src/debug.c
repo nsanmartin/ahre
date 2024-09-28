@@ -3,32 +3,6 @@
 #include "src/html-doc.h"
 
 
-Err dbg_print_all_lines_nums(TextBuf textbuf[static 1]) {
-    size_t len = len(textbuf);
-    char* items = textbuf_items(textbuf);
-    char* end = items + len;
-    
-
-    for (size_t lnum = 1; /*items && len && lnum < 40*/ ; ++lnum) {
-        char* next = memchr(items, '\n', len);
-        if (next >= end) {
-            fprintf(stderr, "Error: print all lines nums\n");
-            return  "Error: print all lines nums.";
-        }
-        printf("%ld: ", lnum);
-
-        if (next) {
-            size_t line_len = 1+next-items;
-            fwrite(items, 1, line_len, stdout);
-            items += line_len;
-            len -= line_len;
-        } else {
-            fwrite(items, 1, len, stdout);
-            break;
-        }
-    }
-    return Ok;
-}
 
 /*
  * Functions that append summary of the content for debugging purposes
