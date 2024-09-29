@@ -23,7 +23,7 @@ Err textbuf_append(TextBuf ab[static 1], char* data, size_t len);
 size_t textbuf_len(TextBuf ab[static 1]);
 char* textbuf_items(TextBuf ab[static 1]);
 
-size_t * textbuf_eol_at(TextBuf tb[static 1], size_t i);
+size_t* textbuf_eol_at(TextBuf tb[static 1], size_t i);
 size_t textbuf_line_count(TextBuf textbuf [static 1]);
 size_t textbuf_eol_count(TextBuf textbuf[static 1]);
 
@@ -42,4 +42,5 @@ static inline bool textbuf_is_empty(TextBuf ab[static 1]) {
     return !ab->buf.len;
 }
 
+Err textbuf_read_from_file(TextBuf textbuf[static 1], const char* filename);
 #endif

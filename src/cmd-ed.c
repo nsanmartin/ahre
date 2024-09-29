@@ -81,6 +81,7 @@ Err dbg_print_all_lines_nums(TextBuf textbuf[static 1]) {
     return Ok;
 }
 
+
 Err ed_write(const char* rest, TextBuf textbuf[static 1]) {
     if (!rest || !*rest) { return "cannot write without file arg"; }
     FILE* fp = fopen(rest, "w");
@@ -112,5 +113,22 @@ Err textbuf_eval_cmd(TextBuf textbuf[static 1], const char* line, Range range[st
     if ((rest = substr_match(line, "print", 1)) && !*rest) { return ed_print(textbuf, range); }
     if ((rest = substr_match(line, "write", 1))) { return ed_write(rest, textbuf); }
     return "unknown command";
+}
+
+
+Err ed_eval(TextBuf textbuf[static 1], const char* line) {
+    if (!line) { return Ok; }
+    const char* rest = 0x0;
+    Range range = {0};
+    size_t current_line = textbuf->current_line;
+    size_t nlines       = textbuf_line_count(textbuf);
+    line = parse_range(line, &range, current_line, nlines);
+    if (!line) { return "invalid range"; }
+
+    if ((rest = substr_match(line, "e", 1)) && *rest) { return ed_edit(textbuf, rest); }
+    if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
+
+    textbuf->current_line = range.end;
+    return textbuf_eval_cmd(textbuf, line, &range);
 }
 

@@ -4,6 +4,9 @@
 #include "src/generic.h"
 
 /*  internal linkage */
+#define READ_FROM_FILE_BUFFER_LEN 4096
+_Thread_local static char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {-1};
+
 static Err textbuf_append_line_indexes(TextBuf ab[static 1], char* data, size_t len);
 
 static Err textbuf_append_line_indexes(TextBuf ab[static 1], char* data, size_t len) {
@@ -25,6 +28,7 @@ static Err textbuf_append_line_indexes(TextBuf ab[static 1], char* data, size_t 
 
 void textbuf_cleanup(TextBuf b[static 1]) {
     buffn(char, clean)(&b->buf);
+    arlfn(size_t, clean)(&b->eols);
     *b = (TextBuf){.current_line=1};
 }
 
@@ -60,4 +64,24 @@ Err textbuf_append(TextBuf textbuf[static 1], char* data, size_t len) {
         : Ok
         )
         ;
+}
+
+
+Err textbuf_read_from_file(TextBuf textbuf[static 1], const char* filename) {
+    FILE* fp = fopen(filename, "r");
+    if  (!fp) { return strerror(errno); }
+
+    Err err = NULL;
+
+    size_t bytes_read = 0;
+    while ((bytes_read = fread(read_from_file_buffer, 1, READ_FROM_FILE_BUFFER_LEN, fp))) {
+        if ((err = textbuf_append(textbuf, read_from_file_buffer, bytes_read))) {
+            return err;
+        }
+    }
+    //TODO: free mem?
+    if (ferror(fp)) { fclose(fp); return strerror(errno); }
+    fclose(fp);
+
+    return NULL;
 }

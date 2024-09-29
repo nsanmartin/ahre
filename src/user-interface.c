@@ -27,6 +27,7 @@ bool substr_match_all(const char* s, size_t len, const char* cmd) {
 }
 
 
+//TODO: move this to a method
 Err cmd_set_url(Session session[static 1], const char* url) {
     Str u;
     if(str_init(&u, url)) { return "bad url"; }
@@ -75,36 +76,18 @@ Err cmd_eval(Session session[static 1], const char* line) {
 }
 
 
-
-Err ed_eval(Session session[static 1], const char* line) {
-    if (!line) { return Ok; }
-    const char* rest = 0x0;
-    Range range = {0};
-
-    if ((rest = substr_match(line, "quit", 1)) && !*rest) { session->quit = true; return Ok;}
-
-    TextBuf* textbuf = session_current_buf(session);
-    size_t current_line = textbuf->current_line;
-    size_t nlines       = textbuf_line_count(textbuf);
-    line = parse_range(line, &range, current_line, nlines);
-    if (!line) { return "invalid range"; }
-
-    if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
-
-    textbuf->current_line = range.end;
-    return textbuf_eval_cmd(textbuf, line, &range);
-}
-
 Err process_line(Session session[static 1], const char* line) {
     if (!line) { session->quit = true; return "no input received, exiting"; }
     line = cstr_skip_space(line);
 
     if (!*line) { return Ok; }
 
+    const char* rest = NULL;
+    if ((rest = substr_match(line, "quit", 1)) && !*rest) { session->quit = true; return Ok;}
     if (*line == '\\') {
         return cmd_eval(session, line + 1);
     } else {
-        return ed_eval(session, line);
+        return ed_eval(session_current_buf(session), line);
     }
 
     return "unexpected";

@@ -1,16 +1,39 @@
 #include "src/str.h"
 
-char* str_ndup_cstr(const Str* url, size_t n) {
-    if (str_is_empty(url)) { return NULL; }
-    if (len(url) >= n) {
-        perror("str too long");
-        return NULL;
-    }
+/* reserves \0 at the end */
+//Str str_dup(Str s[static 1]) {
+//    Str res = {0};
+//    res.s = malloc(s->len + 1);
+//    res.len = s->len;
+//    memcpy((char*)res.s, s->s, s->len);
+//    res.s[res.len] = '\0';
+//    return res;
+//}
 
-    char* res = malloc(len(url) + 1);
-    if (!res) { return NULL; }
-    res[len(url)] = '\0';
-    memcpy(res, url->s, len(url));
+///char* str_ndup_cstr(const Str* url, size_t n) {
+///    if (str_is_empty(url)) { return NULL; }
+///    if (len(url) >= n) {
+///        perror("str too long");
+///        return NULL;
+///    }
+///
+///    char* res = malloc(len(url) + 1);
+///    if (!res) { return NULL; }
+///    res[len(url)] = '\0';
+///    memcpy(res, url->s, len(url));
+///    return res;
+///}
+
+char* url_cpy(const char* url) {
+    char* res = NULL;
+    if (url && *url) {
+        const char* end = cstr_next_space(url);
+        size_t len = end - url;
+        res = malloc(1 + len);
+        if (!res) { return NULL; }
+        memcpy(res, url, 1 + len);
+        memset(res + len, '\0', 1);
+    }
     return res;
 }
 
@@ -51,6 +74,11 @@ inline bool str_is_empty(const Str s[static 1]) { return !s->s || len(s) == 0; }
 inline int str_init(Str s[static 1], const char* cs) {
     *s = (Str){.s=cs, .len=cs?strlen(cs):0};
     return cs && !len(s) ? -1 : 0;
+}
+
+inline int str_init_from_mem(Str s[static 1], const char* beg, const char* end) {
+    *s = (Str){.s=beg, .len=beg<=end?end-beg:0};
+    return beg > end ? -1 : 0;
 }
 
 
