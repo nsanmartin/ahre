@@ -53,7 +53,7 @@ $(AHRE_OBJDIR)/%.o: $(AHRE_SRCDIR)/%.c $(AHRE_HEADERS)
 		-L$(LIB) \
 		-c -o $@ \
 		$< \
-		-lcurl -llexbor
+		-lcurl -llexbor -lreadline
 
 #TODO: add lexbor as submodule too
 debug: curl/lib/.libs 
