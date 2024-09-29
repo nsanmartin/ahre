@@ -14,7 +14,7 @@ AHRE_OBJ=$(AHRE_SRCS:src/%.c=$(AHRE_OBJDIR)/%.o)
 ADHOC_SRCS := src/error.c src/ranges.c src/str.c src/textbuf.c src/cmd-ed.c
 ADHOC_OBJ=$(ADHOC_SRCS:src/%.c=$(AHRE_OBJDIR)/%.o)
 
-all: tags cscope ahre tests
+all: ahre tests
 
 run_tests: tests
 	./build/test_buf
