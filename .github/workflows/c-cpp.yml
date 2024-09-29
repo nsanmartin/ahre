@@ -19,6 +19,8 @@ jobs:
       run: sudo apt install -y gcc 
     - name: libcurl
       run: sudo apt install -y libcurl4-openssl-dev
+    - name: readline
+      run: sudo apt install -y libreadline-dev
     - name: lexbor-clone
       run: git clone https://github.com/lexbor/lexbor 
     - name: lexbor-install
