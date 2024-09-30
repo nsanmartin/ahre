@@ -86,7 +86,7 @@ Err doc_cache_buffer_summary(DocCache c[static 1], BufOf(char) buf[static 1]) {
 
         if (c->hrefs) {
             if((err=lexbor_foreach_href(c->hrefs, ahre_append_href, buf))) {
-                return err; ///lexbod foreach href";
+                return err;
             }
         }
     } else { buf_append_lit(" no hrefs\n", buf); }

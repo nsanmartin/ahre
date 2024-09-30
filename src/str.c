@@ -1,28 +1,5 @@
 #include "src/str.h"
 
-/* reserves \0 at the end */
-//Str str_dup(Str s[static 1]) {
-//    Str res = {0};
-//    res.s = malloc(s->len + 1);
-//    res.len = s->len;
-//    memcpy((char*)res.s, s->s, s->len);
-//    res.s[res.len] = '\0';
-//    return res;
-//}
-
-///char* str_ndup_cstr(const Str* url, size_t n) {
-///    if (str_is_empty(url)) { return NULL; }
-///    if (len(url) >= n) {
-///        perror("str too long");
-///        return NULL;
-///    }
-///
-///    char* res = malloc(len(url) + 1);
-///    if (!res) { return NULL; }
-///    res[len(url)] = '\0';
-///    memcpy(res, url->s, len(url));
-///    return res;
-///}
 
 char* url_cpy(const char* url) {
     char* res = NULL;

@@ -8,8 +8,6 @@ typedef const char* Err;
 //constexpr Err Ok = (Err)0x0;
 #define Ok ((Err)0x0)
 
-///#define RETERR(ERRMSG,RETVAL) do{ perror(ERRMSG); return RETVAL; } while(0)
-
 Err err_fmt(Err fmt, ...);
 
 #endif

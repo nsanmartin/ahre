@@ -34,8 +34,7 @@ adhoc: $(ADHOC_OBJ)
 	$(CC) $(CFLAGS) \
 		-I$(INCLUDE) \
 		$@.c -o build/$@ \
-		$^  \
-		-lreadline
+		$^
 
 
 $(AHRE)2: $(AHRE_OBJ)

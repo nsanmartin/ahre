@@ -1,14 +1,65 @@
 #include <stdbool.h>
 #include <stdio.h>
-#include <readline/readline.h>
-#include <readline/history.h>
  
 #include "src/mem.h"
 #include "src/ranges.h"
 #include "src/str.h"
-#include "src/user-interface.h"
+#include "src/cmd-ed.h"
 
 /* * */
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+
+
+int getline(char **lineptr, size_t *n, FILE *stream) {
+    static char line[256];
+    char *ptr;
+    unsigned int len;
+
+   if (lineptr == NULL || n == NULL) {
+      errno = EINVAL;
+      return -1;
+   }
+
+   if (ferror (stream))
+      return -1;
+
+   if (feof(stream))
+      return -1;
+     
+   fgets(line,256,stream);
+
+   ptr = strchr(line,'\n');   
+   if (ptr)
+      *ptr = '\0';
+
+   len = strlen(line);
+   
+   if ((len+1) < 256) {
+      ptr = realloc(*lineptr, 256);
+      if (ptr == NULL)
+         return(-1);
+      *lineptr = ptr;
+      *n = 256;
+   }
+
+   strcpy(*lineptr,line); 
+   return(len);
+}
+
+char* adhoc_readline (const char *prompt) {
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+    printf("%s", prompt);
+    read = getline(&line, &len, stdin);
+    if (read == -1) { free(line); line = 0x0; }
+    return line;
+
+}
 
 typedef struct {
     const char* url;
@@ -83,27 +134,6 @@ void text_session_destroy(TextSession s[static 1]) {
 }
 
 
-//Err adhoc_ed_eval(TextSession session[static 1], const char* line) {
-//    if (!line) { return Ok; }
-//    const char* rest = 0x0;
-//    Range range = {0};
-//
-//    if ((rest = substr_match(line, "quit", 1)) && !*rest) { session->quit = true; return Ok;}
-//    ///if ((rest = substr_match(line, "edit", 1))) { return cmd_set_url(session, rest); }
-//
-//    TextBuf* textbuf = text_session_current_buf(session);
-//    size_t current_line = textbuf->current_line;
-//    size_t nlines       = textbuf_line_count(textbuf);
-//    line = parse_range(line, &range, current_line, nlines);
-//    if (!line) { return "invalid range"; }
-//
-//    if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
-//
-//    textbuf->current_line = range.end;
-//    return textbuf_eval_cmd(textbuf, line, &range);
-//}
-
-
 Err ahdoc_process_line(TextSession session[static 1], const char* line) {
     if (!line) { session->quit = true; return "no input received, exiting"; }
     line = cstr_skip_space(line);
@@ -120,11 +150,11 @@ Err ahdoc_process_line(TextSession session[static 1], const char* line) {
 
 Err ahdoc_read_line_from_user(TextSession session[static 1]) {
     char* line = 0x0;
-    line = readline("");
+    line = adhoc_readline("");
     Err err = ahdoc_process_line(session, line);
-    if (!err) {
-        add_history(line);
-    }
+    ///if (!err) {
+    ///    add_history(line);
+    ///}
     destroy(line);
     return err;
 }
