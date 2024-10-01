@@ -16,17 +16,6 @@
 #include "src/error.h"
 
 
-#define LENGTH(Ptr) (Ptr)->len
-
-
-#define len(Ptr) _Generic((Ptr), \
-        Str*: str_len, \
-        const Str*: str_len, \
-        TextBuf*: textbuf_len, \
-        const TextBuf*: textbuf_len \
-    )(Ptr)
-
-
 #define buf_append_lit(LitStr, Buf_) do{\
    if (buffn(char,append)(Buf_, (char*)LitStr, sizeof(LitStr))) {\
        return "could not append"; }}while(0)

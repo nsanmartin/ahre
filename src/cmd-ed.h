@@ -1,6 +1,7 @@
 #ifndef __AHRE_CMD_ED_H__
 #define __AHRE_CMD_ED_H__
 
+#include "src/generic.h"
 #include "src/textbuf.h"
 #include "src/ranges.h"
 

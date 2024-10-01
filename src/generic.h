@@ -9,6 +9,17 @@
 #include "src/utils.h"
 
 
+#define LENGTH(Ptr) (Ptr)->len
+
+
+#define len(Ptr) _Generic((Ptr), \
+        Str*: str_len, \
+        const Str*: str_len, \
+        TextBuf*: textbuf_len, \
+        const TextBuf*: textbuf_len \
+    )(Ptr)
+
+
 #define destroy(Ptr) _Generic((Ptr), \
     TextBuf*:   textbuf_destroy, \
     UrlClient*: url_client_destroy, \
