@@ -9,12 +9,13 @@
 
 #include "src/textbuf.h"
 #include "src/error.h"
+#include "src/mem.h"
 #include "src/url-client.h"
 #include "src/utils.h"
 #include "src/wrapper-lexbor-curl.h"
 
 
-typedef struct UrlClient UrlClient;
+///typedef struct UrlClient UrlClient;
 
 typedef struct {
     lxb_dom_collection_t* hrefs;

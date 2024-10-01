@@ -105,6 +105,6 @@ clean-tags:
 clean-cscope:
 	find . -type f -name "cscope.*" -delete
 
-clean: clean-tags clean-cscope
+clean:
 	find build -type f -delete
 	find . -type f -name tags -delete

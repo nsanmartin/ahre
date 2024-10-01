@@ -3,7 +3,6 @@
 #include <ctype.h>
 
 #include "src/utils.h"
-#include "src/session.h"
 #include "src/textbuf.h"
 #include "src/ranges.h"
 

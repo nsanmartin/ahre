@@ -1,5 +1,3 @@
-#include "src/mem.h"
-
 #include "src/textbuf.h"
 #include "src/generic.h"
 

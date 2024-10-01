@@ -7,17 +7,4 @@
 #define std_free free
 #define ah_strndup strndup
 
-#include "src/url-client.h"
-#include "src/html-doc.h"
-#include "src/session.h"
-#include "src/textbuf.h"
-
-#define destroy(Ptr) _Generic((Ptr), \
-    TextBuf*:   textbuf_destroy, \
-    UrlClient*: url_client_destroy, \
-    HtmlDoc*:       doc_destroy, \
-    Session*:   session_destroy, \
-    char*:     std_free \
-)(Ptr)
-
 #endif

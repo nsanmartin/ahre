@@ -1,3 +1,6 @@
+#include "src/error.h"
+#include "src/generic.h"
+#include "src/mem.h"
 #include "src/str.h"
 
 

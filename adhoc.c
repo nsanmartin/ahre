@@ -52,7 +52,7 @@ int getline(char **lineptr, size_t *n, FILE *stream) {
 char* adhoc_readline (const char *prompt) {
     char *line = NULL;
     size_t len = 0;
-    ssize_t read;
+    int read;
 
     printf("%s", prompt);
     read = getline(&line, &len, stdin);
@@ -79,7 +79,7 @@ Err textdoc_init(TextDoc textdoc[static 1], const char* fname) {
         if (!mut_buf) { return "mem error"; }
         memcpy(mut_buf, fname, 1 + len);
         memset(mut_buf + len, '\0', 1);
-        destroy((char*)textdoc->url);
+        std_free((char*)textdoc->url);
         textdoc->url = mut_buf;
     }
     return Ok;
@@ -87,7 +87,7 @@ Err textdoc_init(TextDoc textdoc[static 1], const char* fname) {
 
 void textdoc_cleanup(TextDoc textdoc[static 1]) {
     textbuf_cleanup(&textdoc->textbuf);
-    destroy((char*)textdoc->url);
+    std_free((char*)textdoc->url);
 }
 
 static inline bool textdoc_has_url(TextDoc textdoc[static 1]) { return textdoc->url; }
@@ -97,7 +97,7 @@ Err textdoc_fetch(TextDoc textdoc[static 1]) {
 }
 
 Err textdoc_set_url(TextDoc textdoc[static 1], const char* url) {
-    if (textdoc_url(textdoc)) destroy((char*)textdoc_url(textdoc));
+    if (textdoc_url(textdoc)) std_free((char*)textdoc_url(textdoc));
     textbuf_cleanup(&textdoc->textbuf);
     textdoc->url = url_cpy(url);
     if (textdoc_has_url(textdoc)) {
@@ -155,7 +155,7 @@ Err ahdoc_read_line_from_user(TextSession session[static 1]) {
     ///if (!err) {
     ///    add_history(line);
     ///}
-    destroy(line);
+    std_free(line);
     return err;
 }
 /* * */
