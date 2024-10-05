@@ -1,6 +1,9 @@
 #include <stdbool.h>
 #include <stdio.h>
  
+#include <readline/readline.h>
+#include <readline/history.h>
+
 #include "src/mem.h"
 #include "src/ranges.h"
 #include "src/str.h"
@@ -150,11 +153,9 @@ Err ahdoc_process_line(TextSession session[static 1], const char* line) {
 
 Err ahdoc_read_line_from_user(TextSession session[static 1]) {
     char* line = 0x0;
-    line = adhoc_readline("");
+    line = readline("");
     Err err = ahdoc_process_line(session, line);
-    ///if (!err) {
-    ///    add_history(line);
-    ///}
+    if (line && *line) add_history(line);
     std_free(line);
     return err;
 }
