@@ -1,5 +1,6 @@
 #include <string.h>
 
+#include "src/generic.h"
 #include "src/mem.h"
 #include "src/url-client.h"
 
