@@ -50,7 +50,6 @@ static inline Err ed_print_all(TextBuf textbuf[static 1]) {
 Err ed_write(const char* rest, TextBuf textbuf[static 1]);
 Err dbg_print_all_lines_nums(TextBuf textbuf[static 1]);
 
-static inline Err
-ed_edit(TextBuf textbuf[static 1], const char* rest) { return textbuf_read_from_file(textbuf, rest); }
+static inline Err ed_edit(TextBuf textbuf[static 1], const char* rest) { return textbuf_read_from_file(textbuf, rest); }
 Err ed_eval(TextBuf textbuf[static 1], const char* line);
 #endif

@@ -135,9 +135,10 @@ Err doc_read_from_file(HtmlDoc html_doc[static 1]) {
 
     Err err = NULL;
 
+    TextBuf* textbuf = doc_textbuf(html_doc);
     size_t bytes_read = 0;
     while ((bytes_read = fread(read_from_file_buffer, 1, READ_FROM_FILE_BUFFER_LEN, fp))) {
-        if ((err = textbuf_append(doc_textbuf(html_doc), (char*)read_from_file_buffer, READ_FROM_FILE_BUFFER_LEN))) {
+        if ((err = textbuf_append_part(textbuf, (char*)read_from_file_buffer, READ_FROM_FILE_BUFFER_LEN))) {
             return err;
         }
     }
@@ -145,7 +146,7 @@ Err doc_read_from_file(HtmlDoc html_doc[static 1]) {
     if (ferror(fp)) { fclose(fp); return strerror(errno); }
     fclose(fp);
 
-    return NULL;
+    return textbuf_append_null(textbuf);
 }
 
 

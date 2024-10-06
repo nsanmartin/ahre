@@ -105,7 +105,9 @@ Err lexbor_href_write(
         )) { return "failed to get elements by name"; }
     }
 
-    return lexbor_foreach_href(*hrefs, ahre_append_href, (void*)textbuf);
+    Err err = lexbor_foreach_href(*hrefs, ahre_append_href, (void*)textbuf);
+    if (err) return err;
+    return textbuf_append_null(textbuf);
 }
 
 
@@ -122,7 +124,7 @@ lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf) {
     }
     size_t len = 0;
     lxb_char_t* text = lxb_dom_node_text_content(node, &len);
-    return textbuf_append(buf, (char*)text, len);
+    return textbuf_append_part(buf, (char*)text, len);
 }
 
 

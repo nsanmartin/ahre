@@ -3,7 +3,7 @@
 
 /*  internal linkage */
 #define READ_FROM_FILE_BUFFER_LEN 4096
-_Thread_local static char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {-1};
+_Thread_local static char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN + 1] = {0};
 
 static Err textbuf_append_line_indexes(TextBuf ab[static 1], char* data, size_t len);
 
@@ -53,7 +53,7 @@ inline size_t textbuf_line_count(TextBuf textbuf[static 1]) {
 }
 
 
-Err textbuf_append(TextBuf textbuf[static 1], char* data, size_t len) {
+Err textbuf_append_part(TextBuf textbuf[static 1], char* data, size_t len) {
     Err err = Ok;
     return (err=textbuf_append_line_indexes(textbuf, data, len))
         ? err :
@@ -73,13 +73,41 @@ Err textbuf_read_from_file(TextBuf textbuf[static 1], const char* filename) {
 
     size_t bytes_read = 0;
     while ((bytes_read = fread(read_from_file_buffer, 1, READ_FROM_FILE_BUFFER_LEN, fp))) {
-        if ((err = textbuf_append(textbuf, read_from_file_buffer, bytes_read))) {
+        if ((err = textbuf_append_part(textbuf, read_from_file_buffer, bytes_read))) {
             return err;
         }
     }
     //TODO: free mem?
     if (ferror(fp)) { fclose(fp); return strerror(errno); }
     fclose(fp);
+    return textbuf_append_null(textbuf);
+}
+
+Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) {
+    char* bufbeg = textbuf_items(tb);
+    if (ch <= bufbeg) return "error: invalid char in textbuf";
+    size_t off = ch - bufbeg;
+    if (off >= textbuf_len(tb)) { return "error: offset out of textbuf"; }
+    ArlOf(size_t)* eols = textbuf_eols(tb);
+    const size_t* beg = arlfn(size_t, begin)(eols);
+    const size_t* it = beg;
+    const size_t* end = arlfn(size_t, end)(eols);
+    while (it < end && *it < off) 
+        ++it;
+    *out = 1 + (it-beg);
+    return  Ok;
+}
+
+char* textbuf_line_offset(TextBuf tb[static 1], size_t line) {
+    if (!line) { return NULL; }
+    char* beg = textbuf_items(tb);
+    if (line == 1) { return beg; }
+    ArlOf(size_t)* eols = textbuf_eols(tb);
+    size_t* it = arlfn(size_t, at)(eols, line-1);
+    if (it) 
+        return beg + *it;
 
     return NULL;
 }
+
+

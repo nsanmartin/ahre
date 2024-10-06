@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "src/cmd-ed.h"
+#include "src/re.h"
 #include "src/str.h"
 
 static inline Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
@@ -104,12 +105,33 @@ Err ed_global(TextBuf textbuf[static 1],  const char* rest) {
 }
 
 
+Err ed_search(TextBuf textbuf[static 1],  const char* rest) {
+    const char* buf = textbuf_current_line_offset(textbuf);
+    if (!buf) return "error: invalid current line";
+    size_t match;
+    Err err = regex_search_next(rest, buf, &match);
+    if (err) return err;
+    //if (!match || !*match) { return Ok; }
+    //puts("match");
+    printf("match off: %ld\n", match);
+
+    size_t line = 0;
+    if ((err = textbuf_get_line_of(textbuf, buf + match, &line)))  return err;
+    printf("line off: %ld\n", line);
+    Range r = (Range){.beg=line,.end=line};
+    ed_print(textbuf, &r);
+    *textbuf_current_line(textbuf) = line;
+    return Ok;
+}
+
+
 Err textbuf_eval_cmd(TextBuf textbuf[static 1], const char* line, Range range[static 1]) {
     const char* rest = 0x0;
 
     if ((rest = substr_match(line, "a", 1)) && !*rest) { return ed_print_all(textbuf); }
     if ((rest = substr_match(line, "l", 1)) && !*rest) { return dbg_print_all_lines_nums(textbuf); }
     if ((rest = substr_match(line, "g", 1)) && *rest) { return ed_global(textbuf, rest); }
+    if (line && *line == '/') { return ed_search(textbuf, ++line); }
     if ((rest = substr_match(line, "print", 1)) && !*rest) { return ed_print(textbuf, range); }
     if ((rest = substr_match(line, "write", 1))) { return ed_write(rest, textbuf); }
     return "unknown command";

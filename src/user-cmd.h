@@ -18,10 +18,11 @@ Err cmd_fetch(Session session[static 1]) {
 
 static inline Err cmd_ahre(Session session[static 1]) {
     HtmlDoc* html_doc = session_current_doc(session);
-    return lexbor_href_write(html_doc->lxbdoc, &html_doc->cache.hrefs, &html_doc->textbuf)
-        ? "could not fetch href"
-        : Ok
-        ;
+    TextBuf* tb = &html_doc->textbuf;
+    if (lexbor_href_write(html_doc->lxbdoc, &html_doc->cache.hrefs, tb)) 
+        return "could not fetch href"; 
+    
+    return textbuf_append_null(tb);
 }
 
 static inline Err cmd_clear(Session session[static 1]) {

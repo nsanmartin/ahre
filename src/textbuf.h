@@ -19,10 +19,13 @@ void textbuf_cleanup(TextBuf b[static 1]);
 void textbuf_destroy(TextBuf* b);
 static inline int textbuf_init(TextBuf ab[static 1]) { *ab = (TextBuf){.current_line=1}; return 0; }
 
-Err textbuf_append(TextBuf ab[static 1], char* data, size_t len);
+Err textbuf_append_part(TextBuf ab[static 1], char* data, size_t len);
 size_t textbuf_len(TextBuf ab[static 1]);
 char* textbuf_items(TextBuf ab[static 1]);
+char* textbuf_line_offset(TextBuf ab[static 1], size_t line);
+static inline size_t* textbuf_current_line(TextBuf tb[static 1]) { return &tb->current_line; }
 
+static inline ArlOf(size_t)* textbuf_eols(TextBuf tb[static 1]) { return &tb->eols; }
 size_t* textbuf_eol_at(TextBuf tb[static 1], size_t i);
 size_t textbuf_line_count(TextBuf textbuf [static 1]);
 size_t textbuf_eol_count(TextBuf textbuf[static 1]);
@@ -42,5 +45,11 @@ static inline bool textbuf_is_empty(TextBuf ab[static 1]) {
     return !ab->buf.len;
 }
 
-Err textbuf_read_from_file(TextBuf textbuf[static 1], const char* filename);
+static inline Err textbuf_append_null(TextBuf textbuf[static 1]) { return textbuf_append_part(textbuf, (char[]){0}, 1); }
+Err textbuf_read_from_file(TextBuf textbuf[static 1], const char* filename) ;
+Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) ;
+
+static inline char* textbuf_current_line_offset(TextBuf tb[static 1]) {
+    return textbuf_line_offset(tb, *textbuf_current_line(tb));
+}
 #endif
