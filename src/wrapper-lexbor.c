@@ -88,7 +88,9 @@ Err ahre_append_href(lxb_dom_element_t* element, void* aeBuf) {
     const lxb_char_t * value = lxb_dom_element_get_attribute(
         element, (const lxb_char_t*)"href", 4, &value_len
     );
-    return textbuf_append_line(buf, (char*)value, value_len);
+    if (value_len && value)
+        return textbuf_append_line(buf, (char*)value, value_len);
+    return NULL;
 }
 
 

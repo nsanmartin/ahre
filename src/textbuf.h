@@ -32,12 +32,16 @@ size_t textbuf_eol_count(TextBuf textbuf[static 1]);
 
 static inline Err
 textbuf_append_line(TextBuf ab[static 1], char* data, size_t len) {
-    return buffn(char,append)(&ab->buf, (char*)data, len)
-        && arlfn(size_t, append)(&ab->eols, &ab->buf.len)
-        && buffn(char,append)(&ab->buf, (char*)"\n", 1)
-        ? Ok
-        : __func__
-        ;
+    if (!len || !data || !*data)
+        return err_fmt("error: invalid param: %s", __func__);
+    if (!buffn(char,append)(&ab->buf, (char*)data, len))
+        return err_fmt("error in %s: could not append data", __func__);
+    if (!arlfn(size_t, append)(&ab->eols, &ab->buf.len))
+        return err_fmt("error in %s: could not append eol", __func__);
+    if (!buffn(char,append)(&ab->buf, (char*)"\n", 1))
+        return err_fmt("error in %s: could not append newline, data: %s",__func__, data);
+
+    return NULL;
 }
 
 

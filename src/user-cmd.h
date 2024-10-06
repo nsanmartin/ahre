@@ -19,8 +19,8 @@ Err cmd_fetch(Session session[static 1]) {
 static inline Err cmd_ahre(Session session[static 1]) {
     HtmlDoc* html_doc = session_current_doc(session);
     TextBuf* tb = &html_doc->textbuf;
-    if (lexbor_href_write(html_doc->lxbdoc, &html_doc->cache.hrefs, tb)) 
-        return "could not fetch href"; 
+    Err err = lexbor_href_write(html_doc->lxbdoc, &html_doc->cache.hrefs, tb);
+    if (err) return err; 
     
     return textbuf_append_null(tb);
 }

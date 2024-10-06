@@ -16,10 +16,5 @@ void print_html(lxb_html_document_t* document);
 int
 lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf);
 
-int lexbor_href_write(
-    lxb_html_document_t* document,
-    lxb_dom_collection_t** hrefs,
-    TextBuf* buf
-);
 
 #endif
