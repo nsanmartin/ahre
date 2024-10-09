@@ -56,4 +56,5 @@ Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) ;
 static inline char* textbuf_current_line_offset(TextBuf tb[static 1]) {
     return textbuf_line_offset(tb, *textbuf_current_line(tb));
 }
+Err textbuf_append_part(TextBuf textbuf[static 1], char* data, size_t len);
 #endif

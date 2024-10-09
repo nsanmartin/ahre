@@ -13,8 +13,7 @@ Err process_line(Session session[static 1], const char* line);
 
 
 void print_html(lxb_html_document_t* document);
-int
-lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf);
+Err lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf);
 
 
 #endif

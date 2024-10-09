@@ -1,5 +1,6 @@
 #include "src/utils.h"
 #include "src/html-doc.h"
+//#include "src/texbuf.h"
 
 
 /* internal linkage */
@@ -126,7 +127,11 @@ lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf) {
     }
     size_t len = 0;
     lxb_char_t* text = lxb_dom_node_text_content(node, &len);
-    return textbuf_append_part(buf, (char*)text, len);
+    Err err = NULL;
+    if ((err = textbuf_append_part(buf, (char*)text, len))) {
+        return err;
+    }
+    return textbuf_append_null(buf);
 }
 
 

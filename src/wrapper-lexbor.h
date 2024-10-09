@@ -27,4 +27,5 @@ lxb_inline lxb_status_t append_to_buf_callback(const lxb_char_t *data, size_t le
     return LXB_STATUS_OK;
 }
 
+Err lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf);
 #endif

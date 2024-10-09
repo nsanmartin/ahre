@@ -4,6 +4,7 @@
 #include "src/ranges.h"
 #include "src/user-interface.h"
 #include "src/cmd-ed.h"
+#include "src/wrapper-lexbor.h"
 
 Err cmd_write(char* fname, Session session[static 1]);
 
@@ -37,10 +38,7 @@ static inline Err cmd_tag(const char* rest, Session session[static 1]) {
 
 static inline Err cmd_text(Session* session) {
     HtmlDoc* html_doc = session_current_doc(session);
-    return lexbor_html_text_append(html_doc->lxbdoc, &html_doc->textbuf)
-        ? "could not append text"
-        : Ok
-        ;
+    return lexbor_html_text_append(html_doc->lxbdoc, &html_doc->textbuf);
 }
 
 
