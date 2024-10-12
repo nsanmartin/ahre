@@ -5,6 +5,7 @@
 #include "src/utils.h"
 #include "src/textbuf.h"
 #include "src/ranges.h"
+#include "src/re.h"
 
 /*
  * + . current line,
@@ -53,9 +54,45 @@ static const char* parse_range_addr_num(const char* tk, unsigned long long num, 
 
 _Static_assert(sizeof(size_t) <= sizeof(unsigned long long), "range parser requires this precondition");
 
-static const char* parse_range_addr(const char* tk, unsigned long long curr, unsigned long long max, size_t* out) {
+static const char* parse_linenum_search_regex(
+    const char* tk, TextBuf tb[static 1], size_t out[static 1]
+) {
+    const char* buf = textbuf_current_line_offset(tb);
+    if (!buf) { perror("error: invalid current line"); exit(-1); }
+    char* end = strchr(tk, '/');
+    const char* res = end ? end + 1 : tk + strlen(tk);
+    if (end) *end = '\0';
+    size_t match = 0;
+    size_t* pmatch = &match;
+    Err err = regex_maybe_find_next(tk, buf, &pmatch);
+    if (end) *end = '/';
+
+    if (!pmatch) 
+        return NULL;
+    
+
+    size_t linenum;
+    if ((err = textbuf_get_line_of(tb, buf + match, &linenum))) {
+        perror(err); exit(-1);
+    }
+
+    *out = linenum;
+    ///TODO: refactor in order to mutate only in one place
+    *textbuf_current_line(tb) = linenum;
+
+    return res;
+}
+
+static const char*
+parse_range_addr(const char* tk, TextBuf tb[static 1], size_t out[static 1]) {
+
+    unsigned long long curr = *textbuf_current_line(tb);
+    unsigned long long max  = textbuf_eol_count(tb);
     if (!tk || !*tk) { return NULL; }
-    if (*tk == '.' || *tk == '+' || *tk == '-')  {
+    if (*tk == '/') {
+        ++tk;
+        return parse_linenum_search_regex(tk, tb, out);
+    } else if (*tk == '.' || *tk == '+' || *tk == '-')  {
         if (*tk == '.') { ++tk; }
         const char* rest = parse_range_addr_num(tk, curr, max, out);
         if (rest) { tk = rest; }
@@ -85,17 +122,20 @@ static const char* parse_range_addr(const char* tk, unsigned long long curr, uns
 }
 
 
-static const char* parse_range_impl(const char* tk, size_t current_line, size_t nlines, Range* range) {
+static const char* parse_range_impl(
+    const char* tk, TextBuf tb[static 1], Range range[static 1]
+) {
+    size_t current_line = *textbuf_current_line(tb);
+    size_t nlines       = textbuf_eol_count(tb);
+
+
     /* invalid input */
-    if (!tk) { return NULL; }
+    if (!tk) return NULL;
+
     tk = cstr_skip_space(tk);
 
     /* empty string */
-    if (!*tk) { 
-        range->beg = current_line;
-        range->end = 0;
-        return tk;
-    }
+    if (!*tk) return NULL;
 
     /* full range */
     if (*tk == '%') {
@@ -108,18 +148,31 @@ static const char* parse_range_impl(const char* tk, size_t current_line, size_t 
     if (*tk == ',') {
         ++tk;
         range->beg = current_line;
-        const char* rest = parse_range_addr(tk, current_line, nlines, &range->end);
+        //size_t* endp = &range->end;
+        const char* rest = parse_range_addr(tk, tb, &range->end);
+        //if (rest && !*endp) 
+        //    perror("pattern not found");
+        
         return rest? rest : tk;
     }
             
-    const char* rest = parse_range_addr(tk, current_line, nlines, &range->beg);
+    //size_t* begp = &range->beg;
+    const char* rest = parse_range_addr(tk, tb, &range->beg);
+    //if (rest && !*begp) 
+    //    perror("pattern not found");
+    
     if (rest) { 
         /* Addr... */
         tk = cstr_skip_space(rest);
         if (*tk == ',') {
             ++tk;
             /* Addr,... */
-            rest = parse_range_addr(tk, current_line, nlines, &range->end);
+            //size_t end = 0;
+            //size_t* endp = &range->end;
+            rest = parse_range_addr(tk, tb, &range->end);
+            //if (rest && !*endp) 
+            //    perror("pattern not found");
+            //else range->end = end;
             if (rest) {
                 /* Addr,AddrEOF */
                 return rest;
@@ -150,8 +203,10 @@ static inline bool range_has_no_end(Range r[static 1]) { return r->end == 0; }
 /* external linkage */
 
 const char*
-parse_range(const char* tk, Range range[static 1], size_t current_line, size_t nlines) {
-    tk =  parse_range_impl(tk, current_line, nlines, range);
+parse_range(const char* tk, Range range[static 1], TextBuf tb[static 1]) {
+    //size_t current_line, size_t nlines) {
+    //size_t current_line, size_t nlines) {
+    tk =  parse_range_impl(tk, tb, range);
     if (!tk || (!range_has_no_end(range) && is_range_valid(range, 0))) { return NULL; }
     else if (range->end == 0) range->end = range->beg; 
     return tk;

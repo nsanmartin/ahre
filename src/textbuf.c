@@ -85,7 +85,7 @@ Err textbuf_read_from_file(TextBuf textbuf[static 1], const char* filename) {
 
 Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) {
     char* bufbeg = textbuf_items(tb);
-    if (ch <= bufbeg) return "error: invalid char in textbuf";
+    if (ch < bufbeg) return "error: invalid char offset in textbuf";
     size_t off = ch - bufbeg;
     if (off >= textbuf_len(tb)) { return "error: offset out of textbuf"; }
     ArlOf(size_t)* eols = textbuf_eols(tb);
