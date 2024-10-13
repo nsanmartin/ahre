@@ -13,10 +13,8 @@ void print_help(char* program) { printf("usage: %s <url>\n", program); }
 
 int loop_lexbor(char* url) {
     Session* session = session_create(url, process_line);
-    if (!session) {
-        /* TODO: do not ext, ask for another url instead */
+    if (!session) 
         return EXIT_FAILURE;
-    }
 
     while (!session->quit) {
         Err err = read_line_from_user(session);

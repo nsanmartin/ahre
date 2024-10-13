@@ -109,4 +109,3 @@ clean-cscope:
 
 clean:
 	find build -type f -delete
-	find . -type f -name tags -delete

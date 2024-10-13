@@ -124,7 +124,6 @@ Err ed_eval(TextBuf textbuf[static 1], const char* line) {
     line = parse_range(line, &range, textbuf);
     if (!line) { return "invalid range"; }
 
-    //TODO: use lexbor_read_doc_from_file instead
     if ((rest = substr_match(line, "e", 1)) && *rest) 
         return ed_edit(textbuf, cstr_trim_space((char*)rest));
     if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
