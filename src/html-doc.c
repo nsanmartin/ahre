@@ -88,7 +88,7 @@ int doc_init(HtmlDoc d[static 1], const Str url[static 1]) {
     return 0;
 }
 
-HtmlDoc* doc_create(char* url) {
+HtmlDoc* doc_create(const char* url) {
     HtmlDoc* rv = std_malloc(sizeof(HtmlDoc));
     Str u;
     if (str_init(&u, url)) { return NULL; }

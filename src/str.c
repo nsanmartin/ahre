@@ -91,8 +91,12 @@ const char* substr_match(const char* s, const char* cmd, size_t len) {
 }
 
 const char* cstr_trim_space(char* s) {
+    if (!s) return NULL;
     s = (char*)cstr_skip_space(s);
-    size_t len = strlen(s);
-    if (len) s[len-1] = '\0';
+    if (!*s) return s;
+    char* end = s + strlen(s);
+    if (s == end) return s;
+    while (end > s && isspace(end[-1])) --end;
+    *end = '\0';
     return s;
 }

@@ -43,7 +43,7 @@ void doc_destroy(HtmlDoc* html_doc) ;
 int doc_init(HtmlDoc d[static 1], const Str url[static 1]);
 
 
-HtmlDoc* doc_create(char* url);
+HtmlDoc* doc_create(const char* url);
 
 static inline bool doc_has_url(HtmlDoc html_doc[static 1]) {
     return html_doc->url != NULL;
