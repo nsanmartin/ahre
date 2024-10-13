@@ -15,7 +15,7 @@ Err read_line_from_user(Session session[static 1]) {
     char* line = 0x0;
     line = readline("");
     Err err = session->user_line_callback(session, line);
-    if (!err) {
+    if (line && cstr_skip_space(line)) {
         add_history(line);
     }
     destroy(line);

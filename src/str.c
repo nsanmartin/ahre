@@ -90,4 +90,9 @@ const char* substr_match(const char* s, const char* cmd, size_t len) {
 	return cstr_skip_space(s);
 }
 
-///Str str_view_from_cstr(const char*
+const char* cstr_trim_space(char* s) {
+    s = (char*)cstr_skip_space(s);
+    size_t len = strlen(s);
+    if (len) s[len-1] = '\0';
+    return s;
+}

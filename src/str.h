@@ -35,4 +35,5 @@ char* str_ndup_cstr(const Str* url, size_t n);
 
 const char* substr_match(const char* s, const char* cmd, size_t len);
 char* url_cpy(const char* url) ;
+const char* cstr_trim_space(char* s);
 #endif
