@@ -1,4 +1,5 @@
 1. [*] Accept files apart from urls
 2. [ ] Allow reusable buffer for files
-3. [ ] count lines when appending to buf
-4. [ ] use array of line pointers in aebuf
+3. [*] count lines when appending to buf
+4. [*] use array of line pointers in aebuf
+5. [ ] implement browse fn similar to lexbor/examples/lexbor/html/html2sexpr.c
