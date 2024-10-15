@@ -1,6 +1,7 @@
-#include <limits.h>
-#include <errno.h>
 #include <ctype.h>
+#include <errno.h>
+#include <limits.h>
+#include <stdint.h>
 
 #include "src/utils.h"
 #include "src/textbuf.h"
@@ -22,7 +23,7 @@
 
 /* internal linkage */
 
-static const char* parse_ull(const char* tk, long long unsigned* ullp) {
+static const char* parse_ull(const char* tk, uintmax_t* ullp) {
     if (!tk || !*tk) { return NULL; }
     char* endptr = 0x0;
     *ullp = strtoll(tk, &endptr, 10);
@@ -30,8 +31,8 @@ static const char* parse_ull(const char* tk, long long unsigned* ullp) {
     return endptr == tk ? NULL: endptr;
 }
 
-static const char* parse_range_addr_num(const char* tk, unsigned long long num, unsigned long long maximum, size_t* out) {
-    unsigned long long ull;
+static const char* parse_range_addr_num(const char* tk, uintmax_t num, uintmax_t maximum, size_t* out) {
+    uintmax_t ull;
     if (*tk == '+') {
         ++tk;
         const char* rest = parse_ull(tk, &ull);
@@ -52,7 +53,7 @@ static const char* parse_range_addr_num(const char* tk, unsigned long long num, 
     return tk;
 }
 
-_Static_assert(sizeof(size_t) <= sizeof(unsigned long long), "range parser requires this precondition");
+_Static_assert(sizeof(size_t) <= sizeof(uintmax_t), "range parser requires this precondition");
 
 static const char* parse_linenum_search_regex(
     const char* tk, TextBuf tb[static 1], size_t out[static 1], bool* not_found
@@ -89,8 +90,8 @@ static const char*
 parse_range_addr(const char* tk, TextBuf tb[static 1], size_t out[static 1], bool not_found[static 1]) {
 
     *not_found = false;
-    unsigned long long curr = *textbuf_current_line(tb);
-    unsigned long long max  = textbuf_eol_count(tb);
+    uintmax_t curr = *textbuf_current_line(tb);
+    uintmax_t max  = textbuf_eol_count(tb);
     if (!tk || !*tk) { return NULL; }
     if (*tk == '/') {
         ++tk;
