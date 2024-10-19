@@ -1,7 +1,7 @@
 #ifndef __GENERIC_AHRE_H__
 #define __GENERIC_AHRE_H__
 
-#include "src/html-doc.h"
+#include "src/htmldoc.h"
 #include "src/session.h"
 #include "src/str.h"
 #include "src/textbuf.h"
@@ -23,7 +23,7 @@
 #define destroy(Ptr) _Generic((Ptr), \
     TextBuf*:   textbuf_destroy, \
     UrlClient*: url_client_destroy, \
-    HtmlDoc*:       doc_destroy, \
+    HtmlDoc*:       htmldoc_destroy, \
     Session*:   session_destroy, \
     char*:     std_free \
 )(Ptr)

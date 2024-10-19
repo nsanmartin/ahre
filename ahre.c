@@ -3,7 +3,7 @@
 #include <curl/curl.h>
 #include <lexbor/html/html.h>
  
-#include "src/html-doc.h"
+#include "src/htmldoc.h"
 #include "src/mem.h"
 #include "src/user-interface.h"
 

@@ -3,7 +3,7 @@
 
 
 inline HtmlDoc* session_current_doc(Session session[static 1]) {
-    return session->html_doc;
+    return session->htmldoc;
 }
 
 inline TextBuf* session_current_buf(Session session[static 1]) {
@@ -21,17 +21,17 @@ Session* session_create(char* url, UserLineCallback callback) {
     UrlClient* url_client = url_client_create();
     if (!url_client) { goto free_rv; }
 
-    HtmlDoc* html_doc = doc_create(cstr_trim_space((char*)url));
-    if (!html_doc) { goto free_ahcurl; }
+    HtmlDoc* htmldoc = htmldoc_create(cstr_trim_space((char*)url));
+    if (!htmldoc) { goto free_ahcurl; }
 
-    if (url && html_doc->lxbdoc) {
-        Err err = doc_fetch(html_doc, url_client);
+    if (url && htmldoc->lxbdoc) {
+        Err err = htmldoc_fetch(htmldoc, url_client);
         if (err) { log_error(err); }
     }
     *rv = (Session) {
         .url_client=url_client,
         .user_line_callback=callback,
-        .html_doc=html_doc,
+        .htmldoc=htmldoc,
         .quit=false
     };
 
@@ -46,7 +46,7 @@ exit_fail:
 }
 
 void session_destroy(Session* session) {
-    doc_destroy(session->html_doc);
+    htmldoc_destroy(session->htmldoc);
     url_client_destroy(session->url_client);
     std_free(session);
 }

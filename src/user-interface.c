@@ -32,22 +32,22 @@ Err cmd_set_url(Session session[static 1], const char* url) {
     Str u;
     if(str_init(&u, url)) { return "bad url"; }
     str_trim_space(&u);
-    if (!str_is_empty(&u) && (!session->html_doc->url || strncmp(u.s, session->html_doc->url, u.len))) {
-        doc_cleanup(session->html_doc);
-        if (doc_init(session->html_doc, &u)) {
-            return "could not init html_doc";
+    if (!str_is_empty(&u) && (!session->htmldoc->url || strncmp(u.s, session->htmldoc->url, u.len))) {
+        htmldoc_cleanup(session->htmldoc);
+        if (htmldoc_init(session->htmldoc, &u)) {
+            return "could not init htmldoc";
         }
 
-        HtmlDoc* html_doc = session_current_doc(session);
-        if (doc_has_url(html_doc)) {
-            Err err = doc_fetch(html_doc, session->url_client);
+        HtmlDoc* htmldoc = session_current_doc(session);
+        if (htmldoc_has_url(htmldoc)) {
+            Err err = htmldoc_fetch(htmldoc, session->url_client);
             if (err) {
                 return err_fmt("\nerror fetching url: '%s': %s", url, err);
             }
         }
         printf("set with url: %s\n", url);
     } else {
-       printf("url: %s\n",  session->html_doc->url ? session->html_doc->url : "<no url>");
+       printf("url: %s\n",  session->htmldoc->url ? session->htmldoc->url : "<no url>");
     }
     return Ok;
 }
@@ -59,7 +59,7 @@ Err cmd_eval(Session session[static 1], const char* line) {
 
     if ((rest = substr_match(line, "url", 1))) { return cmd_set_url(session, rest); }
 
-    if (!doc_is_valid(session_current_doc(session)) ||!session->url_client) {
+    if (!htmldoc_is_valid(session_current_doc(session)) ||!session->url_client) {
         return "no document";
     }
 

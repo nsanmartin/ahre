@@ -1,21 +1,21 @@
 #include "src/debug.h"
 #include "src/generic.h"
-#include "src/html-doc.h"
+#include "src/htmldoc.h"
 
 
 
 /*
  * Functions that append summary of the content for debugging purposes
  */
-static Err textbuf_summary(HtmlDoc html_doc[static 1], BufOf(char)* buf) {
+static Err textbuf_summary(HtmlDoc htmldoc[static 1], BufOf(char)* buf) {
 
     buf_append_lit("HtmlDoc: ", buf);
-    if (buf_append_hexp(html_doc, buf)) { return "could not append"; }
+    if (buf_append_hexp(htmldoc, buf)) { return "could not append"; }
     buf_append_lit("\n", buf);
 
-    if (html_doc->url) {
+    if (htmldoc->url) {
         buf_append_lit(" url: ", buf);
-       if (buffn(char,append)(buf, (char*)html_doc->url, strlen(html_doc->url))) {
+       if (buffn(char,append)(buf, (char*)htmldoc->url, strlen(htmldoc->url))) {
            return  "could not append";
        }
        buf_append_lit("\n", buf);
@@ -24,9 +24,9 @@ static Err textbuf_summary(HtmlDoc html_doc[static 1], BufOf(char)* buf) {
        buf_append_lit(" none\n", buf);
 
     }
-    if (html_doc->lxbdoc) {
+    if (htmldoc->lxbdoc) {
         buf_append_lit(" lxbdoc: ", buf);
-        if (buf_append_hexp(html_doc->lxbdoc, buf)) { return  "could not append"; }
+        if (buf_append_hexp(htmldoc->lxbdoc, buf)) { return  "could not append"; }
         buf_append_lit("\n", buf);
 
     }
@@ -64,16 +64,16 @@ Err dbg_session_summary(Session session[static 1]) {
         if(url_client_summary(session->url_client, buf)) { return "could not get url client summary"; }
     } else { buf_append_lit("Not url_client\n", buf); }
 
-    if (session->html_doc) {
-        textbuf_summary(session->html_doc, buf);
-        doc_cache_buffer_summary(&session->html_doc->cache, buf);
-    } else { buf_append_lit("Not html_doc\n", buf); }
+    if (session->htmldoc) {
+        textbuf_summary(session->htmldoc, buf);
+        htmldoc_cache_buffer_summary(&session->htmldoc->cache, buf);
+    } else { buf_append_lit("Not htmldoc\n", buf); }
 
     return Ok;
 }
 
 
-Err doc_cache_buffer_summary(DocCache c[static 1], BufOf(char) buf[static 1]) {
+Err htmldoc_cache_buffer_summary(DocCache c[static 1], BufOf(char) buf[static 1]) {
     Err err = Ok;
     buf_append_lit("DocCache: ", buf);
     if (buf_append_hexp(c, buf)) { return "could nor append"; }

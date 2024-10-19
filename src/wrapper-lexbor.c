@@ -1,5 +1,5 @@
 #include "src/utils.h"
-#include "src/html-doc.h"
+#include "src/htmldoc.h"
 //#include "src/texbuf.h"
 
 
