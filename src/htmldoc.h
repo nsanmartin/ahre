@@ -15,8 +15,6 @@
 #include "src/wrapper-lexbor-curl.h"
 
 
-///typedef struct UrlClient UrlClient;
-
 typedef struct {
     lxb_dom_collection_t* hrefs;
 } DocCache;
@@ -35,6 +33,10 @@ typedef struct {
     DocCache cache;
 } HtmlDoc;
 
+
+static inline lxb_html_document_t* htmldoc_lxbdoc(HtmlDoc d[static 1]) {
+    return d->lxbdoc;
+}
 
 void htmldoc_reset(HtmlDoc htmldoc[static 1]) ;
 void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) ;
@@ -62,4 +64,8 @@ static inline Err htmldoc_fetch(HtmlDoc htmldoc[static 1], UrlClient url_client[
     }
     return curl_lexbor_fetch_document(url_client, htmldoc->lxbdoc, htmldoc->url);
 }
+
+Err htmldoc_browse(HtmlDoc htmldoc[static 1]);
+Err htmldoc_browse0(HtmlDoc htmldoc[static 1]) ;
+
 #endif

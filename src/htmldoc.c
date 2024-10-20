@@ -12,6 +12,12 @@
 #define READ_FROM_FILE_BUFFER_LEN 4096
 _Thread_local static unsigned char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {0};
 
+static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, void* ctx);
+static Err
+attr_href(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void *ctx);
+
+static lxb_status_t
+serialize_cb(const lxb_char_t *data, size_t len, void *ctx) ;
 
 static TextBuf* htmldoc_textbuf(HtmlDoc htmldoc[static 1]) { return &htmldoc->textbuf; }
 
@@ -31,8 +37,105 @@ static char* str_url_dup(const Str* url) {
 }
 
 
+static lxb_status_t
+serialize_cb(const lxb_char_t *data, size_t len, void *ctx) {
+    //(void)ctx;
+    //fwrite(data, 1, len, stdout);
+    //return LXB_STATUS_OK;
+    TextBuf* textbuf = htmldoc_textbuf(ctx);
+    return textbuf_append_part(textbuf, (char*)data, len)
+        ? LXB_STATUS_ERROR
+        : LXB_STATUS_OK;
+}
 
 
+static Err
+attr_href(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void *ctx)
+{
+    lxb_dom_attr_t *attr;
+    const lxb_char_t *data;
+    size_t data_len;
+
+    attr = lxb_dom_element_first_attribute(lxb_dom_interface_element(node));
+
+    while (attr != NULL) {
+        data = lxb_dom_attr_qualified_name(attr, &data_len);
+
+        if (!strcmp("href", (char*)data))  {
+            //if(LXB_STATUS_OK != cb(data, data_len, ctx)) { return "error serializing data"; }
+
+            data = lxb_dom_attr_value(attr, &data_len);
+
+            if (data != NULL) {
+                if (
+                    LXB_STATUS_OK != cb((const lxb_char_t *) "[", 1, ctx)
+                    || LXB_STATUS_OK != cb(data, data_len, ctx)
+                    || LXB_STATUS_OK != cb((const lxb_char_t *) "]", 1, ctx)
+                ) { return "error serializing data"; }
+
+
+            }
+
+            return Ok;
+
+        }
+        attr = lxb_dom_element_next_attribute(attr);
+    }
+
+    return Ok;
+}
+
+
+#define EscCodeRed   "\033[91m"
+#define EscCodeBlue  "\033[34m"
+#define EscCodeReset "\033[0m"
+
+
+static Err browse_tag_a(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void* ctx) {
+    cb((lxb_char_t*)EscCodeBlue, sizeof EscCodeRed, ctx);
+    lxb_dom_node_t* it = node->first_child;
+    const lxb_dom_node_t* last = node->last_child; 
+    for(; ; it = it->next) {
+        Err err = browse_rec(it, cb, ctx);
+        if (err) return err;
+        if (it == last) { break; }
+    }
+    attr_href(node, cb, ctx);
+    cb((lxb_char_t*)EscCodeReset, sizeof EscCodeReset, ctx);
+    return Ok;
+
+}
+
+static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, void* ctx) {
+    if (node) {
+        if (node->type == LXB_DOM_NODE_TYPE_ELEMENT) {
+
+            if (node->local_name == LXB_TAG_SCRIPT) { printf("skip script\n"); } 
+
+            if (node->local_name == LXB_TAG_A) {
+                return browse_tag_a(node, cb, ctx);
+            }
+        } else if (node->type == LXB_DOM_NODE_TYPE_TEXT) {
+            size_t len = lxb_dom_interface_text(node)->char_data.data.length;
+            unsigned char* data = lxb_dom_interface_text(node)->char_data.data.data;
+            if (!is_all_space((char*)data, len)) {
+                cb(data, len, ctx);
+            } //else cb((lxb_char_t*)"\n", 1, ctx);
+            
+        }
+
+        lxb_dom_node_t* it = node->first_child;
+        const lxb_dom_node_t* last = node->last_child; 
+
+        for(; /*it != last*/ ; it = it->next) {
+            browse_rec(it, cb, ctx);
+            if (it == last) { break; }
+        }
+
+    }   
+
+    return Ok;
+}
 
 /* external linkage */
 
@@ -147,6 +250,15 @@ Err htmldoc_read_from_file(HtmlDoc htmldoc[static 1]) {
     fclose(fp);
 
     return textbuf_append_null(textbuf);
+}
+
+
+Err htmldoc_browse(HtmlDoc htmldoc[static 1]) {
+    lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(htmldoc);
+    //return browse_rec(lxb_dom_interface_node(lxbdoc), serialize_cb, htmldoc);
+    Err err = browse_rec(lxb_dom_interface_node(lxbdoc), serialize_cb, htmldoc);
+    if (err) return err;
+    return textbuf_append_null(htmldoc_textbuf(htmldoc));
 }
 
 

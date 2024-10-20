@@ -57,7 +57,7 @@ Err textbuf_append_part(TextBuf textbuf[static 1], char* data, size_t len) {
     Err err = Ok;
     return (err=textbuf_append_line_indexes(textbuf, data, len))
         ? err :
-        ( !buffn(char,append)(&textbuf->buf, (char*)data, len) //buffn_append returns NULL on error
+        ( !buffn(char,append)(&textbuf->buf, (char*)data, len)
         ?  "buffn failed to append"
         : Ok
         )

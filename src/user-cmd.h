@@ -41,5 +41,9 @@ static inline Err cmd_text(Session* session) {
     return lexbor_html_text_append(htmldoc->lxbdoc, &htmldoc->textbuf);
 }
 
+static inline Err cmd_browse(Session session[static 1]) {
+    HtmlDoc* htmldoc = session_current_doc(session);
+    return htmldoc_browse(htmldoc);
+}
 
 #endif

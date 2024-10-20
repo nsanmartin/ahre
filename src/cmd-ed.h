@@ -27,7 +27,7 @@ static inline int
 line_num_to_right_offset(size_t lnum, TextBuf textbuf[static 1], size_t out[static 1]) {
 
     if (lnum == 0 || lnum > textbuf_eol_count(textbuf)) { return -1; }
-    if (lnum == textbuf_eol_count(textbuf)+1) {
+    if (lnum == textbuf_eol_count(textbuf)/*+1*/) {
         *out = len(textbuf);
         return 0;
     }
