@@ -49,7 +49,9 @@ inline size_t textbuf_eol_count(TextBuf textbuf[static 1]) {
 }
 
 inline size_t textbuf_line_count(TextBuf textbuf[static 1]) {
-    return textbuf->eols.len;
+    size_t neols = textbuf->eols.len;
+    return neols ? neols + 1
+        : (textbuf_len(textbuf) ? 1 : 0);
 }
 
 

@@ -11,7 +11,7 @@ Err textbuf_eval_cmd(TextBuf textbuf[static 1], const char* line, Range range[st
 static inline int
 line_num_to_left_offset(size_t lnum, TextBuf textbuf[static 1], size_t out[static 1]) {
 
-    if (lnum == 0 || lnum > textbuf_eol_count(textbuf)) { return -1; }
+    if (lnum == 0 || lnum > textbuf_line_count(textbuf)) { return -1; }
     if (lnum == 1) { *out = 0; return 0; }
 
     size_t* tmp = textbuf_eol_at(textbuf, lnum-2);
@@ -26,8 +26,8 @@ line_num_to_left_offset(size_t lnum, TextBuf textbuf[static 1], size_t out[stati
 static inline int
 line_num_to_right_offset(size_t lnum, TextBuf textbuf[static 1], size_t out[static 1]) {
 
-    if (lnum == 0 || lnum > textbuf_eol_count(textbuf)) { return -1; }
-    if (lnum == textbuf_eol_count(textbuf)/*+1*/) {
+    if (lnum == 0 || lnum > textbuf_line_count(textbuf)) { return -1; }
+    if (lnum == textbuf_line_count(textbuf)/*+1*/) {
         *out = len(textbuf);
         return 0;
     }

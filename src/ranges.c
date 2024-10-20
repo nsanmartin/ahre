@@ -91,7 +91,7 @@ parse_range_addr(const char* tk, TextBuf tb[static 1], size_t out[static 1], boo
 
     *not_found = false;
     uintmax_t curr = *textbuf_current_line(tb);
-    uintmax_t max  = textbuf_eol_count(tb);
+    uintmax_t max  = textbuf_line_count(tb);
     if (!tk || !*tk) { return NULL; }
     if (*tk == '/') {
         ++tk;
@@ -130,7 +130,7 @@ static const char* parse_range_impl(
     const char* tk, TextBuf tb[static 1], Range range[static 1], bool* not_found
 ) {
     size_t current_line = *textbuf_current_line(tb);
-    size_t nlines       = textbuf_eol_count(tb);
+    size_t nlines       = textbuf_line_count(tb);
 
 
     /* invalid input */
