@@ -15,23 +15,26 @@ static inline Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
         return "empty buffer";
     }
 
-    size_t beg_off_p;
-    if (line_num_to_left_offset(range->beg, textbuf, &beg_off_p)) {
+    size_t begoff;
+    if (line_num_to_left_offset(range->beg, textbuf, &begoff)) {
         fprintf(stderr, "? bag range beg\n");
         return "bad range beg";
     }
-    size_t end_off_p;
-    if (line_num_to_right_offset(range->end, textbuf, &end_off_p)) {
+    size_t endoff;
+    if (line_num_to_right_offset(range->end, textbuf, &endoff)) {
         fprintf(stderr, "? bag range end\n");
         return "bad range end";
     }
 
-    if (beg_off_p >= end_off_p || end_off_p > textbuf->buf.len) {
+    if (begoff >= endoff || endoff > textbuf->buf.len) {
         fprintf(stderr, "!Error check offsets");
         return "error: check offsets";
     }
-    fwrite(textbuf->buf.items + beg_off_p, 1, end_off_p-beg_off_p, stdout);
-    fwrite("\n", 1, 1, stdout);
+
+    fwrite(textbuf->buf.items + begoff, 1, endoff-begoff, stdout);
+    fwrite(EscCodeReset, 1, sizeof EscCodeReset, stdout);
+    if (endoff == textbuf_len(textbuf)) 
+        fwrite("\n", 1, 1, stdout);
     return Ok;
 }
 

@@ -15,6 +15,10 @@
 #include "src/str.h"
 #include "src/error.h"
 
+#define EscCodeRed   "\033[91m"
+#define EscCodeBlue  "\033[34m"
+#define EscCodeReset "\033[0m"
+
 
 #define buf_append_lit(LitStr, Buf_) do{\
    if (buffn(char,append)(Buf_, (char*)LitStr, sizeof(LitStr))) {\

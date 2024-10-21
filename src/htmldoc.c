@@ -86,10 +86,6 @@ attr_href(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void *ctx)
 }
 
 
-#define EscCodeRed   "\033[91m"
-#define EscCodeBlue  "\033[34m"
-#define EscCodeReset "\033[0m"
-
 
 static Err browse_tag_a(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void* ctx) {
     cb((lxb_char_t*)EscCodeBlue, sizeof EscCodeRed, ctx);

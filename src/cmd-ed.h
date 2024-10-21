@@ -16,7 +16,7 @@ line_num_to_left_offset(size_t lnum, TextBuf textbuf[static 1], size_t out[stati
 
     size_t* tmp = textbuf_eol_at(textbuf, lnum-2);
     if (tmp) {
-        *out = *tmp;
+        *out = 1 + *tmp;
         return 0;
     }
 
