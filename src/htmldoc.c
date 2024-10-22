@@ -86,48 +86,83 @@ attr_href(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void *ctx)
 }
 
 
-
-static Err browse_tag_a(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void* ctx) {
-    cb((lxb_char_t*)EscCodeBlue, sizeof EscCodeRed, ctx);
-    lxb_dom_node_t* it = node->first_child;
-    const lxb_dom_node_t* last = node->last_child; 
+static Err browse_list(lxb_dom_node_t* it, lxb_dom_node_t* last, lxb_html_serialize_cb_f cb, void* ctx) {
     for(; ; it = it->next) {
         Err err = browse_rec(it, cb, ctx);
         if (err) return err;
         if (it == last) { break; }
     }
-    attr_href(node, cb, ctx);
+    return Ok;
+}
+
+
+static Err browse_tag_a(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void* ctx) {
+    cb((lxb_char_t*)EscCodeBlue, sizeof EscCodeRed, ctx);
+    Err err = browse_list(node->first_child, node->last_child, cb, ctx);
+    if (err) return err;
+    (void) attr_href;//TODO: parse but not print href
+    //err = attr_href(node, cb, ctx);
+    //if (err) return err;
     cb((lxb_char_t*)EscCodeReset, sizeof EscCodeReset, ctx);
+    return Ok;
+}
+
+static Err browse_elem_newline(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void* ctx) {
+    Err err = browse_list(node->first_child, node->last_child, cb, ctx);
+    if (err) return err;
+    cb((lxb_char_t*)"\n", 1, ctx);
     return Ok;
 
 }
+
+static Err browse_tag_p(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void* ctx) {
+    cb((lxb_char_t*)"\n", 1, ctx);
+    return browse_elem_newline(node, cb, ctx);
+}
+
+static Err browse_tag_blockquote(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void* ctx) {
+    //cb((lxb_char_t*)"\t>", 2, ctx);//TODO: indent contents
+    return browse_elem_newline(node, cb, ctx);
+}
+
 
 static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, void* ctx) {
     if (node) {
         if (node->type == LXB_DOM_NODE_TYPE_ELEMENT) {
 
-            if (node->local_name == LXB_TAG_SCRIPT) { printf("skip script\n"); } 
-
-            if (node->local_name == LXB_TAG_A) {
-                return browse_tag_a(node, cb, ctx);
+            switch(node->local_name) {
+                case LXB_TAG_SCRIPT: { printf("skip script\n"); return Ok; } 
+                case LXB_TAG_STYLE: { printf("skip style\n"); return Ok; } 
+                case LXB_TAG_TITLE: { printf("skip title\n"); return Ok; } 
+                case LXB_TAG_P: { return browse_tag_p(node, cb, ctx); }
+                case LXB_TAG_BLOCKQUOTE: { return browse_tag_blockquote(node, cb, ctx); }
+                case LXB_TAG_H1:
+                case LXB_TAG_H2:
+                case LXB_TAG_H3:
+                case LXB_TAG_H4:
+                case LXB_TAG_H5:
+                case LXB_TAG_H6: 
+                case LXB_TAG_BR: { return browse_tag_p(node, cb, ctx); }
+                case LXB_TAG_A: { return browse_tag_a(node, cb, ctx); }
             }
         } else if (node->type == LXB_DOM_NODE_TYPE_TEXT) {
             size_t len = lxb_dom_interface_text(node)->char_data.data.length;
             unsigned char* data = lxb_dom_interface_text(node)->char_data.data.data;
+            //TODO: print lines skppig newline
             if (!is_all_space((char*)data, len)) {
-                cb(data, len, ctx);
-            } //else cb((lxb_char_t*)"\n", 1, ctx);
+                size_t l = len;
+                while(l && isspace(*data)) { ++data; --l; }
+                if (l != len) cb((lxb_char_t*)" ", 1, ctx);
+                len = l;
+                while(l > 1 && isspace(data[l-1])) { --l; }
+                cb(data, l, ctx);
+                if (l != len) cb((lxb_char_t*)" ", 1, ctx);
+            }
             
         }
 
-        lxb_dom_node_t* it = node->first_child;
-        const lxb_dom_node_t* last = node->last_child; 
-
-        for(; /*it != last*/ ; it = it->next) {
-            browse_rec(it, cb, ctx);
-            if (it == last) { break; }
-        }
-
+        Err err = browse_list(node->first_child, node->last_child, cb, ctx);
+        if (err) return err;
     }   
 
     return Ok;
@@ -251,7 +286,6 @@ Err htmldoc_read_from_file(HtmlDoc htmldoc[static 1]) {
 
 Err htmldoc_browse(HtmlDoc htmldoc[static 1]) {
     lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(htmldoc);
-    //return browse_rec(lxb_dom_interface_node(lxbdoc), serialize_cb, htmldoc);
     Err err = browse_rec(lxb_dom_interface_node(lxbdoc), serialize_cb, htmldoc);
     if (err) return err;
     return textbuf_append_null(htmldoc_textbuf(htmldoc));
