@@ -19,12 +19,6 @@ typedef struct {
     lxb_dom_collection_t* hrefs;
 } DocCache;
 
-static inline void htmldoc_cache_cleanup(DocCache c[static 1]) {
-    lxb_dom_collection_destroy(c->hrefs, true);
-    *c = (DocCache){0};
-}
-
-Err htmldoc_cache_buffer_summary(DocCache c[static 1], BufOf(char) buf[static 1]);
 
 typedef struct {
     const char* url;
@@ -33,16 +27,31 @@ typedef struct {
     DocCache cache;
 } HtmlDoc;
 
+/* getters */
+static inline const char*
+htmldoc_url(HtmlDoc d[static 1]) { return d->url; }
 
-static inline lxb_html_document_t* htmldoc_lxbdoc(HtmlDoc d[static 1]) {
-    return d->lxbdoc;
-}
+static inline lxb_html_document_t*
+htmldoc_lxbdoc(HtmlDoc d[static 1]) { return d->lxbdoc; }
 
+static inline TextBuf*
+htmldoc_textbuf(HtmlDoc d[static 1]) { return &d->textbuf; }
+
+/* ctors */
+int htmldoc_init(HtmlDoc d[static 1], const Str url[static 1]);
+
+/* dtors */
 void htmldoc_reset(HtmlDoc htmldoc[static 1]) ;
 void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) ;
 void htmldoc_destroy(HtmlDoc* htmldoc) ;
+static inline void htmldoc_cache_cleanup(DocCache c[static 1]) {
+    lxb_dom_collection_destroy(c->hrefs, true);
+    *c = (DocCache){0};
+}
 
-int htmldoc_init(HtmlDoc d[static 1], const Str url[static 1]);
+/**/
+
+Err htmldoc_cache_buffer_summary(DocCache c[static 1], BufOf(char) buf[static 1]);
 
 
 HtmlDoc* htmldoc_create(const char* url);
@@ -66,6 +75,5 @@ static inline Err htmldoc_fetch(HtmlDoc htmldoc[static 1], UrlClient url_client[
 }
 
 Err htmldoc_browse(HtmlDoc htmldoc[static 1]);
-Err htmldoc_browse0(HtmlDoc htmldoc[static 1]) ;
 
 #endif

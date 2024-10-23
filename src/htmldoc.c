@@ -12,14 +12,14 @@
 #define READ_FROM_FILE_BUFFER_LEN 4096
 _Thread_local static unsigned char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {0};
 
-static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, void* ctx);
+static Err
+browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, void* ctx);
 static Err
 attr_href(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void *ctx);
 
 static lxb_status_t
 serialize_cb(const lxb_char_t *data, size_t len, void *ctx) ;
 
-static TextBuf* htmldoc_textbuf(HtmlDoc htmldoc[static 1]) { return &htmldoc->textbuf; }
 
 //TODO: use str ndup cstr
 static char* str_url_dup(const Str* url) {
@@ -39,9 +39,6 @@ static char* str_url_dup(const Str* url) {
 
 static lxb_status_t
 serialize_cb(const lxb_char_t *data, size_t len, void *ctx) {
-    //(void)ctx;
-    //fwrite(data, 1, len, stdout);
-    //return LXB_STATUS_OK;
     TextBuf* textbuf = htmldoc_textbuf(ctx);
     return textbuf_append_part(textbuf, (char*)data, len)
         ? LXB_STATUS_ERROR
@@ -57,12 +54,10 @@ attr_href(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void *ctx)
     size_t data_len;
 
     attr = lxb_dom_element_first_attribute(lxb_dom_interface_element(node));
-
     while (attr != NULL) {
         data = lxb_dom_attr_qualified_name(attr, &data_len);
 
         if (!strcmp("href", (char*)data))  {
-            //if(LXB_STATUS_OK != cb(data, data_len, ctx)) { return "error serializing data"; }
 
             data = lxb_dom_attr_value(attr, &data_len);
 
@@ -100,9 +95,8 @@ static Err browse_tag_a(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void* 
     cb((lxb_char_t*)EscCodeBlue, sizeof EscCodeRed, ctx);
     Err err = browse_list(node->first_child, node->last_child, cb, ctx);
     if (err) return err;
-    (void) attr_href;//TODO: parse but not print href
-    //err = attr_href(node, cb, ctx);
-    //if (err) return err;
+    err = attr_href(node, cb, ctx);
+    if (err) return err;
     cb((lxb_char_t*)EscCodeReset, sizeof EscCodeReset, ctx);
     return Ok;
 }
