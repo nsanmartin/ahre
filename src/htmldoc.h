@@ -16,6 +16,18 @@
 
 
 typedef struct {
+    const char* url;
+} Ahref;
+
+
+#define KT size_t
+#define VT Ahref
+#define VTClean(Ptr) do{ if(Ptr) free((char*)(Ptr)->url);}while(0)
+#include <lip.h>
+
+#include <hashi.h>
+
+typedef struct {
     lxb_dom_collection_t* hrefs;
 } DocCache;
 
@@ -25,6 +37,7 @@ typedef struct {
     lxb_html_document_t* lxbdoc;
     TextBuf textbuf;
     DocCache cache;
+    LipOf(size_t,Ahref) ahrefs;
 } HtmlDoc;
 
 /* getters */
@@ -37,11 +50,14 @@ htmldoc_lxbdoc(HtmlDoc d[static 1]) { return d->lxbdoc; }
 static inline TextBuf*
 htmldoc_textbuf(HtmlDoc d[static 1]) { return &d->textbuf; }
 
+static inline LipOf(size_t,Ahref)*
+htmldoc_ahrefs(HtmlDoc d[static 1]) { return &d->ahrefs; }
+
 /* ctors */
 int htmldoc_init(HtmlDoc d[static 1], const Str url[static 1]);
 
 /* dtors */
-void htmldoc_reset(HtmlDoc htmldoc[static 1]) ;
+//void htmldoc_reset(HtmlDoc htmldoc[static 1]) ;
 void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) ;
 void htmldoc_destroy(HtmlDoc* htmldoc) ;
 static inline void htmldoc_cache_cleanup(DocCache c[static 1]) {

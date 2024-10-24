@@ -45,6 +45,25 @@ serialize_cb(const lxb_char_t *data, size_t len, void *ctx) {
         : LXB_STATUS_OK;
 }
 
+static Err 
+htmldoc_append_ahref(HtmlDoc d[static 1], const char* url, size_t len) {
+    if (!url)
+        return "error: NULL url";
+    Ahref a = (Ahref){0};
+    char* copy = ah_malloc(len);
+    if (!copy) {
+        return "error: malloc";
+    }
+    memcpy(copy, url, len);
+    a.url = copy;
+    LipOf(size_t,Ahref)* ahrefs = htmldoc_ahrefs(d);
+    size_t off = textbuf_len(htmldoc_textbuf(d));
+    if (lipfn(size_t,Ahref,set)(ahrefs,&off,&a)) {
+        free((char*)a.url);
+        return "error: lip set";
+    }
+    return Ok;
+}
 
 static Err
 attr_href(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void *ctx)
@@ -67,8 +86,8 @@ attr_href(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void *ctx)
                     || LXB_STATUS_OK != cb(data, data_len, ctx)
                     || LXB_STATUS_OK != cb((const lxb_char_t *) "]", 1, ctx)
                 ) { return "error serializing data"; }
-
-
+                Err err = htmldoc_append_ahref(ctx, (const char*)data, data_len);
+                if (err) return err;
             }
 
             return Ok;
@@ -91,14 +110,18 @@ static Err browse_list(lxb_dom_node_t* it, lxb_dom_node_t* last, lxb_html_serial
 }
 
 
-static Err browse_tag_a(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void* ctx) {
-    cb((lxb_char_t*)EscCodeBlue, sizeof EscCodeRed, ctx);
-    Err err = browse_list(node->first_child, node->last_child, cb, ctx);
-    if (err) return err;
-    err = attr_href(node, cb, ctx);
-    if (err) return err;
-    cb((lxb_char_t*)EscCodeReset, sizeof EscCodeReset, ctx);
-    return Ok;
+static Err
+browse_tag_a(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void* ctx) {
+    Err err = Ok;
+    if (LXB_STATUS_OK != cb((lxb_char_t*)EscCodeBlue, sizeof EscCodeRed, ctx))
+        return "error: browse serialize callback";
+    if ((err = attr_href(node, cb, ctx)))
+        return err;
+    if ((err = browse_list(node->first_child, node->last_child, cb, ctx)))
+        return err;
+    if (LXB_STATUS_OK != cb((lxb_char_t*)EscCodeReset, sizeof EscCodeReset, ctx))
+        return "error: browse serialize callback";
+    return err;
 }
 
 static Err browse_elem_newline(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void* ctx) {
@@ -212,7 +235,12 @@ int htmldoc_init(HtmlDoc d[static 1], const Str url[static 1]) {
         }
     }
 
-    *d = (HtmlDoc){ .url=u, .lxbdoc=document, .textbuf=(TextBuf){.current_line=1} };
+    *d = (HtmlDoc){
+        .url=u, .lxbdoc=document, .textbuf=(TextBuf){.current_line=1}
+    };
+    lipfn(size_t,Ahref,init)(
+        &d->ahrefs, (LipInitArgs){.sz=100,.attempts=16}
+    );
     return 0;
 }
 
@@ -227,18 +255,13 @@ HtmlDoc* htmldoc_create(const char* url) {
     return rv;
 }
 
-void htmldoc_reset(HtmlDoc htmldoc[static 1]) {
-    htmldoc_cache_cleanup(&htmldoc->cache);
-    lxb_html_document_clean(htmldoc->lxbdoc);
-    textbuf_reset(&htmldoc->textbuf);
-    destroy((char*)htmldoc->url);
-}
 
 void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) {
     htmldoc_cache_cleanup(&htmldoc->cache);
     lxb_html_document_destroy(htmldoc->lxbdoc);
     textbuf_cleanup(&htmldoc->textbuf);
     destroy((char*)htmldoc->url);
+    lipfn(size_t,Ahref,clean)(htmldoc_ahrefs(htmldoc));
 }
 
 inline void htmldoc_destroy(HtmlDoc* htmldoc) {
@@ -280,7 +303,9 @@ Err htmldoc_read_from_file(HtmlDoc htmldoc[static 1]) {
 
 Err htmldoc_browse(HtmlDoc htmldoc[static 1]) {
     lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(htmldoc);
-    Err err = browse_rec(lxb_dom_interface_node(lxbdoc), serialize_cb, htmldoc);
+    Err err = browse_rec(
+        lxb_dom_interface_node(lxbdoc), serialize_cb, htmldoc
+    );
     if (err) return err;
     return textbuf_append_null(htmldoc_textbuf(htmldoc));
 }
