@@ -6,7 +6,7 @@
 #include "src/ranges.h"
 
 Err ed_global(TextBuf textbuf[static 1],  const char* rest);
-Err textbuf_eval_cmd(TextBuf textbuf[static 1], const char* line, Range range[static 1]);
+Err textbuf_eval_cmd(Session session[static 1], const char* line, Range range[static 1]);
 
 static inline int
 line_num_to_left_offset(size_t lnum, TextBuf textbuf[static 1], size_t out[static 1]) {
@@ -51,5 +51,5 @@ Err ed_write(const char* rest, TextBuf textbuf[static 1]);
 Err dbg_print_all_lines_nums(TextBuf textbuf[static 1]);
 
 static inline Err ed_edit(TextBuf textbuf[static 1], const char* rest) { return textbuf_read_from_file(textbuf, rest); }
-Err ed_eval(TextBuf textbuf[static 1], const char* line);
+Err ed_eval(Session session[static 1], const char* line);
 #endif

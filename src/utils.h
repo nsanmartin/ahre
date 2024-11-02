@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #define BT char
 #include <buf.h>
@@ -37,5 +38,22 @@ static inline int buf_append_hexp(void* p, BufOf(char)*buf) {
 
 static inline void log_info(const char* msg) { puts(msg); }
 static inline void log_error(const char* msg) { perror(msg); }
+
+typedef unsigned int (*SerializeCallback)(const unsigned char* data, size_t len, void* ctx);
+static inline unsigned int
+write_to_file(const unsigned char* data, size_t len, void* f) 
+{
+    return len - fwrite(data, 1, len, f);
+}
+
+static inline unsigned int
+serialize_unsigned(SerializeCallback cb, uintmax_t ui, void* ctx, unsigned int error_value) {
+    char numbf[3 * sizeof ui] = {0};
+    size_t len = 0;
+    if ((len = snprintf(numbf, (3 * sizeof ui), "%lu", ui)) > (3 * sizeof ui)) {
+        return error_value;
+    }
+    return cb((unsigned char*)numbf, len, ctx);
+}
 
 #endif

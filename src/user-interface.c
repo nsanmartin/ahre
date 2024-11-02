@@ -88,7 +88,7 @@ Err process_line(Session session[static 1], const char* line) {
     if (*line == '\\') {
         return cmd_eval(session, line + 1);
     } else {
-        return ed_eval(session_current_buf(session), line);
+        return ed_eval(session, line);
     }
 
     return "unexpected";

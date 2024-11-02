@@ -1,6 +1,5 @@
 #include "src/utils.h"
 #include "src/htmldoc.h"
-//#include "src/texbuf.h"
 
 
 /* internal linkage */

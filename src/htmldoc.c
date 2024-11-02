@@ -45,20 +45,31 @@ serialize_cb(const lxb_char_t *data, size_t len, void *ctx) {
         : LXB_STATUS_OK;
 }
 
+lxb_status_t htmldoc_lexbor_serialize_unsigned(
+    HtmlDoc d[static 1], lxb_html_serialize_cb_f cb, uintmax_t ui
+)
+{
+    return serialize_unsigned(cb, ui, d, LXB_STATUS_ERROR);
+}
+
 static Err 
-htmldoc_append_ahref(HtmlDoc d[static 1], const char* url, size_t len) {
-    if (!url)
-        return "error: NULL url";
-    Ahref a = (Ahref){0};
+htmldoc_append_ahref(HtmlDoc d[static 1], const char* url, size_t len, lxb_html_serialize_cb_f cb) {
+    if (!url) return "error: NULL url";
     char* copy = ah_malloc(len);
-    if (!copy) {
-        return "error: malloc";
-    }
+    if (!copy) { return "error: malloc"; }
+
+    ArlOf(Ahref)* ahrefs = htmldoc_ahrefs(d);
+
+    if (
+        LXB_STATUS_OK != cb((const lxb_char_t *) "[", 1, d)
+        || LXB_STATUS_OK != htmldoc_lexbor_serialize_unsigned(d, cb, ahrefs->len)
+        || LXB_STATUS_OK != cb((const lxb_char_t *) "]", 1, d)
+    ) { return "error serializing data"; }
+
     memcpy(copy, url, len);
-    a.url = copy;
-    LipOf(size_t,Ahref)* ahrefs = htmldoc_ahrefs(d);
     size_t off = textbuf_len(htmldoc_textbuf(d));
-    if (lipfn(size_t,Ahref,set)(ahrefs,&off,&a)) {
+    Ahref a = (Ahref){.url=copy, .off=off};
+    if (!arlfn(Ahref,append)(ahrefs, &a)) {
         free((char*)a.url);
         return "error: lip set";
     }
@@ -75,18 +86,12 @@ attr_href(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void *ctx)
     attr = lxb_dom_element_first_attribute(lxb_dom_interface_element(node));
     while (attr != NULL) {
         data = lxb_dom_attr_qualified_name(attr, &data_len);
-
         if (!strcmp("href", (char*)data))  {
 
             data = lxb_dom_attr_value(attr, &data_len);
 
             if (data != NULL) {
-                if (
-                    LXB_STATUS_OK != cb((const lxb_char_t *) "[", 1, ctx)
-                    || LXB_STATUS_OK != cb(data, data_len, ctx)
-                    || LXB_STATUS_OK != cb((const lxb_char_t *) "]", 1, ctx)
-                ) { return "error serializing data"; }
-                Err err = htmldoc_append_ahref(ctx, (const char*)data, data_len);
+                Err err = htmldoc_append_ahref(ctx, (const char*)data, data_len, cb);
                 if (err) return err;
             }
 
@@ -185,6 +190,7 @@ static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, void* ct
     return Ok;
 }
 
+
 /* external linkage */
 
 Err lexbor_read_doc_from_file(HtmlDoc htmldoc[static 1]) {
@@ -238,9 +244,6 @@ int htmldoc_init(HtmlDoc d[static 1], const Str url[static 1]) {
     *d = (HtmlDoc){
         .url=u, .lxbdoc=document, .textbuf=(TextBuf){.current_line=1}
     };
-    lipfn(size_t,Ahref,init)(
-        &d->ahrefs, (LipInitArgs){.sz=100,.attempts=16}
-    );
     return 0;
 }
 
@@ -261,7 +264,7 @@ void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) {
     lxb_html_document_destroy(htmldoc->lxbdoc);
     textbuf_cleanup(&htmldoc->textbuf);
     destroy((char*)htmldoc->url);
-    lipfn(size_t,Ahref,clean)(htmldoc_ahrefs(htmldoc));
+    arlfn(Ahref,clean)(htmldoc_ahrefs(htmldoc));
 }
 
 inline void htmldoc_destroy(HtmlDoc* htmldoc) {

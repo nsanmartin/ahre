@@ -17,15 +17,13 @@
 
 typedef struct {
     const char* url;
+    size_t off;
 } Ahref;
 
 
-#define KT size_t
-#define VT Ahref
-#define VTClean(Ptr) do{ if(Ptr) free((char*)(Ptr)->url);}while(0)
-#include <lip.h>
+#define T Ahref
+#include <arl.h>
 
-#include <hashi.h>
 
 typedef struct {
     lxb_dom_collection_t* hrefs;
@@ -37,7 +35,7 @@ typedef struct {
     lxb_html_document_t* lxbdoc;
     TextBuf textbuf;
     DocCache cache;
-    LipOf(size_t,Ahref) ahrefs;
+    ArlOf(Ahref) ahrefs;
 } HtmlDoc;
 
 /* getters */
@@ -50,7 +48,7 @@ htmldoc_lxbdoc(HtmlDoc d[static 1]) { return d->lxbdoc; }
 static inline TextBuf*
 htmldoc_textbuf(HtmlDoc d[static 1]) { return &d->textbuf; }
 
-static inline LipOf(size_t,Ahref)*
+static inline ArlOf(Ahref)*
 htmldoc_ahrefs(HtmlDoc d[static 1]) { return &d->ahrefs; }
 
 /* ctors */

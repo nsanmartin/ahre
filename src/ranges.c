@@ -187,8 +187,11 @@ static const char* parse_range_impl(
 
 }
 
+/*
+ * validate user provided range.
+ */
 static inline bool is_range_valid(Range r[static 1], size_t nlines) {
-    return r->beg <= r->end && r->end <= nlines;
+    return r->beg && r->beg <= r->end && r->end <= nlines;
 }
 
 static inline bool range_has_no_end(Range r[static 1]) { return r->end == 0; }
