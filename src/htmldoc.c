@@ -14,15 +14,15 @@ _Thread_local static unsigned char read_from_file_buffer[READ_FROM_FILE_BUFFER_L
 
 static Err
 browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, void* ctx);
-static Err
-attr_href(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void *ctx);
+//static Err
+//attr_href(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void *ctx);
 
 static lxb_status_t
 serialize_cb(const lxb_char_t *data, size_t len, void *ctx) ;
 
 
 //TODO: use str ndup cstr
-static char* str_url_dup(const Str* url) {
+static char* str_url_dup_to_cstr(const Str* url) {
     if (str_is_empty(url)) { return 0x0; }
     if (len(url) >= MAX_URL_LEN) {
         perror("url too long");
@@ -55,20 +55,17 @@ lxb_status_t htmldoc_lexbor_serialize_unsigned(
 static Err 
 htmldoc_append_ahref(HtmlDoc d[static 1], const char* url, size_t len, lxb_html_serialize_cb_f cb) {
     if (!url) return "error: NULL url";
-    char* copy = ah_malloc(len);
-    if (!copy) { return "error: malloc"; }
 
     ArlOf(Ahref)* ahrefs = htmldoc_ahrefs(d);
-
     if (
         LXB_STATUS_OK != cb((const lxb_char_t *) "[", 1, d)
         || LXB_STATUS_OK != htmldoc_lexbor_serialize_unsigned(d, cb, ahrefs->len)
         || LXB_STATUS_OK != cb((const lxb_char_t *) "]", 1, d)
     ) { return "error serializing data"; }
 
-    memcpy(copy, url, len);
-    size_t off = textbuf_len(htmldoc_textbuf(d));
-    Ahref a = (Ahref){.url=copy, .off=off};
+    Ahref a = (Ahref){0};
+    if (ahref_init_alloc(&a, url, len, textbuf_len(htmldoc_textbuf(d))))
+        return "error: intialiazing Ahref";
     if (!arlfn(Ahref,append)(ahrefs, &a)) {
         free((char*)a.url);
         return "error: lip set";
@@ -86,7 +83,7 @@ attr_href(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void *ctx)
     attr = lxb_dom_element_first_attribute(lxb_dom_interface_element(node));
     while (attr != NULL) {
         data = lxb_dom_attr_qualified_name(attr, &data_len);
-        if (!strcmp("href", (char*)data))  {
+        if (!strncmp("href", (char*)data, data_len))  {
 
             data = lxb_dom_attr_value(attr, &data_len);
 
@@ -129,23 +126,23 @@ browse_tag_a(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void* ctx) {
     return err;
 }
 
-static Err browse_elem_newline(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void* ctx) {
-    Err err = browse_list(node->first_child, node->last_child, cb, ctx);
-    if (err) return err;
-    cb((lxb_char_t*)"\n", 1, ctx);
-    return Ok;
-
-}
-
-static Err browse_tag_p(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void* ctx) {
-    cb((lxb_char_t*)"\n", 1, ctx);
-    return browse_elem_newline(node, cb, ctx);
-}
-
-static Err browse_tag_blockquote(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void* ctx) {
-    //cb((lxb_char_t*)"\t>", 2, ctx);//TODO: indent contents
-    return browse_elem_newline(node, cb, ctx);
-}
+//static Err browse_elem_newline(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void* ctx) {
+//    Err err = browse_list(node->first_child, node->last_child, cb, ctx);
+//    if (err) return err;
+//    cb((lxb_char_t*)"\n", 1, ctx);
+//    return Ok;
+//
+//}
+//
+//static Err browse_tag_p(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void* ctx) {
+//    cb((lxb_char_t*)"\n", 1, ctx);
+//    return browse_elem_newline(node, cb, ctx);
+//}
+//
+//static Err browse_tag_blockquote(lxb_dom_node_t *node, lxb_html_serialize_cb_f cb, void* ctx) {
+//    //cb((lxb_char_t*)"\t>", 2, ctx);//TODO: indent contents
+//    return browse_elem_newline(node, cb, ctx);
+//}
 
 
 static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, void* ctx) {
@@ -153,32 +150,38 @@ static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, void* ct
         if (node->type == LXB_DOM_NODE_TYPE_ELEMENT) {
 
             switch(node->local_name) {
-                case LXB_TAG_SCRIPT: { printf("skip script\n"); return Ok; } 
-                case LXB_TAG_STYLE: { printf("skip style\n"); return Ok; } 
-                case LXB_TAG_TITLE: { printf("skip title\n"); return Ok; } 
-                case LXB_TAG_P: { return browse_tag_p(node, cb, ctx); }
-                case LXB_TAG_BLOCKQUOTE: { return browse_tag_blockquote(node, cb, ctx); }
-                case LXB_TAG_H1:
-                case LXB_TAG_H2:
-                case LXB_TAG_H3:
-                case LXB_TAG_H4:
-                case LXB_TAG_H5:
-                case LXB_TAG_H6: 
-                case LXB_TAG_BR: { return browse_tag_p(node, cb, ctx); }
+                case LXB_TAG_SCRIPT: { /*printf("skip script\n");*/ return Ok; } 
+                case LXB_TAG_STYLE: { /*printf("skip style\n");*/ return Ok; } 
+                case LXB_TAG_TITLE: { /*printf("skip title\n");*/ return Ok; } 
+                //case LXB_TAG_P: { return browse_tag_p(node, cb, ctx); }
+                //case LXB_TAG_BLOCKQUOTE: { return browse_tag_blockquote(node, cb, ctx); }
+                //case LXB_TAG_H1:
+                //case LXB_TAG_H2:
+                //case LXB_TAG_H3:
+                //case LXB_TAG_H4:
+                //case LXB_TAG_H5:
+                //case LXB_TAG_H6: 
+                //case LXB_TAG_BR: { return browse_tag_p(node, cb, ctx); }
                 case LXB_TAG_A: { return browse_tag_a(node, cb, ctx); }
             }
         } else if (node->type == LXB_DOM_NODE_TYPE_TEXT) {
             size_t len = lxb_dom_interface_text(node)->char_data.data.length;
             unsigned char* data = lxb_dom_interface_text(node)->char_data.data.data;
+
             //TODO: print lines skppig newline
+
             if (!is_all_space((char*)data, len)) {
-                size_t l = len;
-                while(l && isspace(*data)) { ++data; --l; }
-                if (l != len) cb((lxb_char_t*)" ", 1, ctx);
-                len = l;
-                while(l > 1 && isspace(data[l-1])) { --l; }
-                cb(data, l, ctx);
-                if (l != len) cb((lxb_char_t*)" ", 1, ctx);
+                //HtmlDoc htmldoc = ctx;
+                //TextBuf* textbuf = htmldoc_textbuf(ctx);
+                ///size_t beg = textbuf_len(textbuf);
+                StrView s = strview((char*)data, len);
+                strview_trim_space(&s);
+                cb((lxb_char_t*)s.s, s.len, ctx);
+                cb((lxb_char_t*)"\n", 1, ctx);
+                ///size_t end = textbuf_len(textbuf);
+                ///DocElem elem = (DocElem){ .tag=DOC_ELEM_TEXT,.offset=beg,.len=end-beg };
+                ///if (!arlfn(DocElem,append)(htmldoc_elems(ctx), &elem)) { return "error: lip set"; }
+                ///fwrite( textbuf_items(textbuf) + beg, 1, end-beg, stdout);
             }
             
         }
@@ -234,7 +237,7 @@ int htmldoc_init(HtmlDoc d[static 1], const Str url[static 1]) {
 
     const char* u = NULL;
     if (!str_is_empty(url)){
-        u = str_url_dup(url);
+        u = str_url_dup_to_cstr(url);
         if (!u) {
             lxb_html_document_destroy(d->lxbdoc);
             return -1;

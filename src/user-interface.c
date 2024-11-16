@@ -1,3 +1,4 @@
+#include <string.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <readline/readline.h>
@@ -27,31 +28,76 @@ bool substr_match_all(const char* s, size_t len, const char* cmd) {
 }
 
 
-//TODO: move this to a method
+///TODO: move this to session
 Err cmd_set_url(Session session[static 1], const char* url) {
+    HtmlDoc* htmldoc = session_current_doc(session);
+    url = cstr_trim_space((char*)url);
+    if (!*url) return err_fmt("%s", htmldoc->url);
     Str u;
-    if(str_init(&u, url)) { return "bad url"; }
-    str_trim_space(&u);
-    if (!str_is_empty(&u) && (!session->htmldoc->url || strncmp(u.s, session->htmldoc->url, u.len))) {
-        htmldoc_cleanup(session->htmldoc);
-        if (htmldoc_init(session->htmldoc, &u)) {
-            return "could not init htmldoc";
-        }
+    if(str_init(&u, url)) { return err_fmt("error: init str '%s'"); }
+    if (htmldoc->url && strncmp(u.s, htmldoc->url, u.len) == 0) 
+        return "same url, not updating";
 
-        HtmlDoc* htmldoc = session_current_doc(session);
-        if (htmldoc_has_url(htmldoc)) {
-            Err err = htmldoc_fetch(htmldoc, session->url_client);
-            if (err) {
-                return err_fmt("\nerror fetching url: '%s': %s", url, err);
-            }
-        }
-        printf("set with url: %s\n", url);
-    } else {
-       printf("url: %s\n",  session->htmldoc->url ? session->htmldoc->url : "<no url>");
+    if (cstr_starts_with(u.s, "//"))
+        str_prepend(&u, "https://"); ///TODO: suppoert for http
+    else if (cstr_starts_with(u.s, "/"))
+        str_prepend(&u, htmldoc->url);
+    htmldoc_cleanup(htmldoc);
+    if (htmldoc_init(htmldoc, &u)) {
+        return "error: could not init htmldoc";
     }
+
+    if (htmldoc_has_url(htmldoc)) {
+        Err err = htmldoc_fetch(htmldoc, session->url_client);
+        if (err) {
+            return err_fmt("error fetching url: '%s': %s", url, err);
+        }
+    }
+    printf("set with url: %s\n", htmldoc->url ? htmldoc->url : "<no url>");
     return Ok;
 }
 
+
+Err cmd_go(Session session[static 1], const char* link) {
+    if (!link) return "error: unexpected nullptr";
+    while(*link && isspace(*link)) ++link;
+    if (!*link) return "link number not given";
+    if (!isdigit(*link)) return "link number mut consist in digits";
+    char* endptr = NULL;
+    long long unsigned linknum = strtoull(link, &endptr, 10);
+    if (errno == ERANGE)
+        return "link number out of range";
+    if (link == endptr)
+        return "link number could not be parsed";
+    if (linknum > SIZE_MAX) 
+        return "link number out of range (exceeds size max)";
+
+    HtmlDoc* htmldoc = session_current_doc(session);
+    ArlOf(Ahref)* hrefs = htmldoc_ahrefs(htmldoc);
+
+    Ahref* ahref = arlfn(Ahref, at)(hrefs, (size_t)linknum);
+    if (!ahref) return "link number invalid";
+
+    Err e = Ok;
+    const char* url = htmldoc_abs_url_dup(htmldoc, ahref->url);
+    if (!url) return "error: memory failure";
+    HtmlDoc* newdoc = htmldoc_create(cstr_trim_space((char*)url));
+    if (!newdoc) return "error: could not create html doc";
+    if (newdoc->url && newdoc->lxbdoc) {
+        if ((e = htmldoc_fetch(newdoc, session_url_client(session)))) {
+            return e;
+        }
+
+        if ((e = htmldoc_browse(newdoc))) {
+            return e;
+        }
+    }
+    htmldoc_destroy(htmldoc);
+    //TODO: change this when multi docs gets implemented
+    session->htmldoc = newdoc;
+    std_free((char*)url);
+    return Ok;
+}
 
 Err cmd_eval(Session session[static 1], const char* line) {
     const char* rest = 0x0;
@@ -69,6 +115,7 @@ Err cmd_eval(Session session[static 1], const char* line) {
     if ((rest = substr_match(line, "class", 3))) { return "TODO: class"; }
     if ((rest = substr_match(line, "clear", 3))) { return cmd_clear(session); }
     if ((rest = substr_match(line, "fetch", 1))) { return cmd_fetch(session); }
+    if ((rest = substr_match(line, "go", 1))) { return cmd_go(session, rest); }
     if ((rest = substr_match(line, "summary", 1))) { return dbg_session_summary(session); }
     if ((rest = substr_match(line, "tag", 2))) { return cmd_tag(rest, session); }
     if ((rest = substr_match(line, "text", 2))) { return cmd_text(session); }

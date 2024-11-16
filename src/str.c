@@ -107,3 +107,44 @@ bool is_all_space(const char* data, size_t len) {
     return !len;
 }
 
+Err str_prepend(Str s[static 1], const char* cs) {
+    if (!cs) return "error: invalid cstr (nullptr)";
+    size_t cslen = strlen(cs);
+    size_t len = s->len + cslen;
+    char* buf = malloc(len + 1);
+    if (!buf) return "error: not memory";
+    buf[len] = '\0';
+    memcpy(buf, cs, cslen);
+    memcpy(buf + cslen, s->s, s->len);
+    std_free((char*)s->s);
+    s->s = buf;
+    return Ok;
+}
+
+///
+///const char* cstr_prepend(const char* s, const char* prefix) {
+///    if (!s || !t) return NULL;
+///    size_t slen = strlen(s);
+///    size_t tlen = strlen(t);
+///    size_t len = slen + tlen;
+///    char* buf = malloc(len + 1);
+///    if (!buf) return NULL;
+///    buf[len] = '\0';
+///    memcpy(buf, s, slen);
+///    memcpy(buf + slen, t, tlen);
+///    std_free(s);
+///    return Ok;
+///}
+
+const char* cstr_cat_dup(const char* s, const char* t) {
+    if (!s || !t) return NULL;
+    size_t slen = strlen(s);
+    size_t tlen = strlen(t);
+    size_t len = slen + tlen;
+    char* buf = malloc(len + 1);
+    if (!buf) return NULL;
+    buf[len] = '\0';
+    memcpy(buf, s, slen);
+    memcpy(buf + slen, t, tlen);
+    return buf;
+}

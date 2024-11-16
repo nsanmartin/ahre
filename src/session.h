@@ -18,6 +18,9 @@ typedef struct Session {
 
 TextBuf* session_current_buf(Session session[static 1]);
 HtmlDoc* session_current_doc(Session session[static 1]);
+static inline UrlClient* session_url_client(Session session[static 1]) {
+    return session->url_client;
+}
 
 Session* session_create(char* url, UserLineCallback callback);
 void session_destroy(Session* session) ;

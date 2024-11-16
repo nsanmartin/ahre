@@ -13,6 +13,7 @@
 #include "src/url-client.h"
 #include "src/utils.h"
 #include "src/wrapper-lexbor-curl.h"
+#include "src/doc-elem.h"
 
 
 typedef struct {
@@ -20,8 +21,30 @@ typedef struct {
     size_t off;
 } Ahref;
 
+static inline int ahref_init_alloc(
+    Ahref a[static 1], const char* url, size_t len, size_t off
+)
+{
+    const char* copy = mem_to_dup_str(url, len);
+    if (!copy) { return -1; }
+    *a = (Ahref){.url=copy, .off=off};
+    return 0;
+}
+static inline void
+ahref_clean(Ahref a[static 1]) { std_free((char*)(a->url)); }
 
+//static inline int
+//ahref_copy(Ahref dest[static 1], const Ahref src[static 1]) {
+//    dest->url = strdup(src->url);
+//    if (!dest->url) return -1;
+//    dest->off = src->off;
+//    return 0;
+//}
 #define T Ahref
+#define TClean ahref_clean
+#include <arl.h>
+
+#define T DocElem
 #include <arl.h>
 
 
@@ -90,4 +113,11 @@ static inline Err htmldoc_fetch(HtmlDoc htmldoc[static 1], UrlClient url_client[
 
 Err htmldoc_browse(HtmlDoc htmldoc[static 1]);
 
+static inline const char* htmldoc_abs_url_dup(const HtmlDoc htmldoc[static 1], const char* url) {
+    if (cstr_starts_with(url, "//"))
+        return cstr_cat_dup("https://", url); ///TODO: suppoert for http
+    else if (cstr_starts_with(url, "/"))
+        return cstr_cat_dup(htmldoc->url, url);
+    return strdup(url);
+}
 #endif

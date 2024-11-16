@@ -41,7 +41,8 @@ static inline Err ed_print_n(TextBuf textbuf[static 1], Range range[static 1]) {
         if ((err=textbuf_get_line_offset_range(textbuf, line, line, &r)))
             return err;
 
-        serialize_unsigned(write_to_file, line, stdout, -1);
+        if (serialize_unsigned(write_to_file, line, stdout, -1))
+            return "error serializing unsigned";
         fwrite("\t", 1, 1, stdout);
         fwrite(textbuf->buf.items + r.beg, 1, r.end - r.beg, stdout);
         fwrite(EscCodeReset, 1, sizeof EscCodeReset, stdout);
@@ -56,12 +57,17 @@ static inline Err ed_print_n(TextBuf textbuf[static 1], Range range[static 1]) {
 static inline Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
     Err err = validate_range_for_buffer(textbuf, range);
     if (err) return err;
-    Range r = {0};
-    if ((err=textbuf_get_line_offset_range(textbuf, range->beg, range->end, &r)))
-        return err;
 
-    fwrite(textbuf->buf.items + r.beg, 1, r.end - r.beg, stdout);
-    fwrite(EscCodeReset, 1, sizeof EscCodeReset, stdout);
+    for (size_t line = range->beg; line <= range->end; ++line) {
+        Range r = {0};
+        if ((err=textbuf_get_line_offset_range(textbuf, line, line, &r)))
+            return err;
+
+        fwrite(textbuf->buf.items + r.beg, 1, r.end - r.beg, stdout);
+        fwrite(EscCodeReset, 1, sizeof EscCodeReset, stdout);
+    }
+
+
     if (range->end == textbuf_line_count(textbuf)) 
         fwrite("\n", 1, 1, stdout);
     return Ok;

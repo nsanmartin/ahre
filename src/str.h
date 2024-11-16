@@ -12,8 +12,11 @@
 #ifndef __AHRE_STR_H__
 #define __AHRE_STR_H__
 
+#include <ctype.h>
 #include <string.h>
 
+#include "src/error.h"
+#include "src/mem.h"
 
 typedef struct {
 	const char* s;
@@ -37,4 +40,34 @@ const char* substr_match(const char* s, const char* cmd, size_t len);
 char* url_cpy(const char* url) ;
 const char* cstr_trim_space(char* s);
 bool is_all_space(const char* data, size_t len);
+
+static inline bool cstr_starts_with(const char* s, const char* t) {
+    return s && t && strncmp(s, t, strlen(t)) == 0;
+}
+
+typedef struct {
+	const char* s;
+	size_t len;
+} StrView;
+
+inline static StrView strview(const char* s, size_t len) {
+    return (StrView){.s=s, .len=len};
+}
+
+inline static void strview_trim_space(StrView s[static 1]) {
+    while(s->len && isspace(*(s->s))) { ++s->s; --s->len; }
+    while(s->len > 1 && isspace(s->s[s->len-1])) { --s->len; }
+}
+
+Err str_prepend(Str s[static 1], const char* cs);
+
+static inline const char* mem_to_dup_str(const char* data, size_t len) {
+    char* res = ah_malloc(len + 1);
+    if (!res) return NULL;
+    memcpy(res, data, len);
+    res[len] = '\0';
+    return res;
+}
+
+const char* cstr_cat_dup(const char* s, const char* t);
 #endif
