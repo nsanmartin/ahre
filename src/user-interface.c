@@ -132,7 +132,8 @@ Err process_line(Session session[static 1], const char* line) {
 
     const char* rest = NULL;
     if ((rest = substr_match(line, "quit", 1)) && !*rest) { session->quit = true; return Ok;}
-    if (*line == '\\') {
+    if (*line == '/') { return "/ (search) not implemented"; }
+    else if (*line == '\\') {
         return cmd_eval(session, line + 1);
     } else {
         return ed_eval(session, line);

@@ -16,10 +16,7 @@
 #include "src/doc-elem.h"
 
 
-typedef struct {
-    const char* url;
-    size_t off;
-} Ahref;
+typedef struct { const char* url; size_t off; } Ahref;
 
 static inline int ahref_init_alloc(
     Ahref a[static 1], const char* url, size_t len, size_t off
@@ -33,15 +30,26 @@ static inline int ahref_init_alloc(
 static inline void
 ahref_clean(Ahref a[static 1]) { std_free((char*)(a->url)); }
 
-//static inline int
-//ahref_copy(Ahref dest[static 1], const Ahref src[static 1]) {
-//    dest->url = strdup(src->url);
-//    if (!dest->url) return -1;
-//    dest->off = src->off;
-//    return 0;
-//}
 #define T Ahref
 #define TClean ahref_clean
+#include <arl.h>
+
+typedef struct { const char* src; size_t off; } Img;
+static inline int img_init_alloc(
+    Img i[static 1], const char* src, size_t srclen, size_t off
+)
+{
+    const char* srccopy = mem_to_dup_str(src, srclen);
+    if (!srccopy) { return -1; }
+    *i = (Img){.src=srccopy, .off=off};
+    return 0;
+}
+static inline void
+img_clean(Img i[static 1]) {
+    std_free((char*)(i->src));
+}
+#define T Img
+#define TClean img_clean
 #include <arl.h>
 
 #define T DocElem
@@ -59,6 +67,7 @@ typedef struct {
     TextBuf textbuf;
     DocCache cache;
     ArlOf(Ahref) ahrefs;
+    ArlOf(Img) imgs;
 } HtmlDoc;
 
 /* getters */
@@ -73,6 +82,9 @@ htmldoc_textbuf(HtmlDoc d[static 1]) { return &d->textbuf; }
 
 static inline ArlOf(Ahref)*
 htmldoc_ahrefs(HtmlDoc d[static 1]) { return &d->ahrefs; }
+
+static inline ArlOf(Img)*
+htmldoc_imgs(HtmlDoc d[static 1]) { return &d->imgs; }
 
 /* ctors */
 int htmldoc_init(HtmlDoc d[static 1], const Str url[static 1]);
