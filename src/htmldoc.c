@@ -383,7 +383,7 @@ Err lexbor_read_doc_from_file(HtmlDoc htmldoc[static 1]) {
 
 
 int htmldoc_init(HtmlDoc d[static 1], const Str url[static 1]) {
-    if (!d) { return -1; }
+    //if (!d) { return -1; }
     lxb_html_document_t* document = lxb_html_document_create();
     if (!document) {
         perror("Lxb failed to create html document");
