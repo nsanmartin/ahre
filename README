@@ -1,9 +1,36 @@
 Retrieve anchor's href attribute's values from html documents
 
+External dependencies
+======== ============
+
+Readline:
+
+   In debian: libreadline-dev
+
+Curl:
+
+  In debian it may be installed by any of:
+  + libcurl4-openssl-dev 7.88.1-10+deb12u8
+  + libcurl4-nss-dev 7.88.1-10+deb12u8
+  + libcurl4-gnutls-dev 7.88.1-10+deb12u8
+
+Lexbor:
+
+  git repo:  https://github.com/lexbor/lexbor
+
+
 Build
 =====
 
 git clone
 git submodule update --init
 
+
+mkdir build
+make
+
+Run
+===
+
+./build/ahre <url>
 
