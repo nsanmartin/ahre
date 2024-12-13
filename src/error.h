@@ -15,6 +15,10 @@ Err err_fmt(Err fmt, ...);
 #define validate_uint(Value) _Generic((Value), \
         unsigned int: Value)
 
+// 'try' macro is similar to try keyword in zig. It receives an
+// lvalue (a variable) than can store an Err value and an Err
+// value. If the Err value is not null (not Ok) then it immediately
+// returns that value. If not it does nothing.
 #define try(LV, ErrValue) if ((LV=validate_err(ErrValue))) return LV 
 #define try_or(ErrValue, RetVal) \
     if (validate_err(ErrValue)) return validate_err(RetVal)
