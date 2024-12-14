@@ -28,7 +28,7 @@ $(AHRE): $(AHRE_OBJ)
 		$^  \
 		-lcurl -llexbor -lreadline
 
-tests: test_range test_buf
+test_all: test_range test_buf
 
 adhoc: $(ADHOC_OBJ)
 	$(CC) $(CFLAGS) \
