@@ -103,6 +103,7 @@ Err cmd_eval(Session session[static 1], const char* line) {
     const char* rest = 0x0;
     line = cstr_skip_space(line);
 
+    if ((rest = substr_match(line, "browse", 1))) { return cmd_browse(session, rest); }
     if ((rest = substr_match(line, "url", 1))) { return cmd_set_url(session, rest); }
 
     if (!htmldoc_is_valid(session_current_doc(session)) ||!session->url_client) {
@@ -111,7 +112,6 @@ Err cmd_eval(Session session[static 1], const char* line) {
 
     if ((rest = substr_match(line, "ahref", 2)) && !*rest) { return cmd_ahre(session); }
     if ((rest = substr_match(line, "attr", 2))) { return "TODO: attr"; }
-    if ((rest = substr_match(line, "browse", 2)) && !*rest) { return cmd_browse(session); }
     if ((rest = substr_match(line, "class", 3))) { return "TODO: class"; }
     if ((rest = substr_match(line, "clear", 3))) { return cmd_clear(session); }
     if ((rest = substr_match(line, "fetch", 1))) { return cmd_fetch(session); }

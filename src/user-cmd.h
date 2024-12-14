@@ -7,6 +7,7 @@
 #include "src/wrapper-lexbor.h"
 
 Err cmd_write(char* fname, Session session[static 1]);
+Err cmd_set_url(Session session[static 1], const char* url);
 
 Err cmd_fetch(Session session[static 1]) {
     HtmlDoc* htmldoc = session_current_doc(session);
@@ -41,7 +42,11 @@ static inline Err cmd_text(Session* session) {
     return lexbor_html_text_append(htmldoc->lxbdoc, &htmldoc->textbuf);
 }
 
-static inline Err cmd_browse(Session session[static 1]) {
+static inline Err cmd_browse(Session session[static 1], const char* rest) {
+    if (*rest) {
+        Err err = Ok;
+        try(err, cmd_set_url(session, rest));
+    }
     HtmlDoc* htmldoc = session_current_doc(session);
     return htmldoc_browse(htmldoc);
 }
