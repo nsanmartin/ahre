@@ -34,7 +34,7 @@ Err cmd_set_url(Session session[static 1], const char* url) {
     url = cstr_trim_space((char*)url);
     if (!*url) return err_fmt("%s", htmldoc->url);
     Str u;
-    if(str_init(&u, url)) { return err_fmt("error: init str '%s'"); }
+    if(str_init(&u, url)) { return err_fmt("error: init str '%s'", url); }
     if (htmldoc->url && strncmp(u.s, htmldoc->url, u.len) == 0) 
         return "same url, not updating";
 
@@ -49,9 +49,9 @@ Err cmd_set_url(Session session[static 1], const char* url) {
 
     if (htmldoc_has_url(htmldoc)) {
         Err err = htmldoc_fetch(htmldoc, session->url_client);
-        if (err) {
-            return err_fmt("error fetching url: '%s': %s", url, err);
-        }
+        if (err) 
+            return err;
+        
     }
     printf("set with url: %s\n", htmldoc->url ? htmldoc->url : "<no url>");
     return Ok;
