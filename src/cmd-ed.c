@@ -123,6 +123,8 @@ Err dbg_print_all_lines_nums(TextBuf textbuf[static 1]) {
 
 Err ed_write(const char* rest, TextBuf textbuf[static 1]) {
     if (!rest || !*rest) { return "cannot write without file arg"; }
+    rest = cstr_trim_space((char*)rest);
+    if (!*rest) return "invalid url name";
     FILE* fp = fopen(rest, "w");
     if (!fp) {
         return err_fmt("%s: could not open file: %s", __func__, rest); 
@@ -130,6 +132,7 @@ Err ed_write(const char* rest, TextBuf textbuf[static 1]) {
     if (fwrite(textbuf_items(textbuf), 1, len(textbuf), fp) != len(textbuf)) {
         return err_fmt("%s: error writing to file: %s", __func__, rest);
     }
+    if (fclose(fp)) return err_fmt("error closing file '%s'", rest);
     return Ok;
 }
 
