@@ -50,22 +50,6 @@ static TextBuf* browse_ctx_textbuf(BrowseCtx ctx[static 1]) {
 static Err
 browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]);
 
-//TODO: use str ndup cstr
-static char* str_url_dup_to_cstr(const Str* url) {
-    if (str_is_empty(url)) { return 0x0; }
-    if (len(url) >= MAX_URL_LEN) {
-        perror("url too long");
-        return 0x0;
-    }
-
-    char* res = malloc(len(url) + 1);
-    if (!res) { return NULL; }
-    res[len(url)] = '\0';
-    memcpy(res, url->s, len(url));
-    return res;
-}
-
-
 static lxb_status_t
 serialize_cb_browse(const lxb_char_t* data, size_t len, void* ctx) {
     TextBuf* textbuf = htmldoc_textbuf(browse_ctx_htmldoc(ctx));
@@ -396,34 +380,38 @@ Err lexbor_read_doc_from_file(HtmlDoc htmldoc[static 1]) {
 
 
 
-int htmldoc_init(HtmlDoc d[static 1], const Str url[static 1]) {
-    //if (!d) { return -1; }
+int htmldoc_init(HtmlDoc d[static 1], const char* url) {
+    //TODO: trim space in url 
+    if (url && *url) {
+        if (strlen(url) > MAX_URL_LEN) {
+            perror("Url large is not supported.");
+            return -1;
+        }
+        url = strdup(url);
+        if (!url || !*url) {
+            perror("memory error: url cannot be copied");
+            return -1;
+        }
+    } else url = 0x0;
+
     lxb_html_document_t* document = lxb_html_document_create();
     if (!document) {
         perror("Lxb failed to create html document");
         return -1;
     }
 
-    const char* u = NULL;
-    if (!str_is_empty(url)){
-        u = str_url_dup_to_cstr(url);
-        if (!u) {
-            lxb_html_document_destroy(d->lxbdoc);
-            return -1;
-        }
-    }
-
     *d = (HtmlDoc){
-        .url=u, .lxbdoc=document, .textbuf=(TextBuf){.current_line=1}
+        .url=url, .lxbdoc=document, .textbuf=(TextBuf){.current_line=1}
     };
     return 0;
 }
 
 HtmlDoc* htmldoc_create(const char* url) {
     HtmlDoc* rv = std_malloc(sizeof(HtmlDoc));
-    Str u;
-    if (str_init(&u, url)) { return NULL; }
-    if (htmldoc_init(rv, &u)) {
+    if (!rv) return NULL;
+    //Str u;
+    //if (str_init(&u, url)) { return NULL; }
+    if (htmldoc_init(rv, url)) {
         destroy(rv);
         return NULL;
     }

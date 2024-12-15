@@ -87,7 +87,7 @@ static inline ArlOf(Img)*
 htmldoc_imgs(HtmlDoc d[static 1]) { return &d->imgs; }
 
 /* ctors */
-int htmldoc_init(HtmlDoc d[static 1], const Str url[static 1]);
+int htmldoc_init(HtmlDoc d[static 1], const char* url);
 
 /* dtors */
 //void htmldoc_reset(HtmlDoc htmldoc[static 1]) ;
