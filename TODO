@@ -3,3 +3,6 @@
 3. [*] count lines when appending to buf
 4. [*] use array of line pointers in aebuf
 5. [ ] implement browse fn similar to lexbor/examples/lexbor/html/html2sexpr.c
+6. [ ] use '' for ahre cmds and ':' for ed cmds
+7. [ ] use trie for commands and include docs
+8. [ ] add cmd save source

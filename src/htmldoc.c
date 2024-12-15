@@ -4,6 +4,7 @@
 #include "src/generic.h"
 #include "src/mem.h"
 #include "src/utils.h"
+#include "src/wrapper-lexbor.h"
 
 /* internal linkage */
 //static constexpr size_t MAX_URL_LEN = 2048;
@@ -359,14 +360,9 @@ Err lexbor_read_doc_from_file(HtmlDoc htmldoc[static 1]) {
 
     size_t bytes_read = 0;
     while ((bytes_read = fread(read_from_file_buffer, 1, READ_FROM_FILE_BUFFER_LEN, fp))) {
-        if (LXB_STATUS_OK != lxb_html_document_parse_chunk(
-                htmldoc->lxbdoc,
-                read_from_file_buffer,
-                bytes_read
-            )
-        ) {
-            return "Failed to parse HTML chunk";
-        }
+        try_nonzero( lexbor_parse_chunk_callback((char*)read_from_file_buffer, 1, bytes_read, htmldoc),
+                     "Failed to parse HTML chunk");
+
     }
     if (ferror(fp)) { fclose(fp); return strerror(errno); }
     fclose(fp);
@@ -423,6 +419,7 @@ void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) {
     htmldoc_cache_cleanup(&htmldoc->cache);
     lxb_html_document_destroy(htmldoc->lxbdoc);
     textbuf_cleanup(&htmldoc->textbuf);
+    buffn(char, clean)(&htmldoc->sourcebuf);
     destroy((char*)htmldoc->url);
     arlfn(Ahref,clean)(htmldoc_ahrefs(htmldoc));
     arlfn(Img,clean)(htmldoc_imgs(htmldoc));

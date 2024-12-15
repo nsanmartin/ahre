@@ -65,6 +65,7 @@ typedef struct {
     const char* url;
     lxb_html_document_t* lxbdoc;
     TextBuf textbuf;
+    BufOf(char) sourcebuf;
     DocCache cache;
     ArlOf(Ahref) ahrefs;
     ArlOf(Img) imgs;
@@ -98,6 +99,10 @@ static inline void htmldoc_cache_cleanup(DocCache c[static 1]) {
     *c = (DocCache){0};
 }
 
+/* external */
+Err
+curl_lexbor_fetch_document(UrlClient url_client[static 1], HtmlDoc htmldoc[static 1]);
+
 /**/
 
 Err htmldoc_cache_buffer_summary(DocCache c[static 1], BufOf(char) buf[static 1]);
@@ -120,7 +125,7 @@ static inline Err htmldoc_fetch(HtmlDoc htmldoc[static 1], UrlClient url_client[
     if (file_exists(htmldoc->url)) {
         return lexbor_read_doc_from_file(htmldoc);
     }
-    return curl_lexbor_fetch_document(url_client, htmldoc->lxbdoc, htmldoc->url);
+    return curl_lexbor_fetch_document(url_client, htmldoc);
 }
 
 Err htmldoc_browse(HtmlDoc htmldoc[static 1]);

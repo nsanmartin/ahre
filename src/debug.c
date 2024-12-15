@@ -1,6 +1,7 @@
 #include "src/debug.h"
 #include "src/generic.h"
 #include "src/htmldoc.h"
+#include "src/wrapper-lexbor.h"
 
 
 

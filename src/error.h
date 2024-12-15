@@ -12,8 +12,10 @@ Err err_fmt(Err fmt, ...);
 
 
 #define validate_err(Value) _Generic((Value), Err: Value)
-#define validate_uint(Value) _Generic((Value), \
-        unsigned int: Value)
+#define validate_uint(value) _Generic((value), \
+        unsigned int: value)
+#define validate_size(value) _Generic((value), \
+        size_t: value)
 
 // 'try' macro is similar to try keyword in zig. It receives an
 // lvalue (a variable) than can store an Err value and an Err
@@ -25,6 +27,10 @@ Err err_fmt(Err fmt, ...);
 
 #define try_lxb(Value, RetVal) \
     if ((LXB_STATUS_OK!=validate_uint(Value))) \
+        return RetVal
+
+#define try_nonzero(Value, RetVal) \
+    if ((!validate_size(Value))) \
         return RetVal
 
 #endif
