@@ -51,7 +51,59 @@ Err cmd_set_url(Session session[static 1], const char* url) {
     return Ok;
 }
 
+Err parse_number_or_throw(const char** lineptr, unsigned long long* num) {
+    if (!lineptr || !*lineptr) return "error: unexpected NULL ptr";
+    while(**lineptr && isspace(**lineptr)) ++*lineptr;
+    if (!**lineptr) return "number not given";
+    if (!isdigit(**lineptr)) return "number must consist in digits";
+    char* endptr = NULL;
+    *num = strtoull(*lineptr, &endptr, 10);
+    if (errno == ERANGE)
+        return "warn: number out of range";
+    if (*lineptr == endptr)
+        return "warn: number could not be parsed";
+    if (*num > SIZE_MAX) 
+        return "warn: number out of range (exceeds size max)";
+    return Ok;
+}
 
+
+static lxb_dom_node_t*
+_find_parent_form(lxb_dom_node_t* node) {
+    for (;node; node = node->parent) {
+        if (node->local_name == LXB_TAG_FORM) break;
+    }
+    return node;
+}
+
+
+Err cmd_input(Session session[static 1], const char* line) {
+    Err err = Ok;
+    long long unsigned num;
+    try(err, parse_number_or_throw(&line, &num));
+    HtmlDoc* htmldoc = session_current_doc(session);
+    ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(htmldoc);
+
+    LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(inputs, (size_t)num);
+    if (!nodeptr) return "link number invalid";
+
+    lxb_dom_node_t* form = _find_parent_form(*nodeptr);
+    if (form) {
+        const lxb_char_t* data;
+        size_t data_len;
+        lexbor_find_attr_value(form, "action", &data, &data_len);
+        printf("action: ");
+        const char* u = cstr_mem_cat_dup(htmldoc->url, (const char*)data, data_len);
+        if (!u) return "error: memory failure";
+        puts(u);
+        std_free((char*)u);
+    } else {
+        puts("expected form, not found");
+    }
+    return Ok;
+}
+
+//TODO: remove duplicte code.
 Err cmd_go(Session session[static 1], const char* link) {
     if (!link) return "error: unexpected nullptr";
     while(*link && isspace(*link)) ++link;
@@ -76,13 +128,18 @@ Err cmd_go(Session session[static 1], const char* link) {
     const char* url = htmldoc_abs_url_dup(htmldoc, ahref->url);
     if (!url) return "error: memory failure";
     HtmlDoc* newdoc = htmldoc_create(cstr_trim_space((char*)url));
-    if (!newdoc) return "error: could not create html doc";
+    if (!newdoc) {
+        std_free((char*)url);
+        return "error: could not create html doc";
+    }
     if (newdoc->url && newdoc->lxbdoc) {
         if ((e = htmldoc_fetch(newdoc, session_url_client(session)))) {
+            std_free((char*)url);
             return e;
         }
 
         if ((e = htmldoc_browse(newdoc))) {
+            std_free((char*)url);
             return e;
         }
     }
@@ -109,6 +166,7 @@ Err cmd_eval(Session session[static 1], const char* line) {
     if ((rest = substr_match(line, "class", 3))) { return "TODO: class"; }
     if ((rest = substr_match(line, "clear", 3))) { return cmd_clear(session); }
     if ((rest = substr_match(line, "fetch", 1))) { return cmd_fetch(session); }
+    if ((rest = substr_match(line, "input", 1))) { return cmd_input(session, rest); }
     if ((rest = substr_match(line, "go", 1))) { return cmd_go(session, rest); }
     if ((rest = substr_match(line, "summary", 1))) { return dbg_session_summary(session); }
     if ((rest = substr_match(line, "tag", 2))) { return cmd_tag(rest, session); }

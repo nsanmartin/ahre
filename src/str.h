@@ -57,6 +57,8 @@ inline static StrView strview(const char* s, size_t len) {
 inline static void strview_trim_space(StrView s[static 1]) {
     while(s->len && isspace(*(s->s))) { ++s->s; --s->len; }
     while(s->len > 1 && isspace(s->s[s->len-1])) { --s->len; }
+    //while(s->len > 1 && isspace(*(s->s)) && isspace(*(s->s+1)) ) { ++s->s; --s->len; }
+    //while(s->len > 2 && isspace(s->s[s->len-1]) && isspace(s->s[s->len-2])) { --s->len; }
 }
 
 Err str_prepend(Str s[static 1], const char* cs);
@@ -70,4 +72,5 @@ static inline const char* mem_to_dup_str(const char* data, size_t len) {
 }
 
 const char* cstr_cat_dup(const char* s, const char* t);
+const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen);
 #endif

@@ -55,6 +55,9 @@ img_clean(Img i[static 1]) {
 #define T DocElem
 #include <arl.h>
 
+typedef lxb_dom_node_t* LxbNodePtr;
+#define T LxbNodePtr
+#include <arl.h>
 
 typedef struct {
     lxb_dom_collection_t* hrefs;
@@ -69,6 +72,7 @@ typedef struct {
     DocCache cache;
     ArlOf(Ahref) ahrefs;
     ArlOf(Img) imgs;
+    ArlOf(LxbNodePtr) inputs;
 } HtmlDoc;
 
 /* getters */
@@ -86,6 +90,9 @@ htmldoc_ahrefs(HtmlDoc d[static 1]) { return &d->ahrefs; }
 
 static inline ArlOf(Img)*
 htmldoc_imgs(HtmlDoc d[static 1]) { return &d->imgs; }
+
+static inline ArlOf(LxbNodePtr)*
+htmldoc_inputs(HtmlDoc d[static 1]) { return &d->inputs; }
 
 /* ctors */
 int htmldoc_init(HtmlDoc d[static 1], const char* url);

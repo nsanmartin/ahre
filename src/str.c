@@ -148,3 +148,16 @@ const char* cstr_cat_dup(const char* s, const char* t) {
     memcpy(buf + slen, t, tlen);
     return buf;
 }
+
+const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen) {
+    if (!s || !t) return NULL;
+    size_t slen = strlen(s);
+    //size_t tlen = strlen(t);
+    size_t len = slen + tlen;
+    char* buf = malloc(len + 1);
+    if (!buf) return NULL;
+    buf[len] = '\0';
+    memcpy(buf, s, slen);
+    memcpy(buf + slen, t, tlen);
+    return buf;
+}

@@ -12,8 +12,8 @@
 //static constexpr size_t READ_FROM_FILE_BUFFER_LEN = 4096;
 #define READ_FROM_FILE_BUFFER_LEN 4096
 
-#define serialize_lit_str(EscSeq, CallBack, Context) \
- ((LXB_STATUS_OK != CallBack((lxb_char_t*)EscSeq, sizeof EscSeq, Context)) \
+#define serialize_lit_str(LitStr, CallBack, Context) \
+ ((LXB_STATUS_OK != CallBack((lxb_char_t*)LitStr, sizeof LitStr, Context)) \
  ?  "error serializing literal string" : Ok)
 
 #define serialize_literal_color_str(EscSeq, CallBack, Context) \
@@ -70,13 +70,13 @@ lxb_status_t htmldoc_lexbor_serialize_unsigned(
 static Err 
 parse_append_ahref(BrowseCtx ctx[static 1], const char* url, size_t len, lxb_html_serialize_cb_f cb) {
     if (!url) return "error: NULL url";
+    Err err = Ok;
 
     ArlOf(Ahref)* ahrefs = htmldoc_ahrefs(browse_ctx_htmldoc(ctx));
-    if (
-        LXB_STATUS_OK != cb((const lxb_char_t*) "[", 1, ctx)
-        || LXB_STATUS_OK != htmldoc_lexbor_serialize_unsigned(ctx, cb, ahrefs->len)
-        || LXB_STATUS_OK != cb((const lxb_char_t*) "]", 1, ctx)
-    ) { return "error serializing data"; }
+    try(err, serialize_lit_str("{", cb, ctx));
+    try_lxb (htmldoc_lexbor_serialize_unsigned(ctx, cb, ahrefs->len),
+            "error serializing unsigned");
+    try(err, serialize_lit_str(" ", cb, ctx));
 
     Ahref a = (Ahref){0};
     if (ahref_init_alloc(&a, url, len, textbuf_len(browse_ctx_textbuf(ctx))))
@@ -89,40 +89,13 @@ parse_append_ahref(BrowseCtx ctx[static 1], const char* url, size_t len, lxb_htm
 }
 
 
-/*
- * This is obviously innefficient, for each time an attr is queried, 
- * all of them are iterated, but: there are more priority tasks and
- * there are ussually few attrs. 
- */
-static void parse_attr_value(
-    lxb_dom_node_t* node, const char* attr_name, const lxb_char_t* out[static 1], size_t* len
-) 
-{
-    lxb_dom_attr_t* attr;
-
-    attr = lxb_dom_element_first_attribute(lxb_dom_interface_element(node));
-    while (attr) {
-        size_t data_len;
-        const lxb_char_t* data = lxb_dom_attr_qualified_name(attr, &data_len);
-        if (!strncmp(attr_name, (char*)data, data_len))  {
-
-            *out = lxb_dom_attr_value(attr, len);
-            return;
-
-        }
-        attr = lxb_dom_element_next_attribute(attr);
-    }
-
-    *out = NULL; *len = 0;
-}
-
 
 static Err
 parse_href_attrs(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1])
 {
     const lxb_char_t* data;
     size_t data_len;
-    parse_attr_value(node, "href", &data, &data_len);
+    lexbor_find_attr_value(node, "href", &data, &data_len);
     if (data != NULL) {
         Err err = parse_append_ahref(ctx, (const char*)data, data_len, cb);
         if (err) return err;
@@ -160,19 +133,19 @@ parse_img_attrs(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[
 {
     const lxb_char_t* src;
     size_t src_len;
-    parse_attr_value(node, "src", &src, &src_len);
+    lexbor_find_attr_value(node, "src", &src, &src_len);
 
     const lxb_char_t* alt;
     size_t alt_len;
-    parse_attr_value(node, "alt", &alt, &alt_len);
+    lexbor_find_attr_value(node, "alt", &alt, &alt_len);
 
     HtmlDoc* d = browse_ctx_htmldoc(ctx);
 
     ArlOf(Img)* imgs = htmldoc_imgs(d);
-    try_lxb_serialize("(", 1, cb, ctx);
+    try_lxb_serialize("[", 1, cb, ctx);
     try_lxb (htmldoc_lexbor_serialize_unsigned(ctx, cb, imgs->len),
             "error serializing unsigned");
-    try_lxb_serialize(")", 1, cb, ctx);
+    try_lxb_serialize(" ", 1, cb, ctx);
     if (alt && cb(alt, alt_len, ctx)) return "error serializing alt";
     
 
@@ -235,6 +208,7 @@ browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[sta
     try (err, serialize_literal_color_str(EscCodeBlue, cb, ctx));
     try (err, parse_href_attrs(node, cb, ctx));
     try (err, browse_list(node->first_child, node->last_child, cb, ctx));
+    try (err, serialize_lit_str("}", cb, ctx));
     try (err, serialize_literal_color_str(EscCodeBlue, cb, ctx));
     try (err, serialize_literal_color_str(EscCodeReset, cb, ctx));
     return err;
@@ -246,6 +220,7 @@ browse_tag_img(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[s
     try (err, serialize_literal_color_str(EscCodeLightGreen, cb, ctx));
     try (err, parse_img_attrs(node, cb, ctx));
     try (err, browse_list(node->first_child, node->last_child, cb, ctx));
+    try_lxb_serialize("]", 1, cb, ctx);
     try (err, serialize_literal_color_str(EscCodeReset, cb, ctx));
     return err;
 }
@@ -253,53 +228,50 @@ browse_tag_img(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[s
 static Err
 browse_tag_form(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     Err err = Ok;
-    //(void)node;
-    //(void)cb;
-    //(void)ctx;
-    //return err_fmt("%s not implemented", __func__);;
     try (err, serialize_cstring_debug("\n", cb, ctx));
     try (err, browse_list(node->first_child, node->last_child, cb, ctx));
     try (err, serialize_cstring_debug("\n", cb, ctx));
     return Ok;
 }
 
+
 static Err
 browse_tag_input(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     Err err = Ok;
-    (void)node;
-    (void)cb;
-    (void)ctx;
     const lxb_char_t* s;
     size_t slen;
-    parse_attr_value(node, "type", &s, &slen);
-    if (!slen || !strcmp("text", (char*)s)) {
-        parse_attr_value(node, "value", &s, &slen);
-        try (err, serialize_lit_str("[", cb, ctx));
-        if (slen) {
-            try (err, serialize_cstring(s, slen, cb, ctx));
-        }
-        else {
-            try (err, serialize_lit_str("        ", cb, ctx));
-        }
-        try (err, serialize_lit_str("]", cb, ctx));
-    } else if (!strcmp("submit", (char*)s)) {
 
-        try (err, serialize_literal_color_str(EscCodeRed, cb, ctx));
-        try (err, serialize_lit_str("[", cb, ctx));
-        parse_attr_value(node, "value", &s, &slen);
-        if (slen) {
-            try (err, serialize_cstring(s, slen, cb, ctx));
-        }
-        else {
-            try (err, serialize_lit_str("        ", cb, ctx));
-        }
-        try (err, serialize_lit_str("]", cb, ctx));
-        try (err, serialize_literal_color_str(EscCodeReset, cb, ctx));
+    lexbor_find_attr_value(node, "type", &s, &slen);
+    if (slen && !strcmp("hidden", (char*)s)) {
     } else {
-        try (err, serialize_lit_str("[]", cb, ctx));
+        HtmlDoc* d = browse_ctx_htmldoc(ctx);
+        ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(d);
+        if (!arlfn(LxbNodePtr,append)(inputs, &node)) {
+            return "error: lip set";
+        }
+        try (err, serialize_literal_color_str(EscCodeRed, cb, ctx));
+        try (err, serialize_lit_str("<", cb, ctx));
+        try_lxb (htmldoc_lexbor_serialize_unsigned(ctx, cb, inputs->len-1),
+            "error serializing unsigned");
+        if (!slen || !strcmp("text", (char*)s)) {
+            lexbor_find_attr_value(node, "value", &s, &slen);
+            if (slen) {
+                try (err, serialize_lit_str(" ", cb, ctx));
+                try (err, serialize_cstring(s, slen, cb, ctx));
+            }
+        } else if (!strcmp("submit", (char*)s)) {
+
+            lexbor_find_attr_value(node, "value", &s, &slen);
+            if (slen) {
+                try (err, serialize_lit_str(" ", cb, ctx));
+                try (err, serialize_cstring(s, slen, cb, ctx));
+            }
+        } else {
+            try (err, serialize_lit_str("[not supported input]", cb, ctx));
+        }
+        try (err, serialize_lit_str(">", cb, ctx));
+        try (err, serialize_literal_color_str(EscCodeReset, cb, ctx));
     }
-    //try (err, browse_list(node->first_child, node->last_child, cb, ctx));
-    //try (err, serialize_lit_str("]", cb, ctx));
     return Ok;
 }
 
@@ -333,11 +305,9 @@ browse_tag_h(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[sta
 
 static Err browse_tag_blockquote(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     Err err = Ok;
-    try (err, serialize_lit_str("\n", cb, ctx));
-    try (err, serialize_cstring_debug("%(blockquote: ", cb, ctx));
+    try (err, serialize_lit_str("\n``", cb, ctx));
     try (err, browse_list(node->first_child, node->last_child, cb, ctx));
-    try (err, serialize_cstring_debug("%blockquote)", cb, ctx));
-    try (err, serialize_lit_str("\n", cb, ctx));
+    try (err, serialize_lit_str("''\n", cb, ctx));
     return err;
 }
 
@@ -368,20 +338,11 @@ static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCt
             //TODO: print lines skppig newline
 
             if (!is_all_space((char*)data, len)) {
-                //HtmlDoc htmldoc = ctx;
-                //TextBuf* textbuf = htmldoc_textbuf(ctx);
-                ///size_t beg = textbuf_len(textbuf);
+                //TODO: check parent locl_name to decide whether to print
                 StrView s = strview((char*)data, len);
                 strview_trim_space(&s);
                 cb((lxb_char_t*)s.s, s.len, ctx);
-                //TODO: do not append newline once each element is parsed propperly
-                //cb((lxb_char_t*)"\n", 1, ctx);
-                ///size_t end = textbuf_len(textbuf);
-                ///DocElem elem = (DocElem){ .tag=DOC_ELEM_TEXT,.offset=beg,.len=end-beg };
-                ///if (!arlfn(DocElem,append)(htmldoc_elems(ctx), &elem)) { return "error: lip set"; }
-                ///fwrite( textbuf_items(textbuf) + beg, 1, end-beg, stdout);
             }
-            
         }
 
         Err err = browse_list(node->first_child, node->last_child, cb, ctx);
@@ -467,6 +428,7 @@ void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) {
     destroy((char*)htmldoc->url);
     arlfn(Ahref,clean)(htmldoc_ahrefs(htmldoc));
     arlfn(Img,clean)(htmldoc_imgs(htmldoc));
+    arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
 }
 
 inline void htmldoc_destroy(HtmlDoc* htmldoc) {
