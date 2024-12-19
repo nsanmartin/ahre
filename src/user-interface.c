@@ -51,16 +51,16 @@ Err cmd_set_url(Session session[static 1], const char* url) {
     return Ok;
 }
 
-Err parse_number_or_throw(const char** lineptr, unsigned long long* num) {
-    if (!lineptr || !*lineptr) return "error: unexpected NULL ptr";
-    while(**lineptr && isspace(**lineptr)) ++*lineptr;
-    if (!**lineptr) return "number not given";
-    if (!isdigit(**lineptr)) return "number must consist in digits";
+Err parse_number_or_throw(const char** strptr, unsigned long long* num) {
+    if (!strptr || !*strptr) return "error: unexpected NULL ptr";
+    while(**strptr && isspace(**strptr)) ++*strptr;
+    if (!**strptr) return "number not given";
+    if (!isdigit(**strptr)) return "number must consist in digits";
     char* endptr = NULL;
-    *num = strtoull(*lineptr, &endptr, 10);
+    *num = strtoull(*strptr, &endptr, 10);
     if (errno == ERANGE)
         return "warn: number out of range";
-    if (*lineptr == endptr)
+    if (*strptr == endptr)
         return "warn: number could not be parsed";
     if (*num > SIZE_MAX) 
         return "warn: number out of range (exceeds size max)";
@@ -76,6 +76,78 @@ _find_parent_form(lxb_dom_node_t* node) {
     return node;
 }
 
+
+static Err _find_inputs_rec(
+    lxb_dom_node_t node[static 1], ArlOf(LxbNodePtr) lst[static 1]
+) {
+    if (!node) return Ok;
+    else if (node->local_name == LXB_TAG_INPUT) {
+        if (!arlfn(LxbNodePtr, append)(lst, &node))
+            return "error: could not append to arl of input nodes";
+    } 
+    //Err err = browse_list(node->first_child, node->last_child, cb, ctx);
+    for(lxb_dom_node_t* it = node->first_child; ; it = it->next) {
+        Err err = _find_inputs_rec(it, lst);
+        if (err) return err;
+        if (it == node->last_child) { break; }
+    }
+    return Ok;
+}
+
+static Err make_submit_url(
+        const char* baseurl, lxb_dom_node_t form[static 1]
+) {
+    Err err = Ok;
+    ArlOf(LxbNodePtr)* input_ls = &(ArlOf(LxbNodePtr)){0};
+    try(err, _find_inputs_rec(form, input_ls));
+    printf("found %ld inputs\n", input_ls->len);
+    // compute len
+    size_t urllen = strlen(baseurl);
+    for (LxbNodePtr* it = arlfn(LxbNodePtr, begin)(input_ls)
+        ;it != arlfn(LxbNodePtr, end)(input_ls)
+        ; ++it
+    ) {
+        const lxb_char_t* data;
+        size_t data_len;
+        lexbor_find_attr_value(*it, "name", &data, &data_len);
+        urllen += data_len;
+        lexbor_find_attr_value(*it, "value", &data, &data_len);
+        urllen += data_len;
+        urllen += 2; //?=
+    }
+
+    printf("url len:  %ld\n ", urllen);
+
+    char* urlbuf = std_malloc(urllen + 1);
+    if (!urlbuf) return "error: malloc failure";
+    size_t bytes_copied = strlen(baseurl);
+    memcpy(urlbuf, baseurl, bytes_copied);
+    for (LxbNodePtr* it = arlfn(LxbNodePtr, begin)(input_ls)
+        ;it != arlfn(LxbNodePtr, end)(input_ls)
+        ; ++it
+    ) {
+
+        memcpy(urlbuf + bytes_copied, "?", 1);
+        ++bytes_copied;
+
+        const lxb_char_t* data;
+        size_t data_len;
+        lexbor_find_attr_value(*it, "name", &data, &data_len);
+        memcpy(urlbuf + bytes_copied, data, data_len);
+        bytes_copied += data_len;
+
+        memcpy(urlbuf + bytes_copied, "=", 1);
+        ++bytes_copied;
+
+        //urllen += data_len;
+        lexbor_find_attr_value(*it, "value", &data, &data_len);
+        memcpy(urlbuf + bytes_copied, data, data_len);
+        bytes_copied += data_len;
+    }
+    fwrite(urlbuf, 1, bytes_copied, stdout);
+    std_free(urlbuf);
+    return Ok;
+}
 
 Err cmd_input(Session session[static 1], const char* line) {
     Err err = Ok;
@@ -97,6 +169,11 @@ Err cmd_input(Session session[static 1], const char* line) {
         if (!u) return "error: memory failure";
         puts(u);
         std_free((char*)u);
+        /* TESTING....*/
+        try (err, make_submit_url(htmldoc->url, form));
+        //ArlOf(LxbNodePtr)* input_ls = &(ArlOf(LxbNodePtr)){0};
+        //try(err, _find_inputs_rec(form, input_ls));
+        //printf("found %ld inputs", input_ls->len);
     } else {
         puts("expected form, not found");
     }
