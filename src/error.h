@@ -22,6 +22,11 @@ Err err_fmt(Err fmt, ...);
 // value. If the Err value is not null (not Ok) then it immediately
 // returns that value. If not it does nothing.
 #define try(LV, ErrValue) if ((LV=validate_err(ErrValue))) return LV 
+
+#define trygoto(Tag, NonzeroFail) if ((NonzeroFail)) goto Tag
+
+#define trygotoerr(LV, Tag, ErrValue) if ((ErrValue)) do{ LV=ErrValue; goto Tag;}while(0)
+
 #define try_or(ErrValue, RetVal) \
     if (validate_err(ErrValue)) return validate_err(RetVal)
 

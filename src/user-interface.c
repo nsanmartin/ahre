@@ -77,7 +77,10 @@ _find_parent_form(lxb_dom_node_t* node) {
 }
 
 
-static Err _make_submit_url_rec(lxb_dom_node_t node[static 1], BufOf(char) submit_url[static 1]) {
+static Err _make_submit_url_rec(
+    UrlClient url_client[static 1], lxb_dom_node_t node[static 1], BufOf(char) submit_url[static 1]
+) {
+    char* escaped;
     if (!node) return Ok;
     else if (node->local_name == LXB_TAG_INPUT) {
 
@@ -85,42 +88,48 @@ static Err _make_submit_url_rec(lxb_dom_node_t node[static 1], BufOf(char) submi
         size_t valuelen;
         lexbor_find_attr_value(node, "value", &value, &valuelen);
         if (valuelen > 0) {
+            escaped = url_client_escape_url(url_client, (char*)value, valuelen);
+            if (!escaped) return "error: curl_escape failure";
             const lxb_char_t* name;
             size_t namelen;
             lexbor_find_attr_value(node, "name", &name, &namelen);
-            if (!name || !value || namelen == 0) return "error: lexbor tree failure";
-            if (!buffn(char, append)(submit_url, "&", 1)) return "error: buffn failure";
-            if (!buffn(char, append)(submit_url, (char*)name, namelen)) return "error: buffn failure";
-            if (!buffn(char, append)(submit_url, "=", 1)) return "error: buffn failure";
-            if (!buffn(char, append)(submit_url, (char*)value, valuelen)) return "error: buffn failure";
+            if (!name || !value || namelen == 0) goto free_escaped;
+            //if (!name || !value || namelen == 0) return "error: lexbor tree failure";
+            if (!buffn(char, append)(submit_url, "&", 1)) goto free_escaped;
+            //if (!buffn(char, append)(submit_url, "&", 1)) return "error: buffn failure";
+            if (!buffn(char, append)(submit_url, (char*)name, namelen)) goto free_escaped;
+            //if (!buffn(char, append)(submit_url, (char*)name, namelen)) return "error: buffn failure";
+            if (!buffn(char, append)(submit_url, "=", 1)) goto free_escaped;
+            //if (!buffn(char, append)(submit_url, "=", 1)) return "error: buffn failure";
+            if (!buffn(char, append)(submit_url, escaped, strlen(escaped))) goto free_escaped;
+            //if (!buffn(char, append)(submit_url, escaped, strlen(escaped))) {
+            //    //TODO: this in all tries
+            //    url_client_curl_free_cstr(escaped);
+            //    return "error: buffn failure";
+            //}
+            url_client_curl_free_cstr(escaped);
         }
     } 
 
     for(lxb_dom_node_t* it = node->first_child; ; it = it->next) {
-        Err err = _make_submit_url_rec(it, submit_url);
+        Err err = _make_submit_url_rec(url_client, it, submit_url);
         if (err) return err;
         if (it == node->last_child) { break; }
     }
     return Ok;
+free_escaped:
+    url_client_curl_free_cstr(escaped);
+    return err_fmt("error: failure in %s", __func__);
 }
 
 
 static Err make_submit_url(
-    lxb_dom_node_t form[static 1],
-    BufOf(char) submit_url[static 1]
+    UrlClient url_client[static 1], lxb_dom_node_t form[static 1], BufOf(char) submit_url[static 1]
 ) {
     Err err = Ok;
-    //if (!buffn(char, append)(submit_url, (char*)baseurl, strlen(baseurl))) return "error: buffn failure";
-    //const lxb_char_t* action;
-    //size_t actionlen;
-    //lexbor_find_attr_value(form, "action", &action, &actionlen);
-    //if (!action || actionlen == 0) return "error: expecting action in form";
-    //if (!buffn(char, append)(submit_url, (char*)action, actionlen)) return "error: buffn failure";
-    //if (!buffn(char, append)(submit_url, "?", 1)) return "error: buffn failure";
 
-    try(err, _make_submit_url_rec(form, submit_url));
-    //if (!buffn(char, append)(submit_url, "\0", 1)) return "error: buffn failure";
-    //puts(submit_url->items);
+    try(err, _make_submit_url_rec(url_client, form, submit_url));
+    if (!buffn(char, append)(submit_url, "\0", 1)) return "error: buffn failure";
     return Ok;
 }
 
@@ -128,71 +137,60 @@ static Err make_submit_url(
 Err cmd_input(Session session[static 1], const char* line) {
     Err err = Ok;
     long long unsigned num;
+    BufOf(char)* submit_url = &(BufOf(char)){0};
+    HtmlDoc* newdoc;
+
     try(err, parse_number_or_throw(&line, &num));
     HtmlDoc* htmldoc = session_current_doc(session);
     ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(htmldoc);
+
 
     LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(inputs, (size_t)num);
     if (!nodeptr) return "link number invalid";
 
     lxb_dom_node_t* form = _find_parent_form(*nodeptr);
     if (form) {
-        BufOf(char)* submit_url = &(BufOf(char)){0};
-        try (err, make_submit_url(form, submit_url));
-        if (!submit_url) return "error: no url made";
-        char* escaped = url_client_escape_url(
-            session->url_client, submit_url->items, submit_url->len
-        );
-        buffn(char, clean)(submit_url); 
-        //htmldoc->url, 
+
+        if (!buffn(char, append)(submit_url, (char*)htmldoc->url, strlen(htmldoc->url))) return "error: buffn failure";
+        //defer
         const lxb_char_t* action;
         size_t action_len;
         lexbor_find_attr_value(form, "action", &action, &action_len);
-        size_t baseurl_len = strlen(htmldoc->url);
-        size_t escaped_len = strlen(escaped);
-        char* url = malloc(baseurl_len + action_len + 1 + escaped_len + 1);
-        if (!url) {
-            url_client_curl_free_cstr(escaped);
-            return "error: malloc failure";
-        }
-        memcpy(url, htmldoc->url, baseurl_len);
-        memcpy(url + baseurl_len, action, action_len);
-        memcpy(url + baseurl_len + action_len, "?", 1);
-        memcpy(url + baseurl_len + action_len + 1, escaped, escaped_len + 1);
-        memcpy(url + baseurl_len + action_len + 1 + escaped_len, "\0", 1);
-        url_client_curl_free_cstr(escaped);
-        //const char* baseurl = cstr_mem_cat_dup(htmldoc->url, (const char*)action, action_len);
-        //if (!baseurl) return "error: memory failure";
-        //puts(baseurl);
-        //std_free((char*)baseurl);
+        if(!buffn(char, append)(submit_url, (char*)action, action_len)) goto free_sumbit_url;
+        if(!buffn(char, append)(submit_url, "?", 1)) goto free_sumbit_url;
 
-        puts(url);
+        trygotoerr (err, free_sumbit_url, make_submit_url(session->url_client, form, submit_url));
+        //try (err, make_submit_url(session->url_client, form, submit_url));
+        //if (!submit_url) return "error: no url made"; not possible
+
+        puts("The submit URL:"); puts(submit_url->items);
         //TODO: all this is duplicated, refactor!
-        HtmlDoc* newdoc = htmldoc_create(url);
-        if (!newdoc) {
-            std_free(url);
-            return "error: could not create html doc";
-        }
+        newdoc = htmldoc_create(submit_url->items);
+        if (!newdoc) { err="error creating htmldoc"; goto free_sumbit_url; };
+        //if (!newdoc) { buffn(char, clean)(submit_url); return "error: could not create html doc"; }
+        buffn(char, clean)(submit_url);
         if (newdoc->url && newdoc->lxbdoc) {
-            if ((err = htmldoc_fetch(newdoc, session_url_client(session)))) {
-                std_free(url);
-                return err;
-            }
+            //try(err, htmldoc_fetch(newdoc, session_url_client(session)));
+            trygotoerr(err, destroy_new_htmldoc, htmldoc_fetch(newdoc, session_url_client(session)));
+            //if ((err = htmldoc_fetch(newdoc, session_url_client(session)))) { buffn(char, clean)(submit_url); return err; }
 
-            if ((err = htmldoc_browse(newdoc))) {
-                std_free(url);
-                return err;
-            }
+            //try(err, htmldoc_browse(newdoc));
+            trygotoerr(err, destroy_new_htmldoc, htmldoc_browse(newdoc));
+            //if ((err = htmldoc_browse(newdoc))) { buffn(char, clean)(submit_url); return err; }
         }
         htmldoc_destroy(htmldoc);
         //TODO: change this when multi docs gets implemented
         session->htmldoc = newdoc;
-        std_free(url);
     
-    } else {
-        puts("expected form, not found");
-    }
+    } else { puts("expected form, not found"); }
+    buffn(char, clean)(submit_url);
     return Ok;
+destroy_new_htmldoc:
+        htmldoc_destroy(newdoc);
+        return "error fetching or browsing doc";
+free_sumbit_url:
+        buffn(char, clean)(submit_url);
+        return err ? err : err_fmt("error in: %", __func__);
 }
 
 //TODO: remove duplicte code.

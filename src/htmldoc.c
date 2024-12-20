@@ -146,7 +146,9 @@ parse_img_attrs(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[
     try_lxb (htmldoc_lexbor_serialize_unsigned(ctx, cb, imgs->len),
             "error serializing unsigned");
     try_lxb_serialize(" ", 1, cb, ctx);
-    if (alt && cb(alt, alt_len, ctx)) return "error serializing alt";
+    if (alt && *alt && cb(alt, alt_len, ctx)) {
+        puts("debug: img without alt");
+    }
     
 
     Img i = (Img){0};
