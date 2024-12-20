@@ -77,77 +77,53 @@ _find_parent_form(lxb_dom_node_t* node) {
 }
 
 
-static Err _find_inputs_rec(
-    lxb_dom_node_t node[static 1], ArlOf(LxbNodePtr) lst[static 1]
-) {
+static Err _make_submit_url_rec(lxb_dom_node_t node[static 1], BufOf(char) submit_url[static 1]) {
     if (!node) return Ok;
     else if (node->local_name == LXB_TAG_INPUT) {
-        if (!arlfn(LxbNodePtr, append)(lst, &node))
-            return "error: could not append to arl of input nodes";
+
+        const lxb_char_t* value;
+        size_t valuelen;
+        lexbor_find_attr_value(node, "value", &value, &valuelen);
+        if (valuelen > 0) {
+            const lxb_char_t* name;
+            size_t namelen;
+            lexbor_find_attr_value(node, "name", &name, &namelen);
+            if (!name || !value || namelen == 0) return "error: lexbor tree failure";
+            if (!buffn(char, append)(submit_url, "&", 1)) return "error: buffn failure";
+            if (!buffn(char, append)(submit_url, (char*)name, namelen)) return "error: buffn failure";
+            if (!buffn(char, append)(submit_url, "=", 1)) return "error: buffn failure";
+            if (!buffn(char, append)(submit_url, (char*)value, valuelen)) return "error: buffn failure";
+        }
     } 
-    //Err err = browse_list(node->first_child, node->last_child, cb, ctx);
+
     for(lxb_dom_node_t* it = node->first_child; ; it = it->next) {
-        Err err = _find_inputs_rec(it, lst);
+        Err err = _make_submit_url_rec(it, submit_url);
         if (err) return err;
         if (it == node->last_child) { break; }
     }
     return Ok;
 }
 
+
 static Err make_submit_url(
-        const char* baseurl, lxb_dom_node_t form[static 1]
+    lxb_dom_node_t form[static 1],
+    BufOf(char) submit_url[static 1]
 ) {
     Err err = Ok;
-    ArlOf(LxbNodePtr)* input_ls = &(ArlOf(LxbNodePtr)){0};
-    try(err, _find_inputs_rec(form, input_ls));
-    printf("found %ld inputs\n", input_ls->len);
-    // compute len
-    size_t urllen = strlen(baseurl);
-    for (LxbNodePtr* it = arlfn(LxbNodePtr, begin)(input_ls)
-        ;it != arlfn(LxbNodePtr, end)(input_ls)
-        ; ++it
-    ) {
-        const lxb_char_t* data;
-        size_t data_len;
-        lexbor_find_attr_value(*it, "name", &data, &data_len);
-        urllen += data_len;
-        lexbor_find_attr_value(*it, "value", &data, &data_len);
-        urllen += data_len;
-        urllen += 2; //?=
-    }
+    //if (!buffn(char, append)(submit_url, (char*)baseurl, strlen(baseurl))) return "error: buffn failure";
+    //const lxb_char_t* action;
+    //size_t actionlen;
+    //lexbor_find_attr_value(form, "action", &action, &actionlen);
+    //if (!action || actionlen == 0) return "error: expecting action in form";
+    //if (!buffn(char, append)(submit_url, (char*)action, actionlen)) return "error: buffn failure";
+    //if (!buffn(char, append)(submit_url, "?", 1)) return "error: buffn failure";
 
-    printf("url len:  %ld\n ", urllen);
-
-    char* urlbuf = std_malloc(urllen + 1);
-    if (!urlbuf) return "error: malloc failure";
-    size_t bytes_copied = strlen(baseurl);
-    memcpy(urlbuf, baseurl, bytes_copied);
-    for (LxbNodePtr* it = arlfn(LxbNodePtr, begin)(input_ls)
-        ;it != arlfn(LxbNodePtr, end)(input_ls)
-        ; ++it
-    ) {
-
-        memcpy(urlbuf + bytes_copied, "?", 1);
-        ++bytes_copied;
-
-        const lxb_char_t* data;
-        size_t data_len;
-        lexbor_find_attr_value(*it, "name", &data, &data_len);
-        memcpy(urlbuf + bytes_copied, data, data_len);
-        bytes_copied += data_len;
-
-        memcpy(urlbuf + bytes_copied, "=", 1);
-        ++bytes_copied;
-
-        //urllen += data_len;
-        lexbor_find_attr_value(*it, "value", &data, &data_len);
-        memcpy(urlbuf + bytes_copied, data, data_len);
-        bytes_copied += data_len;
-    }
-    fwrite(urlbuf, 1, bytes_copied, stdout);
-    std_free(urlbuf);
+    try(err, _make_submit_url_rec(form, submit_url));
+    //if (!buffn(char, append)(submit_url, "\0", 1)) return "error: buffn failure";
+    //puts(submit_url->items);
     return Ok;
 }
+
 
 Err cmd_input(Session session[static 1], const char* line) {
     Err err = Ok;
@@ -161,19 +137,58 @@ Err cmd_input(Session session[static 1], const char* line) {
 
     lxb_dom_node_t* form = _find_parent_form(*nodeptr);
     if (form) {
-        const lxb_char_t* data;
-        size_t data_len;
-        lexbor_find_attr_value(form, "action", &data, &data_len);
-        printf("action: ");
-        const char* u = cstr_mem_cat_dup(htmldoc->url, (const char*)data, data_len);
-        if (!u) return "error: memory failure";
-        puts(u);
-        std_free((char*)u);
-        /* TESTING....*/
-        try (err, make_submit_url(htmldoc->url, form));
-        //ArlOf(LxbNodePtr)* input_ls = &(ArlOf(LxbNodePtr)){0};
-        //try(err, _find_inputs_rec(form, input_ls));
-        //printf("found %ld inputs", input_ls->len);
+        BufOf(char)* submit_url = &(BufOf(char)){0};
+        try (err, make_submit_url(form, submit_url));
+        if (!submit_url) return "error: no url made";
+        char* escaped = url_client_escape_url(
+            session->url_client, submit_url->items, submit_url->len
+        );
+        buffn(char, clean)(submit_url); 
+        //htmldoc->url, 
+        const lxb_char_t* action;
+        size_t action_len;
+        lexbor_find_attr_value(form, "action", &action, &action_len);
+        size_t baseurl_len = strlen(htmldoc->url);
+        size_t escaped_len = strlen(escaped);
+        char* url = malloc(baseurl_len + action_len + 1 + escaped_len + 1);
+        if (!url) {
+            url_client_curl_free_cstr(escaped);
+            return "error: malloc failure";
+        }
+        memcpy(url, htmldoc->url, baseurl_len);
+        memcpy(url + baseurl_len, action, action_len);
+        memcpy(url + baseurl_len + action_len, "?", 1);
+        memcpy(url + baseurl_len + action_len + 1, escaped, escaped_len + 1);
+        memcpy(url + baseurl_len + action_len + 1 + escaped_len, "\0", 1);
+        url_client_curl_free_cstr(escaped);
+        //const char* baseurl = cstr_mem_cat_dup(htmldoc->url, (const char*)action, action_len);
+        //if (!baseurl) return "error: memory failure";
+        //puts(baseurl);
+        //std_free((char*)baseurl);
+
+        puts(url);
+        //TODO: all this is duplicated, refactor!
+        HtmlDoc* newdoc = htmldoc_create(url);
+        if (!newdoc) {
+            std_free(url);
+            return "error: could not create html doc";
+        }
+        if (newdoc->url && newdoc->lxbdoc) {
+            if ((err = htmldoc_fetch(newdoc, session_url_client(session)))) {
+                std_free(url);
+                return err;
+            }
+
+            if ((err = htmldoc_browse(newdoc))) {
+                std_free(url);
+                return err;
+            }
+        }
+        htmldoc_destroy(htmldoc);
+        //TODO: change this when multi docs gets implemented
+        session->htmldoc = newdoc;
+        std_free(url);
+    
     } else {
         puts("expected form, not found");
     }
