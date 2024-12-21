@@ -1,8 +1,14 @@
-1. [*] Accept files apart from urls
-2. [ ] Allow reusable buffer for files
-3. [*] count lines when appending to buf
-4. [*] use array of line pointers in aebuf
-5. [ ] implement browse fn similar to lexbor/examples/lexbor/html/html2sexpr.c
-6. [ ] use '' for ahre cmds and ':' for ed cmds
-7. [ ] use trie for commands and include docs
-8. [ ] add cmd save source
+# TODO
+[ ] Allow reusable buffer for files
+[ ] use no prefix for ahre cmds and ':' for ed cmds
+[ ] use trie for commands and include docs
+[ ] add cmd save_source
+[ ] implement try as `do{Err AHRE_ERR_=(Expr); if(AHRE_ERR_) return AHRE_ERR_;}while(0)`
+[ ] define and add license (GNU, Apache, MIT, ...?)
+[ ] implement editable attributes such as input value
+
+# DONE
+[*] Accept files apart from urls
+[*] count lines when appending to buf
+[*] use array of line pointers in aebuf
+[*] implement browse fn similar to lexbor/examples/lexbor/html/html2sexpr.c

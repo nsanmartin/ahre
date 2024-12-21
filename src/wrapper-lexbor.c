@@ -96,6 +96,9 @@ Err ahre_append_href(lxb_dom_element_t* element, void* aeBuf) {
 }
 
 
+/*
+ * Writes all hrefs into textbuf
+ */
 Err lexbor_href_write(
     lxb_html_document_t document[static 1],
     lxb_dom_collection_t** hrefs,

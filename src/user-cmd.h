@@ -18,7 +18,8 @@ Err cmd_fetch(Session session[static 1]) {
 }
 
 
-static inline Err cmd_ahre(Session session[static 1]) {
+/* writes anchors to current textbuf */
+static inline Err cmd_anchors(Session session[static 1]) {
     HtmlDoc* htmldoc = session_current_doc(session);
     TextBuf* tb = &htmldoc->textbuf;
     Err err = lexbor_href_write(htmldoc->lxbdoc, &htmldoc->cache.hrefs, tb);
