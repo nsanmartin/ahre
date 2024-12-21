@@ -14,6 +14,7 @@
 [ ] Make go cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)
 [ ] Make ahre cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)
 [ ] wrap lexbor functions with Err returning wrappers whenever possible
+[ ] implement cookies
 
 # DONE
 [*] Accept files apart from urls

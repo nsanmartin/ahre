@@ -228,6 +228,7 @@ Err cmd_submit(Session session[static 1], const char* line) {
 
     LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(inputs, (size_t)num);
     if (!nodeptr) return "link number invalid";
+    if (!_lexbor_attr_has_value(*nodeptr, "type", "submit")) return "warn: not submit input";
 
     lxb_dom_node_t* form = _find_parent_form(*nodeptr);
     if (form) {
@@ -246,6 +247,7 @@ Err cmd_submit(Session session[static 1], const char* line) {
         if (question_mark_ptr) *question_mark_ptr = '?';
 
         trygotoerr(err, free_sumbit_url, _append_lexbor_name_value_attrs(session->url_client, *nodeptr, submit_url));
+
         if (!buffn(char, append)(submit_url, "\0", 1)) goto free_sumbit_url;
         //TODO: all this is duplicated, refactor!
         if (!(newdoc=htmldoc_create(submit_url->items))) { err="error creating htmldoc"; goto free_sumbit_url; };

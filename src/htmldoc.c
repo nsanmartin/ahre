@@ -265,7 +265,7 @@ browse_tag_input(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
 
             lexbor_find_attr_value(node, "value", &s, &slen);
             if (slen) {
-                try (err, serialize_lit_str(" ", cb, ctx));
+                try (err, serialize_lit_str("|", cb, ctx));
                 try (err, serialize_cstring(s, slen, cb, ctx));
             }
         } else {
