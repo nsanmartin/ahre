@@ -16,7 +16,7 @@
 #include "src/str.h"
 #include "src/error.h"
 
-#define EscCodeBlue  "\033[34m"
+#define EscCodeBlue  "\033[94m"
 #define EscCodeGreen  "\033[32m"
 #define EscCodeRed   "\033[91m"
 #define EscCodeReset "\033[0m"

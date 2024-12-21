@@ -1,14 +1,22 @@
 # TODO
 [ ] Allow reusable buffer for files
-[ ] use no prefix for ahre cmds and ':' for ed cmds
 [ ] use trie for commands and include docs
 [ ] add cmd save_source
 [ ] implement try as `do{Err AHRE_ERR_=(Expr); if(AHRE_ERR_) return AHRE_ERR_;}while(0)`
 [ ] define and add license (GNU, Apache, MIT, ...?)
 [ ] implement editable attributes such as input value
+[ ] implement htmldoc array to allow some history preservation
+[ ] document basic funtionality (usefull until cmd self docuemnt themselfs)
+[ ] Unicode support
+[ ] Support default and bright colour pallets (as w3m)
+[ ] Log TAG not supported by browser when is the case
+[ ] Decide how to allow color/one color (cli option, different, commands, config file?)
+[ ] Make go cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)
+[ ] Make ahre cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)
 
 # DONE
 [*] Accept files apart from urls
 [*] count lines when appending to buf
 [*] use array of line pointers in aebuf
 [*] implement browse fn similar to lexbor/examples/lexbor/html/html2sexpr.c
+[*] use no prefix for ahre cmds and ':' for ed cmds
