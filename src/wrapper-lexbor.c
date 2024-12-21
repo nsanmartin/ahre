@@ -151,6 +151,29 @@ size_t lexbor_parse_chunk_callback(char *in, size_t size, size_t nmemb, void* ou
 }
 
 
+Err lexbor_set_attr_value(
+    lxb_dom_node_t* node, const char* attr_name, const char* value
+)  {
+    lxb_dom_attr_t* attr;
+
+    attr = lxb_dom_element_first_attribute(lxb_dom_interface_element(node));
+    while (attr) {
+        size_t data_len;
+        const lxb_char_t* data = lxb_dom_attr_qualified_name(attr, &data_len);
+        if (!strncmp(attr_name, (char*)data, data_len))  {
+
+            //TODO: why node and not element like here?
+            //attr = lxb_dom_element_attr_by_name(element, name, name_size);
+            if (LXB_STATUS_OK != lxb_dom_attr_set_value(attr, (const lxb_char_t *) value, strlen(value)))
+                return "error: lexbor failed to change attribute value";
+            return Ok;
+
+        }
+        attr = lxb_dom_element_next_attribute(attr);
+    }
+    return Ok;
+}
+
 /*
  * This is innefficient. For each time an attr is queried, 
  * all of them are iterated, but: there are more priority tasks and

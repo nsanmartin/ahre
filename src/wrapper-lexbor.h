@@ -29,4 +29,5 @@ lxb_inline lxb_status_t append_to_buf_callback(const lxb_char_t *data, size_t le
 void lexbor_find_attr_value(
     lxb_dom_node_t* node, const char* attr_name, const lxb_char_t* out[static 1], size_t* len
 ); 
+Err lexbor_set_attr_value( lxb_dom_node_t* node, const char* attr_name, const char* value);
 #endif
