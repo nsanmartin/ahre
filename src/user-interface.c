@@ -245,6 +245,7 @@ Err cmd_eval(Session session[static 1], const char* line) {
     line = cstr_skip_space(line);
 
     if ((rest = substr_match(line, "browse", 1))) { return cmd_browse(session, rest); }
+    if ((rest = substr_match(line, "go", 1))) { return cmd_browse(session, rest); }
     if ((rest = substr_match(line, "url", 1))) { return cmd_set_url(session, rest); }
 
     if (!htmldoc_is_valid(session_current_doc(session)) ||!session->url_client) {
@@ -257,12 +258,11 @@ Err cmd_eval(Session session[static 1], const char* line) {
     if ((rest = substr_match(line, "clear", 3))) { return cmd_clear(session); }
     if ((rest = substr_match(line, "fetch", 1))) { return cmd_fetch(session); }
     if ((rest = substr_match(line, "input", 1))) { return cmd_input(session, rest); }
-    if ((rest = substr_match(line, "go", 1))) { return cmd_ahre(session, rest); }
     if ((rest = substr_match(line, "summary", 1))) { return dbg_session_summary(session); }
     if ((rest = substr_match(line, "tag", 2))) { return cmd_tag(rest, session); }
     if ((rest = substr_match(line, "text", 2))) { return cmd_text(session); }
 
-    return "unknown lxb cmd";
+    return "unknown cmd";
 }
 
 
@@ -275,10 +275,10 @@ Err process_line(Session session[static 1], const char* line) {
     const char* rest = NULL;
     if ((rest = substr_match(line, "quit", 1)) && !*rest) { session->quit = true; return Ok;}
     if (*line == '/') { return "/ (search) not implemented"; }
-    else if (*line == '\\') {
-        return cmd_eval(session, line + 1);
+    else if (*line == ':') {
+        return ed_eval(session, line + 1);
     } else {
-        return ed_eval(session, line);
+        return cmd_eval(session, line);
     }
 
     return "unexpected";
