@@ -422,15 +422,20 @@ HtmlDoc* htmldoc_create(const char* url) {
 }
 
 
-void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) {
-    htmldoc_cache_cleanup(&htmldoc->cache);
-    lxb_html_document_destroy(htmldoc->lxbdoc);
+void htmldoc_reset(HtmlDoc htmldoc[static 1]) {
     textbuf_cleanup(&htmldoc->textbuf);
-    buffn(char, clean)(&htmldoc->sourcebuf);
-    destroy((char*)htmldoc->url);
     arlfn(Ahref,clean)(htmldoc_ahrefs(htmldoc));
     arlfn(Img,clean)(htmldoc_imgs(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
+}
+
+void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) {
+    htmldoc_reset(htmldoc);
+    htmldoc_cache_cleanup(&htmldoc->cache);
+    lxb_html_document_destroy(htmldoc->lxbdoc);
+    buffn(char, clean)(&htmldoc->sourcebuf);
+    destroy((char*)htmldoc->url);
+
 }
 
 inline void htmldoc_destroy(HtmlDoc* htmldoc) {

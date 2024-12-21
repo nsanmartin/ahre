@@ -98,9 +98,10 @@ htmldoc_inputs(HtmlDoc d[static 1]) { return &d->inputs; }
 int htmldoc_init(HtmlDoc d[static 1], const char* url);
 
 /* dtors */
-//void htmldoc_reset(HtmlDoc htmldoc[static 1]) ;
+void htmldoc_reset(HtmlDoc htmldoc[static 1]) ;
 void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) ;
 void htmldoc_destroy(HtmlDoc* htmldoc) ;
+//TODO: this fn should cleanup instead the browse data
 static inline void htmldoc_cache_cleanup(DocCache c[static 1]) {
     lxb_dom_collection_destroy(c->hrefs, true);
     *c = (DocCache){0};
