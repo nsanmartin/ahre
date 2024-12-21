@@ -32,7 +32,7 @@ bool substr_match_all(const char* s, size_t len, const char* cmd) {
 Err cmd_set_url(Session session[static 1], const char* url) {
     HtmlDoc* htmldoc = session_current_doc(session);
     url = cstr_trim_space((char*)url);
-    if (!*url) return "empty url, not setting";
+    if (!*url) return err_fmt("url: '%s'", htmldoc->url);
     if (htmldoc->url && strcmp(url, htmldoc->url) == 0) 
         return "same url, not updating";
 
