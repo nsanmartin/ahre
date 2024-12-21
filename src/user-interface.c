@@ -232,8 +232,7 @@ Err cmd_submit(Session session[static 1], const char* line) {
     lxb_dom_node_t* form = _find_parent_form(*nodeptr);
     if (form) {
 
-        if (!buffn(char, append)(submit_url, (char*)htmldoc->url, strlen(htmldoc->url))) return "error: buffn failure";
-        //defer
+        if (!buffn(char, append)(submit_url, (char*)htmldoc->url, strlen(htmldoc->url))) goto free_sumbit_url;
         const lxb_char_t* action;
         size_t action_len;
         lexbor_find_attr_value(form, "action", &action, &action_len);
@@ -242,27 +241,18 @@ Err cmd_submit(Session session[static 1], const char* line) {
         size_t question_mark_offset = submit_url->len;
 
         trygotoerr (err, free_sumbit_url, make_submit_url(session->url_client, form, submit_url));
-        //try (err, make_submit_url(session->url_client, form, submit_url));
 
         char* question_mark_ptr = buffn(char, at)(submit_url, question_mark_offset);
         if (question_mark_ptr) *question_mark_ptr = '?';
 
-        try(err, _append_lexbor_name_value_attrs(session->url_client, *nodeptr, submit_url));
-        if (!buffn(char, append)(submit_url, "\0", 1)) return "error: buffn failure";
-        puts("The submit URL:"); puts(submit_url->items);
+        trygotoerr(err, free_sumbit_url, _append_lexbor_name_value_attrs(session->url_client, *nodeptr, submit_url));
+        if (!buffn(char, append)(submit_url, "\0", 1)) goto free_sumbit_url;
         //TODO: all this is duplicated, refactor!
-        newdoc = htmldoc_create(submit_url->items);
-        if (!newdoc) { err="error creating htmldoc"; goto free_sumbit_url; };
-        //if (!newdoc) { buffn(char, clean)(submit_url); return "error: could not create html doc"; }
+        if (!(newdoc=htmldoc_create(submit_url->items))) { err="error creating htmldoc"; goto free_sumbit_url; };
         buffn(char, clean)(submit_url);
         if (newdoc->url && newdoc->lxbdoc) {
-            //try(err, htmldoc_fetch(newdoc, session_url_client(session)));
             trygotoerr(err, destroy_new_htmldoc, htmldoc_fetch(newdoc, session_url_client(session)));
-            //if ((err = htmldoc_fetch(newdoc, session_url_client(session)))) { buffn(char, clean)(submit_url); return err; }
-
-            //try(err, htmldoc_browse(newdoc));
             trygotoerr(err, destroy_new_htmldoc, htmldoc_browse(newdoc));
-            //if ((err = htmldoc_browse(newdoc))) { buffn(char, clean)(submit_url); return err; }
         }
         htmldoc_destroy(htmldoc);
         //TODO: change this when multi docs gets implemented
