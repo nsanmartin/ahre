@@ -120,8 +120,7 @@ static Err _make_submit_url_rec(
 ) {
     if (!node) return Ok;
     else if (node->local_name == LXB_TAG_INPUT && !_lexbor_attr_has_value(node, "type", "submit")) {
-        Err err;
-        try(err, _append_lexbor_name_value_attrs(url_client, node, submit_url));
+        try(_append_lexbor_name_value_attrs(url_client, node, submit_url));
     } 
 
     for(lxb_dom_node_t* it = node->first_child; ; it = it->next) {
@@ -182,17 +181,15 @@ static Err _make_submit_url_rec(
 static Err make_submit_url(
     UrlClient url_client[static 1], lxb_dom_node_t form[static 1], BufOf(char) submit_url[static 1]
 ) {
-    Err err = Ok;
 
-    try(err, _make_submit_url_rec(url_client, form, submit_url));
+    try(_make_submit_url_rec(url_client, form, submit_url));
     return Ok;
 }
 
 
 Err cmd_input(Session session[static 1], const char* line) {
-    Err err = Ok;
     long long unsigned num;
-    try(err, parse_number_or_throw(&line, &num));
+    try(parse_number_or_throw(&line, &num));
     HtmlDoc* htmldoc = session_current_doc(session);
     ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(htmldoc);
     LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(inputs, (size_t)num);
@@ -202,7 +199,7 @@ Err cmd_input(Session session[static 1], const char* line) {
     if (!*line) return "borrar?";
     if (*line == ' ' || *line == '=') ++line;
 
-    try(err, lexbor_set_attr_value(*nodeptr, "value", line));
+    try(lexbor_set_attr_value(*nodeptr, "value", line));
 
     //attr = lxb_dom_element_attr_by_name(element, name, name_size);
     //status = lxb_dom_attr_set_value(attr, (const lxb_char_t *) "new value", 9);
@@ -221,7 +218,7 @@ Err cmd_submit(Session session[static 1], const char* line) {
     BufOf(char)* submit_url = &(BufOf(char)){0};
     HtmlDoc* newdoc;
 
-    try(err, parse_number_or_throw(&line, &num));
+    try(parse_number_or_throw(&line, &num));
     HtmlDoc* htmldoc = session_current_doc(session);
     ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(htmldoc);
 

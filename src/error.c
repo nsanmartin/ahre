@@ -32,9 +32,8 @@ static Err _err_fmt_count_params(const char* s, size_t nparams[static 1]) {
 
 
 Err _is_err_fmt_valid(Err fmt, ...) {
-    Err err = Ok;
     size_t nparams;
-    try(err, _err_fmt_count_params(fmt, &nparams));
+    try(_err_fmt_count_params(fmt, &nparams));
     va_list ap;
     va_start(ap, fmt);
     while (nparams--) {
@@ -115,7 +114,6 @@ static Err _num_to_str(char* buf, size_t sz, int n, size_t len[static 1]) {
 
 Err err_fmt(Err fmt, ...) {
     if (!fmt || !*fmt) { return "error: err_fmt fmt is empty."; }
-    Err err = Ok;
     const char* beg = fmt;
     const char* end;
     char* buf = MSGBUF;
@@ -127,7 +125,7 @@ Err err_fmt(Err fmt, ...) {
     while ((end = strchr(beg, '%'))) {
         if (end < beg) return "error: strchr error.";
         else if (beg < end) {
-            try(err, _msg_buf_append(&buf, beg, end-beg));
+            try(_msg_buf_append(&buf, beg, end-beg));
             beg = end + 1;
         } else if (beg == end) { ++beg; }
 
@@ -136,17 +134,17 @@ Err err_fmt(Err fmt, ...) {
                 const char* s = va_arg(ap, const char *);
                 if (s == MSGBUF) return "error: err_fmt can't receive as parameter an err_fmt return value";
                 if (s == NULL) s = "(null)";
-                try(err, _msg_buf_append(&buf, s, strlen(s)));
+                try(_msg_buf_append(&buf, s, strlen(s)));
                 break;
             case 'd':
                 size_t len = 0;
-                try(err, _num_to_str(buf, MSGBUF + MAX_MSG_LEN - buf, va_arg(ap, int), &len));
+                try(_num_to_str(buf, MSGBUF + MAX_MSG_LEN - buf, va_arg(ap, int), &len));
                 buf += len;
                 ERR_MSG_LEN += len;
                 break;
             case '%':
                 s = "%";
-                try(err, _msg_buf_append(&buf, "%", strlen(s)));
+                try(_msg_buf_append(&buf, "%", strlen(s)));
                 break;
             default:
                 return "error: unsupported fmt";
@@ -154,7 +152,7 @@ Err err_fmt(Err fmt, ...) {
         ++beg;
     }
 
-    try(err, _msg_buf_append(&buf, beg, strlen(beg)));
+    try(_msg_buf_append(&buf, beg, strlen(beg)));
 
     MSGBUF[ERR_MSG_LEN] = '\0';
     return MSGBUF;

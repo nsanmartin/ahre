@@ -45,8 +45,7 @@ static inline Err cmd_text(Session* session) {
 
 static inline Err cmd_browse(Session session[static 1], const char* rest) {
     if (*rest) {
-        Err err = Ok;
-        try(err, cmd_set_url(session, rest));
+        try(cmd_set_url(session, rest));
     }
     HtmlDoc* htmldoc = session_current_doc(session);
     htmldoc_reset(htmldoc);

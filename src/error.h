@@ -17,18 +17,16 @@ Err err_fmt(Err fmt, ...);
 #define validate_size(value) _Generic((value), \
         size_t: value)
 
-// 'try' macro is similar to try keyword in zig. It receives an
-// lvalue (a variable) than can store an Err value and an Err
-// value. If the Err value is not null (not Ok) then it immediately
+// 'try' macro is similar to try keyword in zig. It receives an expression of
+// type Err value. If the Err value is not null (not Ok) then it immediately
 // returns that value. If not it does nothing.
-#define try(LV, ErrValue) if ((LV=validate_err(ErrValue))) return LV 
+#define try(Expr) do{Err ahre_err_=validate_err((Expr));if (ahre_err_) return ahre_err_;}while(0) 
 
-#define trygoto(Tag, NonzeroFail) if ((NonzeroFail)) goto Tag
+//#define trygoto(Tag, NonzeroFail) if ((NonzeroFail)) goto Tag
 
 #define trygotoerr(LV, Tag, ErrValue) if ((ErrValue)) do{ LV=ErrValue; goto Tag;}while(0)
 
-#define try_or(ErrValue, RetVal) \
-    if (validate_err(ErrValue)) return validate_err(RetVal)
+// #define try_or(ErrValue, RetVal)  if (validate_err(ErrValue)) return validate_err(RetVal)
 
 #define try_lxb(Value, RetVal) \
     if ((LXB_STATUS_OK!=validate_uint(Value))) \
