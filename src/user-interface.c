@@ -88,26 +88,28 @@ static bool _lexbor_attr_has_value(
 }
 
 
-static Err _append_lexbor_name_value_attrs(
+static Err _append_lexbor_name_value_attrs_if_both(
     UrlClient url_client[static 1], lxb_dom_node_t node[static 1], BufOf(char) buf[static 1]
 ) {
     char* escaped;
     const lxb_char_t* value;
     size_t valuelen;
     lexbor_find_attr_value(node, "value", &value, &valuelen);
-    if (value && valuelen > 0) {
-        escaped = url_client_escape_url(url_client, (char*)value, valuelen);
-        if (!escaped) return "error: curl_escape failure";
-        const lxb_char_t* name;
-        size_t namelen;
-        lexbor_find_attr_value(node, "name", &name, &namelen);
-        if (!name || namelen == 0) goto free_escaped;
-        if (!buffn(char, append)(buf, "&", 1)) goto free_escaped;
-        if (!buffn(char, append)(buf, (char*)name, namelen)) goto free_escaped;
-        if (!buffn(char, append)(buf, "=", 1)) goto free_escaped;
-        if (!buffn(char, append)(buf, escaped, strlen(escaped))) goto free_escaped;
-        url_client_curl_free_cstr(escaped);
-    }
+    if (!value || valuelen == 0) return Ok;
+
+    const lxb_char_t* name;
+    size_t namelen;
+    lexbor_find_attr_value(node, "name", &name, &namelen);
+    if (!name || namelen == 0) return Ok;
+
+    escaped = url_client_escape_url(url_client, (char*)value, valuelen);
+    if (!escaped) return "error: curl_escape failure";
+
+    if (!buffn(char, append)(buf, "&", 1)) goto free_escaped;
+    if (!buffn(char, append)(buf, (char*)name, namelen)) goto free_escaped;
+    if (!buffn(char, append)(buf, "=", 1)) goto free_escaped;
+    if (!buffn(char, append)(buf, escaped, strlen(escaped))) goto free_escaped;
+    url_client_curl_free_cstr(escaped);
     return Ok;
 free_escaped:
     url_client_curl_free_cstr(escaped);
@@ -120,7 +122,7 @@ static Err _make_submit_url_rec(
 ) {
     if (!node) return Ok;
     else if (node->local_name == LXB_TAG_INPUT && !_lexbor_attr_has_value(node, "type", "submit")) {
-        try(_append_lexbor_name_value_attrs(url_client, node, submit_url));
+        try(_append_lexbor_name_value_attrs_if_both(url_client, node, submit_url));
     } 
 
     for(lxb_dom_node_t* it = node->first_child; ; it = it->next) {
@@ -129,53 +131,7 @@ static Err _make_submit_url_rec(
         if (it == node->last_child) { break; }
     }
     return Ok;
-//free_escaped:
-//    url_client_curl_free_cstr(escaped);
-//    return err_fmt("error: failure in %s", __func__);
 }
-
-//static Err _make_submit_url_rec__( UrlClient url_client[static 1], lxb_dom_node_t node[static 1], BufOf(char) submit_url[static 1]) {
-//    char* escaped;
-//    if (!node) return Ok;
-//    else if (node->local_name == LXB_TAG_INPUT && !_lexbor_attr_has_value(node, "type", "submit")) {
-//
-//        const lxb_char_t* value;
-//        size_t valuelen;
-//        lexbor_find_attr_value(node, "value", &value, &valuelen);
-//        if (value && valuelen > 0) {
-//            escaped = url_client_escape_url(url_client, (char*)value, valuelen);
-//            if (!escaped) return "error: curl_escape failure";
-//            const lxb_char_t* name;
-//            size_t namelen;
-//            lexbor_find_attr_value(node, "name", &name, &namelen);
-//            if (!name || !value || namelen == 0) goto free_escaped;
-//            //if (!name || !value || namelen == 0) return "error: lexbor tree failure";
-//            if (!buffn(char, append)(submit_url, "&", 1)) goto free_escaped;
-//            //if (!buffn(char, append)(submit_url, "&", 1)) return "error: buffn failure";
-//            if (!buffn(char, append)(submit_url, (char*)name, namelen)) goto free_escaped;
-//            //if (!buffn(char, append)(submit_url, (char*)name, namelen)) return "error: buffn failure";
-//            if (!buffn(char, append)(submit_url, "=", 1)) goto free_escaped;
-//            //if (!buffn(char, append)(submit_url, "=", 1)) return "error: buffn failure";
-//            if (!buffn(char, append)(submit_url, escaped, strlen(escaped))) goto free_escaped;
-//            //if (!buffn(char, append)(submit_url, escaped, strlen(escaped))) {
-//            //    //TODO: this in all tries
-//            //    url_client_curl_free_cstr(escaped);
-//            //    return "error: buffn failure";
-//            //}
-//            url_client_curl_free_cstr(escaped);
-//        }
-//    } 
-//
-//    for(lxb_dom_node_t* it = node->first_child; ; it = it->next) {
-//        Err err = _make_submit_url_rec(url_client, it, submit_url);
-//        if (err) return err;
-//        if (it == node->last_child) { break; }
-//    }
-//    return Ok;
-//free_escaped:
-//    url_client_curl_free_cstr(escaped);
-//    return err_fmt("error: failure in %s", __func__);
-//}
 
 
 static Err make_submit_url(
@@ -201,14 +157,6 @@ Err cmd_input(Session session[static 1], const char* line) {
 
     try(lexbor_set_attr_value(*nodeptr, "value", line));
 
-    //attr = lxb_dom_element_attr_by_name(element, name, name_size);
-    //status = lxb_dom_attr_set_value(attr, (const lxb_char_t *) "new value", 9);
-    //if (status != LXB_STATUS_OK) {
-    //    FAILED("Failed to change attribute value");
-    //}
-    //const lxb_char_t* action;
-    //size_t action_len;
-    //lexbor_find_attr_value(form, "action", &action, &action_len);
     return Ok;
 }
 
@@ -243,7 +191,7 @@ Err cmd_submit(Session session[static 1], const char* line) {
         char* question_mark_ptr = buffn(char, at)(submit_url, question_mark_offset);
         if (question_mark_ptr) *question_mark_ptr = '?';
 
-        trygotoerr(err, free_sumbit_url, _append_lexbor_name_value_attrs(session->url_client, *nodeptr, submit_url));
+        trygotoerr(err, free_sumbit_url, _append_lexbor_name_value_attrs_if_both(session->url_client, *nodeptr, submit_url));
 
         if (!buffn(char, append)(submit_url, "\0", 1)) goto free_sumbit_url;
         //TODO: all this is duplicated, refactor!

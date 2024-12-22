@@ -15,6 +15,7 @@
 [ ] Make ahre cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)
 [ ] wrap lexbor functions with Err returning wrappers whenever possible
 [ ] implement cookies
+[ ] implement post method for forms
 
 # DONE
 [*] Accept files apart from urls
