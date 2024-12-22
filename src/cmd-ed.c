@@ -31,6 +31,7 @@ textbuf_get_line_offset_range(
     return Ok;
 }
 
+//TODO: reset color during number printing (and re-establish it after).
 static inline Err ed_print_n(TextBuf textbuf[static 1], Range range[static 1]) {
 
     Err err = validate_range_for_buffer(textbuf, range);
@@ -45,10 +46,8 @@ static inline Err ed_print_n(TextBuf textbuf[static 1], Range range[static 1]) {
             return "error serializing unsigned";
         fwrite("\t", 1, 1, stdout);
         fwrite(textbuf->buf.items + r.beg, 1, r.end - r.beg, stdout);
-        fwrite(EscCodeReset, 1, sizeof EscCodeReset, stdout);
     }
-
-
+    fwrite(EscCodeReset, 1, sizeof EscCodeReset, stdout);
     if (range->end == textbuf_line_count(textbuf)) 
         fwrite("\n", 1, 1, stdout);
     return Ok;
@@ -64,9 +63,9 @@ static inline Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
             return err;
 
         fwrite(textbuf->buf.items + r.beg, 1, r.end - r.beg, stdout);
-        fwrite(EscCodeReset, 1, sizeof EscCodeReset, stdout);
     }
 
+    fwrite(EscCodeReset, 1, sizeof EscCodeReset, stdout);
 
     if (range->end == textbuf_line_count(textbuf)) 
         fwrite("\n", 1, 1, stdout);
