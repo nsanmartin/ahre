@@ -273,6 +273,13 @@ browse_tag_input(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
 
 
 static Err
+browse_tag_div(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    //try (serialize_lit_str("\n", cb, ctx));
+    try (browse_list(node->first_child, node->last_child, cb, ctx));
+    //try (serialize_lit_str("\n", cb, ctx));
+    return Ok;
+}
+static Err
 browse_tag_p(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     try (serialize_lit_str("\n", cb, ctx));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
@@ -313,6 +320,7 @@ static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCt
                 case LXB_TAG_BLOCKQUOTE: { return browse_tag_blockquote(node, cb, ctx); }
                 case LXB_TAG_BR: { browse_tag_br(cb, ctx); break; }
                 case LXB_TAG_CENTER: { return browse_tag_center(node, cb, ctx); } 
+                case LXB_TAG_DIV: { return browse_tag_div(node, cb, ctx); }
                 case LXB_TAG_FORM: { return browse_tag_form(node, cb, ctx); }
                 case LXB_TAG_H1: case LXB_TAG_H2: case LXB_TAG_H3: case LXB_TAG_H4: case LXB_TAG_H5: case LXB_TAG_H6: { return browse_tag_h(node, cb, ctx); }
                 case LXB_TAG_INPUT: { return browse_tag_input(node, cb, ctx); }
