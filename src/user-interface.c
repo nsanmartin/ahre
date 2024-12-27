@@ -279,10 +279,10 @@ Err cmd_eval(Session session[static 1], const char* line) {
     if ((rest = substr_match(line, "attr", 2))) { return "TODO: attr"; }
     if ((rest = substr_match(line, "class", 3))) { return "TODO: class"; }
     if ((rest = substr_match(line, "clear", 3))) { return cmd_clear(session); }
+    if ((rest = substr_match(line, "dgbsummary", 1))) { return dbg_session_summary(session); }
     if ((rest = substr_match(line, "fetch", 1))) { return cmd_fetch(session); }
     if ((rest = substr_match(line, "input", 1))) { return cmd_input(session, rest); }
-    if ((rest = substr_match(line, "submit", 3))) { return cmd_submit(session, rest); }
-    if ((rest = substr_match(line, "summary", 3))) { return dbg_session_summary(session); }
+    if ((rest = substr_match(line, "submit", 1))) { return cmd_submit(session, rest); }
     if ((rest = substr_match(line, "tag", 2))) { return cmd_tag(rest, session); }
     if ((rest = substr_match(line, "text", 2))) { return cmd_text(session); }
 
