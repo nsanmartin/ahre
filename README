@@ -25,6 +25,7 @@ Build
 git clone
 git submodule update --init
 
+(to update: git submodule update --recursive --remote)
 
 mkdir build
 make

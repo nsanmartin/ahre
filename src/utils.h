@@ -59,4 +59,21 @@ serialize_unsigned(SerializeCallback cb, uintmax_t ui, void* ctx, unsigned int e
     return cb((unsigned char*)numbf, len, ctx);
 }
 
+static inline  Err
+unsigned_to_str(uintmax_t ui, char* buf, size_t size , size_t len[static 1]) {
+    if ((*len = snprintf(buf, size, "%lu", ui)) > size) {
+        return "error: number too large for string buffer";
+    }
+    return Ok;
+}
+
+static inline  Err
+append_unsigned_to_str(uintmax_t ui, char* str, size_t size, size_t len[static 1]) {
+    size_t numlen;
+    if ((numlen = snprintf(str + *len, size, "%lu", ui)) > (size - *len)) {
+        return "error: number too large for string buffer";
+    }
+    *len += numlen;
+    return Ok;
+}
 #endif
