@@ -232,9 +232,9 @@ Err cmd_ahre(Session session[static 1], const char* link) {
         return "link number out of range (exceeds size max)";
 
     HtmlDoc* htmldoc = session_current_doc(session);
-    ArlOf(Ahref)* hrefs = htmldoc_ahrefs(htmldoc);
+    ArlOf(Ahref)* ahrefs = htmldoc_ahrefs(htmldoc);
 
-    Ahref* ahref = arlfn(Ahref, at)(hrefs, (size_t)linknum);
+    Ahref* ahref = arlfn(Ahref, at)(ahrefs, (size_t)linknum);
     if (!ahref) return "link number invalid";
 
     Err e = Ok;
