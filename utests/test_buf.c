@@ -19,6 +19,7 @@ int test_0(void) {
     utest_assert(!err, fail);
     utest_assert(count == buf.eols.len, fail);
 
+    textbuf_cleanup(&buf);
     return 0;
 fail:
     return -1;

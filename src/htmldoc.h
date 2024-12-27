@@ -60,40 +60,44 @@ typedef lxb_dom_node_t* LxbNodePtr;
 #include <arl.h>
 
 typedef struct {
-    lxb_dom_collection_t* hrefs;
+    BufOf(char) sourcebuf;
+    TextBuf textbuf;
+    ArlOf(Ahref) ahrefs;
+    ArlOf(Img) imgs;
+    ArlOf(LxbNodePtr) inputs;
 } DocCache;
 
 
 typedef struct {
     const char* url;
     lxb_html_document_t* lxbdoc;
-    TextBuf textbuf;
-    BufOf(char) sourcebuf;
     DocCache cache;
-    ArlOf(Ahref) ahrefs;
-    ArlOf(Img) imgs;
-    ArlOf(LxbNodePtr) inputs;
 } HtmlDoc;
 
 /* getters */
 static inline const char*
-htmldoc_url(HtmlDoc d[static 1]) { return d->url; }
+htmldoc_url(const HtmlDoc d[static 1]) { return d->url; }
 
 static inline lxb_html_document_t*
 htmldoc_lxbdoc(HtmlDoc d[static 1]) { return d->lxbdoc; }
 
+static inline BufOf(char)*
+htmldoc_sourcebuf(HtmlDoc d[static 1]) { return &d->cache.sourcebuf; }
+
 static inline TextBuf*
-htmldoc_textbuf(HtmlDoc d[static 1]) { return &d->textbuf; }
+htmldoc_textbuf(HtmlDoc d[static 1]) { return &d->cache.textbuf; }
 
 static inline ArlOf(Ahref)*
-htmldoc_ahrefs(HtmlDoc d[static 1]) { return &d->ahrefs; }
+htmldoc_ahrefs(HtmlDoc d[static 1]) { return &d->cache.ahrefs; }
 
 static inline ArlOf(Img)*
-htmldoc_imgs(HtmlDoc d[static 1]) { return &d->imgs; }
+htmldoc_imgs(HtmlDoc d[static 1]) { return &d->cache.imgs; }
 
 static inline ArlOf(LxbNodePtr)*
-htmldoc_inputs(HtmlDoc d[static 1]) { return &d->inputs; }
+htmldoc_inputs(HtmlDoc d[static 1]) { return &d->cache.inputs; }
 
+static inline DocCache*
+htmldoc_cache(HtmlDoc d[static 1]) { return &d->cache; }
 /* ctors */
 int htmldoc_init(HtmlDoc d[static 1], const char* url);
 
@@ -102,9 +106,13 @@ void htmldoc_reset(HtmlDoc htmldoc[static 1]) ;
 void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) ;
 void htmldoc_destroy(HtmlDoc* htmldoc) ;
 //TODO: this fn should cleanup instead the browse data
-static inline void htmldoc_cache_cleanup(DocCache c[static 1]) {
-    lxb_dom_collection_destroy(c->hrefs, true);
-    *c = (DocCache){0};
+static inline void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
+    textbuf_cleanup(htmldoc_textbuf(htmldoc));
+    buffn(char, clean)(htmldoc_sourcebuf(htmldoc));
+    arlfn(Ahref,clean)(htmldoc_ahrefs(htmldoc));
+    arlfn(Img,clean)(htmldoc_imgs(htmldoc));
+    arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
+    *htmldoc_cache(htmldoc) = (DocCache){0};
 }
 
 /* external */
@@ -142,7 +150,7 @@ static inline const char* htmldoc_abs_url_dup(const HtmlDoc htmldoc[static 1], c
     if (cstr_starts_with(url, "//"))
         return cstr_cat_dup("https://", url); ///TODO: suppoert for http
     else if (cstr_starts_with(url, "/"))
-        return cstr_cat_dup(htmldoc->url, url);
+        return cstr_cat_dup(htmldoc_url(htmldoc), url);
     return strdup(url);
 }
 #endif

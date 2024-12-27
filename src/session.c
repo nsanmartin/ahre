@@ -7,7 +7,7 @@ inline HtmlDoc* session_current_doc(Session session[static 1]) {
 }
 
 inline TextBuf* session_current_buf(Session session[static 1]) {
-    return &session_current_doc(session)->textbuf;
+    return htmldoc_textbuf(session_current_doc(session));
 }
 
 

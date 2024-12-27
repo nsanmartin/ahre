@@ -387,7 +387,7 @@ int htmldoc_init(HtmlDoc d[static 1], const char* url) {
     }
 
     *d = (HtmlDoc){
-        .url=url, .lxbdoc=document, .textbuf=(TextBuf){.current_line=1}
+        .url=url, .lxbdoc=document, .cache=(DocCache){.textbuf=(TextBuf){.current_line=1}}
     };
     return 0;
 }
@@ -404,18 +404,16 @@ HtmlDoc* htmldoc_create(const char* url) {
 
 
 void htmldoc_reset(HtmlDoc htmldoc[static 1]) {
-    textbuf_cleanup(&htmldoc->textbuf);
+    textbuf_cleanup(htmldoc_textbuf(htmldoc));
     arlfn(Ahref,clean)(htmldoc_ahrefs(htmldoc));
     arlfn(Img,clean)(htmldoc_imgs(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
 }
 
 void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) {
-    htmldoc_reset(htmldoc);
-    htmldoc_cache_cleanup(&htmldoc->cache);
-    lxb_html_document_destroy(htmldoc->lxbdoc);
-    buffn(char, clean)(&htmldoc->sourcebuf);
-    destroy((char*)htmldoc->url);
+    htmldoc_cache_cleanup(htmldoc);
+    lxb_html_document_destroy(htmldoc_lxbdoc(htmldoc));
+    destroy((char*)htmldoc_url(htmldoc));
 
 }
 

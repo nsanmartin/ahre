@@ -18,15 +18,16 @@ Err cmd_fetch(Session session[static 1]) {
 }
 
 
-/* writes anchors to current textbuf */
-static inline Err cmd_anchors(Session session[static 1]) {
-    HtmlDoc* htmldoc = session_current_doc(session);
-    TextBuf* tb = &htmldoc->textbuf;
-    Err err = lexbor_href_write(htmldoc->lxbdoc, &htmldoc->cache.hrefs, tb);
-    if (err) return err; 
-    
-    return textbuf_append_null(tb);
-}
+// deprecated
+////* writes anchors to current textbuf */
+///static inline Err cmd_anchors(Session session[static 1]) {
+///    HtmlDoc* htmldoc = session_current_doc(session);
+///    TextBuf* tb = htmldoc_textbuf(htmldoc);
+///    Err err = lexbor_href_write(htmldoc->lxbdoc, &htmldoc->cache.hrefs, tb);
+///    if (err) return err; 
+///    
+///    return textbuf_append_null(tb);
+///}
 
 static inline Err cmd_clear(Session session[static 1]) {
     textbuf_cleanup(session_current_buf(session));
@@ -35,12 +36,12 @@ static inline Err cmd_clear(Session session[static 1]) {
 
 static inline Err cmd_tag(const char* rest, Session session[static 1]) {
     HtmlDoc* htmldoc = session_current_doc(session);
-    return lexbor_cp_tag(rest, htmldoc->lxbdoc, &htmldoc->textbuf.buf);
+    return lexbor_cp_tag(rest, htmldoc->lxbdoc, textbuf_buf(htmldoc_textbuf(htmldoc)));
 }
 
 static inline Err cmd_text(Session* session) {
     HtmlDoc* htmldoc = session_current_doc(session);
-    return lexbor_html_text_append(htmldoc->lxbdoc, &htmldoc->textbuf);
+    return lexbor_html_text_append(htmldoc->lxbdoc, htmldoc_textbuf(htmldoc));
 }
 
 static inline Err cmd_browse(Session session[static 1], const char* rest) {
