@@ -46,6 +46,10 @@ static Err browse_ctx_init(BrowseCtx ctx[static 1], HtmlDoc htmldoc[static 1], b
     return Ok;
 }
 
+static void browse_ctx_cleanup(BrowseCtx ctx[static 1]) {
+    buffn(char, clean)(&ctx->lazy_str);
+}
+
 static HtmlDoc* browse_ctx_htmldoc(BrowseCtx ctx[static 1]) { return ctx->htmldoc; }
 static TextBuf* browse_ctx_textbuf(BrowseCtx ctx[static 1]) {
     return htmldoc_textbuf(browse_ctx_htmldoc(ctx));
@@ -457,6 +461,7 @@ Err htmldoc_browse(HtmlDoc htmldoc[static 1]) {
     BrowseCtx ctx;
     try(browse_ctx_init(&ctx, htmldoc, true));
     try(browse_rec(lxb_dom_interface_node(lxbdoc), serialize_cb_browse, &ctx));
+    browse_ctx_cleanup(&ctx);
     return textbuf_append_null(htmldoc_textbuf(htmldoc));
 }
 
