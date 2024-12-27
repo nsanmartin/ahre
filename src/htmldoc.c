@@ -169,7 +169,7 @@ browse_tag_center(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ct
     try (serialize_lit_str("\n", cb, ctx));
     try (serialize_cstring_debug("%(center:\n\n", cb, ctx));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
-    try (serialize_cstring_debug("%center)\n", cb, ctx));
+    try (serialize_cstring_debug("%%center)\n", cb, ctx));
     try (serialize_lit_str("\n", cb, ctx));
     return Ok;
 }
@@ -177,7 +177,7 @@ browse_tag_center(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ct
 //TODO: move instance of Ahref here as well as appending it
 static Err
 browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    try ( serialize_literal_color_str(EscCodeBlue, cb, ctx));
+    if (!buffn(char, append)(&ctx->lazy_str, EscCodeBlue, sizeof EscCodeBlue)) return "error: failed to append to bufof";
     try ( parse_href_attrs(node, ctx));
     try ( browse_list(node->first_child, node->last_child, cb, ctx));
     try ( serialize_lit_str("}", cb, ctx));
