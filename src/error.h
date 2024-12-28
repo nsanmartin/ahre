@@ -2,6 +2,8 @@
 #define __STATUS_AHRE_H__
 
 #include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
 
 
 typedef const char* Err;
@@ -10,6 +12,12 @@ typedef const char* Err;
 
 Err err_fmt(Err fmt, ...);
 
+static Err FATAL_ERROR_PREFIX = "error";
+static size_t FATAL_ERROR_PREFIX_LEN = sizeof FATAL_ERROR_PREFIX;
+
+static inline bool fatal_error(Err e) {
+    return !strncmp(e, FATAL_ERROR_PREFIX, FATAL_ERROR_PREFIX_LEN);
+}
 
 #define validate_err(Value) _Generic((Value), Err: Value)
 #define validate_uint(value) _Generic((value), \

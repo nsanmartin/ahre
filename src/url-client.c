@@ -25,7 +25,7 @@ UrlClient* url_client_create(void) {
 cleanup_curl:
     curl_easy_cleanup(handle);
 free_rv:
-    destroy(rv);
+    std_free(rv);
 exit_fail:
     return 0x0;
 }

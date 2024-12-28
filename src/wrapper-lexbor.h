@@ -5,6 +5,8 @@
 
 #include "src/textbuf.h"
 
+#define BT lxb_char_t
+#include <buf.h>
 
 // deprecated
 //Err lexbor_href_write(
@@ -36,4 +38,10 @@ void lexbor_find_attr_value(
     lxb_dom_node_t* node, const char* attr_name, const lxb_char_t* out[static 1], size_t* len
 ); 
 Err lexbor_set_attr_value( lxb_dom_node_t* node, const char* attr_name, const char* value);
+
+lxb_dom_node_t* _find_parent_form(lxb_dom_node_t* node) ;
+
+bool _lexbor_attr_has_value(
+    lxb_dom_node_t node[static 1], const char* attr, const char* expected_value
+) ;
 #endif

@@ -366,37 +366,44 @@ Err lexbor_read_doc_from_file(HtmlDoc htmldoc[static 1]) {
 
 
 
-int htmldoc_init(HtmlDoc d[static 1], const char* url) {
-    //TODO: trim space in url 
+Err htmldoc_init(HtmlDoc d[static 1], const char* url) {
+    Url urlu = {0};
     if (url && *url) {
         if (strlen(url) > MAX_URL_LEN) {
-            perror("Url large is not supported.");
-            return -1;
+            return "url large is not supported.";
         }
         url = strdup(url);
         if (!url || !*url) {
-            perror("memory error: url cannot be copied");
-            return -1;
+            return "error: memory failure (strdup).";
         }
-    } else url = 0x0;
+        Err err = url_init(&urlu, url);
+        if (err) {
+            std_free((char*)url);
+            return err;
+        }
+    } else { url = 0x0; }
 
     lxb_html_document_t* document = lxb_html_document_create();
     if (!document) {
-        perror("Lxb failed to create html document");
-        return -1;
+        if (url) {
+            std_free((char*)url);
+            url_cleanup(htmldoc_curlu(d));
+        }
+
+        return "error: lxb failed to create html document";
     }
 
     *d = (HtmlDoc){
-        .url=url, .lxbdoc=document, .cache=(DocCache){.textbuf=(TextBuf){.current_line=1}}
+        .url=url, .lxbdoc=document, .curlu=urlu, .cache=(DocCache){.textbuf=(TextBuf){.current_line=1}}
     };
-    return 0;
+    return Ok;
 }
 
 HtmlDoc* htmldoc_create(const char* url) {
     HtmlDoc* rv = std_malloc(sizeof(HtmlDoc));
     if (!rv) return NULL;
     if (htmldoc_init(rv, url)) {
-        destroy(rv);
+        std_free(rv);
         return NULL;
     }
     return rv;
@@ -413,8 +420,8 @@ void htmldoc_reset(HtmlDoc htmldoc[static 1]) {
 void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) {
     htmldoc_cache_cleanup(htmldoc);
     lxb_html_document_destroy(htmldoc_lxbdoc(htmldoc));
-    destroy((char*)htmldoc_url(htmldoc));
-
+    std_free((char*)htmldoc_url(htmldoc));
+    url_cleanup(htmldoc_curlu(htmldoc));
 }
 
 inline void htmldoc_destroy(HtmlDoc* htmldoc) {
@@ -430,7 +437,9 @@ inline void htmldoc_update_url(HtmlDoc ad[static 1], char* url) {
 
 
 bool htmldoc_is_valid(HtmlDoc htmldoc[static 1]) {
-    return htmldoc->url && htmldoc->lxbdoc && htmldoc->lxbdoc->body;
+    ////TODO: remove, not needed since URLU
+    //return htmldoc->url && htmldoc->lxbdoc && htmldoc->lxbdoc->body;
+    return htmldoc->lxbdoc && htmldoc->lxbdoc->body;
 }
 
 Err htmldoc_read_from_file(HtmlDoc htmldoc[static 1]) {

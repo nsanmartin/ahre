@@ -11,10 +11,11 @@ Err cmd_set_url(Session session[static 1], const char* url);
 
 Err cmd_fetch(Session session[static 1]) {
     HtmlDoc* htmldoc = session_current_doc(session);
-    if (htmldoc->url) {
+    //TODO: remove (not needed since CURLU.
+    //if (htmldoc->url) {
         return htmldoc_fetch(htmldoc, session->url_client);
-    }
-    return "Not url to fech";
+    //}
+    //return "Not url to fech";
 }
 
 

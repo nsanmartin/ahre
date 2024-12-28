@@ -11,6 +11,11 @@
 #include "src/user-interface.h"
 #include "src/utils.h"
 #include "src/cmd-ed.h"
+#include "src/wrapper-lexbor-curl.h"
+#include "src/url.h"
+
+//TODO: move this to wrapper-lexbor-curl.h
+Err mk_submit_url (lxb_dom_node_t* form, HtmlDoc d[static 1], CURLU* out[static 1]) ;
 
 Err read_line_from_user(Session session[static 1]) {
     char* line = 0x0;
@@ -31,23 +36,28 @@ bool substr_match_all(const char* s, size_t len, const char* cmd) {
 ///TODO: move this to session
 Err cmd_set_url(Session session[static 1], const char* url) {
     HtmlDoc* htmldoc = session_current_doc(session);
+
     url = cstr_trim_space((char*)url);
-    if (!*url) return err_fmt("url: '%s'", htmldoc->url);
-    if (htmldoc->url && strcmp(url, htmldoc->url) == 0) 
-        return "same url, not updating";
+    if (!*url) {
+        char* buf;
+        try(url_cstr(&htmldoc->curlu, &buf));
+        Err res = err_fmt("current url: '%s'", buf);
+        curl_free(buf);
+        return res;
+    }
+
+    HtmlDoc* newdoc = htmldoc_create(url);
+    if (!newdoc) { return err_fmt("error: could not create doc from %s", url); }
+
+    Err err = htmldoc_fetch(newdoc, session->url_client);
+    if (err) {
+        htmldoc_destroy(newdoc);
+        return err;
+    }
 
     htmldoc_cleanup(htmldoc);
-    if (htmldoc_init(htmldoc, url)) {
-        return "error: could not init htmldoc";
-    }
-
-    if (htmldoc_has_url(htmldoc)) {
-        Err err = htmldoc_fetch(htmldoc, session->url_client);
-        if (err) 
-            return err;
-        
-    }
-    printf("set with url: %s\n", htmldoc->url ? htmldoc->url : "<no url>");
+    session->htmldoc = newdoc;
+    printf("set with url: %s\n", newdoc->url ? newdoc->url : "<no url>");
     return Ok;
 }
 
@@ -69,78 +79,60 @@ Err parse_number_or_throw(const char** strptr, unsigned long long* num) {
 }
 
 
-static lxb_dom_node_t*
-_find_parent_form(lxb_dom_node_t* node) {
-    for (;node; node = node->parent) {
-        if (node->local_name == LXB_TAG_FORM) break;
-    }
-    return node;
-}
+
+//static Err _append_lexbor_name_value_attrs_if_both(
+//    UrlClient url_client[static 1], lxb_dom_node_t node[static 1], BufOf(char) buf[static 1]
+//) {
+//    char* escaped;
+//    const lxb_char_t* value;
+//    size_t valuelen;
+//    lexbor_find_attr_value(node, "value", &value, &valuelen);
+//    if (!value || valuelen == 0) return Ok;
+//
+//    const lxb_char_t* name;
+//    size_t namelen;
+//    lexbor_find_attr_value(node, "name", &name, &namelen);
+//    if (!name || namelen == 0) return Ok;
+//
+//    escaped = url_client_escape_url(url_client, (char*)value, valuelen);
+//    if (!escaped) return "error: curl_escape failure";
+//
+//    if (!buffn(char, append)(buf, "&", 1)) goto free_escaped;
+//    if (!buffn(char, append)(buf, (char*)name, namelen)) goto free_escaped;
+//    if (!buffn(char, append)(buf, "=", 1)) goto free_escaped;
+//    if (!buffn(char, append)(buf, escaped, strlen(escaped))) goto free_escaped;
+//    url_client_curl_free_cstr(escaped);
+//    return Ok;
+//free_escaped:
+//    url_client_curl_free_cstr(escaped);
+//    return err_fmt("error: failure in %s", __func__);
+//}
 
 
-static bool _lexbor_attr_has_value(
-     lxb_dom_node_t node[static 1], const char* attr, const char* expected_value
-) {
-    const lxb_char_t* value;
-    size_t valuelen;
-    lexbor_find_attr_value(node, attr, &value, &valuelen);
-    return value && valuelen && !strncmp(expected_value, (const char*)value, valuelen);
-}
+//static Err _make_submit_url_rec(
+//    UrlClient url_client[static 1], lxb_dom_node_t node[static 1], BufOf(char) submit_url[static 1]
+//) {
+//    if (!node) return Ok;
+//    else if (node->local_name == LXB_TAG_INPUT && !_lexbor_attr_has_value(node, "type", "submit")) {
+//        try(_append_lexbor_name_value_attrs_if_both(url_client, node, submit_url));
+//    } 
+//
+//    for(lxb_dom_node_t* it = node->first_child; ; it = it->next) {
+//        Err err = _make_submit_url_rec(url_client, it, submit_url);
+//        if (err) return err;
+//        if (it == node->last_child) { break; }
+//    }
+//    return Ok;
+//}
 
 
-static Err _append_lexbor_name_value_attrs_if_both(
-    UrlClient url_client[static 1], lxb_dom_node_t node[static 1], BufOf(char) buf[static 1]
-) {
-    char* escaped;
-    const lxb_char_t* value;
-    size_t valuelen;
-    lexbor_find_attr_value(node, "value", &value, &valuelen);
-    if (!value || valuelen == 0) return Ok;
-
-    const lxb_char_t* name;
-    size_t namelen;
-    lexbor_find_attr_value(node, "name", &name, &namelen);
-    if (!name || namelen == 0) return Ok;
-
-    escaped = url_client_escape_url(url_client, (char*)value, valuelen);
-    if (!escaped) return "error: curl_escape failure";
-
-    if (!buffn(char, append)(buf, "&", 1)) goto free_escaped;
-    if (!buffn(char, append)(buf, (char*)name, namelen)) goto free_escaped;
-    if (!buffn(char, append)(buf, "=", 1)) goto free_escaped;
-    if (!buffn(char, append)(buf, escaped, strlen(escaped))) goto free_escaped;
-    url_client_curl_free_cstr(escaped);
-    return Ok;
-free_escaped:
-    url_client_curl_free_cstr(escaped);
-    return err_fmt("error: failure in %s", __func__);
-}
-
-
-static Err _make_submit_url_rec(
-    UrlClient url_client[static 1], lxb_dom_node_t node[static 1], BufOf(char) submit_url[static 1]
-) {
-    if (!node) return Ok;
-    else if (node->local_name == LXB_TAG_INPUT && !_lexbor_attr_has_value(node, "type", "submit")) {
-        try(_append_lexbor_name_value_attrs_if_both(url_client, node, submit_url));
-    } 
-
-    for(lxb_dom_node_t* it = node->first_child; ; it = it->next) {
-        Err err = _make_submit_url_rec(url_client, it, submit_url);
-        if (err) return err;
-        if (it == node->last_child) { break; }
-    }
-    return Ok;
-}
-
-
-static Err make_submit_url(
-    UrlClient url_client[static 1], lxb_dom_node_t form[static 1], BufOf(char) submit_url[static 1]
-) {
-
-    try(_make_submit_url_rec(url_client, form, submit_url));
-    return Ok;
-}
+//static Err make_submit_url(
+//    UrlClient url_client[static 1], lxb_dom_node_t form[static 1], BufOf(char) submit_url[static 1]
+//) {
+//
+//    try(_make_submit_url_rec(url_client, form, submit_url));
+//    return Ok;
+//}
 
 
 Err cmd_input(Session session[static 1], const char* line) {
@@ -160,11 +152,79 @@ Err cmd_input(Session session[static 1], const char* line) {
     return Ok;
 }
 
+
+//Err cmd_submit(Session session[static 1], const char* line) {
+//    Err err = Ok;
+//    long long unsigned num;
+//    BufOf(char)* submit_url = &(BufOf(char)){0};
+//    HtmlDoc* newdoc;
+//
+//    try(parse_number_or_throw(&line, &num));
+//    HtmlDoc* htmldoc = session_current_doc(session);
+//    ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(htmldoc);
+//
+//
+//    LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(inputs, (size_t)num);
+//    if (!nodeptr) return "link number invalid";
+//    if (!_lexbor_attr_has_value(*nodeptr, "type", "submit")) return "warn: not submit input";
+//
+//    lxb_dom_node_t* form = _find_parent_form(*nodeptr);
+//    if (form) {
+//
+//        if (!buffn(char, append)(submit_url, (char*)htmldoc->url, strlen(htmldoc->url))) goto free_sumbit_url;
+//        const lxb_char_t* action;
+//        size_t action_len;
+//        lexbor_find_attr_value(form, "action", &action, &action_len);
+//        if(!buffn(char, append)(submit_url, (char*)action, action_len)) goto free_sumbit_url;
+//
+//        size_t question_mark_offset = submit_url->len;
+//
+//        trygotoerr (err, free_sumbit_url, make_submit_url(session->url_client, form, submit_url));
+//
+//        char* question_mark_ptr = buffn(char, at)(submit_url, question_mark_offset);
+//        if (question_mark_ptr) *question_mark_ptr = '?';
+//
+//        trygotoerr(err, free_sumbit_url, _append_lexbor_name_value_attrs_if_both(session->url_client, *nodeptr, submit_url));
+//
+//        if (!buffn(char, append)(submit_url, "\0", 1)) goto free_sumbit_url;
+//        //TODO: all this is duplicated, refactor!
+//        if (!(newdoc=htmldoc_create(submit_url->items))) { err="error creating htmldoc"; goto free_sumbit_url; };
+//        buffn(char, clean)(submit_url);
+//        if (newdoc->url && newdoc->lxbdoc) {
+//            trygotoerr(err, destroy_new_htmldoc, htmldoc_fetch(newdoc, session_url_client(session)));
+//            trygotoerr(err, destroy_new_htmldoc, htmldoc_browse(newdoc));
+//        }
+//        htmldoc_destroy(htmldoc);
+//        //TODO: change this when multi docs gets implemented
+//        session->htmldoc = newdoc;
+//    
+//    } else { puts("expected form, not found"); }
+//    buffn(char, clean)(submit_url);
+//    return Ok;
+//destroy_new_htmldoc:
+//        htmldoc_destroy(newdoc);
+//        return "error fetching or browsing doc";
+//free_sumbit_url:
+//        buffn(char, clean)(submit_url);
+//        return err ? err : err_fmt("error in: %", __func__);
+//}
+//
+
+static Err _curlu_to_str(CURLU* u, char** content) {
+    CURLUcode curlu_code = curl_url_get(u, CURLUPART_URL, content, 0);
+    if(curlu_code == CURLUE_OK) {
+      printf("the content is %s\n", *content);
+      curl_free(*content);
+      return Ok;
+    }
+    return "error: TODO use here strerror ...";
+}
+
 Err cmd_submit(Session session[static 1], const char* line) {
     Err err = Ok;
     long long unsigned num;
-    BufOf(char)* submit_url = &(BufOf(char)){0};
     HtmlDoc* newdoc;
+    CURLU* curlu;
 
     try(parse_number_or_throw(&line, &num));
     HtmlDoc* htmldoc = session_current_doc(session);
@@ -178,46 +238,42 @@ Err cmd_submit(Session session[static 1], const char* line) {
     lxb_dom_node_t* form = _find_parent_form(*nodeptr);
     if (form) {
 
-        if (!buffn(char, append)(submit_url, (char*)htmldoc->url, strlen(htmldoc->url))) goto free_sumbit_url;
-        const lxb_char_t* action;
-        size_t action_len;
-        lexbor_find_attr_value(form, "action", &action, &action_len);
-        if(!buffn(char, append)(submit_url, (char*)action, action_len)) goto free_sumbit_url;
-
-        size_t question_mark_offset = submit_url->len;
-
-        trygotoerr (err, free_sumbit_url, make_submit_url(session->url_client, form, submit_url));
-
-        char* question_mark_ptr = buffn(char, at)(submit_url, question_mark_offset);
-        if (question_mark_ptr) *question_mark_ptr = '?';
-
-        trygotoerr(err, free_sumbit_url, _append_lexbor_name_value_attrs_if_both(session->url_client, *nodeptr, submit_url));
-
-        if (!buffn(char, append)(submit_url, "\0", 1)) goto free_sumbit_url;
-        //TODO: all this is duplicated, refactor!
-        if (!(newdoc=htmldoc_create(submit_url->items))) { err="error creating htmldoc"; goto free_sumbit_url; };
-        buffn(char, clean)(submit_url);
-        if (newdoc->url && newdoc->lxbdoc) {
-            trygotoerr(err, destroy_new_htmldoc, htmldoc_fetch(newdoc, session_url_client(session)));
-            trygotoerr(err, destroy_new_htmldoc, htmldoc_browse(newdoc));
+        if ((err = mk_submit_url(form, htmldoc, &curlu))) {
+            curl_url_cleanup(curlu);
+            return "error making submit url";
         }
+        //TODO: delete this
+        char* s;
+        _curlu_to_str(curlu, &s);
+        ////TODO: all this is duplicated, refactor!
+        if (!(newdoc=htmldoc_create(NULL))) { err="error creating htmldoc"; goto cleanup_curlu; };
+        newdoc->curlu.urlu=curlu;
+
+        if ((err=htmldoc_fetch(newdoc, session_url_client(session)))) {
+           goto cleanup_htmldoc; 
+        }
+
+        if ((err=htmldoc_browse(newdoc))) {
+           goto cleanup_htmldoc; 
+        }
+
+        session->htmldoc = newdoc;
         htmldoc_destroy(htmldoc);
         //TODO: change this when multi docs gets implemented
-        session->htmldoc = newdoc;
     
     } else { puts("expected form, not found"); }
-    buffn(char, clean)(submit_url);
     return Ok;
-destroy_new_htmldoc:
-        htmldoc_destroy(newdoc);
-        return "error fetching or browsing doc";
-free_sumbit_url:
-        buffn(char, clean)(submit_url);
-        return err ? err : err_fmt("error in: %", __func__);
+cleanup_htmldoc:
+    htmldoc_destroy(newdoc);
+cleanup_curlu:
+    curl_url_cleanup(curlu);
+    return err;
 }
 
 //TODO: remove duplicte code.
 Err cmd_ahre(Session session[static 1], const char* link) {
+    Err err;
+    HtmlDoc* newdoc;
     if (!link) return "error: unexpected nullptr";
     while(*link && isspace(*link)) ++link;
     if (!*link) return "link number not given";
@@ -237,30 +293,57 @@ Err cmd_ahre(Session session[static 1], const char* link) {
     Ahref* ahref = arlfn(Ahref, at)(ahrefs, (size_t)linknum);
     if (!ahref) return "link number invalid";
 
-    Err e = Ok;
-    const char* url = htmldoc_abs_url_dup(htmldoc, ahref->url);
-    if (!url) return "error: memory failure";
-    HtmlDoc* newdoc = htmldoc_create(cstr_trim_space((char*)url));
-    if (!newdoc) {
-        std_free((char*)url);
-        return "error: could not create html doc";
-    }
-    if (newdoc->url && newdoc->lxbdoc) {
-        if ((e = htmldoc_fetch(newdoc, session_url_client(session)))) {
-            std_free((char*)url);
-            return e;
-        }
+    ///
 
-        if ((e = htmldoc_browse(newdoc))) {
-            std_free((char*)url);
-            return e;
-        }
+    CURLU* curlu = curl_url_dup(url_curlu(htmldoc_curlu(htmldoc)));
+    if (!curlu) return "error: memory failure (curl_url_dup)";
+    err = curlu_set_url(curlu, ahref->url);
+    if (err) /*todo cleanup */ return err;
+
+    if (!(newdoc=htmldoc_create(NULL))) { err="error creating htmldoc"; goto cleanup_curlu; };
+    newdoc->curlu.urlu=curlu;
+
+    if ((err=htmldoc_fetch(newdoc, session_url_client(session)))) {
+        goto cleanup_htmldoc;
     }
-    htmldoc_destroy(htmldoc);
-    //TODO: change this when multi docs gets implemented
+
+    if ((err=htmldoc_browse(newdoc))) {
+        goto cleanup_htmldoc;
+    }
+
     session->htmldoc = newdoc;
-    std_free((char*)url);
+    htmldoc_destroy(htmldoc);
     return Ok;
+cleanup_htmldoc:
+    htmldoc_destroy(newdoc);
+cleanup_curlu:
+    curl_url_cleanup(curlu);
+    return err;
+
+    ////TODO: consider using the curl URL API.
+    //const char* url = htmldoc_abs_url_dup(htmldoc, ahref->url);
+    //if (!url) return "error: memory failure";
+    //HtmlDoc* newdoc = htmldoc_create(cstr_trim_space((char*)url));
+    //if (!newdoc) {
+    //    std_free((char*)url);
+    //    return "error: could not create html doc";
+    //}
+    //if (newdoc->url && newdoc->lxbdoc) {
+    //    if ((e = htmldoc_fetch(newdoc, session_url_client(session)))) {
+    //        std_free((char*)url);
+    //        return e;
+    //    }
+
+    //    if ((e = htmldoc_browse(newdoc))) {
+    //        std_free((char*)url);
+    //        return e;
+    //    }
+    //}
+    //htmldoc_destroy(htmldoc);
+    //TODO: change this when multi docs gets implemented
+    //session->htmldoc = newdoc;
+    //std_free((char*)url);
+    //return Ok;
 }
 
 Err cmd_eval(Session session[static 1], const char* line) {

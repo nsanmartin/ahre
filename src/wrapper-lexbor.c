@@ -204,3 +204,21 @@ void lexbor_find_attr_value(
     *out = NULL; *len = 0;
 }
 
+lxb_dom_node_t*
+_find_parent_form(lxb_dom_node_t* node) {
+    for (;node; node = node->parent) {
+        if (node->local_name == LXB_TAG_FORM) break;
+    }
+    return node;
+}
+
+
+bool _lexbor_attr_has_value(
+     lxb_dom_node_t node[static 1], const char* attr, const char* expected_value
+) {
+    const lxb_char_t* value;
+    size_t valuelen;
+    lexbor_find_attr_value(node, attr, &value, &valuelen);
+    return value && valuelen && !strncmp(expected_value, (const char*)value, valuelen);
+}
+

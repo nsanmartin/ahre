@@ -14,6 +14,7 @@
 #include "src/utils.h"
 #include "src/wrapper-lexbor-curl.h"
 #include "src/doc-elem.h"
+#include "src/url.h"
 
 //TODO: move to htmldoc-cache.h
 typedef struct { const char* url; size_t off; } Ahref;
@@ -70,6 +71,7 @@ typedef struct {
 
 typedef struct {
     const char* url;
+    Url curlu;
     lxb_html_document_t* lxbdoc;
     DocCache cache;
 } HtmlDoc;
@@ -98,8 +100,13 @@ htmldoc_inputs(HtmlDoc d[static 1]) { return &d->cache.inputs; }
 
 static inline DocCache*
 htmldoc_cache(HtmlDoc d[static 1]) { return &d->cache; }
+
+static inline Url*
+htmldoc_curlu(HtmlDoc d[static 1]) { return &d->curlu; }
+
+
 /* ctors */
-int htmldoc_init(HtmlDoc d[static 1], const char* url);
+Err htmldoc_init(HtmlDoc d[static 1], const char* url);
 
 /* dtors */
 void htmldoc_reset(HtmlDoc htmldoc[static 1]) ;
@@ -138,9 +145,10 @@ static inline bool file_exists(const char* path) { return access(path, F_OK) == 
 Err lexbor_read_doc_from_file(HtmlDoc htmldoc[static 1]) ;
 
 static inline Err htmldoc_fetch(HtmlDoc htmldoc[static 1], UrlClient url_client[static 1]) {
-    if (file_exists(htmldoc->url)) {
-        return lexbor_read_doc_from_file(htmldoc);
-    }
+    //TODO: remove, not needed since CURLU
+    //if (file_exists(htmldoc->url)) {
+    //    return lexbor_read_doc_from_file(htmldoc);
+    //}
     return curl_lexbor_fetch_document(url_client, htmldoc);
 }
 

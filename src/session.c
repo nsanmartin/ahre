@@ -11,6 +11,7 @@ inline TextBuf* session_current_buf(Session session[static 1]) {
 }
 
 
+//Err session_init(Session s[static 1],char* url, UserLineCallback callback) { }
 Session* session_create(char* url, UserLineCallback callback) {
     Session* rv = std_malloc(sizeof(Session));
     if (!rv) {
@@ -42,7 +43,7 @@ Session* session_create(char* url, UserLineCallback callback) {
 free_ahcurl:
     url_client_destroy(url_client);
 free_rv:
-    destroy(rv);
+    std_free(rv);
 exit_fail:
     return 0x0;
 }

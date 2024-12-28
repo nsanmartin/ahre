@@ -10,6 +10,10 @@
 #define BT char
 #include <buf.h>
 
+typedef const char* const_char;
+#define BT const_char
+#include <buf.h>
+
 #define T size_t
 #include <arl.h>
 
