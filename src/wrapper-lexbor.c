@@ -69,31 +69,33 @@ Err lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* b
 }
 
 
-Err lexbor_foreach_href(
-    lxb_dom_collection_t collection[static 1],
-    Err (*callback)(lxb_dom_element_t* element, void* session),
-    void* session
-) {
-    Err err = Ok;
-    for (size_t i = 0; i < lxb_dom_collection_length(collection); i++) {
-        lxb_dom_element_t* element = lxb_dom_collection_element(collection, i);
-        if ((err=callback(element, session))) { break; };
-    }
+// deprecated
+//Err lexbor_foreach_href(
+//    lxb_dom_collection_t collection[static 1],
+//    Err (*callback)(lxb_dom_element_t* element, void* session),
+//    void* session
+//) {
+//    Err err = Ok;
+//    for (size_t i = 0; i < lxb_dom_collection_length(collection); i++) {
+//        lxb_dom_element_t* element = lxb_dom_collection_element(collection, i);
+//        if ((err=callback(element, session))) { break; };
+//    }
+//
+//    return err;
+//}
 
-    return err;
-}
 
-
-Err ahre_append_href(lxb_dom_element_t* element, void* aeBuf) {
-    TextBuf* buf = aeBuf;
-    size_t value_len = 0;
-    const lxb_char_t * value = lxb_dom_element_get_attribute(
-        element, (const lxb_char_t*)"href", 4, &value_len
-    );
-    if (value_len && value)
-        return textbuf_append_line(buf, (char*)value, value_len);
-    return NULL;
-}
+// deprecated
+//Err ahre_append_href(lxb_dom_element_t* element, void* aeBuf) {
+//    TextBuf* buf = aeBuf;
+//    size_t value_len = 0;
+//    const lxb_char_t * value = lxb_dom_element_get_attribute(
+//        element, (const lxb_char_t*)"href", 4, &value_len
+//    );
+//    if (value_len && value)
+//        return textbuf_append_line(buf, (char*)value, value_len);
+//    return NULL;
+//}
 
 
 /// deprecated

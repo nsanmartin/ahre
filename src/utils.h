@@ -43,9 +43,9 @@ static inline void log_info(const char* msg) { puts(msg); }
 static inline void log_error(const char* msg) { perror(msg); }
 
 typedef unsigned int (*SerializeCallback)(const unsigned char* data, size_t len, void* ctx);
+
 static inline unsigned int
-write_to_file(const unsigned char* data, size_t len, void* f) 
-{
+write_to_file(const unsigned char* data, size_t len, void* f) {
     return len - fwrite(data, 1, len, f);
 }
 

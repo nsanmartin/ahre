@@ -15,7 +15,7 @@
 #include "src/wrapper-lexbor-curl.h"
 #include "src/doc-elem.h"
 
-
+//TODO: move to htmldoc-cache.h
 typedef struct { const char* url; size_t off; } Ahref;
 
 static inline int ahref_init_alloc(

@@ -18,7 +18,7 @@ Err cmd_fetch(Session session[static 1]) {
 }
 
 
-// deprecated
+///TOOD: rewrite using htmldoc-cache
 ////* writes anchors to current textbuf */
 ///static inline Err cmd_anchors(Session session[static 1]) {
 ///    HtmlDoc* htmldoc = session_current_doc(session);
@@ -29,6 +29,7 @@ Err cmd_fetch(Session session[static 1]) {
 ///    return textbuf_append_null(tb);
 ///}
 
+//TODO: use reset
 static inline Err cmd_clear(Session session[static 1]) {
     textbuf_cleanup(session_current_buf(session));
     return Ok;
@@ -45,9 +46,7 @@ static inline Err cmd_text(Session* session) {
 }
 
 static inline Err cmd_browse(Session session[static 1], const char* rest) {
-    if (*rest) {
-        try(cmd_set_url(session, rest));
-    }
+    if (*rest) try(cmd_set_url(session, rest));
     HtmlDoc* htmldoc = session_current_doc(session);
     htmldoc_reset(htmldoc);
     return htmldoc_browse(htmldoc);

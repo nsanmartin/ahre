@@ -23,13 +23,14 @@ typedef struct {
 	size_t len;
 } Str;
 
-//#include "src/generic.h"
-
+/* getters */
 size_t str_len(const Str s[static 1]);
 bool str_is_empty(const Str s[static 1]);
 
+/* ctor */
 int str_init(Str s[static 1], const char* cs);
-bool str_is_empty(const Str s[static 1]);
+
+/**/
 size_t mem_count_ocurrencies(char* data, size_t len, char c);
 const char* cstr_skip_space(const char* s);
 const char* cstr_next_space(const char* l);
@@ -57,8 +58,6 @@ inline static StrView strview(const char* s, size_t len) {
 inline static void strview_trim_space(StrView s[static 1]) {
     while(s->len && isspace(*(s->s))) { ++s->s; --s->len; }
     while(s->len > 1 && isspace(s->s[s->len-1])) { --s->len; }
-    //while(s->len > 1 && isspace(*(s->s)) && isspace(*(s->s+1)) ) { ++s->s; --s->len; }
-    //while(s->len > 2 && isspace(s->s[s->len-1]) && isspace(s->s[s->len-2])) { --s->len; }
 }
 
 Err str_prepend(Str s[static 1], const char* cs);

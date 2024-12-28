@@ -11,9 +11,13 @@ typedef struct UrlClient {
 } UrlClient;
 
 
+/* ctor */
 UrlClient* url_client_create(void);
+/* dtor */
 void url_client_destroy(UrlClient* url_client);
 
+
+/* curl easy escape */
 static inline char* url_client_escape_url(
     UrlClient url_client[static 1], const char* u, size_t len
 ) {
