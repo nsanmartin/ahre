@@ -26,7 +26,7 @@
 static const char* parse_ull(const char* tk, uintmax_t* ullp) {
     if (!tk || !*tk) { return NULL; }
     char* endptr = 0x0;
-    *ullp = strtoll(tk, &endptr, 36);
+    *ullp = strtoll(tk, &endptr, 10);
     if (ERANGE == errno && ULLONG_MAX == *ullp) { return NULL; }
     return endptr == tk ? NULL: endptr;
 }

@@ -137,16 +137,14 @@ cleanup_curlu:
     return err;
 }
 
-Err cmd_ahre(Session session[static 1], const char* link) {
+Err cmd_ahre_asterisk(Session session[static 1], size_t linknum) {
     Err err;
     HtmlDoc* newdoc;
-    long long unsigned linknum;
-    try( parse_base36_or_throw(&link, &linknum));
 
     HtmlDoc* htmldoc = session_current_doc(session);
     ArlOf(Ahref)* ahrefs = htmldoc_ahrefs(htmldoc);
 
-    Ahref* ahref = arlfn(Ahref, at)(ahrefs, (size_t)linknum);
+    Ahref* ahref = arlfn(Ahref, at)(ahrefs, linknum);
     if (!ahref) return "link number invalid";
 
     ///
@@ -181,6 +179,12 @@ Err cmd_ahre(Session session[static 1], const char* link) {
     return Ok;
 }
 
+Err cmd_ahre(Session session[static 1], const char* link) {
+    long long unsigned linknum;
+    try( parse_base36_or_throw(&link, &linknum));
+    return cmd_ahre_asterisk(session, (size_t)linknum);
+}
+
 Err cmd_eval(Session session[static 1], const char* line) {
     const char* rest = 0x0;
     line = cstr_skip_space(line);
@@ -208,23 +212,11 @@ Err cmd_eval(Session session[static 1], const char* line) {
     return "unknown cmd";
 }
 
-Err cmd_ahref_print(Session session[static 1], const char* line) {
-    line = cstr_skip_space(line);
-    if (!*line) return "line number not given";
-    if (!isdigit(*line)) return "line number mut consist in digits";
-    char* endptr = NULL;
-    long long unsigned linenum = strtoull(line, &endptr, 10);
-    if (errno == ERANGE)
-        return "line number out of range";
-    if (line == endptr)
-        return "line number could not be parsed";
-    if (linenum > SIZE_MAX) 
-        return "line number out of range (exceeds size max)";
-
+Err cmd_ahref_print(Session session[static 1], size_t linknum) {
     HtmlDoc* htmldoc = session_current_doc(session);
     ArlOf(Ahref)* ahrefs = htmldoc_ahrefs(htmldoc);
 
-    Ahref* ahref = arlfn(Ahref, at)(ahrefs, (size_t)linenum);
+    Ahref* ahref = arlfn(Ahref, at)(ahrefs, (size_t)linknum);
     if (!ahref) return "line number invalid";
     puts(ahref->url);
     return Ok;
@@ -236,8 +228,26 @@ Err cmd_ahref_eval(Session session[static 1], const char* line) {
         return "no document";
     }
     line = cstr_skip_space(line);
+    long long unsigned linknum;
+    try( parse_base36_or_throw(&line, &linknum));
+    line = cstr_skip_space(line);
+    if (*line && *cstr_skip_space(line + 1)) return "error unexpected:...";
     switch (*line) {
-        case '\'': return cmd_ahref_print(session, line + 1); 
+        case '\'': return cmd_ahref_print(session, (size_t)linknum); 
+        case '*': return cmd_ahre_asterisk(session, (size_t)linknum);
+        default: return "?";
+    }
+}
+
+Err cmd_input_eval(Session session[static 1], const char* line) {
+    if (!htmldoc_is_valid(session_current_doc(session)) ||!session->url_client) {
+        return "no document";
+    }
+    line = cstr_skip_space(line);
+    switch (*line) {
+        case '\'': return "print input not implemented yet";
+        case '*': return cmd_submit(session, line + 1); 
+        case '=': return cmd_input(session, line + 1); 
         default: return "?";
     }
 }
@@ -268,6 +278,8 @@ Err process_line(Session session[static 1], const char* line) {
         return ed_eval(session, line + 1);
     } else if(*line == '{') {
         return cmd_ahref_eval(session, line + 1);
+    } else if(*line == '<') {
+        return cmd_input_eval(session, line + 1);
     } else {
         return cmd_eval(session, line);
     }
