@@ -77,58 +77,41 @@ static Err _make_submit_curlu_rec(
 
 Err mk_submit_url (lxb_dom_node_t* form, HtmlDoc d[static 1], CURLU* out[static 1]) {
 
+    Err err;
     *out = curl_url_dup(url_curlu(htmldoc_curlu(d)));
     if (!*out) return "error: memory failure (curl_url_dup)";
 
     BufOf(lxb_char_t)* buf = &(BufOf(lxb_char_t)){0};
-    //if (!buffn(char, append)(submit_url, (char*)htmldoc->url, strlen(htmldoc->url))) goto free_url_dup;
+
     const lxb_char_t* action;
     size_t action_len;
     lexbor_find_attr_value(form, "action", &action, &action_len);
     if (!action_len) return "no action in form (formaction in button not supported yet)";
     if (!buffn(lxb_char_t, append)(buf, (lxb_char_t*)action, action_len)
         || !buffn(lxb_char_t, append)(buf, (lxb_char_t*)"\0", 1)) {
-        puts("error: memory failure (BufOf)");
+        err = "error: memory failure (BufOf)";
         goto free_url_dup;
     }
     
 
     CURLUcode curl_code = curl_url_set(*out, CURLUPART_PATH, (const char*)buf->items, 0);
     if (curl_code != CURLUE_OK) {
-        printf("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
+        err = err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
         goto clean_buf;
     }
     
     buffn(lxb_char_t, reset)(buf);
 
-    Err err;
     if ((err=_make_submit_curlu_rec(form, buf, *out))) {
         goto clean_buf;
     }
 
     buffn(lxb_char_t, clean)(buf);
     return Ok;
-
-    //trygotoerr (err, free_url_dup, make_submit_url(session->url_client, form, submit_url));
-    //trygotoerr(err, free_url_dup, _append_lexbor_name_value_attrs_if_both(session->url_client, *nodeptr, submit_url));
-    //if (!buffn(char, append)(submit_url, "\0", 1)) goto free_url_dup;
-
-    /////TODO: all this is duplicated, refactor!
-    ///if (!(newdoc=htmldoc_create(submit_url->items))) { err="error creating htmldoc"; goto free_url_dup; };
-    ///buffn(char, clean)(submit_url);
-    ///if (newdoc->url && newdoc->lxbdoc) {
-    ///    trygotoerr(err, destroy_new_htmldoc, htmldoc_fetch(newdoc, session_url_client(session)));
-    ///    trygotoerr(err, destroy_new_htmldoc, htmldoc_browse(newdoc));
-    ///}
-    ///htmldoc_destroy(htmldoc);
-    /////TODO: change this when multi docs gets implemented
-    ///session->htmldoc = newdoc;
-
-    ///return Ok;
 clean_buf:
     buffn(lxb_char_t, clean)(buf);
 free_url_dup:
     curl_url_cleanup(*out);
-    return "error ocurred";
+    return err;
 }
 
