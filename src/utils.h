@@ -80,4 +80,18 @@ append_unsigned_to_str(uintmax_t ui, char* str, size_t size, size_t len[static 1
     *len += numlen;
     return Ok;
 }
+
+static inline 
+void str_reverse(char* s, size_t n) {
+    if (n < 2) return;
+    for (size_t l = 0, r = n-1; l < r; ++l, r--) {
+        char tmp = s[l];
+        s[l] = s[r];
+        s[r] = tmp;
+    }
+}
+
+
+Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[static 1]);
+Err parse_base36_or_throw(const char** strptr, unsigned long long* num);
 #endif

@@ -61,27 +61,10 @@ Err cmd_set_url(Session session[static 1], const char* url) {
     return Ok;
 }
 
-Err parse_number_or_throw(const char** strptr, unsigned long long* num) {
-    if (!strptr || !*strptr) return "error: unexpected NULL ptr";
-    while(**strptr && isspace(**strptr)) ++*strptr;
-    if (!**strptr) return "number not given";
-    if (!isdigit(**strptr)) return "number must consist in digits";
-    char* endptr = NULL;
-    *num = strtoull(*strptr, &endptr, 10);
-    if (errno == ERANGE)
-        return "warn: number out of range";
-    if (*strptr == endptr)
-        return "warn: number could not be parsed";
-    if (*num > SIZE_MAX) 
-        return "warn: number out of range (exceeds size max)";
-    *strptr = endptr;
-    return Ok;
-}
-
 
 Err cmd_input(Session session[static 1], const char* line) {
     long long unsigned num;
-    try(parse_number_or_throw(&line, &num));
+    try(parse_base36_or_throw(&line, &num));
     HtmlDoc* htmldoc = session_current_doc(session);
     ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(htmldoc);
     LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(inputs, (size_t)num);
@@ -113,7 +96,7 @@ Err cmd_submit(Session session[static 1], const char* line) {
     HtmlDoc* newdoc;
     CURLU* curlu;
 
-    try(parse_number_or_throw(&line, &num));
+    try(parse_base36_or_throw(&line, &num));
     HtmlDoc* htmldoc = session_current_doc(session);
     ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(htmldoc);
 
@@ -154,22 +137,11 @@ cleanup_curlu:
     return err;
 }
 
-//TODO: remove duplicte code.
 Err cmd_ahre(Session session[static 1], const char* link) {
     Err err;
     HtmlDoc* newdoc;
-    if (!link) return "error: unexpected nullptr";
-    while(*link && isspace(*link)) ++link;
-    if (!*link) return "link number not given";
-    if (!isdigit(*link)) return "link number mut consist in digits";
-    char* endptr = NULL;
-    long long unsigned linknum = strtoull(link, &endptr, 10);
-    if (errno == ERANGE)
-        return "link number out of range";
-    if (link == endptr)
-        return "link number could not be parsed";
-    if (linknum > SIZE_MAX) 
-        return "link number out of range (exceeds size max)";
+    long long unsigned linknum;
+    try( parse_base36_or_throw(&link, &linknum));
 
     HtmlDoc* htmldoc = session_current_doc(session);
     ArlOf(Ahref)* ahrefs = htmldoc_ahrefs(htmldoc);
@@ -187,7 +159,7 @@ Err cmd_ahre(Session session[static 1], const char* link) {
         return err;
     }
 
-
+    //TODO: remove duplicte code.
     if (!(newdoc=htmldoc_create(NULL))) {
         curl_url_cleanup(curlu);
         return "error creating htmldoc";

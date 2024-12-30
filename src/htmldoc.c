@@ -78,9 +78,10 @@ static inline  Err
 _append_unsigned_to_bufof_char(uintmax_t ui, BufOf(char)* b) {
     char numbf[3 * sizeof ui] = {0};
     size_t len = 0;
-    if ((len = snprintf(numbf, (3 * sizeof ui), "%lu", ui)) > (3 * sizeof ui)) {
-        return "error: number too large for string buffer";
-    }
+    //if ((len = snprintf(numbf, (3 * sizeof ui), "%lu", ui)) > (3 * sizeof ui)) {
+    //    return "error: number too large for string buffer";
+    //}
+    try( uint_to_base36_str(numbf, 3 * sizeof ui, ui, &len));
     if (!buffn(char, append)(b, numbf, len)) return "error appending unsigned to bufof char";
     return Ok;
 }

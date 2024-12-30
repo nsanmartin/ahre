@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "src/error.h"
+#include "src/utils.h"
 
 //static constexpr size_t MAX_MSG_LEN = 512;
 #define MAX_MSG_LEN 1024
@@ -69,15 +70,6 @@ static Err _msg_buf_append(char* buf[static 1], const char* s, size_t sz) {
     return Ok;
 }
 
-static void _swap_str(char* s, size_t n) {
-    if (n < 2) return;
-    for (size_t l = 0, r = n-1; l < r; ++l, r--) {
-        char tmp = s[l];
-        s[l] = s[r];
-        s[r] = tmp;
-    }
-}
-
 static Err _num_to_str(char* buf, size_t sz, int n, size_t len[static 1]) {
     if (!sz) return "error: not enough size to convert num to str.";
     if (n == 0) {
@@ -108,7 +100,7 @@ static Err _num_to_str(char* buf, size_t sz, int n, size_t len[static 1]) {
         n /= 10;
     }
     if (sz == 0 && n != 0) return "error: not enough size to convert num to str.";
-    _swap_str(num + negative, *len - negative);
+    str_reverse(num + negative, *len - negative);
     return Ok;
 }
 
