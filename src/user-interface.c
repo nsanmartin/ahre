@@ -62,19 +62,48 @@ Err cmd_set_url(Session session[static 1], const char* url) {
 }
 
 
-Err cmd_input(Session session[static 1], const char* line) {
-    long long unsigned num;
-    try(parse_base36_or_throw(&line, &num));
+static Err _get_input_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outnode[static 1]) {
     HtmlDoc* htmldoc = session_current_doc(session);
     ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(htmldoc);
-    LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(inputs, (size_t)num);
+    LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(inputs, ix);
     if (!nodeptr) return "link number invalid";
+    *outnode = *nodeptr;
+    return Ok;
+}
 
-    puts(line);
+Err cmd_input_print(Session session[static 1], size_t ix) {
+    lxb_dom_node_t* node;
+    try( _get_input_by_ix(session, ix, &node));
+    BufOf(const_char)* buf = &(BufOf(const_char)){0};
+    //TODO: cleanup on failure
+    try( lexbor_node_to_str(node, buf));
+    bool write_err = fwrite(buf->items, sizeof(char), buf->len, stdout) == buf->len;
+    buffn(const_char, clean)(buf);
+    return write_err ? Ok : "error: fwrite failure";
+}
+
+Err cmd_input(Session session[static 1], const char* line) {
+    line = cstr_skip_space(line);
+    long long unsigned linknum;
+    try( parse_base36_or_throw(&line, &linknum));
+    line = cstr_skip_space(line);
+    lxb_dom_node_t* node;
+    try( _get_input_by_ix(session, linknum, &node));
     if (!*line) return "borrar?";
     if (*line == ' ' || *line == '=') ++line;
 
-    try(lexbor_set_attr_value(*nodeptr, "value", line));
+    try(lexbor_set_attr_value(node, "value", line));
+
+    return Ok;
+}
+
+Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) {
+    lxb_dom_node_t* node;
+    try( _get_input_by_ix(session, ix, &node));
+    if (!*line) return "borrar?";
+    if (*line == ' ' || *line == '=') ++line;
+
+    try(lexbor_set_attr_value(node, "value", line));
 
     return Ok;
 }
@@ -90,18 +119,16 @@ Err cmd_input(Session session[static 1], const char* line) {
 ///    return "error: TODO use here strerror ...";
 ///}
 
-Err cmd_submit(Session session[static 1], const char* line) {
+Err _cmd_submit_ix(Session session[static 1], size_t ix) {
     Err err = Ok;
-    long long unsigned num;
     HtmlDoc* newdoc;
     CURLU* curlu;
 
-    try(parse_base36_or_throw(&line, &num));
     HtmlDoc* htmldoc = session_current_doc(session);
     ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(htmldoc);
 
 
-    LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(inputs, (size_t)num);
+    LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(inputs, ix);
     if (!nodeptr) return "link number invalid";
     if (!_lexbor_attr_has_value(*nodeptr, "type", "submit")) return "warn: not submit input";
 
@@ -135,6 +162,12 @@ cleanup_htmldoc:
 cleanup_curlu:
     curl_url_cleanup(curlu);
     return err;
+}
+
+Err cmd_submit(Session session[static 1], const char* line) {
+    long long unsigned num;
+    try(parse_base36_or_throw(&line, &num));
+    return _cmd_submit_ix(session, num);
 }
 
 Err cmd_ahre_asterisk(Session session[static 1], size_t linknum) {
@@ -231,7 +264,7 @@ Err cmd_ahref_eval(Session session[static 1], const char* line) {
     long long unsigned linknum;
     try( parse_base36_or_throw(&line, &linknum));
     line = cstr_skip_space(line);
-    if (*line && *cstr_skip_space(line + 1)) return "error unexpected:...";
+    //if (*line && *cstr_skip_space(line + 1)) return "error unexpected:..."; TODO: only check when necessary
     switch (*line) {
         case '\'': return cmd_ahref_print(session, (size_t)linknum); 
         case '*': return cmd_ahre_asterisk(session, (size_t)linknum);
@@ -244,10 +277,15 @@ Err cmd_input_eval(Session session[static 1], const char* line) {
         return "no document";
     }
     line = cstr_skip_space(line);
+    long long unsigned linknum;
+    try( parse_base36_or_throw(&line, &linknum));
+    line = cstr_skip_space(line);
+    //if (*line && *cstr_skip_space(line + 1)) return "error unexpected:..."; TODO ^
     switch (*line) {
-        case '\'': return "print input not implemented yet";
-        case '*': return cmd_submit(session, line + 1); 
-        case '=': return cmd_input(session, line + 1); 
+        case '\'': return cmd_input_print(session, linknum);
+                   // TODO: pass linknum to cmd_submit
+        case '*': return _cmd_submit_ix(session, linknum);
+        case '=': return _cmd_input_ix(session, linknum, line + 1); 
         default: return "?";
     }
 }

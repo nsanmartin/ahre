@@ -44,4 +44,5 @@ lxb_dom_node_t* _find_parent_form(lxb_dom_node_t* node) ;
 bool _lexbor_attr_has_value(
     lxb_dom_node_t node[static 1], const char* attr, const char* expected_value
 ) ;
+Err lexbor_node_to_str(lxb_dom_node_t* node, BufOf(const_char)* buf);
 #endif

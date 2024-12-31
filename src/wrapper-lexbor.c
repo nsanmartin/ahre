@@ -204,6 +204,32 @@ void lexbor_find_attr_value(
     *out = NULL; *len = 0;
 }
 
+Err lexbor_node_to_str(lxb_dom_node_t* node, BufOf(const_char)* buf) {
+    lxb_dom_attr_t* attr = lxb_dom_element_first_attribute(lxb_dom_interface_element(node));
+    const char* nullstr = "(null)";
+    const char* indentstr = "    ";
+    for (;attr;  attr = lxb_dom_element_next_attribute(attr)) {
+        size_t namelen;
+        const lxb_char_t* name = lxb_dom_attr_qualified_name(attr, &namelen);
+        if (!namelen || !name)
+            return "error: expecting name for attr but lxb_dom_attr_qualified_name returned null";
+
+        size_t valuelen;
+        const lxb_char_t* value = lxb_dom_attr_value(attr, &valuelen);
+
+        if (!buffn(const_char, append)(buf, indentstr, sizeof indentstr)) return "error: mem failure (BufOf.append)";
+        if (!buffn(const_char, append)(buf, (const char*)name, namelen)) return "error: mem failure (BufOf.append)";
+        if (!buffn(const_char, append)(buf, "=", 1)) return "error: mem failure (BufOf.append)";
+        if (valuelen && valuelen) {
+            if (!buffn(const_char, append)(buf, (const char*)value, valuelen)) return "error: mem failure (BufOf.append)";
+        } else {
+            if (!buffn(const_char, append)(buf, nullstr, sizeof nullstr)) return "error: mem failure (BufOf.append)";
+        }
+        if (!buffn(const_char, append)(buf, "\n", 1)) return "error: mem failure (BufOf.append)";
+    }
+    return Ok;
+}
+
 lxb_dom_node_t*
 _find_parent_form(lxb_dom_node_t* node) {
     for (;node; node = node->parent) {

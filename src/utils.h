@@ -10,7 +10,7 @@
 #define BT char
 #include <buf.h>
 
-typedef const char* const_char;
+typedef const char const_char;
 #define BT const_char
 #include <buf.h>
 
