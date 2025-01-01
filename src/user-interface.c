@@ -1,18 +1,19 @@
-#include <string.h>
 #include <errno.h>
-#include <stdlib.h>
-#include <readline/readline.h>
 #include <readline/history.h>
+#include <readline/readline.h>
+#include <stdlib.h>
+#include <string.h>
 
+#include "src/cmd-ed.h"
+#include "src/constants.h"
 #include "src/debug.h"
 #include "src/mem.h"
 #include "src/ranges.h"
+#include "src/url.h"
 #include "src/user-cmd.h"
 #include "src/user-interface.h"
 #include "src/utils.h"
-#include "src/cmd-ed.h"
 #include "src/wrapper-lexbor-curl.h"
-#include "src/url.h"
 
 //TODO: move this to wrapper-lexbor-curl.h
 Err mk_submit_url (lxb_dom_node_t* form, HtmlDoc d[static 1], CURLU* out[static 1]) ;
@@ -245,6 +246,18 @@ Err cmd_eval(Session session[static 1], const char* line) {
     return "unknown cmd";
 }
 
+//TODO: sotr lxb_node_t* and implement print verbose like the input one
+//Err cmd_ahref_print_verbose(Session session[static 1], size_t ix) {
+//    lxb_dom_node_t* node;
+//    try( _get_input_by_ix(session, ix, &node));
+//    BufOf(const_char)* buf = &(BufOf(const_char)){0};
+//    //TODO: cleanup on failure
+//    try( lexbor_node_to_str(node, buf));
+//    bool write_err = fwrite(buf->items, sizeof(char), buf->len, stdout) == buf->len;
+//    buffn(const_char, clean)(buf);
+//    return write_err ? Ok : "error: fwrite failure";
+//}
+
 Err cmd_ahref_print(Session session[static 1], size_t linknum) {
     HtmlDoc* htmldoc = session_current_doc(session);
     ArlOf(Ahref)* ahrefs = htmldoc_ahrefs(htmldoc);
@@ -267,6 +280,7 @@ Err cmd_ahref_eval(Session session[static 1], const char* line) {
     //if (*line && *cstr_skip_space(line + 1)) return "error unexpected:..."; TODO: only check when necessary
     switch (*line) {
         case '\'': return cmd_ahref_print(session, (size_t)linknum); 
+        case '"': return cmd_ahref_print(session, (size_t)linknum); 
         case '*': return cmd_ahre_asterisk(session, (size_t)linknum);
         default: return "?";
     }
@@ -282,8 +296,7 @@ Err cmd_input_eval(Session session[static 1], const char* line) {
     line = cstr_skip_space(line);
     //if (*line && *cstr_skip_space(line + 1)) return "error unexpected:..."; TODO ^
     switch (*line) {
-        case '\'': return cmd_input_print(session, linknum);
-                   // TODO: pass linknum to cmd_submit
+        case '"': return cmd_input_print(session, linknum);
         case '*': return _cmd_submit_ix(session, linknum);
         case '=': return _cmd_input_ix(session, linknum, line + 1); 
         default: return "?";
@@ -314,9 +327,9 @@ Err process_line(Session session[static 1], const char* line) {
     if (*line == '/') { return "/ (search) not implemented"; }
     else if (*line == ':') {
         return ed_eval(session, line + 1);
-    } else if(*line == '{') {
+    } else if(*line == ANCHOR_OPEN_STR[0]) {
         return cmd_ahref_eval(session, line + 1);
-    } else if(*line == '<') {
+    } else if(*line == INPUT_OPEN_STR[0]) {
         return cmd_input_eval(session, line + 1);
     } else {
         return cmd_eval(session, line);

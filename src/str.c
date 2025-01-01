@@ -101,7 +101,7 @@ const char* cstr_trim_space(char* s) {
     return s;
 }
  
-bool is_all_space(const char* data, size_t len) {
+bool mem_is_all_space(const char* data, size_t len) {
     for(; len && isspace(*data); --len, ++data)
         ;
     return !len;

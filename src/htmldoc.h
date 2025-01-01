@@ -122,6 +122,18 @@ static inline void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
     *htmldoc_cache(htmldoc) = (DocCache){0};
 }
 
+
+typedef struct { 
+    HtmlDoc* htmldoc;
+    bool color;
+    BufOf(char) lazy_str;
+} BrowseCtx;
+
+static inline HtmlDoc* browse_ctx_htmldoc(BrowseCtx ctx[static 1]) { return ctx->htmldoc; }
+static inline TextBuf* browse_ctx_textbuf(BrowseCtx ctx[static 1]) {
+    return htmldoc_textbuf(browse_ctx_htmldoc(ctx));
+}
+
 /* external */
 Err
 curl_lexbor_fetch_document(UrlClient url_client[static 1], HtmlDoc htmldoc[static 1]);
@@ -161,4 +173,16 @@ static inline const char* htmldoc_abs_url_dup(const HtmlDoc htmldoc[static 1], c
         return cstr_cat_dup(htmldoc_url(htmldoc), url);
     return strdup(url);
 }
+
+#define serialize_lit_str(LitStr, CallBack, Context) \
+ ((LXB_STATUS_OK != CallBack((lxb_char_t*)LitStr, sizeof LitStr, Context)) \
+ ?  "error serializing literal string" : Ok)
+
+#define serialize_literal_color_str(EscSeq, CallBack, Context) \
+    ((Context)->color ? serialize_lit_str(EscSeq, CallBack, Context) : Ok)
+
+/* htmldoc_tag_a.c */
+Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]);
+Err parse_href_attrs(lxb_dom_node_t* node, BrowseCtx ctx[static 1]);
+Err parse_append_ahref(BrowseCtx ctx[static 1], const char* url, size_t len);
 #endif
