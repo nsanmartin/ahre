@@ -18,6 +18,9 @@
 [ ] brwose properly blockquote 
 [ ] brwose properly center 
 [ ] store LxbNodePtr for img elements
+[ ] implement ';' as cmd separator so that 'br;:%p' means first browse then print all
+[ ] implement def (or some other keyword) to define procedures
+[ ] add command line option to read commands on startup
 
 # DONE
 [*] Accept files apart from urls

@@ -158,10 +158,10 @@ Err _cmd_submit_ix(Session session[static 1], size_t ix) {
     
     } else { puts("expected form, not found"); }
     return Ok;
-cleanup_htmldoc:
-    htmldoc_destroy(newdoc);
 cleanup_curlu:
     curl_url_cleanup(curlu);
+cleanup_htmldoc:
+    htmldoc_destroy(newdoc);
     return err;
 }
 
@@ -212,18 +212,8 @@ Err cmd_anchor_asterisk(Session session[static 1], size_t linknum) {
     LxbNodePtr* a = arlfn(LxbNodePtr, at)(anchors, linknum);
     if (!a) return "link number invalid";
 
-    ///
     CURLU* curlu = url_curlu(htmldoc_curlu(htmldoc));
     try( dup_curl_with_anchors_href(*a, &curlu));
-
-    ///
-    //CURLU* curlu = curl_url_dup(url_curlu(htmldoc_curlu(htmldoc)));
-    //if (!curlu) return "error: memory failure (curl_url_dup)";
-    //err = curlu_set_url(curlu, a->url);
-    //if (err) { /// /*todo cleanup */ return err;
-    //    curl_url_cleanup(curlu);
-    //    return err;
-    //}
 
     //TODO: remove duplicte code.
     if (!(newdoc=htmldoc_create(NULL))) {
