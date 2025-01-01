@@ -52,43 +52,22 @@ _append_unsigned_to_bufof_char(uintmax_t ui, BufOf(char)* b) {
 }
 
 
-
-Err parse_append_ahref(BrowseCtx ctx[static 1], const char* url, size_t len) {
-    if (!url) return "error: NULL url";
-
-    ArlOf(Ahref)* ahrefs = htmldoc_ahrefs(browse_ctx_htmldoc(ctx));
-    if (!buffn(char, append)(&ctx->lazy_str, ANCHOR_OPEN_STR, sizeof IMAGE_OPEN_STR))
-        return "error: failed to append to bufof";
-    try(_append_unsigned_to_bufof_char(ahrefs->len, &ctx->lazy_str));
-    if (!buffn(char, append)(&ctx->lazy_str, " ", 1)) return "error: failed to append to bufof";
-
-    Ahref a = (Ahref){0};
-    if (ahref_init_alloc(&a, url, len, textbuf_len(browse_ctx_textbuf(ctx))))
-        return "error: intialiazing Ahref";
-    if (!arlfn(Ahref,append)(ahrefs, &a)) {
-        free((char*)a.url);
-        return "error: lip set";
-    }
-    return Ok;
-}
-
-
-Err parse_href_attrs(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    const lxb_char_t* data;
-    size_t data_len;
-    lexbor_find_attr_value(node, "href", &data, &data_len);
-    if (data != NULL) {
-        Err err = parse_append_ahref(ctx, (const char*)data, data_len);
-        if (err) return err;
-    } else
-        puts("warn log: expecting 'href' but not found");
-    return Ok;
-}
-
-//TODO: move instance of Ahref here as well as appending it
 Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     if (!buffn(char, append)(&ctx->lazy_str, EscCodeBlue, sizeof EscCodeBlue)) return "error: failed to append to bufof";
-    try ( parse_href_attrs(node, ctx));
+
+
+    HtmlDoc* d = browse_ctx_htmldoc(ctx);
+    ArlOf(LxbNodePtr)* anchors = htmldoc_anchors(d);
+    const size_t anchor_num = anchors->len;
+    if (!arlfn(LxbNodePtr,append)(anchors, &node)) 
+        return "error: lip set";
+
+    if (!buffn(char, append)(&ctx->lazy_str, ANCHOR_OPEN_STR, sizeof IMAGE_OPEN_STR))
+        return "error: failed to append to bufof";
+    try(_append_unsigned_to_bufof_char(anchor_num, &ctx->lazy_str));
+    if (!buffn(char, append)(&ctx->lazy_str, " ", 1)) return "error: failed to append to bufof";
+
+    //try ( parse_href_attrs(node, ctx));
     try ( _browse_childs(node, cb, ctx));
     try ( serialize_lit_str(ANCHOR_CLOSE_STR, cb, ctx));
     try ( serialize_literal_color_str(EscCodeBlue, cb, ctx));

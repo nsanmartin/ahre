@@ -16,39 +16,17 @@
 #include "src/doc-elem.h"
 #include "src/url.h"
 
-//TODO: move to htmldoc-cache.h
-typedef struct { const char* url; size_t off; } Ahref;
-
-static inline int ahref_init_alloc(
-    Ahref a[static 1], const char* url, size_t len, size_t off
-)
-{
-    const char* copy = mem_to_dup_str(url, len);
-    if (!copy) { return -1; }
-    *a = (Ahref){.url=copy, .off=off};
-    return 0;
-}
-static inline void
-ahref_clean(Ahref a[static 1]) { std_free((char*)(a->url)); }
-
-#define T Ahref
-#define TClean ahref_clean
-#include <arl.h>
-
+//TODO: store Img node instead
 typedef struct { const char* src; size_t off; } Img;
-static inline int img_init_alloc(
-    Img i[static 1], const char* src, size_t srclen, size_t off
-)
-{
+static inline int
+img_init_alloc(Img i[static 1], const char* src, size_t srclen, size_t off) {
     const char* srccopy = mem_to_dup_str(src, srclen);
     if (!srccopy) { return -1; }
     *i = (Img){.src=srccopy, .off=off};
     return 0;
 }
-static inline void
-img_clean(Img i[static 1]) {
-    std_free((char*)(i->src));
-}
+
+static inline void img_clean(Img i[static 1]) { std_free((char*)(i->src)); }
 #define T Img
 #define TClean img_clean
 #include <arl.h>
@@ -63,7 +41,7 @@ typedef lxb_dom_node_t* LxbNodePtr;
 typedef struct {
     BufOf(char) sourcebuf;
     TextBuf textbuf;
-    ArlOf(Ahref) ahrefs;
+    ArlOf(LxbNodePtr) anchors;
     ArlOf(Img) imgs;
     ArlOf(LxbNodePtr) inputs;
 } DocCache;
@@ -89,8 +67,8 @@ htmldoc_sourcebuf(HtmlDoc d[static 1]) { return &d->cache.sourcebuf; }
 static inline TextBuf*
 htmldoc_textbuf(HtmlDoc d[static 1]) { return &d->cache.textbuf; }
 
-static inline ArlOf(Ahref)*
-htmldoc_ahrefs(HtmlDoc d[static 1]) { return &d->cache.ahrefs; }
+static inline ArlOf(LxbNodePtr)*
+htmldoc_anchors(HtmlDoc d[static 1]) { return &d->cache.anchors; }
 
 static inline ArlOf(Img)*
 htmldoc_imgs(HtmlDoc d[static 1]) { return &d->cache.imgs; }
@@ -116,7 +94,7 @@ void htmldoc_destroy(HtmlDoc* htmldoc) ;
 static inline void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
     textbuf_cleanup(htmldoc_textbuf(htmldoc));
     buffn(char, clean)(htmldoc_sourcebuf(htmldoc));
-    arlfn(Ahref,clean)(htmldoc_ahrefs(htmldoc));
+    arlfn(LxbNodePtr,clean)(htmldoc_anchors(htmldoc));
     arlfn(Img,clean)(htmldoc_imgs(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
     *htmldoc_cache(htmldoc) = (DocCache){0};

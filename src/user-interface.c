@@ -171,25 +171,59 @@ Err cmd_submit(Session session[static 1], const char* line) {
     return _cmd_submit_ix(session, num);
 }
 
+Err dup_curl_with_anchors_href(
+    lxb_dom_node_t* anchor,
+    CURLU* u[static 1]
+) {
+
+    const lxb_char_t* data;
+    size_t data_len;
+    lexbor_find_attr_value(anchor, "href", &data, &data_len);
+    if (!data || !data_len)
+        return "anchor does not have href";
+
+    CURLU* dup = curl_url_dup(*u);
+    if (!dup) return "error: memory failure (curl_url_dup)";
+    BufOf(const_char)*buf = &(BufOf(const_char)){0};
+    if ( !buffn(const_char, append)(buf, (const char*)data, data_len)
+       ||!buffn(const_char, append)(buf, "\0", 1)) {
+        curl_url_cleanup(dup);
+        return "error: buffn append failure";
+    }
+    Err err = curlu_set_url(dup, buf->items);
+    buffn(const_char, clean)(buf);
+    if (err) { /// /*todo cleanup */ return err;
+        curl_url_cleanup(dup);
+        return err;
+    }
+    *u = dup;
+    //Err err = parse_append_ahref(ctx, (const char*)data, data_len);
+    //if (err) return err;
+    return Ok;
+}
+
 Err cmd_ahre_asterisk(Session session[static 1], size_t linknum) {
     Err err;
     HtmlDoc* newdoc;
 
     HtmlDoc* htmldoc = session_current_doc(session);
-    ArlOf(Ahref)* ahrefs = htmldoc_ahrefs(htmldoc);
+    ArlOf(LxbNodePtr)* anchors = htmldoc_anchors(htmldoc);
 
-    Ahref* ahref = arlfn(Ahref, at)(ahrefs, linknum);
-    if (!ahref) return "link number invalid";
+    LxbNodePtr* a = arlfn(LxbNodePtr, at)(anchors, linknum);
+    if (!a) return "link number invalid";
 
     ///
+    CURLU* curlu = url_curlu(htmldoc_curlu(htmldoc));
+    try( dup_curl_with_anchors_href(*a, &curlu));
 
-    CURLU* curlu = curl_url_dup(url_curlu(htmldoc_curlu(htmldoc)));
-    if (!curlu) return "error: memory failure (curl_url_dup)";
-    err = curlu_set_url(curlu, ahref->url);
-    if (err) { /// /*todo cleanup */ return err;
-        curl_url_cleanup(curlu);
-        return err;
-    }
+    ///
+    //CURLU* curlu = curl_url_dup(url_curlu(htmldoc_curlu(htmldoc)));
+    //if (!curlu) return "error: memory failure (curl_url_dup)";
+    //err = curlu_set_url(curlu, a->url);
+    //if (err) { /// /*todo cleanup */ return err;
+    //    curl_url_cleanup(curlu);
+    //    return err;
+    //}
 
     //TODO: remove duplicte code.
     if (!(newdoc=htmldoc_create(NULL))) {
@@ -247,7 +281,7 @@ Err cmd_eval(Session session[static 1], const char* line) {
 }
 
 //TODO: sotr lxb_node_t* and implement print verbose like the input one
-//Err cmd_ahref_print_verbose(Session session[static 1], size_t ix) {
+//Err cmd_anchor_print_verbose(Session session[static 1], size_t ix) {
 //    lxb_dom_node_t* node;
 //    try( _get_input_by_ix(session, ix, &node));
 //    BufOf(const_char)* buf = &(BufOf(const_char)){0};
@@ -258,14 +292,18 @@ Err cmd_eval(Session session[static 1], const char* line) {
 //    return write_err ? Ok : "error: fwrite failure";
 //}
 
-Err cmd_ahref_print(Session session[static 1], size_t linknum) {
+Err cmd_anchor_print(Session session[static 1], size_t linknum) {
     HtmlDoc* htmldoc = session_current_doc(session);
-    ArlOf(Ahref)* ahrefs = htmldoc_ahrefs(htmldoc);
+    ArlOf(LxbNodePtr)* anchors = htmldoc_anchors(htmldoc);
 
-    Ahref* ahref = arlfn(Ahref, at)(ahrefs, (size_t)linknum);
-    if (!ahref) return "line number invalid";
-    puts(ahref->url);
-    return Ok;
+    LxbNodePtr* a = arlfn(LxbNodePtr, at)(anchors, (size_t)linknum);
+    if (!a) return "line number invalid";
+    
+    BufOf(const_char)* buf = &(BufOf(const_char)){0};
+    try( lexbor_node_to_str(*a, buf));
+    bool write_err = fwrite(buf->items, sizeof(char), buf->len, stdout) == buf->len;
+    buffn(const_char, clean)(buf);
+    return write_err ? Ok : "error: fwrite failure";
 }
 
 
@@ -279,8 +317,8 @@ Err cmd_ahref_eval(Session session[static 1], const char* line) {
     line = cstr_skip_space(line);
     //if (*line && *cstr_skip_space(line + 1)) return "error unexpected:..."; TODO: only check when necessary
     switch (*line) {
-        case '\'': return cmd_ahref_print(session, (size_t)linknum); 
-        case '"': return cmd_ahref_print(session, (size_t)linknum); 
+        case '\'': return cmd_anchor_print(session, (size_t)linknum); 
+        case '"': return cmd_anchor_print(session, (size_t)linknum); 
         case '*': return cmd_ahre_asterisk(session, (size_t)linknum);
         default: return "?";
     }

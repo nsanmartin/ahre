@@ -340,7 +340,7 @@ HtmlDoc* htmldoc_create(const char* url) {
 
 void htmldoc_reset(HtmlDoc htmldoc[static 1]) {
     textbuf_cleanup(htmldoc_textbuf(htmldoc));
-    arlfn(Ahref,clean)(htmldoc_ahrefs(htmldoc));
+    arlfn(LxbNodePtr,clean)(htmldoc_anchors(htmldoc));
     arlfn(Img,clean)(htmldoc_imgs(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
 }
