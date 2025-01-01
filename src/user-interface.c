@@ -202,7 +202,7 @@ Err dup_curl_with_anchors_href(
     return Ok;
 }
 
-Err cmd_ahre_asterisk(Session session[static 1], size_t linknum) {
+Err cmd_anchor_asterisk(Session session[static 1], size_t linknum) {
     Err err;
     HtmlDoc* newdoc;
 
@@ -250,7 +250,7 @@ Err cmd_ahre_asterisk(Session session[static 1], size_t linknum) {
 Err cmd_ahre(Session session[static 1], const char* link) {
     long long unsigned linknum;
     try( parse_base36_or_throw(&link, &linknum));
-    return cmd_ahre_asterisk(session, (size_t)linknum);
+    return cmd_anchor_asterisk(session, (size_t)linknum);
 }
 
 Err cmd_eval(Session session[static 1], const char* line) {
@@ -319,7 +319,7 @@ Err cmd_ahref_eval(Session session[static 1], const char* line) {
     switch (*line) {
         case '\'': return cmd_anchor_print(session, (size_t)linknum); 
         case '"': return cmd_anchor_print(session, (size_t)linknum); 
-        case '*': return cmd_ahre_asterisk(session, (size_t)linknum);
+        case '*': return cmd_anchor_asterisk(session, (size_t)linknum);
         default: return "?";
     }
 }

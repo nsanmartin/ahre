@@ -2,9 +2,7 @@
 [ ] Allow reusable buffer for files
 [ ] use trie for commands and include docs
 [ ] add cmd save_source
-[ ] implement try as `do{Err AHRE_ERR_=(Expr); if(AHRE_ERR_) return AHRE_ERR_;}while(0)`
 [ ] define and add license (GNU, Apache, MIT, ...?)
-[ ] implement editable attributes such as input value
 [ ] implement htmldoc array to allow some history preservation
 [ ] document basic funtionality (usefull until cmd self docuemnt themselfs)
 [ ] Unicode support
@@ -16,6 +14,10 @@
 [ ] wrap lexbor functions with Err returning wrappers whenever possible
 [ ] implement cookies
 [ ] implement post method for forms
+[ ] brwose properly anchors 
+[ ] brwose properly blockquote 
+[ ] brwose properly center 
+[ ] store LxbNodePtr for img elements
 
 # DONE
 [*] Accept files apart from urls
@@ -23,3 +25,5 @@
 [*] use array of line pointers in aebuf
 [*] implement browse fn similar to lexbor/examples/lexbor/html/html2sexpr.c
 [*] use no prefix for ahre cmds and ':' for ed cmds
+[*] implement try as `do{Err AHRE_ERR_=(Expr); if(AHRE_ERR_) return AHRE_ERR_;}while(0)`
+[*] implement editable attributes such as input value
