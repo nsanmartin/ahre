@@ -1,3 +1,4 @@
 TODO:
-[ ] cmd_submit cleanup on failure
-    test: browse local google's html and submit
+
+DONE:
+[*] cmd_submit cleanup on failure. Test: browse local google's html and submit
