@@ -1,6 +1,4 @@
 #include <errno.h>
-#include <readline/history.h>
-#include <readline/readline.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -11,6 +9,7 @@
 #include "src/ranges.h"
 #include "src/url.h"
 #include "src/user-cmd.h"
+#include "src/user-input.h"
 #include "src/user-interface.h"
 #include "src/utils.h"
 #include "src/wrapper-lexbor-curl.h"
@@ -20,10 +19,10 @@ Err mk_submit_url (lxb_dom_node_t* form, HtmlDoc d[static 1], CURLU* out[static 
 
 Err read_line_from_user(Session session[static 1]) {
     char* line = 0x0;
-    line = readline("");
+    line = read_user_input("");
     Err err = session->user_line_callback(session, line);
     if (line && *cstr_skip_space(line)) {
-        add_history(line);
+        add_to_user_input_history(line);
     }
     destroy(line);
     return err;
