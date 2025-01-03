@@ -9,7 +9,8 @@
 
 enum { TestOk = 0, TestFail = 1 };
 
-#define utest_assert(Expr, Tag) do{ if(!(Expr)) { goto Tag;} }while(0)
+#define utest_assert(Expr, Tag, Linenum) do{ \
+    if(!(Expr)) { fprintf(stderr, "Assertion in line %d failed. ", Linenum); goto Tag;} }while(0)
 
 #define clean_and_ret(Status, Tag, Cleanup) do{\
     Status = 0; \
@@ -18,19 +19,18 @@ Tag: \
     return Status; \
 } while (0)
 
-//#define utest_assert_clean(Expr)  
-//    if (!(Expr)) { fprintf(stderr, RED "Test failed: %s" RESET "n", __func__); goto fail_cleanup; }
-//
-//#define utest_assert_str_eq(Expected, String) 
-//    utest_assert(strcmp(Expected, String) == 0)
-//
-//#define utest_assert_str_eq_clean(Expected, String) 
-//    utest_assert_clean(strcmp(Expected, String) == 0)
-//
-//#define utest_finally_and_return(Clean) do { 
-//	Clean; return TestOk; 
-//fail_cleanup: 
-//	Clean; return TestFail; 
-//} while(0)
+#define print_running_test(TestFname) do{\
+    printf("Running %s...", TestFname); }while(0)
+
+#define print_test_passed() do{ \
+    printf(" %sall tests passed%s\n", GREEN, RESET); }while(0)
+
+#define print_test_failed(TestFname, ErrorCount) do{ \
+    fprintf(stderr, " %s%d errors%s\n",  RED, ErrorCount, RESET); }while(0)
+
+#define print_test_result(ErrorCount) do{\
+    if (ErrorCount) fprintf(stderr, " %s%d errors%s\n",  RED, ErrorCount, RESET); \
+    else printf(" %sall tests passed%s\n", GREEN, RESET); \
+}while(0)
 
 #endif
