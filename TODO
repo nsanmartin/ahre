@@ -22,6 +22,8 @@
 [ ] implement ranges for doc's cache's elements. Vg: [1,4' means show anchors 1 to 4
 [ ] use libchafa for images
 [ ] implement search in textbuf with /
+[?] fix url construction on submit (it could be absolute or not)
+[ ] display form elements with <>
 
 # DONE
 [*] Accept files apart from urls

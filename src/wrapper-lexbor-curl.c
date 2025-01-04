@@ -86,44 +86,54 @@ static Err _make_submit_curlu_rec(
     return Ok;
 }
 
+static Err _submit_url_set_action(
+    BufOf(lxb_char_t)* buf,
+    const lxb_char_t* action,
+    size_t action_len,
+    CURLU* out
+) {
+    if (  !buffn(lxb_char_t, append)(buf, (lxb_char_t*)action, action_len)
+       || !buffn(lxb_char_t, append)(buf, (lxb_char_t*)"\0", 1)) {
+        return "error: memory failure (BufOf)";
+    }
 
-Err mk_submit_url (lxb_dom_node_t* form, HtmlDoc d[static 1], CURLU* out[static 1]) {
+    CURLUcode curl_code = curl_url_set(out, CURLUPART_URL, (const char*)buf->items, 0);
+    if (curl_code != CURLUE_OK) {
+        return err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
+    }
+    
+    buffn(lxb_char_t, reset)(buf);
+    return Ok;
+}
 
+Err mk_submit_url (lxb_dom_node_t* form, CURLU* out[static 1]) {
     Err err;
-    *out = curl_url_dup(url_cu(htmldoc_url(d)));
-    if (!*out) return "error: memory failure (curl_url_dup)";
-
-    BufOf(lxb_char_t)* buf = &(BufOf(lxb_char_t)){0};
 
     const lxb_char_t* action;
     size_t action_len;
     lexbor_find_attr_value(form, "action", &action, &action_len);
-    if (!action_len) return "no action in form (formaction in button not supported yet)";
-    if (!buffn(lxb_char_t, append)(buf, (lxb_char_t*)action, action_len)
-        || !buffn(lxb_char_t, append)(buf, (lxb_char_t*)"\0", 1)) {
-        err = "error: memory failure (BufOf)";
-        goto free_url_dup;
-    }
-    
 
-    CURLUcode curl_code = curl_url_set(*out, CURLUPART_PATH, (const char*)buf->items, 0);
-    if (curl_code != CURLUE_OK) {
-        err = err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
-        goto clean_buf;
-    }
-    
-    buffn(lxb_char_t, reset)(buf);
+    const lxb_char_t* method;
+    size_t method_len;
+    lexbor_find_attr_value(form, "method", &method, &method_len);
 
-    if ((err=_make_submit_curlu_rec(form, buf, *out))) {
-        goto clean_buf;
-    }
+    if (!method_len || strncmp((const char*)method, "get", method_len) == 0) {
+        BufOf(lxb_char_t)* buf = &(BufOf(lxb_char_t)){0};
+        if (action && action_len) {
+            if ((err = _submit_url_set_action(buf, action, action_len, *out))) {
+                buffn(lxb_char_t, clean)(buf);
+                return err;
+            }
+        }
 
-    buffn(lxb_char_t, clean)(buf);
-    return Ok;
-clean_buf:
-    buffn(lxb_char_t, clean)(buf);
-free_url_dup:
-    curl_url_cleanup(*out);
-    return err;
+        if ((err=_make_submit_curlu_rec(form, buf, *out))) {
+            buffn(lxb_char_t, clean)(buf);
+            return err;
+        }
+
+        buffn(lxb_char_t, clean)(buf);
+        return Ok;
+    }
+    return "not a get method";
 }
 

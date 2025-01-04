@@ -15,7 +15,7 @@
 #include "src/wrapper-lexbor-curl.h"
 
 //TODO: move this to wrapper-lexbor-curl.h
-Err mk_submit_url (lxb_dom_node_t* form, HtmlDoc d[static 1], CURLU* out[static 1]) ;
+Err mk_submit_url (lxb_dom_node_t* form, CURLU* out[static 1]);
 
 Err read_line_from_user(Session session[static 1]) {
     char* line = 0x0;
@@ -110,22 +110,30 @@ Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) 
 Err _cmd_submit_ix(Session session[static 1], size_t ix) {
     Err err = Ok;
     HtmlDoc* newdoc;
-    CURLU* curlu;
 
     HtmlDoc* htmldoc = session_current_doc(session);
     ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(htmldoc);
+    CURLU* curlu = curl_url_dup(url_cu(htmldoc_url(htmldoc)));
+    if (!curlu) return "error: memory failure (curl_url_dup)";
+
 
 
     LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(inputs, ix);
-    if (!nodeptr) return "link number invalid";
-    if (!_lexbor_attr_has_value(*nodeptr, "type", "submit")) return "warn: not submit input";
+    if (!nodeptr) {
+        err="link number invalid";
+        goto cleanup_curlu;
+    }
+    if (!_lexbor_attr_has_value(*nodeptr, "type", "submit")) {
+        err="warn: not submit input";
+        goto cleanup_curlu;
+    }
 
     lxb_dom_node_t* form = _find_parent_form(*nodeptr);
     if (form) {
 
-        if ((err = mk_submit_url(form, htmldoc, &curlu))) {
+        if ((err = mk_submit_url(form, &curlu))) {
             curl_url_cleanup(curlu);
-            return "error making submit url";
+            return err;
         }
         ////TODO: all this is duplicated, refactor!
         if (!(newdoc=htmldoc_create(NULL))) { err="error creating htmldoc"; goto cleanup_curlu; };
@@ -145,10 +153,10 @@ Err _cmd_submit_ix(Session session[static 1], size_t ix) {
     
     } else { puts("expected form, not found"); }
     return Ok;
-cleanup_curlu:
-    curl_url_cleanup(curlu);
 cleanup_htmldoc:
     htmldoc_destroy(newdoc);
+cleanup_curlu:
+    curl_url_cleanup(curlu);
     return err;
 }
 
