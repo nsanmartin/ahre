@@ -31,7 +31,7 @@ typedef struct {
 
 
 typedef struct {
-    Url curlu;
+    Url url;
     lxb_html_document_t* lxbdoc;
     DocCache cache;
 } HtmlDoc;
@@ -59,7 +59,7 @@ static inline DocCache*
 htmldoc_cache(HtmlDoc d[static 1]) { return &d->cache; }
 
 static inline Url*
-htmldoc_curlu(HtmlDoc d[static 1]) { return &d->curlu; }
+htmldoc_url(HtmlDoc d[static 1]) { return &d->url; }
 
 
 /* ctors */

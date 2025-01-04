@@ -37,7 +37,7 @@ Err cmd_set_url(Session session[static 1], const char* url) {
     url = cstr_trim_space((char*)url);
     if (!*url) {
         char* buf;
-        try(url_cstr(&htmldoc->curlu, &buf));
+        try(url_cstr(htmldoc_url(htmldoc), &buf));
         Err res = err_fmt("current url: '%s'", buf);
         curl_free(buf);
         return res;
@@ -139,7 +139,7 @@ Err _cmd_submit_ix(Session session[static 1], size_t ix) {
         }
         ////TODO: all this is duplicated, refactor!
         if (!(newdoc=htmldoc_create(NULL))) { err="error creating htmldoc"; goto cleanup_curlu; };
-        newdoc->curlu.urlu=curlu;
+        htmldoc_url(newdoc)->urlu=curlu;
 
         if ((err=htmldoc_fetch(newdoc, session_url_client(session)))) {
            goto cleanup_htmldoc; 
@@ -207,7 +207,7 @@ Err cmd_anchor_asterisk(Session session[static 1], size_t linknum) {
     LxbNodePtr* a = arlfn(LxbNodePtr, at)(anchors, linknum);
     if (!a) return "link number invalid";
 
-    CURLU* curlu = url_curlu(htmldoc_curlu(htmldoc));
+    CURLU* curlu = url_curlu(htmldoc_url(htmldoc));
     try( dup_curl_with_anchors_href(*a, &curlu));
 
     //TODO: remove duplicte code.
@@ -216,7 +216,7 @@ Err cmd_anchor_asterisk(Session session[static 1], size_t linknum) {
         return "error creating htmldoc";
     };
 
-    newdoc->curlu.urlu=curlu;
+    htmldoc_url(newdoc)->urlu=curlu;
     if ((err=htmldoc_fetch(newdoc, session_url_client(session)))) {
         htmldoc_destroy(newdoc);
         return err;

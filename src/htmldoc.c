@@ -255,30 +255,30 @@ static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCt
 
 /* external linkage */
 
-Err htmldoc_init(HtmlDoc d[static 1], const char* url) {
-    Url urlu = {0};
-    if (url && *url) {
-        if (strlen(url) > MAX_URL_LEN) {
-            return "url large is not supported.";
+Err htmldoc_init(HtmlDoc d[static 1], const char* cstr_url) {
+    Url url = {0};
+    if (cstr_url && *cstr_url) {
+        if (strlen(cstr_url) > MAX_URL_LEN) {
+            return "cstr_url large is not supported.";
         }
-        Err err = url_init(&urlu, url);
+        Err err = url_init(&url, cstr_url);
         if (err) {
-            std_free((char*)url);
+            std_free((char*)cstr_url);
             return err;
         }
-    } else { url = 0x0; }
+    } else { cstr_url = 0x0; }
 
     lxb_html_document_t* document = lxb_html_document_create();
     if (!document) {
-        if (url) {
-            url_cleanup(htmldoc_curlu(d));
+        if (cstr_url) {
+            url_cleanup(htmldoc_url(d));
         }
 
         return "error: lxb failed to create html document";
     }
 
     *d = (HtmlDoc){
-        .lxbdoc=document, .curlu=urlu, .cache=(DocCache){.textbuf=(TextBuf){.current_line=1}}
+        .lxbdoc=document, .url=url, .cache=(DocCache){.textbuf=(TextBuf){.current_line=1}}
     };
     return Ok;
 }
@@ -304,7 +304,7 @@ void htmldoc_reset(HtmlDoc htmldoc[static 1]) {
 void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) {
     htmldoc_cache_cleanup(htmldoc);
     lxb_html_document_destroy(htmldoc_lxbdoc(htmldoc));
-    url_cleanup(htmldoc_curlu(htmldoc));
+    url_cleanup(htmldoc_url(htmldoc));
 }
 
 inline void htmldoc_destroy(HtmlDoc* htmldoc) {
