@@ -21,9 +21,6 @@ Err read_line_from_user(Session session[static 1]) {
     char* line = 0x0;
     line = read_user_input(NULL);
     Err err = session->user_line_callback(session, line);
-    if (line && *cstr_skip_space(line)) {
-        add_to_user_input_history(line);
-    }
     destroy(line);
     return err;
 }
