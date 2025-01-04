@@ -22,15 +22,9 @@ Tag: \
 #define print_running_test(TestFname) do{\
     printf("Running %s...", TestFname); }while(0)
 
-#define print_test_passed() do{ \
-    printf(" %sall tests passed%s\n", GREEN, RESET); }while(0)
-
-#define print_test_failed(TestFname, ErrorCount) do{ \
-    fprintf(stderr, " %s%d errors%s\n",  RED, ErrorCount, RESET); }while(0)
-
 #define print_test_result(ErrorCount) do{\
     if (ErrorCount) fprintf(stderr, " %s%d errors%s\n",  RED, ErrorCount, RESET); \
-    else printf(" %sall tests passed%s\n", GREEN, RESET); \
+    else printf(" %stests passed%s\n", GREEN, RESET); \
 }while(0)
 
 #endif

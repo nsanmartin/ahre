@@ -25,7 +25,7 @@ Session* session_create(char* url, UserLineCallback callback) {
     HtmlDoc* htmldoc = htmldoc_create(cstr_trim_space((char*)url));
     if (!htmldoc) { goto free_ahcurl; }
 
-    if (htmldoc->lxbdoc) {
+    if (htmldoc_lxbdoc(htmldoc) && url_cu(htmldoc_url(htmldoc))) {
         Err err = htmldoc_fetch(htmldoc, url_client);
         if (err) { log_error(err); }
         err = htmldoc_browse(htmldoc);

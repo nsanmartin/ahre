@@ -266,19 +266,12 @@ bool htmldoc_is_valid(HtmlDoc htmldoc[static 1]) {
 
 /* */
 
+/*
+ * These commands require a valid document, the caller should check this condition before
+ */
 Err cmd_eval(Session session[static 1], const char* line) {
     const char* rest = 0x0;
     line = cstr_skip_space(line);
-
-    if ((rest = substr_match(line, "browse", 1))) { return cmd_browse(session, rest); }
-    if ((rest = substr_match(line, "echo", 1))) { return puts(rest) < 0 ? "error: puts failure" : Ok; }
-    if ((rest = substr_match(line, "go", 1))) { return cmd_browse(session, rest); }
-    if ((rest = substr_match(line, "url", 1))) { return cmd_set_url(session, rest); }
-
-    if (!htmldoc_is_valid(session_current_doc(session)) ||!session->url_client) {
-        return "no document";
-    }
-
     if ((rest = substr_match(line, "ahref", 2))) { return cmd_ahre(session, rest); }
     if ((rest = substr_match(line, "attr", 2))) { return "TODO: attr"; }
     if ((rest = substr_match(line, "class", 3))) { return "TODO: class"; }
@@ -374,28 +367,26 @@ Err cmd_image_eval(Session session[static 1], const char* line) {
 Err process_line(Session session[static 1], const char* line) {
     if (!line) { session->quit = true; return "no input received, exiting"; }
     line = cstr_skip_space(line);
-
     if (!*line) { return Ok; }
-
     const char* rest = NULL;
+    /* these commands does not require current valid document */
+    if ((rest = substr_match(line, "browse", 1))) { return cmd_browse(session, rest); }
+    if ((rest = substr_match(line, "echo", 1))) return puts(rest) < 0 ? "error: puts failed" : Ok;
+    if ((rest = substr_match(line, "go", 1))) { return cmd_browse(session, rest); }
     if ((rest = substr_match(line, "quit", 1)) && !*rest) { session->quit = true; return Ok;}
-    if (!htmldoc_is_valid(session_current_doc(session)) ||!session->url_client) {
-        return "no document";
-    }
-    //TODO: implement search in textbuf
-    if (*line == '/') { return "/ (search) not implemented"; }
-    //TODO: obtain range from line and pase it already parsed to eval fn
-    else if (*line == ':') {
-        return ed_eval(session, line + 1);
-    } else if(*line == ANCHOR_OPEN_STR[0]) {
-        return cmd_anchor_eval(session, line + 1);
-    } else if(*line == INPUT_OPEN_STR[0]) {
-        return cmd_input_eval(session, line + 1);
-    } else if(*line == IMAGE_OPEN_STR[0]) {
-        return cmd_image_eval(session, line + 1);
-    } else {
-        return cmd_eval(session, line);
-    }
+    if ((rest = substr_match(line, "url", 1))) { return cmd_set_url(session, rest); }
 
-    return "unexpected";
+    if (!htmldoc_is_valid(session_current_doc(session)) ||!session->url_client) return "no document";
+
+    //TODO: implement search in textbuf
+    if (*line == '/') return "/ (search) not implemented";
+
+    //TODO: obtain range from line and pase it already parsed to eval fn
+
+    if (*line == ':') return ed_eval(session, line + 1);
+    if(*line == ANCHOR_OPEN_STR[0]) return cmd_anchor_eval(session, line + 1);
+    if(*line == INPUT_OPEN_STR[0]) return cmd_input_eval(session, line + 1);
+    if(*line == IMAGE_OPEN_STR[0]) return cmd_image_eval(session, line + 1);
+
+    return cmd_eval(session, line);
 }
