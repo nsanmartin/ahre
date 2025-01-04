@@ -19,8 +19,12 @@ _browse_childs(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[s
             if (mem_is_all_space((char*)data, len)) { continue; }
 
             if (ctx->lazy_str.len) {
-                if(cb((lxb_char_t*)ctx->lazy_str.items, ctx->lazy_str.len, ctx))
-                    return "error serializing nl";
+                lxb_char_t* lazy_str = (lxb_char_t*)ctx->lazy_str.items;
+                size_t lazy_str_len = ctx->lazy_str.len;
+                while (len > 1 && isspace(lazy_str[0]) && isspace(lazy_str[1])) {
+                    ++lazy_str; -- lazy_str_len;
+                }
+                if(cb(lazy_str, lazy_str_len, ctx)) return "error serializing nl";
                 buffn(char, reset)(&ctx->lazy_str);
             }
 
@@ -43,7 +47,7 @@ _browse_childs(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[s
 
 
 static inline  Err
-_append_unsigned_to_bufof_char(uintmax_t ui, BufOf(char)* b) {
+_append_unsigned_to_bufof_char_base36(uintmax_t ui, BufOf(char)* b) {
     char numbf[3 * sizeof ui] = {0};
     size_t len = 0;
     try( uint_to_base36_str(numbf, 3 * sizeof ui, ui, &len));
@@ -62,16 +66,24 @@ Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
     if (!arlfn(LxbNodePtr,append)(anchors, &node)) 
         return "error: lip set";
 
-    if (!buffn(char, append)(&ctx->lazy_str, ANCHOR_OPEN_STR, sizeof IMAGE_OPEN_STR))
+    try ( serialize_literal_color_str(EscCodeBlue, cb, ctx));
+    if (!buffn(char, append)(&ctx->lazy_str, ANCHOR_OPEN_STR, sizeof ANCHOR_CLOSE_STR))
         return "error: failed to append to bufof";
-    try(_append_unsigned_to_bufof_char(anchor_num, &ctx->lazy_str));
+    try(_append_unsigned_to_bufof_char_base36(anchor_num, &ctx->lazy_str));
     if (!buffn(char, append)(&ctx->lazy_str, " ", 1)) return "error: failed to append to bufof";
 
-    //try ( parse_href_attrs(node, ctx));
     try ( _browse_childs(node, cb, ctx));
-    try ( serialize_lit_str(ANCHOR_CLOSE_STR, cb, ctx));
-    try ( serialize_literal_color_str(EscCodeBlue, cb, ctx));
-    try ( serialize_literal_color_str(EscCodeReset, cb, ctx));
+
+    /* If lazy string is not empty, node's childs didn't write anything so
+     * there's nothig to close.
+     */
+    if (ctx->lazy_str.len) {
+        buffn(char, reset)(&ctx->lazy_str);
+    } else {
+        try ( serialize_lit_str(ANCHOR_CLOSE_STR, cb, ctx));
+        try ( serialize_literal_color_str(EscCodeReset, cb, ctx));
+    }
+   
     return Ok;
 }
 

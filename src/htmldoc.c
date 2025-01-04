@@ -59,7 +59,6 @@ lxb_status_t htmldoc_lexbor_serialize_unsigned(
 }
 
 
-
 static Err
 parse_img_attrs(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1])
 {

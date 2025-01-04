@@ -193,8 +193,6 @@ Err dup_curl_with_anchors_href(
         return err;
     }
     *u = dup;
-    //Err err = parse_append_ahref(ctx, (const char*)data, data_len);
-    //if (err) return err;
     return Ok;
 }
 
