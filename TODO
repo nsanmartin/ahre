@@ -2,14 +2,12 @@
 [ ] Allow reusable buffer for files
 [ ] use trie for commands and include docs
 [ ] add cmd save_source
-[ ] define and add license (GNU, Apache, MIT, ...?)
 [ ] implement htmldoc array to allow some history preservation
 [ ] document basic funtionality (usefull until cmd self docuemnt themselfs)
 [ ] Unicode support
 [ ] Support default and bright colour pallets (as w3m)
 [ ] Log TAG not supported by browser when is the case
 [ ] Decide how to allow color/one color (cli option, different, commands, config file?)
-[ ] Make go cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)
 [ ] Make ahre cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)
 [ ] wrap lexbor functions with Err returning wrappers whenever possible
 [ ] implement cookies
@@ -22,6 +20,7 @@
 [ ] implement def (or some other keyword) to define procedures
 [ ] add command line option to read commands on startup
 [ ] implement ranges for doc's cache's elements. Vg: [1,4' means show anchors 1 to 4
+[ ] use libchafa for images
 
 # DONE
 [*] Accept files apart from urls
@@ -31,3 +30,5 @@
 [*] use no prefix for ahre cmds and ':' for ed cmds
 [*] implement try as `do{Err AHRE_ERR_=(Expr); if(AHRE_ERR_) return AHRE_ERR_;}while(0)`
 [*] implement editable attributes such as input value
+[*] define and add license (GNU, Apache, MIT, ...?)
+[*] Make go cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)

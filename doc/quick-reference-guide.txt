@@ -13,6 +13,7 @@ Ahre commands.
 Set the url:
 url      :  shows the url of the current document
 url <URL>:  sets current doc's url to <URL> and fetches it.
+browse   :  generate textbuffer for html document.
 go <URL> :  sets the url of the current doc with <URL>, fetches and browses it (it does not show it).
 
 colon (:) commands: 
