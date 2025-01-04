@@ -20,7 +20,7 @@ curl_lexbor_fetch_document(UrlClient url_client[static 1], HtmlDoc htmldoc[stati
 
     CURLcode curl_code = curl_easy_perform(url_client->curl);
     if (curl_code!=CURLE_OK) {
-        return err_fmt("curl failed to perform curl: %s", curl_easy_strerror(curl_code));
+        return err_fmt("curl failed to perform curl: %s (%s)", curl_easy_strerror(curl_code));
     }
 
     lexbor_status_t lxb_status = lxb_html_document_parse_chunk_end(lxbdoc);

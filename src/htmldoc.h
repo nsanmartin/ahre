@@ -31,16 +31,12 @@ typedef struct {
 
 
 typedef struct {
-    const char* url;
     Url curlu;
     lxb_html_document_t* lxbdoc;
     DocCache cache;
 } HtmlDoc;
 
 /* getters */
-static inline const char*
-htmldoc_url(const HtmlDoc d[static 1]) { return d->url; }
-
 static inline lxb_html_document_t*
 htmldoc_lxbdoc(HtmlDoc d[static 1]) { return d->lxbdoc; }
 
@@ -106,34 +102,15 @@ Err htmldoc_cache_buffer_summary(DocCache c[static 1], BufOf(char) buf[static 1]
 
 HtmlDoc* htmldoc_create(const char* url);
 
-static inline bool htmldoc_has_url(HtmlDoc htmldoc[static 1]) {
-    return htmldoc->url != NULL;
-}
-
-void htmldoc_update_url(HtmlDoc htmldoc[static 1], char* url) ;
-bool htmldoc_is_valid(HtmlDoc htmldoc[static 1]);
-
 
 static inline bool file_exists(const char* path) { return access(path, F_OK) == 0; }
 Err lexbor_read_doc_from_file(HtmlDoc htmldoc[static 1]) ;
 
 static inline Err htmldoc_fetch(HtmlDoc htmldoc[static 1], UrlClient url_client[static 1]) {
-    //TODO: remove, not needed since CURLU
-    //if (file_exists(htmldoc->url)) {
-    //    return lexbor_read_doc_from_file(htmldoc);
-    //}
     return curl_lexbor_fetch_document(url_client, htmldoc);
 }
 
 Err htmldoc_browse(HtmlDoc htmldoc[static 1]);
-
-static inline const char* htmldoc_abs_url_dup(const HtmlDoc htmldoc[static 1], const char* url) {
-    if (cstr_starts_with(url, "//"))
-        return cstr_cat_dup("https://", url); ///TODO: suppoert for http
-    else if (cstr_starts_with(url, "/"))
-        return cstr_cat_dup(htmldoc_url(htmldoc), url);
-    return strdup(url);
-}
 
 #define serialize_lit_str(LitStr, CallBack, Context) \
  ((LXB_STATUS_OK != CallBack((lxb_char_t*)LitStr, sizeof LitStr, Context)) \

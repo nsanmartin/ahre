@@ -29,7 +29,7 @@
 #define append_to_arlof_lxb_node__(ArrayList, NodePtr) \
     (arlfn(LxbNodePtr,append)(ArrayList, (NodePtr)) ? Ok : "error: lip set")
 
-_Thread_local static unsigned char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {0};
+//_Thread_local static unsigned char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {0};
 
 
 static Err browse_ctx_init(BrowseCtx ctx[static 1], HtmlDoc htmldoc[static 1], bool color) {
@@ -255,41 +255,11 @@ static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCt
 
 /* external linkage */
 
-Err lexbor_read_doc_from_file(HtmlDoc htmldoc[static 1]) {
-    FILE* fp = fopen(htmldoc->url, "r");
-    if  (!fp) { return strerror(errno); }
-
-    try_lxb (lxb_html_document_parse_chunk_begin(htmldoc->lxbdoc),
-            "Lex failed to init html document");
-
-
-    size_t bytes_read = 0;
-    while ((bytes_read = fread(read_from_file_buffer, 1, READ_FROM_FILE_BUFFER_LEN, fp))) {
-        try_nonzero( lexbor_parse_chunk_callback((char*)read_from_file_buffer, 1, bytes_read, htmldoc),
-                     "Failed to parse HTML chunk");
-
-    }
-    if (ferror(fp)) { fclose(fp); return strerror(errno); }
-    fclose(fp);
-
-    try_lxb (lxb_html_document_parse_chunk_end(htmldoc->lxbdoc),
-            "Lbx failed to parse html");
-
-    return 0x0;
-}
-
-
-
-
 Err htmldoc_init(HtmlDoc d[static 1], const char* url) {
     Url urlu = {0};
     if (url && *url) {
         if (strlen(url) > MAX_URL_LEN) {
             return "url large is not supported.";
-        }
-        url = strdup(url);
-        if (!url || !*url) {
-            return "error: memory failure (strdup).";
         }
         Err err = url_init(&urlu, url);
         if (err) {
@@ -301,7 +271,6 @@ Err htmldoc_init(HtmlDoc d[static 1], const char* url) {
     lxb_html_document_t* document = lxb_html_document_create();
     if (!document) {
         if (url) {
-            std_free((char*)url);
             url_cleanup(htmldoc_curlu(d));
         }
 
@@ -309,7 +278,7 @@ Err htmldoc_init(HtmlDoc d[static 1], const char* url) {
     }
 
     *d = (HtmlDoc){
-        .url=url, .lxbdoc=document, .curlu=urlu, .cache=(DocCache){.textbuf=(TextBuf){.current_line=1}}
+        .lxbdoc=document, .curlu=urlu, .cache=(DocCache){.textbuf=(TextBuf){.current_line=1}}
     };
     return Ok;
 }
@@ -335,7 +304,6 @@ void htmldoc_reset(HtmlDoc htmldoc[static 1]) {
 void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) {
     htmldoc_cache_cleanup(htmldoc);
     lxb_html_document_destroy(htmldoc_lxbdoc(htmldoc));
-    std_free((char*)htmldoc_url(htmldoc));
     url_cleanup(htmldoc_curlu(htmldoc));
 }
 
@@ -345,38 +313,26 @@ inline void htmldoc_destroy(HtmlDoc* htmldoc) {
 }
 
 
-inline void htmldoc_update_url(HtmlDoc ad[static 1], char* url) {
-        destroy((char*)ad->url);
-        ad->url = url;
-}
-
-
-bool htmldoc_is_valid(HtmlDoc htmldoc[static 1]) {
-    ////TODO: remove, not needed since URLU
-    //return htmldoc->url && htmldoc->lxbdoc && htmldoc->lxbdoc->body;
-    return htmldoc->lxbdoc && htmldoc->lxbdoc->body;
-}
-
 //deprecated
-Err htmldoc_read_from_file(HtmlDoc htmldoc[static 1]) {
-    FILE* fp = fopen(htmldoc->url, "r");
-    if  (!fp) { return strerror(errno); }
-
-    Err err = NULL;
-
-    TextBuf* textbuf = htmldoc_textbuf(htmldoc);
-    size_t bytes_read = 0;
-    while ((bytes_read = fread(read_from_file_buffer, 1, READ_FROM_FILE_BUFFER_LEN, fp))) {
-        if ((err = textbuf_append_part(textbuf, (char*)read_from_file_buffer, READ_FROM_FILE_BUFFER_LEN))) {
-            return err;
-        }
-    }
-    //TODO: free mem?
-    if (ferror(fp)) { fclose(fp); return strerror(errno); }
-    fclose(fp);
-
-    return textbuf_append_null(textbuf);
-}
+//static Err htmldoc_read_from_file(HtmlDoc htmldoc[static 1]) {
+//    FILE* fp = fopen(htmldoc->url, "r");
+//    if  (!fp) { return strerror(errno); }
+//
+//    Err err = NULL;
+//
+//    TextBuf* textbuf = htmldoc_textbuf(htmldoc);
+//    size_t bytes_read = 0;
+//    while ((bytes_read = fread(read_from_file_buffer, 1, READ_FROM_FILE_BUFFER_LEN, fp))) {
+//        if ((err = textbuf_append_part(textbuf, (char*)read_from_file_buffer, READ_FROM_FILE_BUFFER_LEN))) {
+//            return err;
+//        }
+//    }
+//    //TODO: free mem?
+//    if (ferror(fp)) { fclose(fp); return strerror(errno); }
+//    fclose(fp);
+//
+//    return textbuf_append_null(textbuf);
+//}
 
 
 Err htmldoc_browse(HtmlDoc htmldoc[static 1]) {

@@ -11,24 +11,9 @@ Err cmd_set_url(Session session[static 1], const char* url);
 
 Err cmd_fetch(Session session[static 1]) {
     HtmlDoc* htmldoc = session_current_doc(session);
-    //TODO: remove (not needed since CURLU.
-    //if (htmldoc->url) {
-        return htmldoc_fetch(htmldoc, session->url_client);
-    //}
-    //return "Not url to fech";
+    return htmldoc_fetch(htmldoc, session->url_client);
 }
 
-
-///TOOD: rewrite using htmldoc-cache
-////* writes anchors to current textbuf */
-///static inline Err cmd_anchors(Session session[static 1]) {
-///    HtmlDoc* htmldoc = session_current_doc(session);
-///    TextBuf* tb = htmldoc_textbuf(htmldoc);
-///    Err err = lexbor_href_write(htmldoc->lxbdoc, &htmldoc->cache.hrefs, tb);
-///    if (err) return err; 
-///    
-///    return textbuf_append_null(tb);
-///}
 
 //TODO: use reset
 static inline Err cmd_clear(Session session[static 1]) {

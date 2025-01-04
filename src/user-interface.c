@@ -54,7 +54,8 @@ Err cmd_set_url(Session session[static 1], const char* url) {
 
     htmldoc_destroy(htmldoc);
     session->htmldoc = newdoc;
-    printf("set with url: %s\n", newdoc->url ? newdoc->url : "<no url>");
+    //TODO: print curlu
+    //printf("set with url: %s\n", newdoc->url ? newdoc->url : "<no url>");
     return Ok;
 }
 
@@ -257,6 +258,12 @@ Err cmd_image_print(Session session[static 1], size_t ix) {
     return write_err ? Ok : "error: fwrite failure";
 }
 
+bool htmldoc_is_valid(HtmlDoc htmldoc[static 1]) {
+    ////TODO: remove, not needed since URLU
+    //return htmldoc->url && htmldoc->lxbdoc && htmldoc->lxbdoc->body;
+    return htmldoc->lxbdoc && htmldoc->lxbdoc->body;
+}
+
 /* */
 
 Err cmd_eval(Session session[static 1], const char* line) {
@@ -276,7 +283,6 @@ Err cmd_eval(Session session[static 1], const char* line) {
     if ((rest = substr_match(line, "attr", 2))) { return "TODO: attr"; }
     if ((rest = substr_match(line, "class", 3))) { return "TODO: class"; }
     if ((rest = substr_match(line, "clear", 3))) { return cmd_clear(session); }
-    if ((rest = substr_match(line, "dgbsummary", 1))) { return dbg_session_summary(session); }
     if ((rest = substr_match(line, "fetch", 1))) { return cmd_fetch(session); }
     if ((rest = substr_match(line, "input", 1))) { return cmd_input(session, rest); }
     if ((rest = substr_match(line, "submit", 1))) { return cmd_submit(session, rest); }
