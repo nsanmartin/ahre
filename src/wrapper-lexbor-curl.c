@@ -14,7 +14,7 @@ curl_lexbor_fetch_document(UrlClient url_client[static 1], HtmlDoc htmldoc[stati
         || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, htmldoc)) { return "error configuring curl write fn/data"; }
     if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(lxbdoc)) { return "error: lex failed to init html document"; }
     //if (curl_easy_setopt(url_client->curl, CURLOPT_URL, url)) { return "error: curl failed to set url"; }
-    if (curl_easy_setopt(url_client->curl, CURLOPT_CURLU, url_curlu(htmldoc_url(htmldoc)))) {
+    if (curl_easy_setopt(url_client->curl, CURLOPT_CURLU, url_cu(htmldoc_url(htmldoc)))) {
         return "error: curl failed to set url";
     }
 
@@ -82,7 +82,7 @@ static Err _make_submit_curlu_rec(
 Err mk_submit_url (lxb_dom_node_t* form, HtmlDoc d[static 1], CURLU* out[static 1]) {
 
     Err err;
-    *out = curl_url_dup(url_curlu(htmldoc_url(d)));
+    *out = curl_url_dup(url_cu(htmldoc_url(d)));
     if (!*out) return "error: memory failure (curl_url_dup)";
 
     BufOf(lxb_char_t)* buf = &(BufOf(lxb_char_t)){0};

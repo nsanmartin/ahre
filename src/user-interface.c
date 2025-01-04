@@ -139,7 +139,7 @@ Err _cmd_submit_ix(Session session[static 1], size_t ix) {
         }
         ////TODO: all this is duplicated, refactor!
         if (!(newdoc=htmldoc_create(NULL))) { err="error creating htmldoc"; goto cleanup_curlu; };
-        htmldoc_url(newdoc)->urlu=curlu;
+        htmldoc_url(newdoc)->cu=curlu;
 
         if ((err=htmldoc_fetch(newdoc, session_url_client(session)))) {
            goto cleanup_htmldoc; 
@@ -207,7 +207,7 @@ Err cmd_anchor_asterisk(Session session[static 1], size_t linknum) {
     LxbNodePtr* a = arlfn(LxbNodePtr, at)(anchors, linknum);
     if (!a) return "link number invalid";
 
-    CURLU* curlu = url_curlu(htmldoc_url(htmldoc));
+    CURLU* curlu = url_cu(htmldoc_url(htmldoc));
     try( dup_curl_with_anchors_href(*a, &curlu));
 
     //TODO: remove duplicte code.
@@ -216,7 +216,7 @@ Err cmd_anchor_asterisk(Session session[static 1], size_t linknum) {
         return "error creating htmldoc";
     };
 
-    htmldoc_url(newdoc)->urlu=curlu;
+    htmldoc_url(newdoc)->cu=curlu;
     if ((err=htmldoc_fetch(newdoc, session_url_client(session)))) {
         htmldoc_destroy(newdoc);
         return err;

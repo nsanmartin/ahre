@@ -6,14 +6,14 @@
 #include "src/error.h"
 
 typedef struct {
-    CURLU* urlu;
+    CURLU* cu;
 } Url;
 
 /* getters */
-static inline CURLU* url_curlu(Url u[static 1]) { return u->urlu; }
+static inline CURLU* url_cu(Url u[static 1]) { return u->cu; }
 
 static inline Err url_cstr(Url u[static 1], char* out[static 1]) {
-    CURLUcode code = curl_url_get(u->urlu, CURLUPART_URL, out, 0);
+    CURLUcode code = curl_url_get(u->cu, CURLUPART_URL, out, 0);
     if (code == CURLUE_OK)
         return Ok;
     return err_fmt("error getting url from CURLU: %s", curl_url_strerror(code));
@@ -21,10 +21,10 @@ static inline Err url_cstr(Url u[static 1], char* out[static 1]) {
 
 /* ctor */
 static inline Err url_init(Url u[static 1],  const char* cstr) {
-    *u = (Url){.urlu=curl_url()};
-    if (!u->urlu) return "error initializing CURLU";
+    *u = (Url){.cu=curl_url()};
+    if (!u->cu) return "error initializing CURLU";
 
-    CURLUcode code = curl_url_set(u->urlu, CURLUPART_URL, cstr, CURLU_DEFAULT_SCHEME);
+    CURLUcode code = curl_url_set(u->cu, CURLUPART_URL, cstr, CURLU_DEFAULT_SCHEME);
     switch (code) {
         case CURLUE_OK:
             return Ok;
@@ -51,5 +51,5 @@ static inline Err curlu_set_url(CURLU* u,  const char* cstr) {
 }
 
 /* dtor */
-static inline void url_cleanup(Url u[static 1]) { curl_url_cleanup(u->urlu); }
+static inline void url_cleanup(Url u[static 1]) { curl_url_cleanup(u->cu); }
 #endif
