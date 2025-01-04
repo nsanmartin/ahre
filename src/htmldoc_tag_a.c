@@ -66,7 +66,8 @@ Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
     if (!arlfn(LxbNodePtr,append)(anchors, &node)) 
         return "error: lip set";
 
-    try ( serialize_literal_color_str(EscCodeBlue, cb, ctx));
+    if (!buffn(char, append)(&ctx->lazy_str, EscCodeBlue, sizeof EscCodeBlue))
+        return "error: failed to append to bufof";
     if (!buffn(char, append)(&ctx->lazy_str, ANCHOR_OPEN_STR, sizeof ANCHOR_CLOSE_STR))
         return "error: failed to append to bufof";
     try(_append_unsigned_to_bufof_char_base36(anchor_num, &ctx->lazy_str));
