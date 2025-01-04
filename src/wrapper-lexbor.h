@@ -8,21 +8,6 @@
 #define BT lxb_char_t
 #include <buf.h>
 
-// deprecated
-//Err lexbor_href_write(
-//    lxb_html_document_t document[static 1],
-//    lxb_dom_collection_t** hrefs,
-//    TextBuf* textbuf
-//);
-//
-//Err ahre_append_href(lxb_dom_element_t* element, void* buf) ;
-//
-//Err lexbor_foreach_href(
-//    lxb_dom_collection_t collection[static 1],
-//    Err (*callback)(lxb_dom_element_t* element, void* textbuf),
-//    void* textbuf
-//);
-
 Err lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* buf);
 
 lxb_inline lxb_status_t append_to_buf_callback(const lxb_char_t *data, size_t len, void *bufptr) {
@@ -45,4 +30,8 @@ bool _lexbor_attr_has_value(
     lxb_dom_node_t node[static 1], const char* attr, const char* expected_value
 ) ;
 Err lexbor_node_to_str(lxb_dom_node_t* node, BufOf(const_char)* buf);
+
+static inline bool lexbor_str_eq(const char* s, const lxb_char_t* lxb_str, size_t len) {
+    return lxb_str && !strncmp(s, (const char*)lxb_str, len);
+}
 #endif

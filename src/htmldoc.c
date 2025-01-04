@@ -125,6 +125,17 @@ browse_tag_form(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[
 }
 
 
+static bool _input_is_text_type_(const lxb_char_t* name, size_t len) {
+    return !len
+        || lexbor_str_eq("text", name, len)
+        || lexbor_str_eq("search", name, len)
+        ;
+}
+
+static bool _input_is_submit_type_(const lxb_char_t* name, size_t len) {
+    return lexbor_str_eq("submit", name, len);
+}
+
 static Err
 browse_tag_input(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     const lxb_char_t* s;
@@ -142,13 +153,13 @@ browse_tag_input(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
         try (serialize_lit_str(INPUT_OPEN_STR, cb, ctx));
         try_lxb (htmldoc_lexbor_serialize_unsigned(ctx, cb, inputs->len-1),
             "error serializing unsigned");
-        if (!slen || !strcmp("text", (char*)s)) {
+        if (_input_is_text_type_(s, slen)) {
             lexbor_find_attr_value(node, "value", &s, &slen);
             if (slen) {
                 try (serialize_lit_str(" ", cb, ctx));
                 try (serialize_cstring(s, slen, cb, ctx));
             }
-        } else if (!strcmp("submit", (char*)s)) {
+        } else if (_input_is_submit_type_(s, slen)) {
 
             lexbor_find_attr_value(node, "value", &s, &slen);
             if (slen) {

@@ -117,7 +117,7 @@ Err mk_submit_url (lxb_dom_node_t* form, CURLU* out[static 1]) {
     size_t method_len;
     lexbor_find_attr_value(form, "method", &method, &method_len);
 
-    if (!method_len || strncmp((const char*)method, "get", method_len) == 0) {
+    if (!method_len || lexbor_str_eq("get", method, method_len)) {
         BufOf(lxb_char_t)* buf = &(BufOf(lxb_char_t)){0};
         if (action && action_len) {
             if ((err = _submit_url_set_action(buf, action, action_len, *out))) {

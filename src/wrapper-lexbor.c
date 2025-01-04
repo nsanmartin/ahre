@@ -163,10 +163,9 @@ Err lexbor_set_attr_value(
     while (attr) {
         size_t data_len;
         const lxb_char_t* data = lxb_dom_attr_qualified_name(attr, &data_len);
-        if (!strncmp(attr_name, (char*)data, data_len))  {
+        if (lexbor_str_eq(attr_name, data, data_len))  {
 
             //TODO: why node and not element like here?
-            //attr = lxb_dom_element_attr_by_name(element, name, name_size);
             if (LXB_STATUS_OK != lxb_dom_attr_set_value(attr, (const lxb_char_t *) value, strlen(value)))
                 return "error: lexbor failed to change attribute value";
             return Ok;
@@ -192,11 +191,9 @@ void lexbor_find_attr_value(
     while (attr) {
         size_t data_len;
         const lxb_char_t* data = lxb_dom_attr_qualified_name(attr, &data_len);
-        if (!strncmp(attr_name, (char*)data, data_len))  {
-
+        if (lexbor_str_eq(attr_name, data, data_len))  {
             *out = lxb_dom_attr_value(attr, len);
             return;
-
         }
         attr = lxb_dom_element_next_attribute(attr);
     }
@@ -245,6 +242,6 @@ bool _lexbor_attr_has_value(
     const lxb_char_t* value;
     size_t valuelen;
     lexbor_find_attr_value(node, attr, &value, &valuelen);
-    return value && valuelen && !strncmp(expected_value, (const char*)value, valuelen);
+    return value && valuelen && lexbor_str_eq(expected_value, value, valuelen);
 }
 
