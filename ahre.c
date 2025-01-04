@@ -6,6 +6,7 @@
 #include "src/htmldoc.h"
 #include "src/mem.h"
 #include "src/user-interface.h"
+#include "src/user-input.h"
 
 
 void print_help(char* program) { printf("usage: %s <url>\n", program); }
@@ -16,6 +17,7 @@ int loop_lexbor(char* url) {
     if (!session) 
         return EXIT_FAILURE;
 
+    init_user_input_history();
     while (!session->quit) {
         Err err = read_line_from_user(session);
         if (err) {

@@ -3,10 +3,6 @@ Ahre text based browser
 External dependencies
 ======== ============
 
-Readline:
-
-   In debian: libreadline-dev
-
 Curl:
 
   In debian it may be installed by any of:
@@ -16,7 +12,13 @@ Curl:
 
 Lexbor:
 
-  git repo:  https://github.com/lexbor/lexbor
+  git repo:  https://github.com/lexbor/lexbo
+
+
+Git submodules:
+==============
+hashi (repo:  https://github.com/nsanmartin/hashi)
+isocline (repo:  https://github.com/daanx/isocline)
 
 
 Build

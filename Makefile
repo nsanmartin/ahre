@@ -1,7 +1,7 @@
 INCLUDE:=$(HOME)/usr/include
 LIB:=$(HOME)/usr/lib
 CFLAGS:=-g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition \
-		-I. -Ihashi/include
+		-I. -Ihashi/include -Iisocline/include
 SANITIZE_FLAGS:= -fsanitize=leak -fsanitize=address -fsanitize=undefined \
 				 -fsanitize=null -fsanitize=bounds -fsanitize=pointer-overflow
 
@@ -26,11 +26,11 @@ run_tests: test_all
 
 test_all: test_range test_buf test_error
 
-$(AHRE): $(AHRE_OBJ)
+$(AHRE): $(AHRE_OBJ) build/isocline.o
 	$(CC) $(CFLAGS) \
 		-I$(INCLUDE) \
 		$@.c -o build/$@ \
-		$^  \
+		$^ \
 		-lcurl -llexbor -lreadline
 
 
@@ -41,6 +41,8 @@ $(AHRE_OBJDIR)/%.o: $(AHRE_SRCDIR)/%.c $(AHRE_HEADERS)
 		-c -o $@ \
 		$< 
 
+build/isocline.o:
+	$(CC) -c -Iisocline/include -o $@ isocline/src/isocline.c
 
 test_range: utests/test_range.c build/session.o build/textbuf.o build/url-client.o \
 	build/htmldoc.o build/str.o build/wrapper-lexbor.o build/wrapper-lexbor-curl.o \

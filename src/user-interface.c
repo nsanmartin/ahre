@@ -19,7 +19,7 @@ Err mk_submit_url (lxb_dom_node_t* form, HtmlDoc d[static 1], CURLU* out[static 
 
 Err read_line_from_user(Session session[static 1]) {
     char* line = 0x0;
-    line = read_user_input("");
+    line = read_user_input(NULL);
     Err err = session->user_line_callback(session, line);
     if (line && *cstr_skip_space(line)) {
         add_to_user_input_history(line);
