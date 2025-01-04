@@ -107,16 +107,6 @@ Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) 
 }
 
 
-///static Err _curlu_to_str(CURLU* u, char** content) {
-///    CURLUcode curlu_code = curl_url_get(u, CURLUPART_URL, content, 0);
-///    if(curlu_code == CURLUE_OK) {
-///      printf("the content is %s\n", *content);
-///      curl_free(*content);
-///      return Ok;
-///    }
-///    return "error: TODO use here strerror ...";
-///}
-
 Err _cmd_submit_ix(Session session[static 1], size_t ix) {
     Err err = Ok;
     HtmlDoc* newdoc;

@@ -8,23 +8,31 @@
 Err
 curl_lexbor_fetch_document(UrlClient url_client[static 1], HtmlDoc htmldoc[static 1]) {
     lxb_html_document_t* lxbdoc = htmldoc->lxbdoc;
-    //const char* url = htmldoc->url;
-    //if (!url || !*url) return "error: unexpected null url";
-    if (curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, lexbor_parse_chunk_callback)
-        || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, htmldoc)) { return "error configuring curl write fn/data"; }
-    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(lxbdoc)) { return "error: lex failed to init html document"; }
-    //if (curl_easy_setopt(url_client->curl, CURLOPT_URL, url)) { return "error: curl failed to set url"; }
-    if (curl_easy_setopt(url_client->curl, CURLOPT_CURLU, url_cu(htmldoc_url(htmldoc)))) {
+
+    if (  curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, lexbor_parse_chunk_callback)
+       || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, htmldoc)) {
+        return "error configuring curl write fn/data";
+    }
+
+    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(lxbdoc)) {
+        return "error: lex failed to init html document";
+    }
+
+    Url* url = htmldoc_url(htmldoc);
+    if (curl_easy_setopt(url_client->curl, CURLOPT_CURLU, url_cu(url))) {
         return "error: curl failed to set url";
     }
 
     CURLcode curl_code = curl_easy_perform(url_client->curl);
     if (curl_code!=CURLE_OK) {
-        return err_fmt(
-            "curl failed to perform curl: %s (%s)",
-            curl_easy_strerror(curl_code),
-            "TODO: get url"
+        char* u;
+        Err e = url_cstr(url, &u);
+        if (e) u = "and url could not be obtained due to another error :/";
+        Err err = err_fmt(
+            "curl failed to perform curl: %s (%s)", curl_easy_strerror(curl_code), u
         );
+        if (!e) curl_free(u);
+        return err;
     }
 
     lexbor_status_t lxb_status = lxb_html_document_parse_chunk_end(lxbdoc);
