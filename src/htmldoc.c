@@ -26,6 +26,9 @@
 #define serialize_cstring_debug(LitStr, CallBack, Context) \
     serialize_cstring(LitStr, sizeof LitStr, CallBack, Context)
 
+#define append_to_arlof_lxb_node__(ArrayList, NodePtr) \
+    (arlfn(LxbNodePtr,append)(ArrayList, (NodePtr)) ? Ok : "error: lip set")
+
 _Thread_local static unsigned char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {0};
 
 
@@ -59,41 +62,6 @@ lxb_status_t htmldoc_lexbor_serialize_unsigned(
 }
 
 
-static Err
-parse_img_attrs(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1])
-{
-    const lxb_char_t* src;
-    size_t src_len;
-    lexbor_find_attr_value(node, "src", &src, &src_len);
-
-    const lxb_char_t* alt;
-    size_t alt_len;
-    lexbor_find_attr_value(node, "alt", &alt, &alt_len);
-
-    HtmlDoc* d = browse_ctx_htmldoc(ctx);
-
-    ArlOf(Img)* imgs = htmldoc_imgs(d);
-    try_lxb_serialize(IMAGE_OPEN_STR, sizeof IMAGE_OPEN_STR, cb, ctx);
-    try_lxb (htmldoc_lexbor_serialize_unsigned(ctx, cb, imgs->len),
-            "error serializing unsigned");
-    try_lxb_serialize(" ", 1, cb, ctx);
-    if (alt && *alt && cb(alt, alt_len, ctx)) {
-        puts("debug: img without alt");
-    }
-    
-
-    Img i = (Img){0};
-    if (img_init_alloc(&i, (const char*)src, src_len, textbuf_len(htmldoc_textbuf(d))))
-        return "error: intialiazing Img";
-    if (!arlfn(Img,append)(imgs, &i)) {
-        free((char*)i.src);
-        return "error: lip set";
-    }
-    return Ok;
-
-}
-
-
 static Err browse_list(lxb_dom_node_t* it, lxb_dom_node_t* last, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     for(; ; it = it->next) {
         Err err = browse_rec(it, cb, ctx);
@@ -119,9 +87,29 @@ browse_tag_center(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ct
 }
 
 static Err
+_serialize_img_alt(lxb_dom_node_t* img, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+
+    const lxb_char_t* alt;
+    size_t alt_len;
+    lexbor_find_attr_value(img, "alt", &alt, &alt_len);
+
+    if (alt && alt_len) {
+        try_lxb_serialize(" ", 1, cb, ctx);
+        if (cb(alt, alt_len, ctx)) return "error serializing img's alf";
+    }
+    return Ok;
+}
+
+static Err
 browse_tag_img(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     try (serialize_literal_color_str(EscCodeLightGreen, cb, ctx));
-    try (parse_img_attrs(node, cb, ctx));
+    HtmlDoc* d = browse_ctx_htmldoc(ctx);
+    ArlOf(LxbNodePtr)* imgs = htmldoc_imgs(d);
+    const size_t img_count = len__(imgs);
+    try( append_to_arlof_lxb_node__(imgs, &node));
+    try_lxb_serialize(IMAGE_OPEN_STR, sizeof IMAGE_OPEN_STR, cb, ctx);
+    try_lxb (htmldoc_lexbor_serialize_unsigned(ctx, cb, img_count), "error serializing unsigned");
+    try( _serialize_img_alt(node, cb, ctx));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     try_lxb_serialize(IMAGE_CLOSE_STR, sizeof IMAGE_CLOSE_STR, cb, ctx);
     try (serialize_literal_color_str(EscCodeReset, cb, ctx));
@@ -340,7 +328,7 @@ HtmlDoc* htmldoc_create(const char* url) {
 void htmldoc_reset(HtmlDoc htmldoc[static 1]) {
     textbuf_cleanup(htmldoc_textbuf(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_anchors(htmldoc));
-    arlfn(Img,clean)(htmldoc_imgs(htmldoc));
+    arlfn(LxbNodePtr,clean)(htmldoc_imgs(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
 }
 
@@ -369,6 +357,7 @@ bool htmldoc_is_valid(HtmlDoc htmldoc[static 1]) {
     return htmldoc->lxbdoc && htmldoc->lxbdoc->body;
 }
 
+//deprecated
 Err htmldoc_read_from_file(HtmlDoc htmldoc[static 1]) {
     FILE* fp = fopen(htmldoc->url, "r");
     if  (!fp) { return strerror(errno); }

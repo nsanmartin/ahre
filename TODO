@@ -21,6 +21,7 @@
 [ ] add command line option to read commands on startup
 [ ] implement ranges for doc's cache's elements. Vg: [1,4' means show anchors 1 to 4
 [ ] use libchafa for images
+[ ] implement search in textbuf with /
 
 # DONE
 [*] Accept files apart from urls

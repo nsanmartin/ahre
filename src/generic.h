@@ -9,7 +9,7 @@
 #include "src/utils.h"
 
 
-#define LENGTH(Ptr) (Ptr)->len
+#define len__(Ptr) (Ptr)->len
 
 
 #define len(Ptr) _Generic((Ptr), \
@@ -21,11 +21,11 @@
 
 
 #define destroy(Ptr) _Generic((Ptr), \
-    TextBuf*:   textbuf_destroy, \
+    TextBuf*  : textbuf_destroy, \
     UrlClient*: url_client_destroy, \
-    HtmlDoc*:       htmldoc_destroy, \
-    Session*:   session_destroy, \
-    char*:     std_free \
+    HtmlDoc*  : htmldoc_destroy, \
+    Session*  : session_destroy, \
+    char*     : std_free \
 )(Ptr)
 
 #endif
