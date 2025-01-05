@@ -23,6 +23,7 @@ run_tests: test_all
 	@./build/test_buf
 	@./build/test_range
 	@./build/test_error
+	@./build/test_ed_write
 
 test_all: test_range test_buf test_error
 
