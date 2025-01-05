@@ -8,21 +8,20 @@
 [ ] Support default and bright colour pallets (as w3m)
 [ ] Log TAG not supported by browser when is the case
 [ ] Decide how to allow color/one color (cli option, different, commands, config file?)
-[ ] Make ahre cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)
 [ ] wrap lexbor functions with Err returning wrappers whenever possible
 [ ] implement cookies
 [ ] implement post method for forms
 [ ] brwose properly anchors 
 [ ] brwose properly blockquote 
 [ ] brwose properly center 
-[ ] store LxbNodePtr for img elements
-[ ] implement ';' as cmd separator so that 'br;:%p' means first browse then print all
+[ ] implement ';' as cmd separator so that 'br;:%p' means first browse then print all (and multiline cmds)
 [ ] implement def (or some other keyword) to define procedures
 [ ] add command line option to read commands on startup
 [ ] implement ranges for doc's cache's elements. Vg: [1,4' means show anchors 1 to 4
 [ ] use libchafa for images
 [ ] implement search in textbuf with /
 [?] fix url construction on submit (it could be absolute or not)
+[?] fix url construction on a href (it could be absolute or not)
 [ ] display form elements with <>
 [ ] fix last char in some files saved by write ed cmd
 
@@ -37,3 +36,5 @@
 [*] define and add license (GNU, Apache, MIT, ...?)
 [*] Make go cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)
 [*] remove escape sequences when writing to a file
+[*] Make ahre cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)
+[*] store LxbNodePtr for img elements
