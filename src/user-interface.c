@@ -382,9 +382,9 @@ Err process_line(Session session[static 1], const char* line) {
     //TODO: obtain range from line and pase it already parsed to eval fn
 
     if (*line == ':') return ed_eval(session, line + 1);
-    if(*line == ANCHOR_OPEN_STR[0]) return cmd_anchor_eval(session, line + 1);
-    if(*line == INPUT_OPEN_STR[0]) return cmd_input_eval(session, line + 1);
-    if(*line == IMAGE_OPEN_STR[0]) return cmd_image_eval(session, line + 1);
+    if (*line == ANCHOR_OPEN_STR[0]) return cmd_anchor_eval(session, line + 1);
+    if (*line == INPUT_OPEN_STR[0]) return cmd_input_eval(session, line + 1);
+    if (*line == IMAGE_OPEN_STR[0]) return cmd_image_eval(session, line + 1);
 
     return cmd_eval(session, line);
 }
