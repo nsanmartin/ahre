@@ -149,7 +149,6 @@ Err ed_write(const char* rest, TextBuf textbuf[static 1]) {
     const char* beg = items;
     size_t len = len(textbuf);
     while (beg && beg < items + len) {
-        //const char* end = memchr(beg, '\0', items + len - beg);
         const char* end = _mem_find_esc_code_(beg, items + len - beg);
         if (!end) end = items + len;
         size_t chunklen = end - beg;

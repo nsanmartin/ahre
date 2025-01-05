@@ -1,0 +1,15 @@
+cc -g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition -I. -Ihashi/include -Iisocline/include -fsanitize=leak -fsanitize=address -fsanitize=undefined -fsanitize=null -fsanitize=bounds -fsanitize=pointer-overflow -I. -I/home/nico/usr/include -Iutests -o build/test_ed_write utests/test_ed_write.c build/error.o build/str.o build/ranges.o build/textbuf.o build/session.o 
+/usr/bin/ld: build/ranges.o: in function `parse_linenum_search_regex':
+/home/nico/github/nsanmartin/ahre/src/ranges.c:69: undefined reference to `regex_maybe_find_next'
+/usr/bin/ld: build/session.o: in function `htmldoc_fetch':
+/home/nico/github/nsanmartin/ahre/./src/htmldoc.h:110: undefined reference to `curl_lexbor_fetch_document'
+/usr/bin/ld: build/session.o: in function `session_create':
+/home/nico/github/nsanmartin/ahre/src/session.c:22: undefined reference to `url_client_create'
+/usr/bin/ld: /home/nico/github/nsanmartin/ahre/src/session.c:25: undefined reference to `htmldoc_create'
+/usr/bin/ld: /home/nico/github/nsanmartin/ahre/src/session.c:31: undefined reference to `htmldoc_browse'
+/usr/bin/ld: /home/nico/github/nsanmartin/ahre/src/session.c:44: undefined reference to `url_client_destroy'
+/usr/bin/ld: build/session.o: in function `session_destroy':
+/home/nico/github/nsanmartin/ahre/src/session.c:52: undefined reference to `htmldoc_destroy'
+/usr/bin/ld: /home/nico/github/nsanmartin/ahre/src/session.c:53: undefined reference to `url_client_destroy'
+collect2: error: ld returned 1 exit status
+make: *** [Makefile:64: test_ed_write] Error 1

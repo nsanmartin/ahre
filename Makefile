@@ -31,7 +31,7 @@ $(AHRE): $(AHRE_OBJ) build/isocline.o
 		-I$(INCLUDE) \
 		$@.c -o build/$@ \
 		$^ \
-		-lcurl -llexbor -lreadline
+		-lcurl -llexbor
 
 
 $(AHRE_OBJDIR)/%.o: $(AHRE_SRCDIR)/%.c $(AHRE_HEADERS)
@@ -44,19 +44,27 @@ $(AHRE_OBJDIR)/%.o: $(AHRE_SRCDIR)/%.c $(AHRE_HEADERS)
 build/isocline.o:
 	$(CC) -c -Iisocline/include -o $@ isocline/src/isocline.c
 
-test_range: utests/test_range.c build/session.o build/textbuf.o build/url-client.o \
-	build/htmldoc.o build/str.o build/wrapper-lexbor.o build/wrapper-lexbor-curl.o \
-	build/error.o build/htmldoc_tag_a.o build/utils.o
+test_range: utests/test_range.c \
+	build/session.o build/textbuf.o build/url-client.o build/htmldoc.o build/htmldoc_tag_a.o \
+	build/str.o build/wrapper-lexbor.o build/wrapper-lexbor-curl.o build/error.o build/utils.o
 	$(CC) $(CFLAGS) $(SANITIZE_FLAGS) -I. -I$(INCLUDE) -Iutests -o build/$@ $^ \
-		-lcurl -llexbor -lreadline
+		-lcurl -llexbor
 
 test_buf: utests/test_buf.c build/str.o
 	$(CC) $(CFLAGS) $(SANITIZE_FLAGS) -I. -I$(INCLUDE) -Iutests -o build/$@ $^ \
-		-lcurl -llexbor -lreadline
+		-lcurl -llexbor
 
 test_error: utests/test_error.c 
 	$(CC) $(CFLAGS) $(SANITIZE_FLAGS) -I. -I$(INCLUDE) -Iutests -o build/$@ $^ \
-		-lcurl -llexbor -lreadline
+		-lcurl -llexbor
+
+test_ed_write: utests/test_ed_write.c \
+	build/utils.o build/error.o build/str.o build/ranges.o build/re.o \
+	build/url-client.o \
+	build/wrapper-lexbor-curl.o build/wrapper-lexbor.o \
+	build/textbuf.o build/session.o build/htmldoc.o build/htmldoc_tag_a.o
+	$(CC) $(CFLAGS) $(SANITIZE_FLAGS) -I. -I$(INCLUDE) -Iutests -o build/$@ $^ \
+		-lcurl -llexbor
 
 
 

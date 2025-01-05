@@ -10,7 +10,7 @@
 enum { TestOk = 0, TestFail = 1 };
 
 #define utest_assert(Expr, Tag, Linenum) do{ \
-    if(!(Expr)) { fprintf(stderr, "Assertion in line %d failed. ", Linenum); goto Tag;} }while(0)
+    if(!(Expr)) { fprintf(stderr, "assertion in line %d failed. ", Linenum); goto Tag;} }while(0)
 
 #define clean_and_ret(Status, Tag, Cleanup) do{\
     Status = 0; \
@@ -20,11 +20,11 @@ Tag: \
 } while (0)
 
 #define print_running_test(TestFname) do{\
-    printf("Running %s...", TestFname); }while(0)
+    printf("Running %s... ", TestFname); fflush(stdout); }while(0)
 
 #define print_test_result(ErrorCount) do{\
     if (ErrorCount) fprintf(stderr, " %s%d errors%s\n",  RED, ErrorCount, RESET); \
-    else printf(" %stests passed%s\n", GREEN, RESET); \
+    else printf("%stests passed%s\n", GREEN, RESET); \
 }while(0)
 
 #endif
