@@ -15,7 +15,7 @@
 #include "src/wrapper-lexbor-curl.h"
 
 //TODO: move this to wrapper-lexbor-curl.h
-Err mk_submit_url (lxb_dom_node_t* form, CURLU* out[static 1]);
+Err mk_submit_url(lxb_dom_node_t* form, CURLU* out[static 1], HttpMethod http_method[static 1]);
 
 Err read_line_from_user(Session session[static 1]) {
     char* line = 0x0;
@@ -131,7 +131,7 @@ Err _cmd_submit_ix(Session session[static 1], size_t ix) {
     lxb_dom_node_t* form = _find_parent_form(*nodeptr);
     if (form) {
 
-        if ((err = mk_submit_url(form, &curlu))) {
+        if ((err = mk_submit_url(form, &curlu, &htmldoc->method))) {
             curl_url_cleanup(curlu);
             return err;
         }
@@ -318,7 +318,7 @@ Err cmd_anchor_eval(Session session[static 1], const char* line) {
     //if (*line && *cstr_skip_space(line + 1)) return "error unexpected:..."; TODO: only check when necessary
     switch (*line) {
         case '\'': return cmd_anchor_print(session, (size_t)linknum); 
-        case '"': return cmd_anchor_print(session, (size_t)linknum); 
+        case '?': return cmd_anchor_print(session, (size_t)linknum); 
         case '*': return cmd_anchor_asterisk(session, (size_t)linknum);
         default: return "?";
     }
@@ -331,7 +331,7 @@ Err cmd_input_eval(Session session[static 1], const char* line) {
     line = cstr_skip_space(line);
     //if (*line && *cstr_skip_space(line + 1)) return "error unexpected:..."; TODO ^
     switch (*line) {
-        case '"': return cmd_input_print(session, linknum);
+        case '?': return cmd_input_print(session, linknum);
         case '*': return _cmd_submit_ix(session, linknum);
         case '=': return _cmd_input_ix(session, linknum, line + 1); 
         default: return "?";
@@ -344,7 +344,7 @@ Err cmd_image_eval(Session session[static 1], const char* line) {
     try( parse_base36_or_throw(&line, &linknum));
     line = cstr_skip_space(line);
     switch (*line) {
-        case '"': return cmd_image_print(session, linknum);
+        case '?': return cmd_image_print(session, linknum);
         default: return "?";
     }
     return Ok;

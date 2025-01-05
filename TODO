@@ -24,6 +24,8 @@
 [?] fix url construction on a href (it could be absolute or not)
 [ ] display form elements with <>
 [ ] fix last char in some files saved by write ed cmd
+[ ] set autocomplete with ahre commands
+[ ] bug: image number incalid: check base
 
 # DONE
 [*] Accept files apart from urls

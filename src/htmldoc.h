@@ -29,9 +29,11 @@ typedef struct {
     ArlOf(LxbNodePtr) inputs;
 } DocCache;
 
+typedef enum { http_get = 0, http_post = 1 } HttpMethod;
 
 typedef struct {
     Url url;
+    HttpMethod method;
     lxb_html_document_t* lxbdoc;
     DocCache cache;
 } HtmlDoc;
@@ -60,6 +62,9 @@ htmldoc_cache(HtmlDoc d[static 1]) { return &d->cache; }
 
 static inline Url*
 htmldoc_url(HtmlDoc d[static 1]) { return &d->url; }
+
+static inline HttpMethod
+htmldoc_method(HtmlDoc d[static 1]) { return d->method; }
 
 
 /* ctors */

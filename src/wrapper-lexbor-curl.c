@@ -19,6 +19,15 @@ curl_lexbor_fetch_document(UrlClient url_client[static 1], HtmlDoc htmldoc[stati
     }
 
     Url* url = htmldoc_url(htmldoc);
+
+    CURLoption method = htmldoc_method(htmldoc) == http_post 
+               ? CURLOPT_POST
+               : CURLOPT_HTTPGET
+               ;
+    if (curl_easy_setopt(url_client->curl, method, url_cu(url))) {
+        return "error: curl failed to set method";
+    }
+
     if (curl_easy_setopt(url_client->curl, CURLOPT_CURLU, url_cu(url))) {
         return "error: curl failed to set url";
     }
@@ -106,8 +115,45 @@ static Err _submit_url_set_action(
     return Ok;
 }
 
-Err mk_submit_url (lxb_dom_node_t* form, CURLU* out[static 1]) {
+//Err _get_form_method_(lxb_dom_node_t* form, HttpMethod out[static 1]) {
+//    const lxb_char_t* method;
+//    size_t len;
+//    lexbor_find_attr_value(form, "action", &method, &len);
+//    if (!method || !len || lexbor_str_eq("get", method, len)) {
+//        *out = http_get;
+//        return Ok;
+//    }
+//
+//    if (method && len && lexbor_str_eq("post", method, len)) {
+//        *out = http_post;
+//        return Ok;
+//    }
+//    return "error: unsuported method";
+//}
+
+static Err mk_submit_get(
+    lxb_dom_node_t* form, const lxb_char_t* action, size_t action_len, CURLU* out[static 1]
+) {
     Err err;
+    BufOf(lxb_char_t)* buf = &(BufOf(lxb_char_t)){0};
+    if (action && action_len) {
+        if ((err = _submit_url_set_action(buf, action, action_len, *out))) {
+            buffn(lxb_char_t, clean)(buf);
+            return err;
+        }
+    }
+
+    if ((err=_make_submit_curlu_rec(form, buf, *out))) {
+        buffn(lxb_char_t, clean)(buf);
+        return err;
+    }
+
+    buffn(lxb_char_t, clean)(buf);
+    return Ok;
+}
+
+Err mk_submit_url (lxb_dom_node_t* form, CURLU* out[static 1], HttpMethod http_method[static 1]) {
+    //Err err;
 
     const lxb_char_t* action;
     size_t action_len;
@@ -118,21 +164,8 @@ Err mk_submit_url (lxb_dom_node_t* form, CURLU* out[static 1]) {
     lexbor_find_attr_value(form, "method", &method, &method_len);
 
     if (!method_len || lexbor_str_eq("get", method, method_len)) {
-        BufOf(lxb_char_t)* buf = &(BufOf(lxb_char_t)){0};
-        if (action && action_len) {
-            if ((err = _submit_url_set_action(buf, action, action_len, *out))) {
-                buffn(lxb_char_t, clean)(buf);
-                return err;
-            }
-        }
-
-        if ((err=_make_submit_curlu_rec(form, buf, *out))) {
-            buffn(lxb_char_t, clean)(buf);
-            return err;
-        }
-
-        buffn(lxb_char_t, clean)(buf);
-        return Ok;
+        *http_method = http_get;
+        return mk_submit_get(form, action, action_len, out);
     }
     return "not a get method";
 }

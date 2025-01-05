@@ -289,7 +289,10 @@ Err htmldoc_init(HtmlDoc d[static 1], const char* cstr_url) {
     }
 
     *d = (HtmlDoc){
-        .lxbdoc=document, .url=url, .cache=(DocCache){.textbuf=(TextBuf){.current_line=1}}
+        .url=url,
+        .method=http_get,
+        .lxbdoc=document,
+        .cache=(DocCache){.textbuf=(TextBuf){.current_line=1}}
     };
     return Ok;
 }
