@@ -24,6 +24,7 @@
 [ ] implement search in textbuf with /
 [?] fix url construction on submit (it could be absolute or not)
 [ ] display form elements with <>
+[ ] fix last char in some files saved by write ed cmd
 
 # DONE
 [*] Accept files apart from urls
@@ -35,3 +36,4 @@
 [*] implement editable attributes such as input value
 [*] define and add license (GNU, Apache, MIT, ...?)
 [*] Make go cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)
+[*] remove escape sequences when writing to a file

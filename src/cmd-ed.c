@@ -1,3 +1,4 @@
+#define _POSIX_C_SOUCRE 200809L
 #include <string.h>
 
 #include "src/cmd-ed.h"
@@ -47,7 +48,7 @@ static inline Err ed_print_n(TextBuf textbuf[static 1], Range range[static 1]) {
         fwrite("\t", 1, 1, stdout);
         fwrite(textbuf->buf.items + r.beg, 1, r.end - r.beg, stdout);
     }
-    fwrite(EscCodeReset, 1, sizeof EscCodeReset, stdout);
+    fwrite(EscCodeReset, 1, sizeof(EscCodeReset)-1, stdout);
     if (range->end == textbuf_line_count(textbuf)) 
         fwrite("\n", 1, 1, stdout);
     return Ok;
@@ -65,7 +66,7 @@ static inline Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
         fwrite(textbuf->buf.items + r.beg, 1, r.end - r.beg, stdout);
     }
 
-    fwrite(EscCodeReset, 1, sizeof EscCodeReset, stdout);
+    fwrite(EscCodeReset, 1, sizeof(EscCodeReset)-1, stdout);
 
     if (range->end == textbuf_line_count(textbuf)) 
         fwrite("\n", 1, 1, stdout);
@@ -119,6 +120,19 @@ Err dbg_print_all_lines_nums(TextBuf textbuf[static 1]) {
     return Ok;
 }
 
+static const char* _mem_find_esc_code_(const char* s, size_t len) {
+    const char* res = s;
+    while((res = memchr(res, '\033', len))) {
+        if (res + sizeof(EscCodeReset)-1 > s + len) return NULL;
+        const char code_prefix[] = "\033[";
+        size_t code_prefix_len = sizeof(code_prefix) - 1;
+        if (memcmp(code_prefix, res, code_prefix_len)) {
+            /* strings differ */
+            ++res;
+        } else break;
+    }
+    return res;
+}
 
 Err ed_write(const char* rest, TextBuf textbuf[static 1]) {
     if (!rest || !*rest) { return "cannot write without file arg"; }
@@ -128,8 +142,22 @@ Err ed_write(const char* rest, TextBuf textbuf[static 1]) {
     if (!fp) {
         return err_fmt("%s: could not open file: %s", __func__, rest); 
     }
-    if (fwrite(textbuf_items(textbuf), 1, len(textbuf), fp) != len(textbuf)) {
-        return err_fmt("%s: error writing to file: %s", __func__, rest);
+    //if (fwrite(textbuf_items(textbuf), 1, len(textbuf), fp) != len(textbuf)) {
+    //    return err_fmt("%s: error writing to file: %s", __func__, rest);
+    //}
+    const char* items = textbuf_items(textbuf);
+    const char* beg = items;
+    size_t len = len(textbuf);
+    while (beg && beg < items + len) {
+        //const char* end = memchr(beg, '\0', items + len - beg);
+        const char* end = _mem_find_esc_code_(beg, items + len - beg);
+        if (!end) end = items + len;
+        size_t chunklen = end - beg;
+        if (chunklen > 1 && fwrite(beg, 1, chunklen, fp) != chunklen) {
+            return err_fmt("%s: error writing to file: %s", __func__, rest);
+        }
+        if (end + 1 < items + len) beg = ((char*)memchr(end + 1, 'm', items+len-(end+1))) + 1;
+        else break;
     }
     if (fclose(fp)) return err_fmt("error closing file '%s'", rest);
     return Ok;

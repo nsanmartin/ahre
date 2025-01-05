@@ -13,7 +13,7 @@ typedef const char* Err;
 Err err_fmt(Err fmt, ...);
 
 static Err FATAL_ERROR_PREFIX = "error";
-static size_t FATAL_ERROR_PREFIX_LEN = sizeof FATAL_ERROR_PREFIX;
+static size_t FATAL_ERROR_PREFIX_LEN = sizeof(FATAL_ERROR_PREFIX) - 1;
 
 static inline bool fatal_error(Err e) {
     return !strncmp(e, FATAL_ERROR_PREFIX, FATAL_ERROR_PREFIX_LEN);

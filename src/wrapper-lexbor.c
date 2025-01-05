@@ -214,13 +214,13 @@ Err lexbor_node_to_str(lxb_dom_node_t* node, BufOf(const_char)* buf) {
         size_t valuelen;
         const lxb_char_t* value = lxb_dom_attr_value(attr, &valuelen);
 
-        if (!buffn(const_char, append)(buf, indentstr, sizeof indentstr)) return "error: mem failure (BufOf.append)";
+        if (!buffn(const_char, append)(buf, indentstr, sizeof(indentstr)-1)) return "error: mem failure (BufOf.append)";
         if (!buffn(const_char, append)(buf, (const char*)name, namelen)) return "error: mem failure (BufOf.append)";
         if (!buffn(const_char, append)(buf, "=", 1)) return "error: mem failure (BufOf.append)";
         if (valuelen && valuelen) {
             if (!buffn(const_char, append)(buf, (const char*)value, valuelen)) return "error: mem failure (BufOf.append)";
         } else {
-            if (!buffn(const_char, append)(buf, nullstr, sizeof nullstr)) return "error: mem failure (BufOf.append)";
+            if (!buffn(const_char, append)(buf, nullstr, sizeof(nullstr)-1)) return "error: mem failure (BufOf.append)";
         }
         if (!buffn(const_char, append)(buf, "\n", 1)) return "error: mem failure (BufOf.append)";
     }

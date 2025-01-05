@@ -113,7 +113,7 @@ static inline Err htmldoc_fetch(HtmlDoc htmldoc[static 1], UrlClient url_client[
 Err htmldoc_browse(HtmlDoc htmldoc[static 1]);
 
 #define serialize_lit_str(LitStr, CallBack, Context) \
- ((LXB_STATUS_OK != CallBack((lxb_char_t*)LitStr, sizeof LitStr, Context)) \
+ ((LXB_STATUS_OK != CallBack((lxb_char_t*)LitStr, sizeof(LitStr)-1, Context)) \
  ?  "error serializing literal string" : Ok)
 
 #define serialize_literal_color_str(EscSeq, CallBack, Context) \

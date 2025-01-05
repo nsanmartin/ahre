@@ -29,7 +29,7 @@ typedef const char const_char;
 #define EscCodeLightGreen  "\033[92m"
 
 #define buf_append_lit(LitStr, Buf_) do{\
-   if (buffn(char,append)(Buf_, (char*)LitStr, sizeof(LitStr))) {\
+   if (buffn(char,append)(Buf_, (char*)LitStr, sizeof(LitStr)-1)) {\
        return "could not append"; }}while(0)
 
 static inline int buf_append_hexp(void* p, BufOf(char)*buf) {

@@ -24,6 +24,7 @@ a range and a command are expected and the current line is set with the end of t
 :,+34p  : prints from the current line to 34 lines after it, moves current line 34.
 :,$n    : print from current line until the last one, numbering the printed lines, move the current line.
 :1p     : prints first line and set the current line.
+:write /home/user/buffer : saves current buffer in target (without the escape sequences bash uses for the colours).
 
 In ahre, some tags are wrapped with specific chars:
 anchors are wrapped within [] 

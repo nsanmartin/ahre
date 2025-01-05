@@ -57,7 +57,7 @@ _append_unsigned_to_bufof_char_base36(uintmax_t ui, BufOf(char)* b) {
 
 
 Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    if (!buffn(char, append)(&ctx->lazy_str, EscCodeBlue, sizeof EscCodeBlue)) return "error: failed to append to bufof";
+    if (!buffn(char, append)(&ctx->lazy_str, EscCodeBlue, sizeof(EscCodeBlue)-1)) return "error: failed to append to bufof";
 
 
     HtmlDoc* d = browse_ctx_htmldoc(ctx);
@@ -66,9 +66,9 @@ Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
     if (!arlfn(LxbNodePtr,append)(anchors, &node)) 
         return "error: lip set";
 
-    if (!buffn(char, append)(&ctx->lazy_str, EscCodeBlue, sizeof EscCodeBlue))
+    if (!buffn(char, append)(&ctx->lazy_str, EscCodeBlue, sizeof(EscCodeBlue)-1))
         return "error: failed to append to bufof";
-    if (!buffn(char, append)(&ctx->lazy_str, ANCHOR_OPEN_STR, sizeof ANCHOR_CLOSE_STR))
+    if (!buffn(char, append)(&ctx->lazy_str, ANCHOR_OPEN_STR, sizeof(ANCHOR_CLOSE_STR)-1))
         return "error: failed to append to bufof";
     try(_append_unsigned_to_bufof_char_base36(anchor_num, &ctx->lazy_str));
     if (!buffn(char, append)(&ctx->lazy_str, " ", 1)) return "error: failed to append to bufof";

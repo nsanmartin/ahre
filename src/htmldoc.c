@@ -24,7 +24,7 @@
         return "error serializing data"
 
 #define serialize_cstring_debug(LitStr, CallBack, Context) \
-    serialize_cstring(LitStr, sizeof LitStr, CallBack, Context)
+    serialize_cstring(LitStr, sizeof(LitStr) - 1, CallBack, Context)
 
 #define append_to_arlof_lxb_node__(ArrayList, NodePtr) \
     (arlfn(LxbNodePtr,append)(ArrayList, (NodePtr)) ? Ok : "error: lip set")
@@ -107,11 +107,11 @@ browse_tag_img(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[s
     ArlOf(LxbNodePtr)* imgs = htmldoc_imgs(d);
     const size_t img_count = len__(imgs);
     try( append_to_arlof_lxb_node__(imgs, &node));
-    try_lxb_serialize(IMAGE_OPEN_STR, sizeof IMAGE_OPEN_STR, cb, ctx);
+    try_lxb_serialize(IMAGE_OPEN_STR, sizeof(IMAGE_OPEN_STR)-1, cb, ctx);
     try_lxb (htmldoc_lexbor_serialize_unsigned(ctx, cb, img_count), "error serializing unsigned");
     try( _serialize_img_alt(node, cb, ctx));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
-    try_lxb_serialize(IMAGE_CLOSE_STR, sizeof IMAGE_CLOSE_STR, cb, ctx);
+    try_lxb_serialize(IMAGE_CLOSE_STR, sizeof(IMAGE_CLOSE_STR)-1, cb, ctx);
     try (serialize_literal_color_str(EscCodeReset, cb, ctx));
     return Ok;
 }
