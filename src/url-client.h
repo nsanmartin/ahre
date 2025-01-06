@@ -8,9 +8,10 @@
 typedef struct UrlClient {
     CURL* curl;
     char errbuf[CURL_ERROR_SIZE];
+    BufOf(const_char) postdata;
 } UrlClient;
 
-
+static inline BufOf(const_char)* url_client_postdata(UrlClient uc[static 1]) { return &uc->postdata; }
 /* ctor */
 UrlClient* url_client_create(void);
 /* dtor */

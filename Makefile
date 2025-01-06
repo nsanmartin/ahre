@@ -25,7 +25,7 @@ run_tests: test_all
 	@./build/test_error
 	@./build/test_ed_write
 
-test_all: test_range test_buf test_error
+test_all: test_range test_buf test_error test_ed_write
 
 $(AHRE): $(AHRE_OBJ) build/isocline.o
 	$(CC) $(CFLAGS) \

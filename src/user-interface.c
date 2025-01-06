@@ -15,7 +15,11 @@
 #include "src/wrapper-lexbor-curl.h"
 
 //TODO: move this to wrapper-lexbor-curl.h
-Err mk_submit_url(lxb_dom_node_t* form, CURLU* out[static 1], HttpMethod http_method[static 1]);
+Err mk_submit_url(UrlClient uc[static 1],
+    lxb_dom_node_t* form,
+    CURLU* out[static 1],
+    HttpMethod doc_method[static 1]
+);
 
 Err read_line_from_user(Session session[static 1]) {
     char* line = 0x0;
@@ -131,13 +135,17 @@ Err _cmd_submit_ix(Session session[static 1], size_t ix) {
     lxb_dom_node_t* form = _find_parent_form(*nodeptr);
     if (form) {
 
-        if ((err = mk_submit_url(form, &curlu, &htmldoc->method))) {
+   
+        UrlClient* url_client = session_url_client(session);
+        HttpMethod method;
+        if ((err = mk_submit_url(url_client, form, &curlu, &method))) {
             curl_url_cleanup(curlu);
             return err;
         }
         ////TODO: all this is duplicated, refactor!
         if (!(newdoc=htmldoc_create(NULL))) { err="error creating htmldoc"; goto cleanup_curlu; };
         htmldoc_url(newdoc)->cu=curlu;
+        newdoc->method = method;
 
         if ((err=htmldoc_fetch(newdoc, session_url_client(session)))) {
            goto cleanup_htmldoc; 
