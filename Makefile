@@ -17,7 +17,7 @@ AHRE_OBJ=$(AHRE_SRCS:src/%.c=$(AHRE_OBJDIR)/%.o)
 ADHOC_SRCS := src/error.c src/ranges.c src/str.c src/textbuf.c src/cmd-ed.c src/re.c
 ADHOC_OBJ=$(ADHOC_SRCS:src/%.c=$(AHRE_OBJDIR)/%.o)
 
-all: ahre run_tests
+all: ahre 
 
 run_tests: test_all
 	@./build/test_buf
