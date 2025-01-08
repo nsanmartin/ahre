@@ -15,6 +15,8 @@ UrlClient* url_client_create(void) {
 
     /* default options to curl */
     if (curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, rv->errbuf)
+            || curl_easy_setopt(handle, CURLOPT_COOKIEFILE, "")
+            //|| curl_easy_setopt(handle, CURLOPT_COOKIEJAR, "cookies.txt")
             || curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 0L)
             || curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1)) {
         perror("Error configuring curl"); goto cleanup_curl;

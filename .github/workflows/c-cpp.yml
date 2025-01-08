@@ -19,13 +19,11 @@ jobs:
       run: sudo apt install -y gcc 
     - name: libcurl
       run: sudo apt install -y libcurl4-openssl-dev
-    - name: readline
-      run: sudo apt install -y libreadline-dev
     - name: lexbor-clone
       run: git clone https://github.com/lexbor/lexbor 
     - name: lexbor-install
       run: cd lexbor && cmake . && make && sudo make install
-    - name: hashi
+    - name: submodules
       run: git submodule update --init --recursive
     - name: create-build-dir
       run: mkdir build
