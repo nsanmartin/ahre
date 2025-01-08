@@ -19,6 +19,8 @@ jobs:
       run: sudo apt install -y gcc 
     - name: libcurl
       run: sudo apt install -y libcurl4-openssl-dev
+    - name: Set LD_LIBRARY_PATH
+      run: export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
     - name: lexbor-clone
       run: git clone https://github.com/lexbor/lexbor 
     - name: lexbor-install
