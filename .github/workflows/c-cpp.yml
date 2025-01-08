@@ -22,7 +22,7 @@ jobs:
     - name: Set LD_LIBRARY_PATH
       run: export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
     - name: check lib
-      run: ls /usr/local/lib
+      run: find -type f -name liblexbor.so.2
     - name: lexbor-clone
       run: git clone https://github.com/lexbor/lexbor 
     - name: lexbor-install
