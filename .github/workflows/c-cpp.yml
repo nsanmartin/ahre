@@ -26,7 +26,7 @@ jobs:
       run: git clone https://github.com/lexbor/lexbor 
     - name: lexbor-install
       run: cd lexbor && cmake . && make && sudo make install
-    - nanme: Find lexbor
+    - name: Find lexbor
       run: find / -type f -name liblexbor.so.2
     - name: submodules
       run: git submodule update --init --recursive
