@@ -33,7 +33,7 @@
 
 
 static Err browse_ctx_init(BrowseCtx ctx[static 1], HtmlDoc htmldoc[static 1], bool color) {
-    if (!htmldoc) return "error: expected non null htmldoc in browse ctx.";
+    //if (!htmldoc) return "error: expected non null htmldoc in browse ctx.";
     *ctx = (BrowseCtx) {.htmldoc=htmldoc, .color=color};
     return Ok;
 }

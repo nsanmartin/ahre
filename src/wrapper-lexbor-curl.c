@@ -57,7 +57,7 @@ curl_lexbor_fetch_document(UrlClient url_client[static 1], HtmlDoc htmldoc[stati
 
 
 static Err _make_submit_get_curlu_rec(
-    lxb_dom_node_t node[static 1],
+    lxb_dom_node_t* node,
     BufOf(lxb_char_t) buf[static 1],
     CURLU* out
 ) {
@@ -127,7 +127,7 @@ free_escaped:
 
 static Err _make_submit_post_curlu_rec(
     UrlClient url_client[static 1],
-    lxb_dom_node_t node[static 1],
+    lxb_dom_node_t* node,
     BufOf(const_char) buf[static 1],
     CURLU* out
 ) {
