@@ -26,4 +26,5 @@ static inline char* url_client_escape_url(
 }
 
 static inline void url_client_curl_free_cstr(char* s) { curl_free(s); }
+Err url_client_print_cookies(UrlClient uc[static 1]) ;
 #endif

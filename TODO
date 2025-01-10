@@ -27,6 +27,7 @@
 [ ] set autocomplete with ahre commands
 [ ] bug: image number incalid: check base
 [ ] run test in github ci workflow (currently it does not find liblexbos.so.2)
+[ ] implement other curlopt setter in user interface
 
 # DONE
 [*] Accept files apart from urls

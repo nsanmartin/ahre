@@ -161,3 +161,21 @@ const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen) {
     memcpy(buf + slen, t, tlen);
     return buf;
 }
+
+const char* cstr_get_next_word(const char* line, Str s[static 1]) {
+    s->s = cstr_skip_space(line);
+    if (!line) return NULL;
+    while (*line && isalnum(*line)) {
+        ++s->len;
+        ++line;
+    }
+    return line;
+}
+
+const char* parse_l(const char* tk, long lptr[static 1]) {
+    if (!tk || !*tk) { return NULL; }
+    char* endptr = 0x0;
+    *lptr = strtol(tk, &endptr, 10);
+    if (ERANGE == errno && (LONG_MAX == *lptr || LONG_MIN == *lptr)) { return NULL; }
+    return endptr == tk ? NULL: endptr;
+}

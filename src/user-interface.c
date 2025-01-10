@@ -34,6 +34,11 @@ bool substr_match_all(const char* s, size_t len, const char* cmd) {
 }
 
 
+Err cmd_cookies(Session session[static 1], const char* url) {
+    (void)url;
+    return url_client_print_cookies(session_url_client(session));
+}
+
 ///TODO: move this to session
 Err cmd_set_url(Session session[static 1], const char* url) {
     HtmlDoc* htmldoc = session_current_doc(session);
@@ -377,9 +382,11 @@ Err process_line(Session session[static 1], const char* line) {
     const char* rest = NULL;
     /* these commands does not require current valid document */
     if ((rest = substr_match(line, "browse", 1))) { return cmd_browse(session, rest); }
+    if ((rest = substr_match(line, "cookies", 1))) { return cmd_cookies(session, rest); }
     if ((rest = substr_match(line, "echo", 1))) return puts(rest) < 0 ? "error: puts failed" : Ok;
     if ((rest = substr_match(line, "go", 1))) { return cmd_browse(session, rest); }
     if ((rest = substr_match(line, "quit", 1)) && !*rest) { session->quit = true; return Ok;}
+    if ((rest = substr_match(line, "setopt", 1))) { return cmd_setopt(session, rest); }
     if ((rest = substr_match(line, "url", 1))) { return cmd_set_url(session, rest); }
 
     if (!htmldoc_is_valid(session_current_doc(session)) ||!session->url_client) return "no document";

@@ -34,4 +34,5 @@ void session_destroy(Session* session) ;
 int edcmd_print(Session session[static 1]);
 
 Err dbg_session_summary(Session session[static 1]);
+Err cmd_setopt(Session session[static 1], const char* line);
 #endif
