@@ -15,6 +15,7 @@ UrlClient* url_client_create(void) {
 
     /* default options to curl */
     if (curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, rv->errbuf)
+            || curl_easy_setopt(handle, CURLOPT_VERBOSE, 1)
             || curl_easy_setopt(handle, CURLOPT_COOKIEFILE, "")
             //|| curl_easy_setopt(handle, CURLOPT_COOKIEJAR, "cookies.txt")
             || curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 0L)
@@ -32,6 +33,20 @@ exit_fail:
     return 0x0;
 }
 
+Err url_client_print_cookies(UrlClient uc[static 1]) {
+    struct curl_slist* cookies = NULL;
+    CURLcode curl_code = curl_easy_getinfo(uc->curl, CURLINFO_COOKIELIST, &cookies);
+    if (curl_code != CURLE_OK) { return "error: could not retrieve cookies list"; }
+    if (!cookies) { puts("No cookies"); return "no cookies"; }
+
+    struct curl_slist* it = cookies;
+    while (it) {
+        printf("%s\n", it->data);
+        it = it->next;
+    }
+    curl_slist_free_all(cookies);
+    return Ok;
+}
 
 void url_client_destroy(UrlClient* url_client) {
     curl_easy_cleanup(url_client->curl);
