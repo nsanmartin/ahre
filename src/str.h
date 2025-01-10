@@ -72,4 +72,5 @@ static inline const char* mem_to_dup_str(const char* data, size_t len) {
 
 const char* cstr_cat_dup(const char* s, const char* t);
 const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen);
+const char* parse_l(const char* tk, long lptr[static 1]);
 #endif

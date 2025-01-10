@@ -10,17 +10,20 @@ UrlClient* url_client_create(void) {
     if (!rv) { perror("Mem Error"); goto exit_fail; }
     CURL* handle = curl_easy_init();
     if (!handle) { perror("Curl init error"); goto free_rv; }
+    //struct curl_slist *headerlist=NULL;
 
     *rv = (UrlClient) { .curl=handle, .errbuf={0} };
 
     /* default options to curl */
-    if (curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, rv->errbuf)
-            || curl_easy_setopt(handle, CURLOPT_VERBOSE, 1)
-            || curl_easy_setopt(handle, CURLOPT_COOKIEFILE, "")
-            //|| curl_easy_setopt(handle, CURLOPT_COOKIEJAR, "cookies.txt")
-            || curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 0L)
-            || curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1)) {
-        perror("Error configuring curl"); goto cleanup_curl;
+    if (   curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, rv->errbuf)
+        || curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 1L)
+        || curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1)
+        || curl_easy_setopt(handle, CURLOPT_VERBOSE, 0L)
+        || curl_easy_setopt(handle, CURLOPT_USERAGENT, "Ahre/0.0.1")
+        || curl_easy_setopt(handle, CURLOPT_COOKIEFILE, "")
+        //|| curl_easy_setopt(handle, CURLOPT_COOKIEJAR, "cookies.txt")
+    ) { 
+        perror("Error configuring curl, exiting."); goto cleanup_curl;
     }
 
     return rv;
@@ -55,3 +58,37 @@ void url_client_destroy(UrlClient* url_client) {
 }
 
 
+const char* _parse_opt(const char* line, CURLoption opt[static 1]) {
+
+    const char* rest;
+    if ((rest = substr_match(line, "noprogress", 1))) { *opt=CURLOPT_NOPROGRESS; return rest; }
+    if ((rest = substr_match(line, "verbose", 1))) { *opt=CURLOPT_VERBOSE; return rest; }
+    return NULL;
+}
+
+Err _parse_setopt_long(CURL* handle, CURLoption opt, const char* line) {
+    long value = 0;
+    const char* rest = parse_l(line, &value);
+    if (!rest) return "not vlue to setopt";
+    if (*cstr_skip_space(rest)) return err_fmt("invalid opt: %s", line);
+    CURLcode curl_code = curl_easy_setopt(handle, opt, value);
+    if (CURLE_OK != curl_code) {
+        return err_fmt("could not set curlopt: %s", curl_easy_strerror(curl_code));
+    }
+    return Ok;
+}
+
+Err cmd_setopt(Session session[static 1], const char* line) {
+    CURLoption opt;
+    const char* rest = _parse_opt(line, &opt);
+    if (!rest) return "invalid curl opt";
+    CURL* handle = session_url_client(session)->curl;
+    switch(opt) {
+        case CURLOPT_VERBOSE:
+        case CURLOPT_NOPROGRESS:
+            return _parse_setopt_long(handle, opt, rest);
+        default: return "not implemented curlopt";
+
+    }
+    return Ok;
+}

@@ -386,6 +386,7 @@ Err process_line(Session session[static 1], const char* line) {
     if ((rest = substr_match(line, "echo", 1))) return puts(rest) < 0 ? "error: puts failed" : Ok;
     if ((rest = substr_match(line, "go", 1))) { return cmd_browse(session, rest); }
     if ((rest = substr_match(line, "quit", 1)) && !*rest) { session->quit = true; return Ok;}
+    if ((rest = substr_match(line, "setopt", 1))) { return cmd_setopt(session, rest); }
     if ((rest = substr_match(line, "url", 1))) { return cmd_set_url(session, rest); }
 
     if (!htmldoc_is_valid(session_current_doc(session)) ||!session->url_client) return "no document";

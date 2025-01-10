@@ -52,6 +52,15 @@ curl_lexbor_fetch_document(UrlClient url_client[static 1], HtmlDoc htmldoc[stati
         return err_fmt("error: lbx failed to parse html, status: %d", lxb_status);
     }
 
+    curl_off_t nbytes;
+    curl_code = curl_easy_getinfo(url_client->curl, CURLINFO_SIZE_DOWNLOAD_T, &nbytes);
+    if (curl_code!=CURLE_OK) {
+        printf("warn: %s", curl_easy_strerror(curl_code));
+    } else {
+        printf("%"CURL_FORMAT_CURL_OFF_T"\n", nbytes);
+    }
+
+
     return Ok;
 }
 
