@@ -8,6 +8,7 @@
 
 static Err validate_range_for_buffer(TextBuf textbuf[static 1], Range range[static 1]) {
     if (!range->beg  || range->beg > range->end) { return  "error: bad range"; }
+    if (textbuf_line_count(textbuf) < range->end) return "invalid range end";
     if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
     return Ok;
 }
@@ -203,6 +204,7 @@ Err textbuf_eval_cmd(Session session[static 1], const char* line, Range range[st
 
     const char* rest = 0x0;
 
+    if (!*cstr_skip_space(line)) { return ed_print(textbuf, range); } /* default :NUM */
     if ((rest = substr_match(line, "a", 1)) && !*rest) { return ed_print_all(textbuf); }
     if ((rest = substr_match(line, "l", 1)) && !*rest) { return dbg_print_all_lines_nums(textbuf); }
     if ((rest = substr_match(line, "go", 2)) && !*rest) { return ed_go(htmldoc, rest, range); }
@@ -219,7 +221,8 @@ Err ed_eval(Session session[static 1], const char* line) {
     const char* rest = 0x0;
     TextBuf* textbuf = session_current_buf(session);
     Range range = {0};
-    line = parse_range(line, &range, textbuf);
+    RangeParseCtx ctx = range_parse_ctx_from_textbuf(textbuf);
+    line = parse_range(line, &range, &ctx);
     if (!line) { return "invalid range"; }
 
     if ((rest = substr_match(line, "e", 1)) && *rest) 

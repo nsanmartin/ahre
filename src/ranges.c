@@ -21,6 +21,7 @@
 */
 
 
+
 /* internal linkage */
 
 static const char* parse_ull(const char* tk, uintmax_t* ullp) {
@@ -87,15 +88,15 @@ static const char* parse_linenum_search_regex(
 }
 
 static const char*
-parse_range_addr(const char* tk, TextBuf tb[static 1], size_t out[static 1], bool not_found[static 1]) {
+parse_range_addr(const char* tk, RangeParseCtx ctx[static 1], size_t out[static 1]) {
 
-    *not_found = false;
-    uintmax_t curr = *textbuf_current_line(tb);
-    uintmax_t max  = textbuf_line_count(tb);
+    ctx->not_found = false;
+    uintmax_t curr = ctx->current_line;
+    uintmax_t max  = ctx->nlines;
     if (!tk || !*tk) { return NULL; }
     if (*tk == '/') {
         ++tk;
-        return parse_linenum_search_regex(tk, tb, out, not_found);
+        return parse_linenum_search_regex(tk, ctx->tb, out, &ctx->not_found);
     } else if (*tk == '.' || *tk == '+' || *tk == '-')  {
         if (*tk == '.') { ++tk; }
         const char* rest = parse_range_addr_num(tk, curr, max, out);
@@ -122,16 +123,13 @@ parse_range_addr(const char* tk, TextBuf tb[static 1], size_t out[static 1], boo
         const char* rest = parse_range_addr_num(tk+1, curr, max, out);
         if (rest) { return rest; }
     }
-    return NULL;
+    ctx->not_found = true;
+    return tk;
 }
 
 
-static const char* parse_range_impl(
-    const char* tk, TextBuf tb[static 1], Range range[static 1], bool* not_found
-) {
-    size_t current_line = *textbuf_current_line(tb);
-    size_t nlines       = textbuf_line_count(tb);
-
+static const char*
+parse_range_impl(const char* tk, RangeParseCtx ctx[static 1], Range range[static 1]) {
 
     /* invalid input */
     if (!tk) return NULL;
@@ -144,20 +142,29 @@ static const char* parse_range_impl(
     /* full range */
     if (*tk == '%') {
         ++tk;
-        *range = (Range){.beg=1, .end=nlines};
+        //lkj
+        *range = (Range){.beg=1, .end=ctx->nlines};
         return tk;
     } 
 
     /* ,Addr? */
     if (*tk == ',') {
         ++tk;
-        range->beg = current_line;
-        const char* rest = parse_range_addr(tk, tb, &range->end, not_found);
+        //lkj
+        range->beg = ctx->current_line;
+        const char* rest = parse_range_addr(tk, ctx, &range->end);
         return rest? rest : tk;
     }
             
-    const char* rest = parse_range_addr(tk, tb, &range->beg, not_found);
-    if (*not_found) return NULL;
+    const char* rest = parse_range_addr(tk, ctx, &range->beg);
+    if (ctx->not_found) {
+        /* No range was giving so defaulting to current line.
+         * This is the case of e.g. 'p' that prints current line.
+         */
+        range->beg = ctx->current_line;
+        range->end = range->beg;
+        return rest;
+    }
     
     if (rest) {
         /* Addr... */
@@ -165,7 +172,7 @@ static const char* parse_range_impl(
         if (*tk == ',') {
             ++tk;
             /* Addr,... */
-            rest = parse_range_addr(tk, tb, &range->end, not_found);
+            rest = parse_range_addr(tk, ctx, &range->end);
             if (rest) {
                 /* Addr,AddrEOF */
                 return rest;
@@ -181,7 +188,7 @@ static const char* parse_range_impl(
         }
     } else {
         /* emptyEOF */
-        *range = (Range){.beg=current_line, .end=0};
+        *range = (Range){.beg=ctx->current_line, .end=0};
         return tk;
     }
 
@@ -199,11 +206,12 @@ static inline bool range_has_no_end(Range r[static 1]) { return r->end == 0; }
 /* external linkage */
 
 const char*
-parse_range(const char* tk, Range range[static 1], TextBuf tb[static 1]) {
-    bool not_found = false;
-    tk =  parse_range_impl(tk, tb, range, &not_found);
-    if (!tk || not_found || (!range_has_no_end(range) && is_range_valid(range, 0))) { return NULL; }
-    else if (range->end == 0) range->end = range->beg; 
+parse_range(const char* tk, Range range[static 1], RangeParseCtx ctx[static 1]) {
+    //RangeParseCtx ctx = range_parse_ctx_from_textbuf(tb);
+    tk =  parse_range_impl(tk, ctx, range);
+    if (textbuf_line_count(ctx->tb) < range->end) return "invalid range end";
+    if (!tk || (!range_has_no_end(range) && is_range_valid(range, 0))) { return NULL; }
+    if (range->end == 0) range->end = range->beg; 
     return tk;
 }
 

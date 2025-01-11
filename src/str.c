@@ -79,8 +79,8 @@ inline void str_trim_space(Str* l) {
 
 
 const char* substr_match(const char* s, const char* cmd, size_t len) {
-    if (!*s) { return 0x0; }
-	for (; *s && !isspace(*s); ++s, ++cmd, (len?--len:len)) {
+    if (!*s || !isalnum(*s)) { return 0x0; }
+	for (; *s && isalnum(*s); ++s, ++cmd, (len?--len:len)) {
 		if (*s != *cmd) { return 0x0; }
 	}
     if (len) { 
