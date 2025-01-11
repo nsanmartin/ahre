@@ -391,7 +391,7 @@ Err process_line(Session session[static 1], const char* line) {
     if (!htmldoc_is_valid(session_current_doc(session)) ||!session->url_client) return "no document";
 
     //TODO: implement search in textbuf
-    if (*line == '/') return "/ (search) not implemented";
+    if (*line == '/') return "to search in buffer use ':/' (not just '/')";
 
     //TODO: obtain range from line and pase it already parsed to eval fn
 

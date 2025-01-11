@@ -230,6 +230,7 @@ Err ed_eval(Session session[static 1], const char* line) {
     if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
 
     if (range.end == 0) return "error: unexpeced range with end == 0";
+    if (range.end > textbuf_line_count(textbuf)) return "error: range end too large";
     textbuf->current_line = range.end;
     return textbuf_eval_cmd(session, line, &range);
 }

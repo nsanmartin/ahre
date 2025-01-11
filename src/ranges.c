@@ -58,12 +58,10 @@ parse_range_addr_num(const char* tk, uintmax_t num, uintmax_t maximum, size_t* o
 
 _Static_assert(sizeof(size_t) <= sizeof(uintmax_t), "range parser requires this precondition");
 
-static const char* parse_linenum_search_regex(
-    const char* tk, TextBuf tb[static 1], size_t out[static 1], bool* no_parse
-) {
-    *no_parse = false;
+static ParseRv
+parse_linenum_search_regex(ParseRv tk, TextBuf tb[static 1], size_t out[static 1]) {
     const char* buf = textbuf_current_line_offset(tb);
-    if (!buf) { perror("error: invalid current line"); exit(-1); }
+    if (!buf) { return to_range_parse_err("error: invalid current line"); }
     char* end = strchr(tk, '/');
     const char* res = end ? end + 1 : tk + strlen(tk);
     if (end) *end = '\0';
@@ -71,20 +69,11 @@ static const char* parse_linenum_search_regex(
     size_t* pmatch = &match;
     Err err = regex_maybe_find_next(tk, buf, &pmatch);
     if (end) *end = '/';
+    if (err) return err_prepend_char(err, '\x01');
 
     if (pmatch)  {
-        if ((err = textbuf_get_line_of(tb, buf + match, out))) {
-            perror(err);
-            exit(-1);
-        }
-
-        ///TODO: refactor in order to mutate only in one place
-        *textbuf_current_line(tb) = *out;
-    } else {
-        ///// Not ideal way to signal that pattern was not found
-        *no_parse = true;
-        return NULL;
-    }
+        try ((err = textbuf_get_line_of(tb, buf + match, out)));
+    } else return to_range_parse_err("pattern not found"); 
 
     return res;
 }
@@ -92,15 +81,15 @@ static const char* parse_linenum_search_regex(
 static ParseRv
 parse_range_addr(const char* tk, RangeParseCtx ctx[static 1], size_t out[static 1]) {
 
+    ParseRv const no_parse = tk;
     ParseRv rest;
-    ctx->no_parse = false;
     uintmax_t curr = ctx->current_line;
     uintmax_t max  = ctx->nlines;
     if (!tk) { return NULL; }
     if (!*tk) { return tk; }
     if (*tk == '/') {
         ++tk;
-        return parse_linenum_search_regex(tk, ctx->tb, out, &ctx->no_parse);
+        return parse_linenum_search_regex(tk, ctx->tb, out);
     } else if (*tk == '.' || *tk == '+' || *tk == '-')  {
         if (*tk == '.') { ++tk; }
         try_parse_range((rest = parse_range_addr_num(tk, curr, max, out)));
@@ -124,8 +113,7 @@ parse_range_addr(const char* tk, RangeParseCtx ctx[static 1], size_t out[static 
         try_parse_range((rest = parse_range_addr_num(tk+1, curr, max, out)));
         return rest;
     }
-    ctx->no_parse = true;
-    return tk;
+    return no_parse;
 }
 
 
@@ -135,12 +123,12 @@ parse_range_impl(const char* tk, RangeParseCtx ctx[static 1], Range range[static
     /* invalid input */
     if (!tk) return NULL;
 
+    ParseRv const no_parse = tk;
     tk = cstr_skip_space(tk);
 
     /* empty string */
     if (!*tk) {
-        ctx->no_parse = true;
-        return tk;
+        return no_parse;
     }
 
     /* full range */
@@ -156,11 +144,11 @@ parse_range_impl(const char* tk, RangeParseCtx ctx[static 1], Range range[static
         ++tk;
         range_beg_set_curr(range, ctx);
         try_parse_range((rest = parse_range_addr(tk, ctx, &range->end)));
-        return ctx->no_parse ? tk : rest;
+        return rest;
     }
 
     try_parse_range((rest = parse_range_addr(tk, ctx, &range->beg)));
-    if (ctx->no_parse) {
+    if (tk == rest /* no_parse */) {
         /* No range was giving so defaulting to current line.
          * This is the case of e.g. 'p' that prints current line.
          */
@@ -174,7 +162,7 @@ parse_range_impl(const char* tk, RangeParseCtx ctx[static 1], Range range[static
         ++tk;
         /* Addr,... */
         try_parse_range((rest = parse_range_addr(tk, ctx, &range->end)));
-        if (ctx->no_parse) range_end_set_beg(range);
+        if (tk == rest /* no_parse */) range_end_set_beg(range);
         return rest;
     } else {
         /* AddrEORange */
@@ -184,30 +172,23 @@ parse_range_impl(const char* tk, RangeParseCtx ctx[static 1], Range range[static
 
 }
 
-/*
- * validate user provided range.
- */
-//static inline bool is_range_valid(Range r[static 1], size_t nlines) {
-//    return r->beg && r->beg <= r->end && r->end <= nlines;
-//}
-
 static inline bool range_has_no_end(Range r[static 1]) { return r->end == 0; }
 
 /* external linkage */
 
 ParseRv
 parse_range(const char* tk, Range range[static 1], RangeParseCtx ctx[static 1]) {
-    tk =  parse_range_impl(tk, ctx, range);
-    if (range_parse_failure(tk)) return tk;
-    if (ctx->no_parse) {
+    ParseRv parse_str =  parse_range_impl(tk, ctx, range);
+    if (range_parse_failure(parse_str)) return parse_str;
+    if (tk == parse_str /* no_parse */) {
         range_both_set_curr(range, ctx);
-        return tk;
+        return parse_str;
     }
     if (range->beg == 0 || range->end == 0) return to_range_parse_err("Zero not supported in ranges");
     if (range->end < range->beg) return to_range_parse_err("backward range");
 
     if (textbuf_line_count(ctx->tb) < range->end)
         return to_range_parse_err("error: not expecting invalid range end");
-    return tk;
+    return parse_str;
 }
 

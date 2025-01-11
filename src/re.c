@@ -58,8 +58,10 @@ Err regex_maybe_find_next(const char* pattern, const char* string, size_t* off[1
     int status = regexec(&regex, string, 1, pmatch, 0);
     if (status == REG_NOMATCH) {
         *off = NULL;
-        return "pattern not found";
+        regfree(&regex);
+        return Ok;
     } else if (status) {
+        regfree(&regex);
         *off = NULL;
         return err_fmt("error executing regex, status: %d\n", status);
     }

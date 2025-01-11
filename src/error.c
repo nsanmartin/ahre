@@ -103,6 +103,24 @@ static Err _num_to_str(char* buf, size_t sz, int n, size_t len[static 1]) {
     return Ok;
 }
 
+Err err_prepend_char(Err err, char c) {
+    if (MSGBUF != err) {
+        MSGBUF[0] = c;
+        ERR_MSG_LEN = 1;
+        char* buf = MSGBUF + 1;
+        try( _msg_buf_append(&buf, err, strlen(err)));
+        MSGBUF[ERR_MSG_LEN] = '\0';
+        return MSGBUF;
+    }
+    if (ERR_MSG_LEN == MAX_MSG_LEN)
+        return "error: while returning error, not enought size to prepend to err buf";
+    memmove(MSGBUF, MSGBUF + 1, ERR_MSG_LEN);
+    MSGBUF[0] = c;
+    ++ERR_MSG_LEN;
+    MSGBUF[ERR_MSG_LEN] = '\0';
+    return MSGBUF;
+}
+
 Err err_fmt(Err fmt, ...) {
     if (!fmt || !*fmt) { return "error: err_fmt fmt is empty."; }
     const char* beg = fmt;
@@ -123,7 +141,8 @@ Err err_fmt(Err fmt, ...) {
         switch(*beg) {
             case 's':
                 const char* s = va_arg(ap, const char *);
-                if (s == MSGBUF) return "error: err_fmt can't receive as parameter an err_fmt return value";
+                if (s == MSGBUF)
+                    return "error: err_fmt can't receive as parameter an err_fmt return value";
                 if (s == NULL) s = "(null)";
                 try(_msg_buf_append(&buf, s, strlen(s)));
                 break;

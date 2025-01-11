@@ -94,6 +94,7 @@ Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) {
     const size_t* beg = arlfn(size_t, begin)(eols);
     const size_t* it = beg;
     const size_t* end = arlfn(size_t, end)(eols);
+    //TODO: use binsearch
     while (it < end && *it < off) 
         ++it;
     *out = 1 + (it-beg);
@@ -101,11 +102,11 @@ Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) {
 }
 
 char* textbuf_line_offset(TextBuf tb[static 1], size_t line) {
-    if (!line) { return NULL; }
+    if (line == 0) { return NULL; }
     char* beg = textbuf_items(tb);
     if (line == 1) { return beg; }
     ArlOf(size_t)* eols = textbuf_eols(tb);
-    size_t* it = arlfn(size_t, at)(eols, line-1);
+    size_t* it = arlfn(size_t, at)(eols, line-2);
     if (it) 
         return beg + *it;
 

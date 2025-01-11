@@ -16,30 +16,31 @@ int test_0(void) {
         .eols=(ArlOf(size_t)){.items=(size_t[10]){0},len=10,.capacity=10}
     };
     Range range;
-    bool not_found;
+    RangeParseCtx ctx = range_parse_ctx_from_textbuf(&tb);
 
-    parse_range_impl("1,2", &tb, &range, &not_found);
+    parse_range_impl("1,2", &ctx, &range);
     utest_assert(range.beg == 1, fail, __LINE__);
     utest_assert(range.end == 2, fail, __LINE__);
 
-    parse_range_impl("0,5", &tb, &range, &not_found);
+    parse_range_impl("0,5", &ctx, &range);
     utest_assert(range.beg == 0, fail, __LINE__);
     utest_assert(range.end == 5, fail, __LINE__);
     
-    parse_range_impl("0,15", &tb, &range, &not_found);
+    parse_range_impl("0,15", &ctx, &range);
     utest_assert(range.beg == 0, fail, __LINE__);
-    utest_assert(range.end == 15, fail, __LINE__);
+    utest_assert(range.end == 5, fail, __LINE__);
 
-    parse_range_impl("0,", &tb, &range, &not_found);
+    parse_range_impl("0,", &ctx, &range);
     utest_assert(range.beg == 0, fail, __LINE__);
     utest_assert(range.end == 0, fail, __LINE__);
 
     *textbuf_current_line(&tb) = 2;
-    parse_range_impl(",4", &tb, &range, &not_found);
+    ctx = range_parse_ctx_from_textbuf(&tb);
+    parse_range_impl(",4", &ctx, &range);
     utest_assert(range.beg == 2, fail, __LINE__);
     utest_assert(range.end == 4, fail, __LINE__);
 
-    parse_range_impl("%", &tb, &range, &not_found);
+    parse_range_impl("%", &ctx, &range);
     utest_assert(range.beg == 1, fail, __LINE__);
     utest_assert(range.end == len + 1, fail, __LINE__);
     return 0;

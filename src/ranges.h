@@ -10,7 +10,6 @@ typedef const char* ParseRv;
 typedef struct {
     size_t current_line;
     size_t nlines;
-    bool no_parse;
     TextBuf* tb;
 } RangeParseCtx;
 
@@ -20,7 +19,6 @@ range_parse_ctx_from_textbuf(TextBuf tb[static 1]) {
     RangeParseCtx res = (RangeParseCtx){
         .current_line = *textbuf_current_line(tb),
         .nlines       = textbuf_line_count(tb),
-        .no_parse    = false,
         .tb           = tb
     };
     return res;
@@ -34,6 +32,7 @@ parse_range(ParseRv tk, Range range[static 1], RangeParseCtx ctx[static 1]);
 #define to_range_parse_err(Msg) ("\x01" Msg)
 
 static inline bool range_parse_failure(ParseRv tk) {
+    //return !tk || (!*tk && iscntrl(*tk));
     return !tk || *tk == '\x01';
 }
 

@@ -30,11 +30,7 @@ static inline bool fatal_error(Err e) {
 // returns that value. If not it does nothing.
 #define try(Expr) do{Err ahre_err_=validate_err((Expr));if (ahre_err_) return ahre_err_;}while(0) 
 
-//#define trygoto(Tag, NonzeroFail) if ((NonzeroFail)) goto Tag
-
 #define trygotoerr(LV, Tag, ErrValue) if ((ErrValue)) do{ LV=ErrValue; goto Tag;}while(0)
-
-// #define try_or(ErrValue, RetVal)  if (validate_err(ErrValue)) return validate_err(RetVal)
 
 #define try_lxb(Value, RetVal) \
     if ((LXB_STATUS_OK!=validate_uint(Value))) \
@@ -44,5 +40,5 @@ static inline bool fatal_error(Err e) {
     if ((!validate_size(Value))) \
         return RetVal
 
+Err err_prepend_char(Err err, char c);
 #endif
-
