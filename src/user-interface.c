@@ -179,10 +179,7 @@ Err cmd_submit(Session session[static 1], const char* line) {
     return _cmd_submit_ix(session, num);
 }
 
-Err dup_curl_with_anchors_href(
-    lxb_dom_node_t* anchor,
-    CURLU* u[static 1]
-) {
+Err dup_curl_with_anchors_href(lxb_dom_node_t* anchor, CURLU* u[static 1]) {
 
     const lxb_char_t* data;
     size_t data_len;
@@ -194,13 +191,15 @@ Err dup_curl_with_anchors_href(
     if (!dup) return "error: memory failure (curl_url_dup)";
     BufOf(const_char)*buf = &(BufOf(const_char)){0};
     if ( !buffn(const_char, append)(buf, (const char*)data, data_len)
-       ||!buffn(const_char, append)(buf, "\0", 1)) {
+       ||!buffn(const_char, append)(buf, "\0", 1)
+    ) {
+        buffn(const_char, clean)(buf);
         curl_url_cleanup(dup);
         return "error: buffn append failure";
     }
     Err err = curlu_set_url(dup, buf->items);
     buffn(const_char, clean)(buf);
-    if (err) { /// /*todo cleanup */ return err;
+    if (err) {
         curl_url_cleanup(dup);
         return err;
     }

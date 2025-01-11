@@ -55,23 +55,37 @@ _append_unsigned_to_bufof_char_base36(uintmax_t ui, BufOf(char)* b) {
     return Ok;
 }
 
+bool _node_has_href(lxb_dom_node_t* node) {
+    const lxb_char_t* data;
+    size_t data_len;
+    lexbor_find_attr_value(node, "href", &data, &data_len);
+    return data && data_len;
+}
+
 
 Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    if (!buffn(char, append)(&ctx->lazy_str, EscCodeBlue, sizeof(EscCodeBlue)-1)) return "error: failed to append to bufof";
+    /* https://html.spec.whatwg.org/multipage/links.html#attr-hyperlink-href
+     * The href attribute on a and area elements is not required; when those
+     * elements do not have href attributes they do not create hyperlinks. */
+    bool is_hyperlink = _node_has_href(node);
+    if (is_hyperlink) {
+        if (!buffn(char, append)(&ctx->lazy_str, EscCodeBlue, sizeof(EscCodeBlue)-1))
+            return "error: failed to append to bufof";
 
 
-    HtmlDoc* d = browse_ctx_htmldoc(ctx);
-    ArlOf(LxbNodePtr)* anchors = htmldoc_anchors(d);
-    const size_t anchor_num = anchors->len;
-    if (!arlfn(LxbNodePtr,append)(anchors, &node)) 
-        return "error: lip set";
+        HtmlDoc* d = browse_ctx_htmldoc(ctx);
+        ArlOf(LxbNodePtr)* anchors = htmldoc_anchors(d);
+        const size_t anchor_num = anchors->len;
+        if (!arlfn(LxbNodePtr,append)(anchors, &node)) 
+            return "error: lip set";
 
-    if (!buffn(char, append)(&ctx->lazy_str, EscCodeBlue, sizeof(EscCodeBlue)-1))
-        return "error: failed to append to bufof";
-    if (!buffn(char, append)(&ctx->lazy_str, ANCHOR_OPEN_STR, sizeof(ANCHOR_CLOSE_STR)-1))
-        return "error: failed to append to bufof";
-    try(_append_unsigned_to_bufof_char_base36(anchor_num, &ctx->lazy_str));
-    if (!buffn(char, append)(&ctx->lazy_str, " ", 1)) return "error: failed to append to bufof";
+        if (!buffn(char, append)(&ctx->lazy_str, EscCodeBlue, sizeof(EscCodeBlue)-1))
+            return "error: failed to append to bufof";
+        if (!buffn(char, append)(&ctx->lazy_str, ANCHOR_OPEN_STR, sizeof(ANCHOR_CLOSE_STR)-1))
+            return "error: failed to append to bufof";
+        try(_append_unsigned_to_bufof_char_base36(anchor_num, &ctx->lazy_str));
+        if (!buffn(char, append)(&ctx->lazy_str, " ", 1)) return "error: failed to append to bufof";
+    }
 
     try ( _browse_childs(node, cb, ctx));
 
@@ -80,7 +94,7 @@ Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
      */
     if (ctx->lazy_str.len) {
         buffn(char, reset)(&ctx->lazy_str);
-    } else {
+    } else if (is_hyperlink) {
         try ( serialize_lit_str(ANCHOR_CLOSE_STR, cb, ctx));
         try ( serialize_literal_color_str(EscCodeReset, cb, ctx));
     }
