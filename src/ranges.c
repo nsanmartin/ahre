@@ -32,7 +32,8 @@ static const char* parse_ull(const char* tk, uintmax_t* ullp) {
     return endptr == tk ? NULL: endptr;
 }
 
-static const char* parse_range_addr_num(const char* tk, uintmax_t num, uintmax_t maximum, size_t* out) {
+static const char*
+parse_range_addr_num(const char* tk, uintmax_t num, uintmax_t maximum, size_t* out) {
     uintmax_t ull;
     if (*tk == '+') {
         ++tk;
@@ -40,15 +41,16 @@ static const char* parse_range_addr_num(const char* tk, uintmax_t num, uintmax_t
         if (!rest) { ull = 1; }
         else { tk = rest; }
         num += ull; 
-        if (num < ull || num > maximum) { return NULL; }
+        if (num < ull) { return to_range_parse_err("error: unsigned overflow reading range"); }
+        if (num > maximum) { return to_range_parse_err("invalid range end (too large)"); }
     } else if (*tk == '-') {
         ++tk;
         const char* rest = parse_ull(tk, &ull);
         if (!rest) { ull = 1; }
         else { tk = rest; }
-        if (ull > num) { return NULL; }
+        if (ull > num) { return to_range_parse_err("error: ull > num"); }
         num -= ull; 
-        if (num > maximum) { return NULL; }
+        if (num > maximum) { return to_range_parse_err("invalid range end (too large)"); }
     }
     *out = num;
     return tk;
@@ -57,9 +59,9 @@ static const char* parse_range_addr_num(const char* tk, uintmax_t num, uintmax_t
 _Static_assert(sizeof(size_t) <= sizeof(uintmax_t), "range parser requires this precondition");
 
 static const char* parse_linenum_search_regex(
-    const char* tk, TextBuf tb[static 1], size_t out[static 1], bool* not_found
+    const char* tk, TextBuf tb[static 1], size_t out[static 1], bool* no_parse
 ) {
-    *not_found = false;
+    *no_parse = false;
     const char* buf = textbuf_current_line_offset(tb);
     if (!buf) { perror("error: invalid current line"); exit(-1); }
     char* end = strchr(tk, '/');
@@ -80,50 +82,49 @@ static const char* parse_linenum_search_regex(
         *textbuf_current_line(tb) = *out;
     } else {
         ///// Not ideal way to signal that pattern was not found
-        *not_found = true;
+        *no_parse = true;
         return NULL;
     }
 
     return res;
 }
 
-static const char*
+static ParseRv
 parse_range_addr(const char* tk, RangeParseCtx ctx[static 1], size_t out[static 1]) {
 
-    ctx->not_found = false;
+    ParseRv rest;
+    ctx->no_parse = false;
     uintmax_t curr = ctx->current_line;
     uintmax_t max  = ctx->nlines;
-    if (!tk || !*tk) { return NULL; }
+    if (!tk) { return NULL; }
+    if (!*tk) { return tk; }
     if (*tk == '/') {
         ++tk;
-        return parse_linenum_search_regex(tk, ctx->tb, out, &ctx->not_found);
+        return parse_linenum_search_regex(tk, ctx->tb, out, &ctx->no_parse);
     } else if (*tk == '.' || *tk == '+' || *tk == '-')  {
         if (*tk == '.') { ++tk; }
-        const char* rest = parse_range_addr_num(tk, curr, max, out);
-        if (rest) { tk = rest; }
-        return tk;
+        try_parse_range((rest = parse_range_addr_num(tk, curr, max, out)));
+        return rest;
     } else if (*tk == '$') {
         ++tk;
-        const char* rest = parse_range_addr_num(tk, max, max, out);
-        if (rest) { tk = rest; }
-        return tk;
+        try_parse_range((rest=parse_range_addr_num(tk, max, max, out)));
+        return rest;
     } else if (isdigit(*tk)) {
         /* tk does not start neither with - nor + */
-        const char* rest = parse_ull(tk, &curr);
-        if (!rest /* overflow  || curr > max*/) { return NULL; }
+        try_parse_range((rest = parse_ull(tk, &curr)));
+        if (curr > max) { return to_range_parse_err("invalid range (num too large)"); }
         *out = curr;
-        if (*tk == '+' || *tk == '-') {
-            const char* rest = parse_range_addr_num(tk+1, curr, max, out);
-            if (rest) { return rest; }
+        if (*rest == '+' || *rest == '-') {
+            try_parse_range((rest = parse_range_addr_num(rest+1, curr, max, out)));
         }
         return rest;
     } 
 
     if (*tk == '+' || *tk == '-') {
-        const char* rest = parse_range_addr_num(tk+1, curr, max, out);
-        if (rest) { return rest; }
+        try_parse_range((rest = parse_range_addr_num(tk+1, curr, max, out)));
+        return rest;
     }
-    ctx->not_found = true;
+    ctx->no_parse = true;
     return tk;
 }
 
@@ -137,58 +138,47 @@ parse_range_impl(const char* tk, RangeParseCtx ctx[static 1], Range range[static
     tk = cstr_skip_space(tk);
 
     /* empty string */
-    if (!*tk) return NULL;
+    if (!*tk) {
+        ctx->no_parse = true;
+        return tk;
+    }
 
     /* full range */
     if (*tk == '%') {
         ++tk;
-        //lkj
-        *range = (Range){.beg=1, .end=ctx->nlines};
+        range_set_full(range, ctx);
         return tk;
     } 
 
+    ParseRv rest;
     /* ,Addr? */
     if (*tk == ',') {
         ++tk;
-        //lkj
-        range->beg = ctx->current_line;
-        const char* rest = parse_range_addr(tk, ctx, &range->end);
-        return rest? rest : tk;
+        range_beg_set_curr(range, ctx);
+        try_parse_range((rest = parse_range_addr(tk, ctx, &range->end)));
+        return ctx->no_parse ? tk : rest;
     }
-            
-    const char* rest = parse_range_addr(tk, ctx, &range->beg);
-    if (ctx->not_found) {
+
+    try_parse_range((rest = parse_range_addr(tk, ctx, &range->beg)));
+    if (ctx->no_parse) {
         /* No range was giving so defaulting to current line.
          * This is the case of e.g. 'p' that prints current line.
          */
-        range->beg = ctx->current_line;
-        range->end = range->beg;
+        range_both_set_curr(range, ctx);
         return rest;
     }
     
-    if (rest) {
-        /* Addr... */
-        tk = cstr_skip_space(rest);
-        if (*tk == ',') {
-            ++tk;
-            /* Addr,... */
-            rest = parse_range_addr(tk, ctx, &range->end);
-            if (rest) {
-                /* Addr,AddrEOF */
-                return rest;
-            } else {
-                /* Addr,EOF */
-                range->end = 0;
-                return tk;
-            }
-        } else {
-            /* AddrEOF */
-            range->end = range->beg;
-            return tk;
-        }
+    /* Addr... */
+    tk = cstr_skip_space(rest);
+    if (*tk == ',') {
+        ++tk;
+        /* Addr,... */
+        try_parse_range((rest = parse_range_addr(tk, ctx, &range->end)));
+        if (ctx->no_parse) range_end_set_beg(range);
+        return rest;
     } else {
-        /* emptyEOF */
-        *range = (Range){.beg=ctx->current_line, .end=0};
+        /* AddrEORange */
+        range_end_set_beg(range);
         return tk;
     }
 
@@ -197,21 +187,27 @@ parse_range_impl(const char* tk, RangeParseCtx ctx[static 1], Range range[static
 /*
  * validate user provided range.
  */
-static inline bool is_range_valid(Range r[static 1], size_t nlines) {
-    return r->beg && r->beg <= r->end && r->end <= nlines;
-}
+//static inline bool is_range_valid(Range r[static 1], size_t nlines) {
+//    return r->beg && r->beg <= r->end && r->end <= nlines;
+//}
 
 static inline bool range_has_no_end(Range r[static 1]) { return r->end == 0; }
 
 /* external linkage */
 
-const char*
+ParseRv
 parse_range(const char* tk, Range range[static 1], RangeParseCtx ctx[static 1]) {
-    //RangeParseCtx ctx = range_parse_ctx_from_textbuf(tb);
     tk =  parse_range_impl(tk, ctx, range);
-    if (textbuf_line_count(ctx->tb) < range->end) return "invalid range end";
-    if (!tk || (!range_has_no_end(range) && is_range_valid(range, 0))) { return NULL; }
-    if (range->end == 0) range->end = range->beg; 
+    if (range_parse_failure(tk)) return tk;
+    if (ctx->no_parse) {
+        range_both_set_curr(range, ctx);
+        return tk;
+    }
+    if (range->beg == 0 || range->end == 0) return to_range_parse_err("Zero not supported in ranges");
+    if (range->end < range->beg) return to_range_parse_err("backward range");
+
+    if (textbuf_line_count(ctx->tb) < range->end)
+        return to_range_parse_err("error: not expecting invalid range end");
     return tk;
 }
 

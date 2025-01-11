@@ -7,11 +7,13 @@
 #include "src/session.h"
 
 static Err validate_range_for_buffer(TextBuf textbuf[static 1], Range range[static 1]) {
-    if (!range->beg  || range->beg > range->end) { return  "error: bad range"; }
-    if (textbuf_line_count(textbuf) < range->end) return "invalid range end";
+    if (!range->beg  || range->beg > range->end) { return  "error: unexpected bad range"; }
+    if (textbuf_line_count(textbuf) < range->end) return "error: unexpected invalid range end";
     if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
     return Ok;
 }
+
+    
 
 static Err
 textbuf_get_line_offset_range(
@@ -36,13 +38,11 @@ textbuf_get_line_offset_range(
 //TODO: reset color during number printing (and re-establish it after).
 static inline Err ed_print_n(TextBuf textbuf[static 1], Range range[static 1]) {
 
-    Err err = validate_range_for_buffer(textbuf, range);
-    if (err) return err;
+    try(validate_range_for_buffer(textbuf, range));
 
     for (size_t line = range->beg; line <= range->end; ++line) {
         Range r = {0};
-        if ((err=textbuf_get_line_offset_range(textbuf, line, line, &r)))
-            return err;
+        try(textbuf_get_line_offset_range(textbuf, line, line, &r));
 
         if (serialize_unsigned(write_to_file, line, stdout, -1))
             return "error serializing unsigned";
@@ -56,13 +56,11 @@ static inline Err ed_print_n(TextBuf textbuf[static 1], Range range[static 1]) {
 }
 
 static inline Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
-    Err err = validate_range_for_buffer(textbuf, range);
-    if (err) return err;
+    try(validate_range_for_buffer(textbuf, range));
 
     for (size_t line = range->beg; line <= range->end; ++line) {
         Range r = {0};
-        if ((err=textbuf_get_line_offset_range(textbuf, line, line, &r)))
-            return err;
+        try (textbuf_get_line_offset_range(textbuf, line, line, &r));
 
         fwrite(textbuf->buf.items + r.beg, 1, r.end - r.beg, stdout);
     }
@@ -218,17 +216,20 @@ Err textbuf_eval_cmd(Session session[static 1], const char* line, Range range[st
 
 Err ed_eval(Session session[static 1], const char* line) {
     if (!line) { return Ok; }
-    const char* rest = 0x0;
     TextBuf* textbuf = session_current_buf(session);
     Range range = {0};
     RangeParseCtx ctx = range_parse_ctx_from_textbuf(textbuf);
     line = parse_range(line, &range, &ctx);
-    if (!line) { return "invalid range"; }
+    if (range_parse_failure(line)) {
+        return range_parse_failure_to_err(line);
+    }
 
+    const char* rest = 0x0;
     if ((rest = substr_match(line, "e", 1)) && *rest) 
         return ed_edit(textbuf, cstr_trim_space((char*)rest));
     if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
 
+    if (range.end == 0) return "error: unexpeced range with end == 0";
     textbuf->current_line = range.end;
     return textbuf_eval_cmd(session, line, &range);
 }
