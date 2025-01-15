@@ -29,6 +29,8 @@
 [ ] run test in github ci workflow (currently it does not find liblexbos.so.2)
 [ ] implement other curlopt setter in user interface
 [ ] html button support (example in sr.ht register)
+[ ] add zf/zb shorcats (smilar to :,+Np/:-N,p with N configurable -and p)
+[ ] set text width
 
 # DONE
 [*] Accept files apart from urls
