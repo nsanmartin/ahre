@@ -7,6 +7,8 @@
 
 #include "src/debug.h"
 
+/* internal linkage */
+
 void _print_fetch_info_(CURL* handle) {
     curl_off_t nbytes;
     CURLcode curl_code = curl_easy_getinfo(handle, CURLINFO_SIZE_DOWNLOAD_T, &nbytes);
@@ -82,6 +84,15 @@ Err _curl_perform_error_( HtmlDoc htmldoc[static 1], CURLcode curl_code) {
     return err;
 }
 
+static Err
+_set_htmldoc_url_with_effective_url_(UrlClient url_client[static 1], HtmlDoc htmldoc[static 1]) {
+    char* effective_url = NULL;
+    if (CURLE_OK != curl_easy_getinfo(url_client->curl, CURLINFO_EFFECTIVE_URL, &effective_url)) {
+        return "error: couldn't get effective url from curl";
+    }
+    return curlu_set_url(url_cu(htmldoc_url(htmldoc)), effective_url);
+}
+
 Err
 curl_lexbor_fetch_document(UrlClient url_client[static 1], HtmlDoc htmldoc[static 1]) {
     try( _curl_set_write_fn_and_data_(url_client, htmldoc));//TODO: move?
@@ -91,17 +102,11 @@ curl_lexbor_fetch_document(UrlClient url_client[static 1], HtmlDoc htmldoc[stati
 
     CURLcode curl_code = curl_easy_perform(url_client->curl);
     buffn(const_char, reset)(url_client_postdata(url_client));
-    if (curl_code!=CURLE_OK) {
+    if (curl_code!=CURLE_OK) 
         return _curl_perform_error_(htmldoc, curl_code);
-    }
 
     try( _lexbor_parse_chunk_end_(htmldoc));
-
-    char* effective_url = NULL;
-    if (CURLE_OK != curl_easy_getinfo(url_client->curl, CURLINFO_EFFECTIVE_URL, &effective_url)) {
-        return "error: couldn't get effective url from curl";
-    }
-    try( curlu_set_url(url_cu(htmldoc_url(htmldoc)), effective_url));
+    try(_set_htmldoc_url_with_effective_url_(url_client, htmldoc));
     _print_fetch_info_(url_client->curl);
     return Ok;
 }
@@ -230,9 +235,7 @@ static Err _submit_url_set_action(
 //    return "error: unsuported method";
 //}
 
-static Err mk_submit_get(
-    lxb_dom_node_t* form, CURLU* out[static 1]
-) {
+static Err _mk_submit_get_(lxb_dom_node_t* form, CURLU* out[static 1]) {
     Err err;
     BufOf(lxb_char_t)* buf = &(BufOf(lxb_char_t)){0};
 
@@ -246,7 +249,7 @@ static Err mk_submit_get(
 }
 
 static Err
-mk_submit_post(UrlClient url_client[static 1], lxb_dom_node_t* form, CURLU* out[static 1]) { 
+_mk_submit_post_(UrlClient url_client[static 1], lxb_dom_node_t* form, CURLU* out[static 1]) { 
     Err err;
     BufOf(const_char)* buf = url_client_postdata(url_client);
     buffn(const_char, reset)(buf);
@@ -268,6 +271,8 @@ mk_submit_post(UrlClient url_client[static 1], lxb_dom_node_t* form, CURLU* out[
 
     return Ok;
 }
+
+/* external linkage */
 
 Err mk_submit_url (
     UrlClient url_client[static 1],
@@ -295,11 +300,11 @@ Err mk_submit_url (
 
     if (!method_len || lexbor_str_eq("get", method, method_len)) {
         *doc_method = http_get;
-        return mk_submit_get(form, out);
+        return _mk_submit_get_(form, out);
     }
     if (!method_len || lexbor_str_eq("post", method, method_len)) {
         *doc_method = http_post;
-        return mk_submit_post(url_client, form, out);
+        return _mk_submit_post_(url_client, form, out);
     }
     return "not yet supported method";
 }

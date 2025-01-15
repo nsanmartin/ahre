@@ -16,8 +16,8 @@
 #define LAZY_STR_BUF_LEN 1600
 
 #define serialize_cstring(Ptr, Len, CallBack, Context) \
- ((LXB_STATUS_OK != CallBack((lxb_char_t*)Ptr, Len, Context)) \
- ?  "error serializing data" : Ok)
+    ((LXB_STATUS_OK != CallBack((lxb_char_t*)Ptr, Len, Context)) \
+    ?  "error serializing data" : Ok)
 
 #define try_lxb_serialize(Ptr, Len, CallBack, Context) \
      if (LXB_STATUS_OK != CallBack((lxb_char_t*)Ptr, Len, Context)) \
