@@ -21,7 +21,7 @@ int loop_lexbor(char* url) {
     while (!session->quit) {
         Err err = read_line_from_user(session);
         if (err) {
-            fprintf(stderr, "%s.\n", err);
+            fprintf(stderr, "%s\n", err);
         }
     }
 
@@ -38,4 +38,3 @@ int main(int argc, char **argv) {
 
     return loop_lexbor(argv[1]);
 }
-

@@ -5,62 +5,104 @@
 #include "src/wrapper-lexbor-curl.h"
 #include "src/wrapper-lexbor.h"
 
+#include "src/debug.h"
 
-Err
-curl_lexbor_fetch_document(UrlClient url_client[static 1], HtmlDoc htmldoc[static 1]) {
+void _print_fetch_info_(CURL* handle) {
+    curl_off_t nbytes;
+    CURLcode curl_code = curl_easy_getinfo(handle, CURLINFO_SIZE_DOWNLOAD_T, &nbytes);
+    if (curl_code!=CURLE_OK) 
+        printf("warn: %s", curl_easy_strerror(curl_code));
+     else 
+        printf("%"CURL_FORMAT_CURL_OFF_T"\n", nbytes);
+}
+
+Err _lexbor_parse_chunk_begin_(HtmlDoc htmldoc[static 1]) {
     lxb_html_document_t* lxbdoc = htmldoc->lxbdoc;
+    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(lxbdoc)) 
+        return "error: lex failed to init html document";
+    return Ok;
+}
 
+Err _lexbor_parse_chunk_end_(HtmlDoc htmldoc[static 1]) {
+    lxb_html_document_t* lxbdoc = htmldoc->lxbdoc;
+    lexbor_status_t lxb_status = lxb_html_document_parse_chunk_end(lxbdoc);
+    if (LXB_STATUS_OK != lxb_status) 
+        return err_fmt("error: lbx failed to parse html, status: %d", lxb_status);
+    return Ok;
+}
+
+CURLoption _curlopt_method_from_htmldoc_(HtmlDoc htmldoc[static 1]) {
+    return htmldoc_method(htmldoc) == http_post 
+               ? CURLOPT_POST
+               : CURLOPT_HTTPGET
+               ;
+}
+
+Err _curl_set_write_fn_and_data_(UrlClient url_client[static 1], HtmlDoc htmldoc[static 1]) {
     if (  curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, lexbor_parse_chunk_callback)
        || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, htmldoc)) {
         return "error configuring curl write fn/data";
     }
+    return Ok;
+}
 
-    if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(lxbdoc)) {
-        return "error: lex failed to init html document";
-    }
-
-    Url* url = htmldoc_url(htmldoc);
-
-    CURLoption method = htmldoc_method(htmldoc) == http_post 
-               ? CURLOPT_POST
-               : CURLOPT_HTTPGET
-               ;
-    if (curl_easy_setopt(url_client->curl, method, url_cu(url))) {
+Err _curl_set_http_method_(UrlClient url_client[static 1], HtmlDoc htmldoc[static 1]) {
+    CURLoption method = _curlopt_method_from_htmldoc_(htmldoc);
+    if (curl_easy_setopt(url_client->curl, method, 1L)) 
         return "error: curl failed to set method";
-    }
+    return Ok;
+}
 
-    if (curl_easy_setopt(url_client->curl, CURLOPT_CURLU, url_cu(url))) {
+Err _curl_set_curlu_(UrlClient url_client[static 1], HtmlDoc htmldoc[static 1]) {
+    char* url_str = NULL;
+    try( url_cstr(htmldoc_url(htmldoc), &url_str));
+    if (curl_easy_setopt(url_client->curl, CURLOPT_URL, url_str)) 
         return "error: curl failed to set url";
-    }
+    curl_free(url_str);
+    return Ok;
+
+    // TODO: once this fix 
+    // https://github.com/curl/curl/commit/5ffc73c78ec48f6ddf38c68ae7e8ff41f54801e6 
+    // is available replace this implementation
+    //CURL* curlu = url_cu(htmldoc_url(htmldoc));
+    //if (curl_easy_setopt(url_client->curl, CURLOPT_CURLU, curlu)) 
+    //    return "error: curl failed to set url";
+    //return Ok;
+}
+
+Err _curl_perform_error_( HtmlDoc htmldoc[static 1], CURLcode curl_code) {
+    Url* url = htmldoc_url(htmldoc);
+    char* u;
+    Err e = url_cstr(url, &u);
+    if (e) u = "and url could not be obtained due to another error :/";
+    Err err = err_fmt(
+        "curl failed to perform curl: %s (%s)", curl_easy_strerror(curl_code), u
+    );
+    if (!e) curl_free(u);
+    return err;
+}
+
+Err
+curl_lexbor_fetch_document(UrlClient url_client[static 1], HtmlDoc htmldoc[static 1]) {
+    try( _curl_set_write_fn_and_data_(url_client, htmldoc));//TODO: move?
+    try( _lexbor_parse_chunk_begin_(htmldoc));
+    try( _curl_set_http_method_(url_client, htmldoc));
+    try( _curl_set_curlu_(url_client, htmldoc));
 
     CURLcode curl_code = curl_easy_perform(url_client->curl);
-    if (curl_code!=CURLE_OK) {
-        buffn(const_char, reset)(url_client_postdata(url_client));
-        char* u;
-        Err e = url_cstr(url, &u);
-        if (e) u = "and url could not be obtained due to another error :/";
-        Err err = err_fmt(
-            "curl failed to perform curl: %s (%s)", curl_easy_strerror(curl_code), u
-        );
-        if (!e) curl_free(u);
-        return err;
-    }
     buffn(const_char, reset)(url_client_postdata(url_client));
-
-    lexbor_status_t lxb_status = lxb_html_document_parse_chunk_end(lxbdoc);
-    if (LXB_STATUS_OK != lxb_status) {
-        return err_fmt("error: lbx failed to parse html, status: %d", lxb_status);
-    }
-
-    curl_off_t nbytes;
-    curl_code = curl_easy_getinfo(url_client->curl, CURLINFO_SIZE_DOWNLOAD_T, &nbytes);
     if (curl_code!=CURLE_OK) {
-        printf("warn: %s", curl_easy_strerror(curl_code));
-    } else {
-        printf("%"CURL_FORMAT_CURL_OFF_T"\n", nbytes);
+        return _curl_perform_error_(htmldoc, curl_code);
     }
 
+    try( _lexbor_parse_chunk_end_(htmldoc));
 
+    char* effective_url = NULL;
+    if (CURLE_OK != curl_easy_getinfo(url_client->curl, CURLINFO_EFFECTIVE_URL, &effective_url)) {
+        return "error: couldn't get effective url from curl";
+    }
+    try( curlu_set_url(url_cu(htmldoc_url(htmldoc)), effective_url));
+    _print_fetch_info_(url_client->curl);
     return Ok;
 }
 

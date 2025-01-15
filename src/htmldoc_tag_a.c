@@ -21,7 +21,7 @@ _browse_childs(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[s
             if (ctx->lazy_str.len) {
                 lxb_char_t* lazy_str = (lxb_char_t*)ctx->lazy_str.items;
                 size_t lazy_str_len = ctx->lazy_str.len;
-                while (len > 1 && isspace(lazy_str[0]) && isspace(lazy_str[1])) {
+                while (lazy_str_len > 1 && isspace(lazy_str[0]) && isspace(lazy_str[1])) {
                     ++lazy_str; -- lazy_str_len;
                 }
                 if(cb(lazy_str, lazy_str_len, ctx)) return "error serializing nl";

@@ -28,7 +28,7 @@
 [ ] bug: image number incalid: check base
 [ ] run test in github ci workflow (currently it does not find liblexbos.so.2)
 [ ] implement other curlopt setter in user interface
-[ ] bug: when goint t oa google link, it is google.com?url=/the/expected/url
+[ ] html button support (example in sr.ht register)
 
 # DONE
 [*] Accept files apart from urls
@@ -43,3 +43,4 @@
 [*] remove escape sequences when writing to a file
 [*] Make ahre cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)
 [*] store LxbNodePtr for img elements
+[*] bug: when goint to a google link, it is google.com?url=/the/expected/url

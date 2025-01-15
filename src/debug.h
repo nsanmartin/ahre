@@ -3,6 +3,17 @@
 
 #include "src/session.h"
 
+static inline void dbg_log(const char* s) { printf("DEBUG %s\n", s); }
+static inline void dbg_print_url(Url u[static 1]) {
+    char* buf;
+    Err e = url_cstr(u, &buf);
+    if (e) printf("DEBUG error: %s\n", e);
+    else {
+        printf("DEBUG url: %s\n", buf);
+        curl_free(buf);
+    }
+}
+
 typedef enum {
     DBG_LXB_TAG__UNDEF              = 0x0000, DBG_LXB_TAG__END_OF_FILE        = 0x0001,
     DBG_LXB_TAG__TEXT               = 0x0002, DBG_LXB_TAG__DOCUMENT           = 0x0003,

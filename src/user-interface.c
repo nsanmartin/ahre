@@ -44,10 +44,10 @@ Err cmd_set_url(Session session[static 1], const char* url) {
     HtmlDoc* htmldoc = session_current_doc(session);
 
     url = cstr_trim_space((char*)url);
-    if (!*url) {
+    if (!*url) { /* if not url given just print current url */
         char* buf;
         try(url_cstr(htmldoc_url(htmldoc), &buf));
-        Err res = err_fmt("current url: '%s'", buf);
+        Err res = err_fmt("current url:\n%s", buf);
         curl_free(buf);
         return res;
     }
