@@ -9,7 +9,6 @@
 [ ] Log TAG not supported by browser when is the case
 [ ] Decide how to allow color/one color (cli option, different, commands, config file?)
 [ ] wrap lexbor functions with Err returning wrappers whenever possible
-[ ] implement cookies
 [ ] implement post method for forms
 [ ] brwose properly anchors 
 [ ] brwose properly blockquote 
@@ -20,18 +19,17 @@
 [ ] implement ranges for doc's cache's elements. Vg: [1,4' means show anchors 1 to 4
 [ ] use libchafa for images
 [ ] implement search in textbuf with /
-[?] fix url construction on submit (it could be absolute or not)
-[?] fix url construction on a href (it could be absolute or not)
 [ ] display form elements with <>
 [ ] fix last char in some files saved by write ed cmd
-[ ] set autocomplete with ahre commands
+[ ] [isocline] set autocomplete with ahre commands 
 [ ] bug: image number incalid: check base
 [ ] run test in github ci workflow (currently it does not find liblexbos.so.2)
 [ ] implement other curlopt setter in user interface
 [ ] html button support (example in sr.ht register)
-[ ] add zf/zb shorcats (smilar to :,+Np/:-N,p with N configurable -and p)
-[ ] e cmd is brocken. Delete it of fix it (it appends keeping previous data in buf).
+[ ] add zf/zb shorcuts (smilar to :,+Np/:-N,p with N configurable -and p)
+[ ] e cmd is broken. Delete it of fix it (it appends keeping previous data in buf).
 [ ] set text width (do not break words, make it configurable)
+[ ] [libcurl] store cookies in file and make it configurable.
 
 # DONE
 [*] Accept files apart from urls
@@ -49,3 +47,6 @@
 [*] bug: when goint to a google link, it is google.com?url=/the/expected/url
 [*] set user agent
 [*] set text width (basic functionality)
+[*] implement cookies
+['] fix url construction on submit (it could be absolute or not)
+['] fix url construction on a href (it could be absolute or not)
