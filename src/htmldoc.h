@@ -84,17 +84,39 @@ static inline void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
     *htmldoc_cache(htmldoc) = (DocCache){0};
 }
 
+/* 
+ * Browse context
+ */
 
 typedef struct { 
     HtmlDoc* htmldoc;
-    bool color;
     BufOf(char) lazy_str;
+    bool color;
+    bool pre_tag;
 } BrowseCtx;
 
 static inline HtmlDoc* browse_ctx_htmldoc(BrowseCtx ctx[static 1]) { return ctx->htmldoc; }
 static inline TextBuf* browse_ctx_textbuf(BrowseCtx ctx[static 1]) {
     return htmldoc_textbuf(browse_ctx_htmldoc(ctx));
 }
+static inline bool browse_ctx_color(BrowseCtx ctx[static 1]) { return ctx->color; }
+static inline bool browse_ctx_pre_tag(BrowseCtx ctx[static 1]) { return ctx->pre_tag; }
+
+static inline Err browse_ctx_init(BrowseCtx ctx[static 1], HtmlDoc htmldoc[static 1], bool color) {
+    *ctx = (BrowseCtx) {.htmldoc=htmldoc, .color=color};
+    return Ok;
+}
+
+static inline void browse_ctx_cleanup(BrowseCtx ctx[static 1]) {
+    buffn(char, clean)(&ctx->lazy_str);
+}
+
+static inline void
+browse_ctx_set_color(BrowseCtx ctx[static 1], bool value) {  ctx->color = value; }
+
+static inline void
+browse_ctx_set_pre_tag(BrowseCtx ctx[static 1], bool value) { ctx->pre_tag = value; }
+
 
 /* external */
 Err
@@ -122,10 +144,9 @@ Err htmldoc_browse(HtmlDoc htmldoc[static 1]);
  ?  "error serializing literal string" : Ok)
 
 #define serialize_literal_color_str(EscSeq, CallBack, Context) \
-    ((Context)->color ? serialize_lit_str(EscSeq, CallBack, Context) : Ok)
+    (browse_ctx_color(Context) ? serialize_lit_str(EscSeq, CallBack, Context) : Ok)
 
 /* htmldoc_tag_a.c */
-Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]);
 Err parse_href_attrs(lxb_dom_node_t* node, BrowseCtx ctx[static 1]);
 Err parse_append_ahref(BrowseCtx ctx[static 1], const char* url, size_t len);
 #endif

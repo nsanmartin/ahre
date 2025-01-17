@@ -55,7 +55,7 @@ _append_unsigned_to_bufof_char_base36(uintmax_t ui, BufOf(char)* b) {
     return Ok;
 }
 
-bool _node_has_href(lxb_dom_node_t* node) {
+static bool _node_has_href(lxb_dom_node_t* node) {
     const lxb_char_t* data;
     size_t data_len;
     lexbor_find_attr_value(node, "href", &data, &data_len);

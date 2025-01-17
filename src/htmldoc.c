@@ -7,6 +7,8 @@
 #include "src/utils.h"
 #include "src/wrapper-lexbor.h"
 
+Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]);
+Err browse_tag_pre(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]);
 
 /* internal linkage */
 //static constexpr size_t MAX_URL_LEN = 2048;
@@ -31,16 +33,6 @@
 
 //_Thread_local static unsigned char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {0};
 
-
-static Err browse_ctx_init(BrowseCtx ctx[static 1], HtmlDoc htmldoc[static 1], bool color) {
-    //if (!htmldoc) return "error: expected non null htmldoc in browse ctx.";
-    *ctx = (BrowseCtx) {.htmldoc=htmldoc, .color=color};
-    return Ok;
-}
-
-static void browse_ctx_cleanup(BrowseCtx ctx[static 1]) {
-    buffn(char, clean)(&ctx->lazy_str);
-}
 
 
 static Err
@@ -183,9 +175,11 @@ browse_tag_div(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[s
     buffn(char, reset)(&ctx->lazy_str);
     return Ok;
 }
+
 static Err
 browse_tag_p(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    try (serialize_lit_str("\n", cb, ctx)); try (browse_list(node->first_child, node->last_child, cb, ctx));
+    try (serialize_lit_str("\n", cb, ctx));
+    try (browse_list(node->first_child, node->last_child, cb, ctx));
     try (serialize_lit_str("\n", cb, ctx));
     return Ok;
 }
@@ -229,6 +223,7 @@ static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCt
                 case LXB_TAG_INPUT: { return browse_tag_input(node, cb, ctx); }
                 case LXB_TAG_IMAGE: case LXB_TAG_IMG: { return browse_tag_img(node, cb, ctx); }
                 case LXB_TAG_P: { return browse_tag_p(node, cb, ctx); }
+                case LXB_TAG_PRE: { return browse_tag_pre(node, cb, ctx); }
                 case LXB_TAG_SCRIPT: { /*printf("skip script\n");*/ return Ok; } 
                 case LXB_TAG_STYLE: { /*printf("skip style\n");*/ return Ok; } 
                 case LXB_TAG_TITLE: { /*printf("skip title\n");*/ return Ok; } 
@@ -238,7 +233,15 @@ static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCt
             size_t len = lxb_dom_interface_text(node)->char_data.data.length;
             const char* data = (const char*)lxb_dom_interface_text(node)->char_data.data.data;
 
-            if (!mem_is_all_space((char*)data, len)) {
+            if(browse_ctx_pre_tag(ctx)) {
+                //TODO Whitespace inside this element is displayed as written,
+                //with one exception. If one or more leading newline characters
+                //are included immediately following the opening <pre> tag, the
+                //first newline character is stripped. 
+                //https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
+
+                if (cb((lxb_char_t*)data, len, ctx)) return "error serializing html text elem";
+            } else if (!mem_is_all_space((char*)data, len)) {
                 if (ctx->lazy_str.len) {
                     if(cb((lxb_char_t*)ctx->lazy_str.items, ctx->lazy_str.len, ctx))
                         return "error serializing nl";
@@ -256,13 +259,18 @@ static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCt
             }
         }
 
-        Err err = browse_list(node->first_child, node->last_child, cb, ctx);
-        if (err) return err;
+        try( browse_list(node->first_child, node->last_child, cb, ctx));
     }   
 
     return Ok;
 }
 
+Err browse_tag_pre(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    browse_ctx_set_pre_tag(ctx, true);
+    try( browse_list(node->first_child, node->last_child, cb, ctx));
+    browse_ctx_set_pre_tag(ctx, false);
+    return Ok;
+}
 
 /* external linkage */
 
