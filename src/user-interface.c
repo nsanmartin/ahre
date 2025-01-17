@@ -14,6 +14,7 @@
 #include "src/utils.h"
 #include "src/wrapper-lexbor-curl.h"
 
+
 //TODO: move this to wrapper-lexbor-curl.h
 Err mk_submit_url(UrlClient uc[static 1],
     lxb_dom_node_t* form,
@@ -291,21 +292,10 @@ Err cmd_eval(Session session[static 1], const char* line) {
     if ((rest = substr_match(line, "submit", 1))) { return cmd_submit(session, rest); }
     if ((rest = substr_match(line, "tag", 2))) { return cmd_tag(rest, session); }
     if ((rest = substr_match(line, "text", 2))) { return cmd_text(session); }
+    if ((rest = substr_match(line, "zf", 2))) { return shorcut_zf(session, rest); }
 
     return "unknown cmd";
 }
-
-//TODO: sotr lxb_node_t* and implement print verbose like the input one
-//Err cmd_anchor_print_verbose(Session session[static 1], size_t ix) {
-//    lxb_dom_node_t* node;
-//    try( _get_input_by_ix(session, ix, &node));
-//    BufOf(const_char)* buf = &(BufOf(const_char)){0};
-//    //TODO: cleanup on failure
-//    try( lexbor_node_to_str(node, buf));
-//    bool write_err = fwrite(buf->items, sizeof(char), buf->len, stdout) == buf->len;
-//    buffn(const_char, clean)(buf);
-//    return write_err ? Ok : "error: fwrite failure";
-//}
 
 Err cmd_anchor_print(Session session[static 1], size_t linknum) {
     HtmlDoc* htmldoc = session_current_doc(session);

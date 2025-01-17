@@ -35,7 +35,8 @@ Session* session_create(char* url, UserLineCallback callback) {
         .url_client=url_client,
         .user_line_callback=callback,
         .htmldoc=htmldoc,
-        .quit=false
+        .quit=false,
+        .conf=mkSessionConf
     };
 
     return rv;

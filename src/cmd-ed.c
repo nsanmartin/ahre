@@ -231,7 +231,25 @@ Err ed_eval(Session session[static 1], const char* line) {
 
     if (range.end == 0) return "error: unexpeced range with end == 0";
     if (range.end > textbuf_line_count(textbuf)) return "error: range end too large";
-    textbuf->current_line = range.end;
+    *textbuf_current_line(textbuf) = range.end;
     return textbuf_eval_cmd(session, line, &range);
 }
 
+Err shorcut_zf(Session session[static 1], const char* rest) {
+    TextBuf* tb = session_current_buf(session);
+    if(*textbuf_current_line(tb) >= textbuf_line_count(tb)) return "No more lines in buffer";
+    if (*rest) {
+        rest = cstr_skip_space(rest);
+        size_t incr;
+        if (!parse_ull(rest, &incr)) return "invalid line number";
+        *session_conf_z_shorcut_len(session) = incr;
+    } 
+    Range r = (Range){
+        .beg=*textbuf_current_line(tb), .end=r.beg + *session_conf_z_shorcut_len(session)
+    };
+    if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
+    ed_print(tb, &r);
+    *textbuf_current_line(tb) = r.end;
+
+    return Ok;
+}

@@ -334,6 +334,7 @@ inline void htmldoc_destroy(HtmlDoc* htmldoc) {
     std_free(htmldoc);
 }
 
+//TODO: pass the max cols and color from session conf
 Err htmldoc_browse(HtmlDoc htmldoc[static 1]) {
     lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(htmldoc);
     BrowseCtx ctx;

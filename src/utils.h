@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <limits.h>
 
 #define BT char
 #include <buf.h>
@@ -94,4 +95,5 @@ void str_reverse(char* s, size_t n) {
 
 Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[static 1]);
 Err parse_base36_or_throw(const char** strptr, unsigned long long* num);
+const char* parse_ull(const char* tk, uintmax_t* ullp);
 #endif

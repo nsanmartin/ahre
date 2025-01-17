@@ -79,8 +79,8 @@ inline void str_trim_space(Str* l) {
 
 
 const char* substr_match(const char* s, const char* cmd, size_t len) {
-    if (!*s || !isalnum(*s)) { return 0x0; }
-	for (; *s && isalnum(*s); ++s, ++cmd, (len?--len:len)) {
+    if (!*s || !isalpha(*s)) { return 0x0; }
+	for (; *s && isalpha(*s); ++s, ++cmd, (len?--len:len)) {
 		if (*s != *cmd) { return 0x0; }
 	}
     if (len) { 
@@ -148,20 +148,3 @@ const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen) {
     return buf;
 }
 
-const char* cstr_get_next_word(const char* line, Str s[static 1]) {
-    s->s = cstr_skip_space(line);
-    if (!line) return NULL;
-    while (*line && isalnum(*line)) {
-        ++s->len;
-        ++line;
-    }
-    return line;
-}
-
-const char* parse_l(const char* tk, long lptr[static 1]) {
-    if (!tk || !*tk) { return NULL; }
-    char* endptr = 0x0;
-    *lptr = strtol(tk, &endptr, 10);
-    if (ERANGE == errno && (LONG_MAX == *lptr || LONG_MIN == *lptr)) { return NULL; }
-    return endptr == tk ? NULL: endptr;
-}

@@ -45,10 +45,12 @@ static bool _get_line_(TextBuf tb[static 1], size_t n, Str out[static 1]) {
         size_t eoloff = textbuf_len(tb);
         *out = (Str){.s=textbuf_items(tb) + *begoffp, .len=eoloff - *begoffp};
         return true;
-    } else {
-        printf("warning: line count: %ld, eols: %ld\n", nlines, len__(eols));
-        return false;
     }
+    /* n can't be grater than len(eols). If eols == 0 and line_count == 1, 0 will be
+     * the first line, there no be line == 1 (second) etc.
+    }
+    */
+    return false;
 }
 
 static size_t _compute_required_newlines_in_line_(size_t linelen, size_t maxlen) {
