@@ -30,6 +30,8 @@
 [ ] e cmd is broken. Delete it of fix it (it appends keeping previous data in buf).
 [ ] set text width (do not break words, make it configurable)
 [ ] [libcurl] store cookies in file and make it configurable.
+[ ] [HTML] implement pre tag
+[ ] make google respond to user ahre's agent
 
 # DONE
 [*] Accept files apart from urls
