@@ -19,7 +19,10 @@ UrlClient* url_client_create(void) {
         || curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 1L)
         || curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1)
         || curl_easy_setopt(handle, CURLOPT_VERBOSE, 0L)
-        || curl_easy_setopt(handle, CURLOPT_USERAGENT, "Ahre/0.0.1")
+        || curl_easy_setopt(handle, CURLOPT_USERAGENT, "edbrowse/3.0.0")
+        //|| curl_easy_setopt(handle, CURLOPT_USERAGENT, "w3m/0.5.3")
+        /* google does not want to responde properly when I use ahre's user agent */
+        //|| curl_easy_setopt(handle, CURLOPT_USERAGENT, "Ahre/0.0.1")
         || curl_easy_setopt(handle, CURLOPT_COOKIEFILE, "")
         //|| curl_easy_setopt(handle, CURLOPT_COOKIEJAR, "cookies.txt")
     ) { 
@@ -62,16 +65,28 @@ const char* _parse_opt(const char* line, CURLoption opt[static 1]) {
 
     const char* rest;
     if ((rest = substr_match(line, "noprogress", 1))) { *opt=CURLOPT_NOPROGRESS; return rest; }
+    if ((rest = substr_match(line, "useragent", 1))) { *opt=CURLOPT_USERAGENT; return rest; }
     if ((rest = substr_match(line, "verbose", 1))) { *opt=CURLOPT_VERBOSE; return rest; }
     return NULL;
 }
 
-Err _parse_setopt_long(CURL* handle, CURLoption opt, const char* line) {
+static Err _parse_setopt_long_(CURL* handle, CURLoption opt, const char* line) {
     long value = 0;
     const char* rest = parse_l(line, &value);
-    if (!rest) return "not vlue to setopt";
+    if (!rest) return "not value to setopt, expecting a long";
     if (*cstr_skip_space(rest)) return err_fmt("invalid opt: %s", line);
     CURLcode curl_code = curl_easy_setopt(handle, opt, value);
+    if (CURLE_OK != curl_code) {
+        return err_fmt("could not set curlopt: %s", curl_easy_strerror(curl_code));
+    }
+    return Ok;
+}
+
+static Err _curl_setopt_cstr_(CURL* handle, CURLoption opt, const char* rest) {
+    if (!rest) return "not value to setopt, expecting a string";
+    rest = cstr_skip_space(rest);
+    if (!*rest) return "invalid opt, whitespace only";
+    CURLcode curl_code = curl_easy_setopt(handle, opt, rest);
     if (CURLE_OK != curl_code) {
         return err_fmt("could not set curlopt: %s", curl_easy_strerror(curl_code));
     }
@@ -86,7 +101,9 @@ Err cmd_setopt(Session session[static 1], const char* line) {
     switch(opt) {
         case CURLOPT_VERBOSE:
         case CURLOPT_NOPROGRESS:
-            return _parse_setopt_long(handle, opt, rest);
+            return _parse_setopt_long_(handle, opt, rest);
+        case CURLOPT_USERAGENT:
+            return _curl_setopt_cstr_(handle, opt, rest);
         default: return "not implemented curlopt";
 
     }

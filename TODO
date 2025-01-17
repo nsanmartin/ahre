@@ -30,8 +30,8 @@
 [ ] implement other curlopt setter in user interface
 [ ] html button support (example in sr.ht register)
 [ ] add zf/zb shorcats (smilar to :,+Np/:-N,p with N configurable -and p)
-[ ] set text width
 [ ] e cmd is brocken. Delete it of fix it (it appends keeping previous data in buf).
+[ ] set text width (do not break words, make it configurable)
 
 # DONE
 [*] Accept files apart from urls
@@ -47,3 +47,5 @@
 [*] Make ahre cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)
 [*] store LxbNodePtr for img elements
 [*] bug: when goint to a google link, it is google.com?url=/the/expected/url
+[*] set user agent
+[*] set text width (basic functionality)
