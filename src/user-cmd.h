@@ -27,8 +27,10 @@ static inline Err cmd_tag(const char* rest, Session session[static 1]) {
 }
 
 static inline Err cmd_text(Session* session) {
-    HtmlDoc* htmldoc = session_current_doc(session);
-    return lexbor_html_text_append(htmldoc->lxbdoc, htmldoc_textbuf(htmldoc));
+    (void)session;
+    return "TODO: compute eols";
+    //HtmlDoc* htmldoc = session_current_doc(session);
+    //return lexbor_html_text_append(htmldoc->lxbdoc, htmldoc_textbuf(htmldoc));
 }
 
 static inline Err cmd_browse(Session session[static 1], const char* rest) {

@@ -326,35 +326,15 @@ inline void htmldoc_destroy(HtmlDoc* htmldoc) {
     std_free(htmldoc);
 }
 
-
-//deprecated
-//static Err htmldoc_read_from_file(HtmlDoc htmldoc[static 1]) {
-//    FILE* fp = fopen(htmldoc->url, "r");
-//    if  (!fp) { return strerror(errno); }
-//
-//    Err err = NULL;
-//
-//    TextBuf* textbuf = htmldoc_textbuf(htmldoc);
-//    size_t bytes_read = 0;
-//    while ((bytes_read = fread(read_from_file_buffer, 1, READ_FROM_FILE_BUFFER_LEN, fp))) {
-//        if ((err = textbuf_append_part(textbuf, (char*)read_from_file_buffer, READ_FROM_FILE_BUFFER_LEN))) {
-//            return err;
-//        }
-//    }
-//    //TODO: free mem?
-//    if (ferror(fp)) { fclose(fp); return strerror(errno); }
-//    fclose(fp);
-//
-//    return textbuf_append_null(textbuf);
-//}
-
-
 Err htmldoc_browse(HtmlDoc htmldoc[static 1]) {
     lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(htmldoc);
     BrowseCtx ctx;
     try(browse_ctx_init(&ctx, htmldoc, true));
     try(browse_rec(lxb_dom_interface_node(lxbdoc), serialize_cb_browse, &ctx));
     browse_ctx_cleanup(&ctx);
-    return textbuf_append_null(htmldoc_textbuf(htmldoc));
+    //TODO: join append-null and fit-lines together in a single static method so that
+    //we always call all .
+    try( textbuf_append_null(htmldoc_textbuf(htmldoc)));
+    return textbuf_fit_lines(htmldoc_textbuf(htmldoc), 90);
 }
 

@@ -5,21 +5,110 @@
 #define READ_FROM_FILE_BUFFER_LEN 4096
 _Thread_local static char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN + 1] = {0};
 
-static Err textbuf_append_line_indexes(TextBuf ab[static 1], char* data, size_t len);
+///static Err textbuf_append_line_indexes(TextBuf ab[static 1], char* data, size_t len);
 
-static Err textbuf_append_line_indexes(TextBuf ab[static 1], char* data, size_t len) {
-    char* end = data + len;
-    char* it = data;
+static Err _textbuf_append_line_indexes_(TextBuf tb[static 1]) { //, char* data, size_t len) {
+    char* it = textbuf_items(tb);
+    char* end = it + textbuf_len(tb);
+    arlfn(size_t, clean)(&tb->eols);
 
     for(;it < end;) {
         it = memchr(it, '\n', end-it);
         if (!it || it >= end) { break; }
-        size_t index = len(ab) + (it - data);
-        if(NULL == arlfn(size_t, append)(&ab->eols, &index)) { return "arlfn failed to append"; }
+        size_t index =  (it - textbuf_items(tb));
+        if(NULL == arlfn(size_t, append)(&tb->eols, &index)) { return "arlfn failed to append"; }
         ++it;
     }
 
     return Ok;
+}
+
+static bool _get_line_(TextBuf tb[static 1], size_t n, Str out[static 1]) {
+    size_t nlines = textbuf_line_count(tb);
+    if (nlines == 0 || nlines < n) return false;
+    ArlOf(size_t)* eols = textbuf_eols(tb);
+    if (n == 0) {
+        size_t* linelenptr = arlfn(size_t,at)(eols, n);
+        if (!linelenptr) return false; //"error: expecting len(eols) > 0";
+        *out = (Str){.s=textbuf_items(tb), .len=*linelenptr};
+        return true;
+    } else if (n < len__(eols)) {
+        size_t* begoffp = arlfn(size_t,at)(eols, n-1);
+        if (!begoffp) return false; //"error: expecting len(eols) >= n-1";
+        size_t* eoloffp = arlfn(size_t,at)(eols, n);
+        if (!eoloffp) return false; //"error: expecting len(eols) >= n";
+        *out = (Str){.s=textbuf_items(tb) + *begoffp + 1, .len=*eoloffp-*begoffp};
+        return true;
+    } else if (n == len__(eols)) {
+        size_t* begoffp = arlfn(size_t,at)(eols, n-1);
+        if (!begoffp) return false; //"error: expecting len(eols) >= n-1";
+        size_t eoloff = textbuf_len(tb);
+        *out = (Str){.s=textbuf_items(tb) + *begoffp, .len=eoloff - *begoffp};
+        return true;
+    } else {
+        printf("warning: line count: %ld, eols: %ld\n", nlines, len__(eols));
+        return false;
+    }
+}
+
+static size_t _compute_required_newlines_in_line_(size_t linelen, size_t maxlen) {
+        return (linelen / maxlen) + (bool) (linelen % maxlen != 0);
+}
+
+size_t _compute_required_newlines_(TextBuf tb[static 1], size_t maxlen) {
+    size_t res = 0;
+    size_t n = 0;
+    Str line;
+    while (_get_line_(tb, n++, &line)) {
+        res += _compute_required_newlines_in_line_(line.len,  maxlen);
+    }
+    return res;
+}
+
+static size_t _compute_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
+    return _compute_required_newlines_(tb, maxlen) - textbuf_eol_count(tb);
+}
+
+static Err _insert_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
+    try( _textbuf_append_line_indexes_(tb));
+    size_t missing_newlines = _compute_missing_newlines_(tb, maxlen);
+    if (!missing_newlines) return Ok;
+    if (!buffn(char, __ensure_extra_capacity)(textbuf_buf(tb), missing_newlines))
+        return "error: bufof mem failure";
+    size_t n = 0;
+    Str line;
+    BufOf(char)* buf = &(BufOf(char)){0};
+    while (_get_line_(tb, n++, &line)) {
+        if (line.len && line.len <= maxlen) {
+            if (!buffn(char,append)(buf,(char*)line.s, line.len)) {
+                buffn(char,clean)(buf);
+                return "error: bufof mem failure";
+            }
+        } else {
+            size_t i = 0;
+            for (i = 0; i + maxlen <= line.len; i+=maxlen) {
+                if (!buffn(char,append)(buf,(char*)line.s+i, maxlen)) {
+                    buffn(char,clean)(buf);
+                    return "error: bufof mem failure";
+                }
+                if (i + maxlen < line.len) {
+                    if (!buffn(char,append)(buf,"\n", 1)) {
+                        buffn(char,clean)(buf);
+                        return "error: bufof mem failure";
+                    }
+                }
+            }
+            if (i < line.len) {
+                if (!buffn(char,append)(buf,(char*)line.s+i, line.len-i)) {
+                    buffn(char,clean)(buf);
+                    return "error: bufof mem failure";
+                }
+            }
+        }
+    }
+    buffn(char,clean)(textbuf_buf(tb));
+    tb->buf = *buf;
+    return  _textbuf_append_line_indexes_(tb);
 }
 
 /* external linkage  */
@@ -56,13 +145,9 @@ inline size_t textbuf_line_count(TextBuf textbuf[static 1]) {
 
 
 Err textbuf_append_part(TextBuf textbuf[static 1], char* data, size_t len) {
-    Err err = Ok;
-    return (err=textbuf_append_line_indexes(textbuf, data, len))
-        ? err :
-        ( !buffn(char,append)(&textbuf->buf, (char*)data, len)
+    return !buffn(char,append)(&textbuf->buf, (char*)data, len)
         ?  "buffn failed to append"
         : Ok
-        )
         ;
 }
 
@@ -82,7 +167,8 @@ Err textbuf_read_from_file(TextBuf textbuf[static 1], const char* filename) {
     //TODO: free mem?
     if (ferror(fp)) { fclose(fp); return strerror(errno); }
     fclose(fp);
-    return textbuf_append_null(textbuf);
+    try( textbuf_append_null(textbuf));
+    return textbuf_fit_lines(textbuf, 90);
 }
 
 Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) {
@@ -113,4 +199,7 @@ char* textbuf_line_offset(TextBuf tb[static 1], size_t line) {
     return NULL;
 }
 
+Err textbuf_fit_lines(TextBuf tb[static 1], size_t maxlen) {
+    return _insert_missing_newlines_(tb, maxlen);
+}
 
