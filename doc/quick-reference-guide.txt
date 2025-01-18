@@ -1,3 +1,4 @@
+===== ========= =====
 Quick reference guide
 ===== ========= =====
 
@@ -8,39 +9,69 @@ If schema is not provided, https is assumed. So
 > ./ahre curl.se
 assumes https://curl.se
 
-Ahre commands.
+In ahre, some tags are wrapped with specific chars:
++ anchors are wrapped within [] 
++ inputs are wrapped within {}
++ images are wrapped within ()
+inside of which a number (base 36) identifies the element and its text is
+displayed.
 
-Set the url:
+This chars are used to indicate specific commands like for example the
+line `[1f*` is used to follow the link with id 1f (see later).
+
+There are also shortcut commands aimed to save keystrokes such as `zf` (see
+later).
+
+You don't need to type the full command if there is no ambiguity. Hence,
+`b` will be interpreted as `browse` (unless we implement a new doc command 
+beginning with b).
+
+Ahre commands
+=============
+
 url      :  shows the url of the current document
 url <URL>:  sets current doc's url to <URL> and fetches it.
-browse   :  generate textbuffer for html document.
-go <URL> :  sets the url of the current doc with <URL>, fetches and browses it (it does not show it).
+browse   :  generate text buffer for html document.
+go <URL> :  sets the url of the current doc with <URL>, fetches and browses it
+            (it does not show it).
 
-colon (:) commands: 
-Simmilarly to vim, commands starting with colon are buffer commands. After ':'
-a range and a command are expected and the current line is set with the end of the range.
+colon (:) commands 
+==================
+
+Similarly to vim, commands starting with colon are buffer commands. After ':'
+a range and a command are expected and the current line is set with the end of
+the range.
 
 :%p     : prints the whole buffer, sets current line with $.
 :,+34p  : prints from the current line to 34 lines after it, moves current line 34.
-:,$n    : print from current line until the last one, numbering the printed lines, move the current line.
+:,$n    : print from current line until the last one, numbering the printed
+          lines, move the current line.
 :1p     : prints first line and set the current line.
-:write /home/user/buffer : saves current buffer in target (without the escape sequences bash uses for the colours).
 
-In ahre, some tags are wrapped with specific chars:
-anchors are wrapped within [] 
-inputs are wrapped within {}
-images are wrapped within ()
+:write <PATH> : saves current buffer in target (without the escape
+                sequences bash uses for the colours).
 
-inside of which a number (base 36) identifies the element and its text is displayed.
-
-This chars are used to indicate specific commands:
 
 anchor commands ([)
+===================
+
 [<ID>' : shows content of anchor with id = <ID>
 [<ID>* : sets current buffer with anchor's href url fetches and browses it.
+[<ID>? : print information about element (attributes)
 
 input commands ({)
-{<ID>=<VALUE>   : sets input with is = <ID> calue with <VALUE>. This applies
+==================
+
+{<ID>=<VALUE>   : sets input with is = <ID> value with <VALUE>. This applies
                   only to text inputs and is used to fill inputs in forms.
-{<ID>*<VALUE>   : submits button input with id=<ID>. Applied only to submit inputs.
-                 
+{<ID>*<VALUE>   : submits button input with id=<ID>. Applied only to submit
+                  inputs.
+{<ID>?          : print information about element (attributes)
+
+shortcuts
+========
+
+zf [<NUM>}] : shortcut to :,+<NUM>p but setting NUM so that it does not exceeds
+              line count and prints a message when already reached the last
+              line. If num is not given the last one provided in a previous
+              call is used (with a default value if it was not called).
