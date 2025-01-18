@@ -26,11 +26,9 @@
 [ ] run test in github ci workflow (currently it does not find liblexbos.so.2)
 [ ] implement other curlopt setter in user interface
 [ ] html button support (example in sr.ht register)
-[ ] add zf/zb shorcuts (smilar to :,+Np/:-N,p with N configurable -and p)
 [ ] e cmd is broken. Delete it of fix it (it appends keeping previous data in buf).
 [ ] set text width (do not break words, make it configurable)
 [ ] [libcurl] store cookies in file and make it configurable.
-[ ] [HTML] implement pre tag
 [ ] make google respond to user ahre's agent
 
 # DONE
@@ -52,3 +50,5 @@
 [*] implement cookies
 ['] fix url construction on submit (it could be absolute or not)
 ['] fix url construction on a href (it could be absolute or not)
+[*] add zf/zb shorcuts (smilar to :,+Np/:-N,p with N configurable -and p)
+['] [HTML] implement pre tag

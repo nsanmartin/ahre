@@ -292,7 +292,9 @@ Err cmd_eval(Session session[static 1], const char* line) {
     if ((rest = substr_match(line, "submit", 1))) { return cmd_submit(session, rest); }
     if ((rest = substr_match(line, "tag", 2))) { return cmd_tag(rest, session); }
     if ((rest = substr_match(line, "text", 2))) { return cmd_text(session); }
+    if ((rest = substr_match(line, "zb", 2))) { return shorcut_zb(session, rest); }
     if ((rest = substr_match(line, "zf", 2))) { return shorcut_zf(session, rest); }
+    if ((rest = substr_match(line, "zz", 2))) { return shorcut_zz(session, rest); }
 
     return "unknown cmd";
 }

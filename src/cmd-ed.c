@@ -229,10 +229,33 @@ Err ed_eval(Session session[static 1], const char* line) {
         return ed_edit(textbuf, cstr_trim_space((char*)rest));
     if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
 
-    if (range.end == 0) return "error: unexpeced range with end == 0";
+    if (range.end == 0) return "error: unexpected range with end == 0";
     if (range.end > textbuf_line_count(textbuf)) return "error: range end too large";
     *textbuf_current_line(textbuf) = range.end;
     return textbuf_eval_cmd(session, line, &range);
+}
+
+Err shorcut_zb(Session session[static 1], const char* rest) {
+    TextBuf* tb = session_current_buf(session);
+    if(*textbuf_current_line(tb) == 1) return "No more lines at the beginning";
+    if (*rest) {
+        rest = cstr_skip_space(rest);
+        size_t incr;
+        if (!parse_ull(rest, &incr)) return "invalid line number";
+        *session_conf_z_shorcut_len(session) = incr;
+    } 
+    size_t beg = *textbuf_current_line(tb) <= *session_conf_z_shorcut_len(session)
+        ? 1
+        : *textbuf_current_line(tb) - *session_conf_z_shorcut_len(session)
+        ;
+    Range r = (Range){
+        .beg=beg,
+        .end=*textbuf_current_line(tb)
+    };
+    ed_print(tb, &r);
+    *textbuf_current_line(tb) = r.beg;
+
+    return Ok;
 }
 
 Err shorcut_zf(Session session[static 1], const char* rest) {
@@ -250,6 +273,36 @@ Err shorcut_zf(Session session[static 1], const char* rest) {
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
     ed_print(tb, &r);
     *textbuf_current_line(tb) = r.end;
+
+    return Ok;
+}
+
+Err shorcut_zz(Session session[static 1], const char* rest) {
+    TextBuf* tb = session_current_buf(session);
+    ///if(*textbuf_current_line(tb) >= textbuf_line_count(tb)) return "No more lines in buffer";
+    if (*rest) {
+        rest = cstr_skip_space(rest);
+        size_t incr;
+        if (!parse_ull(rest, &incr)) return "invalid line number";
+        *session_conf_z_shorcut_len(session) = incr;
+    } 
+    size_t beg = *textbuf_current_line(tb) <= *session_conf_z_shorcut_len(session) / 2
+        ? 1
+        : *textbuf_current_line(tb) - *session_conf_z_shorcut_len(session) / 2
+        ;
+
+    ////size_t center = *session_conf_z_shorcut_len(session) / 2;
+    //size_t beg = *textbuf_current_line(tb) <= *session_conf_z_shorcut_len(session)
+    //    ? 1
+    //    : *textbuf_current_line(tb) - *session_conf_z_shorcut_len(session)
+    //    ;
+    //} 
+    Range r = (Range){
+        .beg=beg, .end=beg + *session_conf_z_shorcut_len(session)
+    };
+    if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
+    ed_print(tb, &r);
+    //*textbuf_current_line(tb) = r.end;
 
     return Ok;
 }
