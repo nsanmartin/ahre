@@ -175,7 +175,11 @@ static Err
 browse_tag_div(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
-    buffn(char, reset)(browse_ctx_lazy_str(ctx));
+    if (browse_ctx_lazy_str_len(ctx)) {
+        buffn(char, reset)(browse_ctx_lazy_str(ctx));
+    } else {
+        try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
+    }
     return Ok;
 }
 
@@ -184,7 +188,7 @@ browse_tag_p(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[sta
     try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     if (browse_ctx_lazy_str_len(ctx)) {
-        buffn(char, reset)(&ctx->lazy_str);
+        buffn(char, reset)(browse_ctx_lazy_str(ctx));
     } else {
         try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
     }
@@ -195,6 +199,19 @@ static Err
 browse_tag_ul(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     try (serialize_lit_str("\n", cb, ctx));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
+    try (serialize_lit_str("\n", cb, ctx));
+    return Ok;
+}
+
+static Err
+browse_tag_li(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    // TODO: implement this more decently
+    ////try (serialize_lit_str("\n * ", cb, ctx));
+    try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n * "));
+    try (browse_list(node->first_child, node->last_child, cb, ctx));
+    if (browse_ctx_lazy_str_len(ctx)) {
+        buffn(char, reset)(browse_ctx_lazy_str(ctx));
+    }
     try (serialize_lit_str("\n", cb, ctx));
     return Ok;
 }
@@ -230,6 +247,7 @@ static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCt
                 case LXB_TAG_H1: case LXB_TAG_H2: case LXB_TAG_H3: case LXB_TAG_H4: case LXB_TAG_H5: case LXB_TAG_H6: { return browse_tag_h(node, cb, ctx); }
                 case LXB_TAG_INPUT: { return browse_tag_input(node, cb, ctx); }
                 case LXB_TAG_IMAGE: case LXB_TAG_IMG: { return browse_tag_img(node, cb, ctx); }
+                case LXB_TAG_LI: { return browse_tag_li(node, cb, ctx); }
                 case LXB_TAG_P: { return browse_tag_p(node, cb, ctx); }
                 case LXB_TAG_PRE: { return browse_tag_pre(node, cb, ctx); }
                 case LXB_TAG_SCRIPT: { /*printf("skip script\n");*/ return Ok; } 
@@ -261,10 +279,14 @@ static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCt
                     buffn(char, reset)(browse_ctx_lazy_str(ctx));
                 }
 
+                bool first = true;
                 while((data = cstr_skip_space((const char*)data))) {
                     if (!*data) break;
                     const char* end = cstr_next_space((const char*)data);
                     if (data == end) break;
+                    if (!first) { 
+                        if (cb((lxb_char_t*)" ", 1, ctx)) return "error serializing space";
+                    } else first = false;
                     if (cb((lxb_char_t*)data, end-data, ctx)) return "error serializing html text elem";
                     if (cb((lxb_char_t*)" ", 1, ctx)) return "error serializing space";
                     data = end;

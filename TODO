@@ -30,6 +30,7 @@
 [ ] set text width (do not break words, make it configurable)
 [ ] [libcurl] store cookies in file and make it configurable.
 [ ] make google respond to user ahre's agent
+[ ] [HTML] browse ul/li
 
 # DONE
 [*] Accept files apart from urls
