@@ -31,6 +31,9 @@ Err browse_tag_pre(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx c
 #define append_to_arlof_lxb_node__(ArrayList, NodePtr) \
     (arlfn(LxbNodePtr,append)(ArrayList, (NodePtr)) ? Ok : "error: lip set")
 
+#define append_to_bufof_char_lit_(Buffer, LitStr) \
+    (buffn(char, append)(Buffer,LitStr, sizeof(LitStr) - 1) ? Ok : "error: failed to append to bufof")
+
 //_Thread_local static unsigned char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {0};
 
 
@@ -170,17 +173,21 @@ browse_tag_input(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
 
 static Err
 browse_tag_div(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    if (!buffn(char, append)(&ctx->lazy_str, "\n", 1)) return "error: failed to append to bufof";
+    try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
-    buffn(char, reset)(&ctx->lazy_str);
+    buffn(char, reset)(browse_ctx_lazy_str(ctx));
     return Ok;
 }
 
 static Err
 browse_tag_p(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    try (serialize_lit_str("\n", cb, ctx));
+    try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
-    try (serialize_lit_str("\n", cb, ctx));
+    if (browse_ctx_lazy_str_len(ctx)) {
+        buffn(char, reset)(&ctx->lazy_str);
+    } else {
+        try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
+    }
     return Ok;
 }
 
@@ -200,8 +207,9 @@ browse_tag_h(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[sta
     return Ok;
 }
 
-static Err browse_tag_blockquote(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    if (!buffn(char, append)(&ctx->lazy_str, "``", 2)) return "error: failed to append to bufof";
+static Err
+browse_tag_blockquote(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "``"));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     try (serialize_lit_str("''", cb, ctx));
     return Ok;
@@ -242,10 +250,15 @@ static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCt
 
                 if (cb((lxb_char_t*)data, len, ctx)) return "error serializing html text elem";
             } else if (!mem_is_all_space((char*)data, len)) {
-                if (ctx->lazy_str.len) {
-                    if(cb((lxb_char_t*)ctx->lazy_str.items, ctx->lazy_str.len, ctx))
+                if (browse_ctx_lazy_str_len(ctx)) {
+                    if(cb(
+                        (lxb_char_t*)browse_ctx_lazy_str_items(ctx),
+                        browse_ctx_lazy_str_len(ctx),
+                        ctx
+                      )
+                    )
                         return "error serializing nl";
-                    buffn(char, reset)(&ctx->lazy_str);
+                    buffn(char, reset)(browse_ctx_lazy_str(ctx));
                 }
 
                 while((data = cstr_skip_space((const char*)data))) {

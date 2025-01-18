@@ -101,6 +101,14 @@ static inline TextBuf* browse_ctx_textbuf(BrowseCtx ctx[static 1]) {
 }
 static inline bool browse_ctx_color(BrowseCtx ctx[static 1]) { return ctx->color; }
 static inline bool browse_ctx_pre_tag(BrowseCtx ctx[static 1]) { return ctx->pre_tag; }
+static inline BufOf(char)* browse_ctx_lazy_str(BrowseCtx ctx[static 1]) { return &ctx->lazy_str; }
+static inline size_t browse_ctx_lazy_str_len(BrowseCtx ctx[static 1]) {
+    return browse_ctx_lazy_str(ctx)->len;
+}
+static inline char* browse_ctx_lazy_str_items(BrowseCtx ctx[static 1]) { 
+    return browse_ctx_lazy_str(ctx)->items;
+}
+
 
 static inline Err browse_ctx_init(BrowseCtx ctx[static 1], HtmlDoc htmldoc[static 1], bool color) {
     *ctx = (BrowseCtx) {.htmldoc=htmldoc, .color=color};
