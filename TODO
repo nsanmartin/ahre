@@ -31,6 +31,9 @@
 [ ] [libcurl] store cookies in file and make it configurable.
 [ ] make google respond to user ahre's agent
 [ ] [HTML] browse ul/li
+[ ] add cmd to show a and submit urls
+[ ] allow switch between source buf and textbuf (via current buf, doc etc).
+[ ] implement hashi arl reset
 
 # DONE
 [*] Accept files apart from urls

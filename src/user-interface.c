@@ -130,12 +130,12 @@ Err _cmd_submit_ix(Session session[static 1], size_t ix) {
 
     LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(inputs, ix);
     if (!nodeptr) {
-        err="link number invalid";
-        goto cleanup_curlu;
+        curl_url_cleanup(curlu);
+        return "link number invalid";
     }
     if (!_lexbor_attr_has_value(*nodeptr, "type", "submit")) {
-        err="warn: not submit input";
-        goto cleanup_curlu;
+        curl_url_cleanup(curlu);
+        return "warn: not submit input";
     }
 
     lxb_dom_node_t* form = _find_parent_form(*nodeptr);
@@ -149,16 +149,21 @@ Err _cmd_submit_ix(Session session[static 1], size_t ix) {
             return err;
         }
         ////TODO: all this is duplicated, refactor!
-        if (!(newdoc=htmldoc_create(NULL))) { err="error creating htmldoc"; goto cleanup_curlu; };
+        if (!(newdoc=htmldoc_create(NULL))) {
+            curl_url_cleanup(curlu);
+            return "error creating htmldoc";
+        };
         htmldoc_url(newdoc)->cu=curlu;
         newdoc->method = method;
 
         if ((err=htmldoc_fetch(newdoc, session_url_client(session)))) {
-           goto cleanup_htmldoc; 
+            htmldoc_destroy(newdoc);
+            return err;
         }
 
         if ((err=htmldoc_browse(newdoc))) {
-           goto cleanup_htmldoc; 
+            htmldoc_destroy(newdoc);
+            return err;
         }
 
         session->htmldoc = newdoc;
@@ -167,11 +172,6 @@ Err _cmd_submit_ix(Session session[static 1], size_t ix) {
     
     } else { puts("expected form, not found"); }
     return Ok;
-cleanup_htmldoc:
-    htmldoc_destroy(newdoc);
-cleanup_curlu:
-    curl_url_cleanup(curlu);
-    return err;
 }
 
 Err cmd_submit(Session session[static 1], const char* line) {

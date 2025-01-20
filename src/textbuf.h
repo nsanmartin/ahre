@@ -22,8 +22,8 @@ textbuf_buf(TextBuf t[static 1]) { return &t->buf; }
 static inline int textbuf_init(TextBuf ab[static 1]) { *ab = (TextBuf){.current_line=1}; return 0; }
 
 /* dtors */
-#define textbuf_reset textbuf_cleanup
 void textbuf_cleanup(TextBuf b[static 1]);
+void textbuf_reset(TextBuf b[static 1]);
 void textbuf_destroy(TextBuf* b);
 
 Err textbuf_append_part(TextBuf ab[static 1], char* data, size_t len);

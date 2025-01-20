@@ -350,9 +350,9 @@ HtmlDoc* htmldoc_create(const char* url) {
     return rv;
 }
 
-
+//TODO: rename this fn
 void htmldoc_reset(HtmlDoc htmldoc[static 1]) {
-    textbuf_cleanup(htmldoc_textbuf(htmldoc));
+    textbuf_reset(htmldoc_textbuf(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_anchors(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_imgs(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
@@ -378,7 +378,10 @@ Err htmldoc_browse(HtmlDoc htmldoc[static 1]) {
     browse_ctx_cleanup(&ctx);
     //TODO: join append-null and fit-lines together in a single static method so that
     //we always call all .
-    try( textbuf_append_null(htmldoc_textbuf(htmldoc)));
-    return textbuf_fit_lines(htmldoc_textbuf(htmldoc), 90);
+    if (textbuf_len(htmldoc_textbuf(htmldoc))) {
+        try( textbuf_append_null(htmldoc_textbuf(htmldoc)));
+        return textbuf_fit_lines(htmldoc_textbuf(htmldoc), 90);
+    }
+    return Ok;
 }
 

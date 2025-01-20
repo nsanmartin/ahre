@@ -121,6 +121,12 @@ void textbuf_cleanup(TextBuf b[static 1]) {
     *b = (TextBuf){.current_line=1};
 }
 
+void textbuf_reset(TextBuf b[static 1]) {
+    buffn(char, reset)(&b->buf);
+    //TODO: use reset once avalable
+    arlfn(size_t, clean)(&b->eols);
+    b->current_line = 1;
+}
 
 inline void textbuf_destroy(TextBuf* b) {
     textbuf_cleanup(b);

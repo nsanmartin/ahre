@@ -148,8 +148,11 @@ lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf) {
 size_t lexbor_parse_chunk_callback(char *in, size_t size, size_t nmemb, void* outstream) {
     //TODO: append to sourcebuf
     HtmlDoc* htmldoc = outstream;
-    lxb_html_document_t* document = htmldoc->lxbdoc;
     size_t r = size * nmemb;
+    if (!buffn(char, append)(htmldoc_sourcebuf(htmldoc), in, r)) {
+        return LXB_STATUS_ERROR;
+    }
+    lxb_html_document_t* document = htmldoc->lxbdoc;
     return  LXB_STATUS_OK == lxb_html_document_parse_chunk(document, (lxb_char_t*)in, r) ? r : 0;
 }
 
