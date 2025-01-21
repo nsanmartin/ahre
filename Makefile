@@ -1,5 +1,4 @@
 INCLUDE:=$(HOME)/usr/include
-LIB:=$(HOME)/usr/lib
 CFLAGS:=-g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition \
 		-I. -Ihashi/include -Iisocline/include
 SANITIZE_FLAGS:= -fsanitize=leak -fsanitize=address -fsanitize=undefined \
@@ -38,7 +37,6 @@ $(AHRE): $(AHRE_OBJ) build/isocline.o
 $(AHRE_OBJDIR)/%.o: $(AHRE_SRCDIR)/%.c $(AHRE_HEADERS)
 	$(CC) $(CFLAGS) \
 		-I$(INCLUDE) \
-		-L$(LIB) \
 		-c -o $@ \
 		$< 
 
@@ -91,6 +89,7 @@ clean:
 
 #####################
 #TODO: add lexbor as submodule too
+LIB:=$(HOME)/usr/lib
 debug: curl/lib/.libs 
 	$(CC) $(CFLAGS) \
 		-I$(INCLUDE)\

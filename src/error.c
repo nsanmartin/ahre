@@ -139,23 +139,25 @@ Err err_fmt(Err fmt, ...) {
         } else if (beg == end) { ++beg; }
 
         switch(*beg) {
-            case 's':
+            case 's': {
                 const char* s = va_arg(ap, const char *);
                 if (s == MSGBUF)
                     return "error: err_fmt can't receive as parameter an err_fmt return value";
                 if (s == NULL) s = "(null)";
                 try(_msg_buf_append(&buf, s, strlen(s)));
                 break;
-            case 'd':
+                      }
+            case 'd':{
                 size_t len = 0;
                 try(_num_to_str(buf, MSGBUF + MAX_MSG_LEN - buf, va_arg(ap, int), &len));
                 buf += len;
                 ERR_MSG_LEN += len;
                 break;
-            case '%':
-                s = "%";
-                try(_msg_buf_append(&buf, "%", strlen(s)));
+                     }
+            case '%':{
+                try(_msg_buf_append(&buf, "%", 1));
                 break;
+                     }
             default:
                 return "error: unsupported fmt";
         }

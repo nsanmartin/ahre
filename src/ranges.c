@@ -164,8 +164,6 @@ parse_range_impl(const char* tk, RangeParseCtx ctx[static 1], Range range[static
 
 }
 
-static inline bool range_has_no_end(Range r[static 1]) { return r->end == 0; }
-
 /* external linkage */
 
 ParseRv

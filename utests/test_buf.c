@@ -8,14 +8,15 @@
 int test_0(void) {
 
     char* str = "01\n02\n03";
-    size_t len = 8;
+    size_t len = sizeof(str)-1;
 
     size_t count = mem_count_ocurrencies(str, len, '\n');
     utest_assert(count == 2, fail, __LINE__);
 
     TextBuf buf;
     textbuf_init(&buf);
-    Err err = textbuf_append_line_indexes(&buf, str, len);
+    textbuf_append_part(&buf, str, len);
+    Err err = _textbuf_append_line_indexes_(&buf);
     utest_assert(!err, fail, __LINE__);
     utest_assert(count == buf.eols.len, fail, __LINE__);
 

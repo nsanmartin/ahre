@@ -2,11 +2,11 @@
 #include "src/session.h"
 
 
-inline HtmlDoc* session_current_doc(Session session[static 1]) {
+HtmlDoc* session_current_doc(Session session[static 1]) {
     return session->htmldoc;
 }
 
-inline TextBuf* session_current_buf(Session session[static 1]) {
+TextBuf* session_current_buf(Session session[static 1]) {
     return htmldoc_textbuf(session_current_doc(session));
 }
 
