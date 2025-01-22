@@ -196,6 +196,17 @@ browse_tag_p(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[sta
 }
 
 static Err
+browse_tag_tr(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
+    try (browse_list(node->first_child, node->last_child, cb, ctx));
+    if (browse_ctx_lazy_str_len(ctx)) {
+        buffn(char, reset)(browse_ctx_lazy_str(ctx));
+    } else {
+        try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
+    }
+    return Ok;
+}
+static Err
 browse_tag_ul(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     try (serialize_lit_str("\n", cb, ctx));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
@@ -253,6 +264,7 @@ static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCt
                 case LXB_TAG_SCRIPT: { /*printf("skip script\n");*/ return Ok; } 
                 case LXB_TAG_STYLE: { /*printf("skip style\n");*/ return Ok; } 
                 case LXB_TAG_TITLE: { /*printf("skip title\n");*/ return Ok; } 
+                case LXB_TAG_TR: { return browse_tag_tr(node, cb, ctx); }
                 case LXB_TAG_UL: { return browse_tag_ul(node, cb, ctx); }
             }
         } else if (node->type == LXB_DOM_NODE_TYPE_TEXT) {
