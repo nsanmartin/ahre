@@ -19,7 +19,7 @@ UrlClient* url_client_create(void) {
         || curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 1L)
         || curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1)
         || curl_easy_setopt(handle, CURLOPT_VERBOSE, 0L)
-        || curl_easy_setopt(handle, CURLOPT_USERAGENT, "user-agent/3.0.0")
+        || curl_easy_setopt(handle, CURLOPT_USERAGENT, "ELinks/0.13.2 (textmode; Linux 6.6.62+rpt-rpi-2712 aarch64; 213x55-2)")
         //|| curl_easy_setopt(handle, CURLOPT_USERAGENT, "w3m/0.5.3")
         /* google does not want to responde properly when I use ahre's user agent */
         //|| curl_easy_setopt(handle, CURLOPT_USERAGENT, "Ahre/0.0.1")
