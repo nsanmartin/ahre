@@ -14,6 +14,7 @@ typedef struct {
     ArlOf(size_t) eols;
 } TextBuf;
 
+
 /* getters */
 static inline BufOf(char)*
 textbuf_buf(TextBuf t[static 1]) { return &t->buf; }
@@ -65,4 +66,7 @@ static inline char* textbuf_current_line_offset(TextBuf tb[static 1]) {
 }
 Err textbuf_append_part(TextBuf textbuf[static 1], char* data, size_t len);
 Err textbuf_fit_lines(TextBuf tb[static 1], size_t maxlen);
+
+Err textbuf_append_line_indexes(TextBuf tb[static 1]);
+
 #endif

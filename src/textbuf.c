@@ -5,24 +5,6 @@
 #define READ_FROM_FILE_BUFFER_LEN 4096
 _Thread_local static char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN + 1] = {0};
 
-///static Err textbuf_append_line_indexes(TextBuf ab[static 1], char* data, size_t len);
-
-static Err _textbuf_append_line_indexes_(TextBuf tb[static 1]) { //, char* data, size_t len) {
-    char* it = textbuf_items(tb);
-    char* end = it + textbuf_len(tb);
-    arlfn(size_t, clean)(&tb->eols);
-
-    for(;it < end;) {
-        it = memchr(it, '\n', end-it);
-        if (!it || it >= end) { break; }
-        size_t index =  (it - textbuf_items(tb));
-        if(NULL == arlfn(size_t, append)(&tb->eols, &index)) { return "arlfn failed to append"; }
-        ++it;
-    }
-
-    return Ok;
-}
-
 static bool _get_line_(TextBuf tb[static 1], size_t n, Str out[static 1]) {
     size_t nlines = textbuf_line_count(tb);
     if (nlines == 0 || nlines < n) return false;
@@ -72,7 +54,7 @@ static size_t _compute_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
 }
 
 static Err _insert_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
-    try( _textbuf_append_line_indexes_(tb));
+    try( textbuf_append_line_indexes(tb));
     size_t missing_newlines = _compute_missing_newlines_(tb, maxlen);
     if (!missing_newlines) return Ok;
     if (!buffn(char, __ensure_extra_capacity)(textbuf_buf(tb), missing_newlines))
@@ -110,8 +92,9 @@ static Err _insert_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
     }
     buffn(char,clean)(textbuf_buf(tb));
     tb->buf = *buf;
-    return  _textbuf_append_line_indexes_(tb);
+    return  textbuf_append_line_indexes(tb);
 }
+
 
 /* external linkage  */
 
@@ -146,9 +129,12 @@ inline size_t textbuf_eol_count(TextBuf textbuf[static 1]) {
 }
 
 inline size_t textbuf_line_count(TextBuf textbuf[static 1]) {
-    size_t neols = textbuf->eols.len;
-    return neols ? neols + 1
-        : (textbuf_len(textbuf) ? 1 : 0);
+    size_t neols = textbuf_eol_count(textbuf);
+    size_t len = textbuf_len(textbuf);
+    size_t* last_eolp = arlfn(size_t, back)(&textbuf->eols);
+    return neols && last_eolp
+        ? neols + ( len == 1 + *last_eolp ? 0 : 1)
+        : (len ? 1 : 0);
 }
 
 
@@ -172,7 +158,7 @@ Err textbuf_read_from_file(TextBuf textbuf[static 1], const char* filename) {
             return err;
         }
     }
-    //TODO: free mem?
+    //TODO: free me?
     if (ferror(fp)) { fclose(fp); return strerror(errno); }
     fclose(fp);
     try( textbuf_append_null(textbuf));
@@ -209,5 +195,21 @@ char* textbuf_line_offset(TextBuf tb[static 1], size_t line) {
 
 Err textbuf_fit_lines(TextBuf tb[static 1], size_t maxlen) {
     return _insert_missing_newlines_(tb, maxlen);
+}
+
+Err textbuf_append_line_indexes(TextBuf tb[static 1]) {
+    char* it = textbuf_items(tb);
+    char* end = it + textbuf_len(tb);
+    arlfn(size_t, clean)(&tb->eols);
+
+    for(;it < end;) {
+        it = memchr(it, '\n', end-it);
+        if (!it || it >= end) { break; }
+        size_t index =  (it - textbuf_items(tb));
+        if(NULL == arlfn(size_t, append)(&tb->eols, &index)) { return "arlfn failed to append"; }
+        ++it;
+    }
+
+    return Ok;
 }
 

@@ -2,9 +2,11 @@
 #include <string.h>
 
 #include "src/cmd-ed.h"
+#include "src/ranges.h"
 #include "src/re.h"
 #include "src/str.h"
 #include "src/session.h"
+#include "src/textbuf.h"
 
 static Err validate_range_for_buffer(TextBuf textbuf[static 1], Range range[static 1]) {
     if (!range->beg  || range->beg > range->end) { return  "error: unexpected bad range"; }
@@ -50,23 +52,6 @@ static inline Err ed_print_n(TextBuf textbuf[static 1], Range range[static 1]) {
         fwrite(textbuf->buf.items + r.beg, 1, r.end - r.beg, stdout);
     }
     fwrite(EscCodeReset, 1, sizeof(EscCodeReset)-1, stdout);
-    if (range->end == textbuf_line_count(textbuf)) 
-        fwrite("\n", 1, 1, stdout);
-    return Ok;
-}
-
-static inline Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
-    try(validate_range_for_buffer(textbuf, range));
-
-    for (size_t line = range->beg; line <= range->end; ++line) {
-        Range r = {0};
-        try (textbuf_get_line_offset_range(textbuf, line, line, &r));
-
-        fwrite(textbuf->buf.items + r.beg, 1, r.end - r.beg, stdout);
-    }
-
-    fwrite(EscCodeReset, 1, sizeof(EscCodeReset)-1, stdout);
-
     if (range->end == textbuf_line_count(textbuf)) 
         fwrite("\n", 1, 1, stdout);
     return Ok;
@@ -196,16 +181,34 @@ Err ed_go(HtmlDoc htmldoc[static 1],  const char* rest, Range range[static 1]) {
     return Ok;
 }
 
-Err textbuf_eval_cmd(Session session[static 1], const char* line, Range range[static 1]) {
-    HtmlDoc* htmldoc = session_current_doc(session);
-    TextBuf* textbuf = session_current_buf(session);
+
+Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
+    try(validate_range_for_buffer(textbuf, range));
+
+    for (size_t line = range->beg; line <= range->end; ++line) {
+        Range r = {0};
+        try (textbuf_get_line_offset_range(textbuf, line, line, &r));
+
+        fwrite(textbuf->buf.items + r.beg, 1, r.end - r.beg, stdout);
+    }
+
+    fwrite(EscCodeReset, 1, sizeof(EscCodeReset)-1, stdout);
+
+    if (range->end == textbuf_line_count(textbuf)) 
+        fwrite("\n", 1, 1, stdout);
+    return Ok;
+}
+
+
+Err textbuf_eval_cmd(TextBuf textbuf[static 1], const char* line, Range range[static 1]) {
+    //HtmlDoc* htmldoc = session_current_doc(session);
+    //TextBuf* textbuf = session_current_buf(session);
 
     const char* rest = 0x0;
 
     if (!*cstr_skip_space(line)) { return ed_print(textbuf, range); } /* default :NUM */
     if ((rest = substr_match(line, "a", 1)) && !*rest) { return ed_print_all(textbuf); }
     if ((rest = substr_match(line, "l", 1)) && !*rest) { return dbg_print_all_lines_nums(textbuf); }
-    if ((rest = substr_match(line, "go", 2)) && !*rest) { return ed_go(htmldoc, rest, range); }
     if ((rest = substr_match(line, "g", 1)) && *rest) { return ed_global(textbuf, rest); }
     if ((rest = substr_match(line, "n", 1)) && !*rest) { return ed_print_n(textbuf, range); }
     if ((rest = substr_match(line, "print", 1)) && !*rest) { return ed_print(textbuf, range); }
@@ -213,10 +216,8 @@ Err textbuf_eval_cmd(Session session[static 1], const char* line, Range range[st
     return "unknown command";
 }
 
-
-Err ed_eval(Session session[static 1], const char* line) {
+Err ed_eval(TextBuf textbuf[static 1], const char* line) {
     if (!line) { return Ok; }
-    TextBuf* textbuf = session_current_buf(session);
     Range range = {0};
     RangeParseCtx ctx = range_parse_ctx_from_textbuf(textbuf);
     line = parse_range(line, &range, &ctx);
@@ -232,7 +233,7 @@ Err ed_eval(Session session[static 1], const char* line) {
     if (range.end == 0) return "error: unexpected range with end == 0";
     if (range.end > textbuf_line_count(textbuf)) return "error: range end too large";
     *textbuf_current_line(textbuf) = range.end;
-    return textbuf_eval_cmd(session, line, &range);
+    return textbuf_eval_cmd(textbuf, line, &range);
 }
 
 Err shorcut_zb(Session session[static 1], const char* rest) {

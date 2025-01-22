@@ -3,9 +3,11 @@
 
 #include <stddef.h>
 
-#include "src/textbuf.h"
+typedef struct { size_t beg; size_t end; } Range;
 
 typedef const char* ParseRv;
+
+#include "src/textbuf.h"
 
 typedef struct {
     size_t current_line;
@@ -14,28 +16,9 @@ typedef struct {
 } RangeParseCtx;
 
 
-static inline RangeParseCtx
-range_parse_ctx_from_textbuf(TextBuf tb[static 1]) {
-    RangeParseCtx res = (RangeParseCtx){
-        .current_line = *textbuf_current_line(tb),
-        .nlines       = textbuf_line_count(tb),
-        .tb           = tb
-    };
-    return res;
-}
-
-typedef struct { size_t beg; size_t end; } Range;
-
-ParseRv
-parse_range(ParseRv tk, Range range[static 1], RangeParseCtx ctx[static 1]);
-
+ParseRv parse_range(ParseRv tk, Range range[static 1], RangeParseCtx ctx[static 1]);
 #define to_range_parse_err(Msg) ("\x01" Msg)
-
-static inline bool range_parse_failure(ParseRv tk) {
-    //return !tk || (!*tk && iscntrl(*tk));
-    return !tk || *tk == '\x01';
-}
-
+static inline bool range_parse_failure(ParseRv tk) { return !tk || *tk == '\x01'; }
 static inline Err range_parse_failure_to_err(ParseRv tk) {
     return !tk
         ? "invalid range"
@@ -68,5 +51,16 @@ inline static Err range_both_set_curr(Range r[static 1], RangeParseCtx ctx[stati
     r->beg = ctx->current_line;
     r->end = r->beg;
     return Ok;
+}
+Err textbuf_eval_cmd(TextBuf textbuf[static 1], const char* line, Range range[static 1]);
+
+static inline RangeParseCtx
+range_parse_ctx_from_textbuf(TextBuf tb[static 1]) {
+    RangeParseCtx res = (RangeParseCtx){
+        .current_line = *textbuf_current_line(tb),
+        .nlines       = textbuf_line_count(tb),
+        .tb           = tb
+    };
+    return res;
 }
 #endif

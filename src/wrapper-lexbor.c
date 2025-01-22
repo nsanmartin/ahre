@@ -146,10 +146,10 @@ lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf) {
  * The signature of this fn must match the api of curl_easy_setopt CURLOPT_WRITEFUNCTION
  */
 size_t lexbor_parse_chunk_callback(char *in, size_t size, size_t nmemb, void* outstream) {
-    //TODO: append to sourcebuf
     HtmlDoc* htmldoc = outstream;
     size_t r = size * nmemb;
-    if (!buffn(char, append)(htmldoc_sourcebuf(htmldoc), in, r)) {
+    if (textbuf_append_part(htmldoc_sourcebuf(htmldoc), in, r)) {
+        //TODO: log error
         return LXB_STATUS_ERROR;
     }
     lxb_html_document_t* document = htmldoc->lxbdoc;

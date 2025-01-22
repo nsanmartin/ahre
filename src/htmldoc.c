@@ -335,7 +335,10 @@ Err htmldoc_init(HtmlDoc d[static 1], const char* cstr_url) {
         .url=url,
         .method=http_get,
         .lxbdoc=document,
-        .cache=(DocCache){.textbuf=(TextBuf){.current_line=1}}
+        .cache=(DocCache){
+            .textbuf=(TextBuf){.current_line=1},
+            .sourcebuf=(TextBuf){.current_line=1}
+        }
     };
     return Ok;
 }

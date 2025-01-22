@@ -30,7 +30,8 @@ Err _lexbor_parse_chunk_end_(HtmlDoc htmldoc[static 1]) {
     lexbor_status_t lxb_status = lxb_html_document_parse_chunk_end(lxbdoc);
     if (LXB_STATUS_OK != lxb_status) 
         return err_fmt("error: lbx failed to parse html, status: %d", lxb_status);
-    return Ok;
+
+    return textbuf_append_line_indexes(htmldoc_sourcebuf(htmldoc));
 }
 
 CURLoption _curlopt_method_from_htmldoc_(HtmlDoc htmldoc[static 1]) {

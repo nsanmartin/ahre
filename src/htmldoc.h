@@ -22,7 +22,7 @@ typedef lxb_dom_node_t* LxbNodePtr;
 #include <arl.h>
 
 typedef struct {
-    BufOf(char) sourcebuf;
+    TextBuf sourcebuf;
     TextBuf textbuf;
     ArlOf(LxbNodePtr) anchors;
     ArlOf(LxbNodePtr) imgs;
@@ -42,7 +42,7 @@ typedef struct {
 static inline lxb_html_document_t*
 htmldoc_lxbdoc(HtmlDoc d[static 1]) { return d->lxbdoc; }
 
-static inline BufOf(char)*
+static inline TextBuf*
 htmldoc_sourcebuf(HtmlDoc d[static 1]) { return &d->cache.sourcebuf; }
 
 static inline TextBuf*
@@ -77,7 +77,7 @@ void htmldoc_destroy(HtmlDoc* htmldoc) ;
 //TODO: this fn should cleanup instead the browse data
 static inline void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
     textbuf_cleanup(htmldoc_textbuf(htmldoc));
-    buffn(char, clean)(htmldoc_sourcebuf(htmldoc));
+    textbuf_cleanup(htmldoc_sourcebuf(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_anchors(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_imgs(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
