@@ -4,20 +4,28 @@
 #include <stdbool.h>
 
 #include "src/error.h"
+#include "src/ranges.h"
 #include "src/str.h"
 #include "src/utils.h"
 
+typedef struct {
+    Range last_range;
+} TextBufCache;
 
 typedef struct {
     BufOf(char) buf;
     size_t current_line;
     ArlOf(size_t) eols;
+    TextBufCache cache;
 } TextBuf;
 
 
 /* getters */
 static inline BufOf(char)*
 textbuf_buf(TextBuf t[static 1]) { return &t->buf; }
+
+static inline Range* textbuf_last_range(TextBuf t[static 1]) { return &t->cache.last_range; }
+
 
 /* ctor */
 static inline int textbuf_init(TextBuf ab[static 1]) { *ab = (TextBuf){.current_line=1}; return 0; }

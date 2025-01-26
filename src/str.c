@@ -90,6 +90,18 @@ const char* substr_match(const char* s, const char* cmd, size_t len) {
 	return cstr_skip_space(s);
 }
 
+const char* subword_match(const char* s, const char* cmd, size_t len) {
+    if (!*s || !isalpha(*s)) { return 0x0; }
+	for (; *cmd && *s && isalpha(*s); ++s, ++cmd, (len?--len:len)) {
+		if (*s != *cmd) { return 0x0; }
+	}
+    if (len) { 
+        printf("...%s?\n", cmd);
+        return 0x0;
+    }
+	return cstr_skip_space(s);
+}
+
 const char* cstr_trim_space(char* s) {
     if (!s) return NULL;
     s = (char*)cstr_skip_space(s);

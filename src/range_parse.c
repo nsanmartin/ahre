@@ -5,7 +5,7 @@
 
 #include "src/utils.h"
 #include "src/textbuf.h"
-#include "src/ranges.h"
+#include "src/range_parse.h"
 #include "src/re.h"
 
 /*
@@ -112,15 +112,17 @@ parse_range_addr(const char* tk, RangeParseCtx ctx[static 1], size_t out[static 
 static const char*
 parse_range_impl(const char* tk, RangeParseCtx ctx[static 1], Range range[static 1]) {
 
-    /* invalid input */
-    if (!tk) return NULL;
+    if (!tk) return NULL; /* invalid input */
 
     ParseRv const no_parse = tk;
     tk = cstr_skip_space(tk);
 
-    /* empty string */
-    if (!*tk) {
-        return no_parse;
+    if (!*tk) return no_parse; /* empty string */
+
+    if (*tk == '^') {
+        *range = *textbuf_last_range(ctx->tb);
+        if (range->end == 0) { return err_fmt("\x01no last range"); }
+        return tk + 1;
     }
 
     /* full range */

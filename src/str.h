@@ -38,6 +38,7 @@ void str_trim_space(Str* l);
 char* str_ndup_cstr(const Str* url, size_t n);
 
 const char* substr_match(const char* s, const char* cmd, size_t len);
+const char* subword_match(const char* s, const char* cmd, size_t len);
 char* url_cpy(const char* url) ;
 const char* cstr_trim_space(char* s);
 bool mem_is_all_space(const char* data, size_t len);

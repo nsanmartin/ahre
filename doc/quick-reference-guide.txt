@@ -51,6 +51,12 @@ the range.
 :write <PATH> : saves current buffer in target (without the escape
                 sequences bash uses for the colours).
 
+:^      : repeat last range used (for example :^n after :2,5 will be :2,5n).
+
+less than (<) commands:
+======================
+
+These are similar to (:) but operates on the source (html) buffer.
 
 anchor commands ([)
 ===================

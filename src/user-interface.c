@@ -283,18 +283,15 @@ bool htmldoc_is_valid(HtmlDoc htmldoc[static 1]) {
 Err cmd_eval(Session session[static 1], const char* line) {
     const char* rest = 0x0;
     line = cstr_skip_space(line);
-    if ((rest = substr_match(line, "ahref", 2))) { return cmd_ahre(session, rest); }
+    if ((rest = substr_match(line, "ahref", 2))) { return cmd_ahre(session, rest); } //TODO: deprecate, impl [%p
     if ((rest = substr_match(line, "attr", 2))) { return "TODO: attr"; }
     if ((rest = substr_match(line, "class", 3))) { return "TODO: class"; }
     if ((rest = substr_match(line, "clear", 3))) { return cmd_clear(session); }
     if ((rest = substr_match(line, "fetch", 1))) { return cmd_fetch(session); }
-    if ((rest = substr_match(line, "input", 1))) { return cmd_input(session, rest); }
-    if ((rest = substr_match(line, "submit", 1))) { return cmd_submit(session, rest); }
     if ((rest = substr_match(line, "tag", 2))) { return cmd_tag(rest, session); }
-    if ((rest = substr_match(line, "text", 2))) { return cmd_text(session); }
-    if ((rest = substr_match(line, "zb", 2))) { return shorcut_zb(session, rest); }
-    if ((rest = substr_match(line, "zf", 2))) { return shorcut_zf(session, rest); }
-    if ((rest = substr_match(line, "zz", 2))) { return shorcut_zz(session, rest); }
+    if ((rest = subword_match(line, "zb", 2))) { return shorcut_zb(session, rest); }
+    if ((rest = subword_match(line, "zf", 2))) { return shorcut_zf(session, rest); }
+    if ((rest = subword_match(line, "zz", 2))) { return shorcut_zz(session, rest); }
 
     return "unknown cmd";
 }

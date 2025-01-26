@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include "src/cmd-ed.h"
-#include "src/ranges.h"
+#include "src/range_parse.h"
 #include "src/re.h"
 #include "src/str.h"
 #include "src/session.h"
@@ -201,14 +201,14 @@ Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
 
 
 Err textbuf_eval_cmd(TextBuf textbuf[static 1], const char* line, Range range[static 1]) {
-    //HtmlDoc* htmldoc = session_current_doc(session);
-    //TextBuf* textbuf = session_current_buf(session);
+
+    *textbuf_last_range(textbuf) = *range;
 
     const char* rest = 0x0;
 
     if (!*cstr_skip_space(line)) { return ed_print(textbuf, range); } /* default :NUM */
-    if ((rest = substr_match(line, "a", 1)) && !*rest) { return ed_print_all(textbuf); }
-    if ((rest = substr_match(line, "l", 1)) && !*rest) { return dbg_print_all_lines_nums(textbuf); }
+    if ((rest = substr_match(line, "a", 1)) && !*rest) { return ed_print_all(textbuf); } //TODO: depre: use :%
+    if ((rest = substr_match(line, "l", 1)) && !*rest) { return dbg_print_all_lines_nums(textbuf); } //TODO: deprecate
     if ((rest = substr_match(line, "g", 1)) && *rest) { return ed_global(textbuf, rest); }
     if ((rest = substr_match(line, "n", 1)) && !*rest) { return ed_print_n(textbuf, range); }
     if ((rest = substr_match(line, "print", 1)) && !*rest) { return ed_print(textbuf, range); }
@@ -239,6 +239,10 @@ Err ed_eval(TextBuf textbuf[static 1], const char* line) {
 Err shorcut_zb(Session session[static 1], const char* rest) {
     TextBuf* tb = session_current_buf(session);
     if(*textbuf_current_line(tb) == 1) return "No more lines at the beginning";
+
+    const char* cmd = "print";
+    if (*rest == 'n') { cmd = "n"; ++rest; }
+
     if (*rest) {
         rest = cstr_skip_space(rest);
         size_t incr;
@@ -253,13 +257,15 @@ Err shorcut_zb(Session session[static 1], const char* rest) {
         .beg=beg,
         .end=*textbuf_current_line(tb)
     };
-    ed_print(tb, &r);
+    try( textbuf_eval_cmd(tb, cmd, &r));
     *textbuf_current_line(tb) = r.beg;
 
     return Ok;
 }
 
 Err shorcut_zf(Session session[static 1], const char* rest) {
+    const char* cmd = "print";
+    if (*rest == 'n') { cmd = "n"; ++rest; }
     TextBuf* tb = session_current_buf(session);
     if(*textbuf_current_line(tb) >= textbuf_line_count(tb)) return "No more lines in buffer";
     if (*rest) {
@@ -272,7 +278,7 @@ Err shorcut_zf(Session session[static 1], const char* rest) {
         .beg=*textbuf_current_line(tb), .end=r.beg + *session_conf_z_shorcut_len(session)
     };
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
-    ed_print(tb, &r);
+    try( textbuf_eval_cmd(tb,cmd, &r));
     *textbuf_current_line(tb) = r.end;
 
     return Ok;
@@ -280,7 +286,8 @@ Err shorcut_zf(Session session[static 1], const char* rest) {
 
 Err shorcut_zz(Session session[static 1], const char* rest) {
     TextBuf* tb = session_current_buf(session);
-    ///if(*textbuf_current_line(tb) >= textbuf_line_count(tb)) return "No more lines in buffer";
+    const char* cmd = "print";
+    if (*rest == 'n') { cmd = "n"; ++rest; }
     if (*rest) {
         rest = cstr_skip_space(rest);
         size_t incr;
@@ -292,18 +299,10 @@ Err shorcut_zz(Session session[static 1], const char* rest) {
         : *textbuf_current_line(tb) - *session_conf_z_shorcut_len(session) / 2
         ;
 
-    ////size_t center = *session_conf_z_shorcut_len(session) / 2;
-    //size_t beg = *textbuf_current_line(tb) <= *session_conf_z_shorcut_len(session)
-    //    ? 1
-    //    : *textbuf_current_line(tb) - *session_conf_z_shorcut_len(session)
-    //    ;
-    //} 
     Range r = (Range){
         .beg=beg, .end=beg + *session_conf_z_shorcut_len(session)
     };
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
-    ed_print(tb, &r);
-    //*textbuf_current_line(tb) = r.end;
-
-    return Ok;
+    return textbuf_eval_cmd(tb, cmd, &r);
 }
+

@@ -53,5 +53,6 @@ Err dbg_print_all_lines_nums(TextBuf textbuf[static 1]);
 static inline Err ed_edit(TextBuf textbuf[static 1], const char* rest) { return textbuf_read_from_file(textbuf, rest); }
 Err shorcut_zf(Session session[static 1], const char* rest);
 Err shorcut_zb(Session session[static 1], const char* rest);
+Err shorcut_zn(Session session[static 1]);
 Err shorcut_zz(Session session[static 1], const char* rest);
 #endif
