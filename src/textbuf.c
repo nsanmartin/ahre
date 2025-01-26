@@ -128,7 +128,7 @@ inline size_t textbuf_eol_count(TextBuf textbuf[static 1]) {
     return textbuf->eols.len;
 }
 
-inline size_t textbuf_line_count(TextBuf textbuf[static 1]) {
+size_t textbuf_line_count(TextBuf textbuf[static 1]) {
     size_t neols = textbuf_eol_count(textbuf);
     size_t len = textbuf_len(textbuf);
     size_t* last_eolp = arlfn(size_t, back)(&textbuf->eols);
