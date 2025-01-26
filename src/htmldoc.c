@@ -291,15 +291,12 @@ static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCt
                     buffn(char, reset)(browse_ctx_lazy_str(ctx));
                 }
 
-                bool first = true;
                 while((data = cstr_skip_space((const char*)data))) {
                     if (!*data) break;
                     const char* end = cstr_next_space((const char*)data);
                     if (data == end) break;
-                    if (!first) { 
-                        if (cb((lxb_char_t*)" ", 1, ctx)) return "error serializing space";
-                    } else first = false;
-                    if (cb((lxb_char_t*)data, end-data, ctx)) return "error serializing html text elem";
+                    if (cb((lxb_char_t*)data, end-data, ctx))
+                        return "error serializing html text elem";
                     if (cb((lxb_char_t*)" ", 1, ctx)) return "error serializing space";
                     data = end;
                 }
