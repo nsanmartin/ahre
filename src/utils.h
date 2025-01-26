@@ -98,7 +98,9 @@ Err parse_base36_or_throw(const char** strptr, unsigned long long* num);
 const char* parse_ull(const char* tk, uintmax_t* ullp);
 
 static inline Err bufofchar_append(BufOf(char) buf[static 1], char* s, size_t len) {
-    return buffn(char, append)(buf, s, len) ? Ok : "error: BufOf(char) failed to append.";
+    if (buffn(char, append)(buf, s, len)) return Ok;
+    buffn(char,clean)(buf);
+    return "error: BufOf(char) failed to append.";
 }
 
 #define bufofchar_append_lit__(Buffer, LitStr) \

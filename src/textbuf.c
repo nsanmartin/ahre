@@ -49,13 +49,35 @@ size_t _compute_required_newlines_(TextBuf tb[static 1], size_t maxlen) {
     return res;
 }
 
-static size_t _compute_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
-    return _compute_required_newlines_(tb, maxlen) - textbuf_eol_count(tb);
+static size_t _estimate_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
+    size_t res = _compute_required_newlines_(tb, maxlen) - textbuf_eol_count(tb);
+    return res + res / 12;
+}
+
+static Err _insert_line_splitting_(Str line[static 1], BufOf(char) buf[static 1], size_t maxlen) {
+    size_t off = 0;
+    size_t len = 0;
+    for (off = 0; off < line->len; ) {
+        if (off + maxlen >= line->len) {
+            len = line->len - off;
+        } else {
+            len = maxlen;
+            if (!isspace(line->s[off + len])) {
+                while (len && !isspace(line->s[off + len])) --len;
+                if (!len) len = maxlen;
+            }
+        }
+        char* beg = (char*)line->s + off;
+        try( bufofchar_append(buf, beg, len)) ;
+        try( bufofchar_append_lit__(buf, "\n")) ;
+        off += len + 1;
+    }
+    return Ok;
 }
 
 static Err _insert_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
     try( textbuf_append_line_indexes(tb));
-    size_t missing_newlines = _compute_missing_newlines_(tb, maxlen);
+    size_t missing_newlines = _estimate_missing_newlines_(tb, maxlen);
     if (!missing_newlines) return Ok;
     if (!buffn(char, __ensure_extra_capacity)(textbuf_buf(tb), missing_newlines))
         return "error: bufof mem failure";
@@ -64,30 +86,9 @@ static Err _insert_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
     BufOf(char)* buf = &(BufOf(char)){0};
     while (_get_line_(tb, n++, &line)) {
         if (line.len && line.len <= maxlen) {
-            if (!buffn(char,append)(buf,(char*)line.s, line.len)) {
-                buffn(char,clean)(buf);
-                return "error: bufof mem failure";
-            }
+            try( bufofchar_append(buf, (char*)line.s, line.len));
         } else {
-            size_t i = 0;
-            for (i = 0; i + maxlen <= line.len; i+=maxlen) {
-                if (!buffn(char,append)(buf,(char*)line.s+i, maxlen)) {
-                    buffn(char,clean)(buf);
-                    return "error: bufof mem failure";
-                }
-                if (i + maxlen < line.len) {
-                    if (!buffn(char,append)(buf,"\n", 1)) {
-                        buffn(char,clean)(buf);
-                        return "error: bufof mem failure";
-                    }
-                }
-            }
-            if (i < line.len) {
-                if (!buffn(char,append)(buf,(char*)line.s+i, line.len-i)) {
-                    buffn(char,clean)(buf);
-                    return "error: bufof mem failure";
-                }
-            }
+            try( _insert_line_splitting_(&line, buf, maxlen));
         }
     }
     buffn(char,clean)(textbuf_buf(tb));
