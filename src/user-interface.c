@@ -289,6 +289,7 @@ Err cmd_eval(Session session[static 1], const char* line) {
     if ((rest = substr_match(line, "clear", 3))) { return cmd_clear(session); }
     if ((rest = substr_match(line, "fetch", 1))) { return cmd_fetch(session); }
     if ((rest = substr_match(line, "tag", 2))) { return cmd_tag(rest, session); }
+    //TODO: define shorcut_z and pass the rest
     if ((rest = subword_match(line, "zb", 2))) { return shorcut_zb(session, rest); }
     if ((rest = subword_match(line, "zf", 2))) { return shorcut_zf(session, rest); }
     if ((rest = subword_match(line, "zz", 2))) { return shorcut_zz(session, rest); }
