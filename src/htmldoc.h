@@ -27,6 +27,7 @@ typedef struct {
     ArlOf(LxbNodePtr) anchors;
     ArlOf(LxbNodePtr) imgs;
     ArlOf(LxbNodePtr) inputs;
+    LxbNodePtr title;
 } DocCache;
 
 typedef enum { http_get = 0, http_post = 1 } HttpMethod;
@@ -56,6 +57,9 @@ htmldoc_imgs(HtmlDoc d[static 1]) { return &d->cache.imgs; }
 
 static inline ArlOf(LxbNodePtr)*
 htmldoc_inputs(HtmlDoc d[static 1]) { return &d->cache.inputs; }
+
+static inline LxbNodePtr*
+htmldoc_title(HtmlDoc d[static 1]) { return &d->cache.title; }
 
 static inline DocCache*
 htmldoc_cache(HtmlDoc d[static 1]) { return &d->cache; }

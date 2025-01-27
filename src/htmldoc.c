@@ -57,13 +57,13 @@ lxb_status_t htmldoc_lexbor_serialize_unsigned(
 }
 
 
-static Err browse_list(lxb_dom_node_t* it, lxb_dom_node_t* last, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+static Err browse_list(
+    lxb_dom_node_t* it, lxb_dom_node_t* last, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]
+) {
     for(; ; it = it->next) {
-        Err err = browse_rec(it, cb, ctx);
-        if (err) return err;
-        if (it == last) { break; }
+        try( browse_rec(it, cb, ctx));
+        if (it == last) return Ok;
     }
-    return Ok;
 }
 
 static Err
@@ -243,6 +243,13 @@ browse_tag_blockquote(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCt
     return Ok;
 }
 
+static Err
+browse_tag_title(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
+    HtmlDoc* d = browse_ctx_htmldoc(ctx);
+    *htmldoc_title(d) = node;
+    try( dbg_print_title(node));
+    return Ok;
+}
 
 static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     if (node) {
@@ -263,7 +270,7 @@ static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCt
                 case LXB_TAG_PRE: { return browse_tag_pre(node, cb, ctx); }
                 case LXB_TAG_SCRIPT: { /*printf("skip script\n");*/ return Ok; } 
                 case LXB_TAG_STYLE: { /*printf("skip style\n");*/ return Ok; } 
-                case LXB_TAG_TITLE: { /*printf("skip title\n");*/ return Ok; } 
+                case LXB_TAG_TITLE: { return browse_tag_title(node, ctx); } 
                 case LXB_TAG_TR: { return browse_tag_tr(node, cb, ctx); }
                 case LXB_TAG_UL: { return browse_tag_ul(node, cb, ctx); }
             }
