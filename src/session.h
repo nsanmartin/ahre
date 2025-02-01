@@ -55,6 +55,10 @@ void session_destroy(Session* session);
 
 /**/
 
+static inline Err session_open_url(Session s[static 1], const char* url) {
+    return htmldoc_forest_append_tree_from_url(session_htmldoc_forest(s), url);
+}
+
 int edcmd_print(Session session[static 1]);
 
 Err dbg_session_summary(Session session[static 1]);

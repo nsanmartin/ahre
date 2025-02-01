@@ -30,12 +30,20 @@ htmldoc_forest_append_move_tree(HtmlDocForest f[static 1], HtmlDocTree t[static 
     return Ok;
 }
 
-/* ctor */
-static inline Err htmldoc_forest_init(HtmlDocForest f[static 1], const char* url) {
+static inline Err
+htmldoc_forest_append_tree_from_url(HtmlDocForest f[static 1], const char* url) {
     HtmlDocTree t = (HtmlDocTree){0};
     try( htmldoc_tree_init(&t));
     try( htmldoc_tree_append_url(&t, url));
-    return htmldoc_forest_append_move_tree(f, &t);
+    try( htmldoc_forest_append_move_tree(f, &t));
+    if (!f->trees.len) return "error: expecting trees in the forest after appending a tree";
+    f->current = f->trees.len - 1;
+    return Ok;
+}
+
+/* ctor */
+static inline Err htmldoc_forest_init(HtmlDocForest f[static 1], const char* url) {
+    return htmldoc_forest_append_tree_from_url(f, url);
 }
 
 /* dtor */

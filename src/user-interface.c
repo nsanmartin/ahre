@@ -64,8 +64,9 @@ Err cmd_set_url(Session session[static 1], const char* url) {
 
     htmldoc_destroy(htmldoc);
     session->htmldoc = newdoc;
-    //TODO: print curlu
-    //printf("set with url: %s\n", newdoc->url ? newdoc->url : "<no url>");
+    ///
+    ///
+    try( session_open_url(session, url));
     return Ok;
 }
 

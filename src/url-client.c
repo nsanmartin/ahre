@@ -5,6 +5,7 @@
 #include "src/url-client.h"
 
 
+//TODO: use init
 UrlClient* url_client_create(void) {
     UrlClient* rv = std_malloc(sizeof(UrlClient));
     if (!rv) { perror("Mem Error"); goto exit_fail; }
