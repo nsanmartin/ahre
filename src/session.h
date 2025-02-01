@@ -42,7 +42,6 @@ static inline HtmlDocForest*
 session_htmldoc_forest(Session s[static 1]) { return &s->htmldoc_forest; }
 
 /* ctor */
-Session* session_create(char* url, UserLineCallback callback);
 Err session_init(Session s[static 1], char* url, UserLineCallback callback);
 
 /* dtor */

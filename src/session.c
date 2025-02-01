@@ -45,19 +45,6 @@ Err session_init(Session s[static 1], char* url, UserLineCallback callback) {
     return Ok;
 }
 
-Session* session_create(char* url, UserLineCallback callback) {
-    Session* rv = std_malloc(sizeof(Session));
-    if (!rv) {
-        perror("Mem error");
-        return NULL;
-    }
-    Err err = session_init(rv, url, callback);
-    if (err) {
-        puts(err);
-        return NULL;
-    }
-    return rv;
-}
 
 void session_destroy(Session* session) {
     session_cleanup(session);

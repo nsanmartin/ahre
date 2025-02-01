@@ -13,19 +13,21 @@ void print_help(char* program) { printf("usage: %s <url>\n", program); }
 
 
 int loop_lexbor(char* url) {
-    Session* session = session_create(url, process_line);
-    if (!session) 
+    Err err;
+    Session session;
+    if ((err=session_init(&session, url, process_line))) {
+        fprintf(stderr, "%s", err);
         return EXIT_FAILURE;
+    }
 
     init_user_input_history();
-    while (!session->quit) {
-        Err err = read_line_from_user(session);
-        if (err) {
+    while (!session.quit) {
+        if ((err = read_line_from_user(&session))) {
             fprintf(stderr, "%s\n", err);
         }
     }
 
-    destroy(session);
+    session_cleanup(&session);
     return EXIT_SUCCESS;
 }
 
