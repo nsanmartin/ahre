@@ -46,7 +46,13 @@ Session* session_create(char* url, UserLineCallback callback);
 Err session_init(Session s[static 1], char* url, UserLineCallback callback);
 
 /* dtor */
-void session_destroy(Session* session) ;
+static inline void session_cleanup(Session s[static 1]) {
+    htmldoc_destroy(s->htmldoc);
+    url_client_destroy(s->url_client);
+    htmldoc_forest_cleanup(session_htmldoc_forest(s));
+}
+
+void session_destroy(Session* session);
 
 /**/
 

@@ -60,9 +60,7 @@ Session* session_create(char* url, UserLineCallback callback) {
 }
 
 void session_destroy(Session* session) {
-    htmldoc_destroy(session->htmldoc);
-    url_client_destroy(session->url_client);
-    htmldoc_forest_cleanup(session_htmldoc_forest(session));
+    session_cleanup(session);
     std_free(session);
 }
 
