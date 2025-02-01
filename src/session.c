@@ -25,16 +25,26 @@ Session* session_create(char* url, UserLineCallback callback) {
     HtmlDoc* htmldoc = htmldoc_create(cstr_trim_space((char*)url));
     if (!htmldoc) { goto free_ahcurl; }
 
+    HtmlDocForest f = (HtmlDocForest){0};
+
     if (htmldoc_lxbdoc(htmldoc) && url_cu(htmldoc_url(htmldoc))) {
         Err err = htmldoc_fetch(htmldoc, url_client);
         if (err) { log_error(err); }
         err = htmldoc_browse(htmldoc);
         if (err) { log_error(err); }
+        //// ><M
+        err = htmldoc_forest_init(&f, url);
+        if (err) {
+            puts(err);
+            return NULL;
+        }
+            
     }
     *rv = (Session) {
         .url_client=url_client,
         .user_line_callback=callback,
         .htmldoc=htmldoc,
+        .htmldoc_forest=f,
         .quit=false,
         .conf=mkSessionConf
     };
@@ -52,6 +62,7 @@ exit_fail:
 void session_destroy(Session* session) {
     htmldoc_destroy(session->htmldoc);
     url_client_destroy(session->url_client);
+    htmldoc_forest_cleanup(session_htmldoc_forest(session));
     std_free(session);
 }
 

@@ -3,6 +3,7 @@
 
 #include "src/utils.h"
 #include "src/htmldoc.h"
+#include "src/htmldoc_forest.h"
 
 typedef struct Session Session;
 
@@ -19,6 +20,7 @@ typedef struct {
 typedef struct Session {
     UrlClient* url_client;
     HtmlDoc* htmldoc;
+    HtmlDocForest htmldoc_forest;
     bool quit;
     SessionConf conf;
     //TODO: do not use a callback here
@@ -36,6 +38,8 @@ static inline size_t* session_conf_z_shorcut_len(Session s[static 1]) {
     return &session_conf(s)->z_shorcut_len;
 }
 
+static inline HtmlDocForest*
+session_htmldoc_forest(Session s[static 1]) { return &s->htmldoc_forest; }
 
 /* ctor */
 Session* session_create(char* url, UserLineCallback callback);
