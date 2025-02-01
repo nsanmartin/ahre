@@ -11,19 +11,16 @@ TextBuf* session_current_buf(Session session[static 1]) {
 }
 
 
-//Err session_init(Session s[static 1],char* url, UserLineCallback callback) { }
-Session* session_create(char* url, UserLineCallback callback) {
-    Session* rv = std_malloc(sizeof(Session));
-    if (!rv) {
-        perror("Mem error");
-        goto exit_fail;
-    }
-    *rv = (Session){0};
+Err session_init(Session s[static 1], char* url, UserLineCallback callback) {
+    *s = (Session){0};
     UrlClient* url_client = url_client_create();
-    if (!url_client) { goto free_rv; }
+    if (!url_client) { return "error:  url_client_create failure"; }
 
     HtmlDoc* htmldoc = htmldoc_create(cstr_trim_space((char*)url));
-    if (!htmldoc) { goto free_ahcurl; }
+    if (!htmldoc) {
+        url_client_destroy(url_client);
+        return "error: htmldoc_create failure";
+    }
 
     HtmlDocForest f = (HtmlDocForest){0};
 
@@ -33,14 +30,10 @@ Session* session_create(char* url, UserLineCallback callback) {
         err = htmldoc_browse(htmldoc);
         if (err) { log_error(err); }
         //// ><M
-        err = htmldoc_forest_init(&f, url);
-        if (err) {
-            puts(err);
-            return NULL;
-        }
+        try( htmldoc_forest_init(&f, url));
             
     }
-    *rv = (Session) {
+    *s = (Session) {
         .url_client=url_client,
         .user_line_callback=callback,
         .htmldoc=htmldoc,
@@ -49,14 +42,21 @@ Session* session_create(char* url, UserLineCallback callback) {
         .conf=mkSessionConf
     };
 
-    return rv;
+    return Ok;
+}
 
-free_ahcurl:
-    url_client_destroy(url_client);
-free_rv:
-    std_free(rv);
-exit_fail:
-    return 0x0;
+Session* session_create(char* url, UserLineCallback callback) {
+    Session* rv = std_malloc(sizeof(Session));
+    if (!rv) {
+        perror("Mem error");
+        return NULL;
+    }
+    Err err = session_init(rv, url, callback);
+    if (err) {
+        puts(err);
+        return NULL;
+    }
+    return rv;
 }
 
 void session_destroy(Session* session) {
