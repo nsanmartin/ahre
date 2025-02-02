@@ -72,7 +72,7 @@ static inline Err session_press_submit(Session s[static 1], size_t ix) {
     TabNode* current_tab;
     try( tablist_current_tab(session_tablist(s), &current_tab));
     if(current_tab)
-        return htmldoc_tree_append_submit(current_tab , ix, s->url_client);
+        return htmldoc_tree_append_submit(current_tab , ix, session_url_client(s));
 
     
     return "error: where is the input if current tree is empty?";

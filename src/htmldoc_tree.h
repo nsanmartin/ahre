@@ -79,10 +79,10 @@ _tab_node_init_base_(TabNode n[static 1], TabNode* parent) {
 
 static inline Err
 tab_node_init_from_curlu(
-    TabNode n[static 1], TabNode* parent, CURLU* cu, UrlClient url_client[static 1]
+    TabNode n[static 1], TabNode* parent, CURLU* cu, UrlClient url_client[static 1], HttpMethod method
 ) {
     try(_tab_node_init_base_(n, parent));
-    try( htmldoc_init_fetch_browse_from_curlu(tab_node_doc(n), cu, url_client));
+    try( htmldoc_init_fetch_browse_from_curlu(tab_node_doc(n), cu, url_client, method));
     n->current_ix = n->childs->len;
     return Ok;
 }
@@ -147,7 +147,7 @@ Err htmldoc_tree_append_ahref(TabNode t[static 1], size_t linknum, UrlClient url
     try( lexcurl_dup_curl_with_anchors_href(*a, &curlu));
 
     TabNode newnode;
-    try( tab_node_init_from_curlu(&newnode, n, curlu, url_client));
+    try( tab_node_init_from_curlu(&newnode, n, curlu, url_client, http_get));
     Err err;
     if ((err=tab_node_append_move_child(n, &newnode))) {
         curl_url_cleanup(curlu);
@@ -162,10 +162,15 @@ Err htmldoc_tree_append_submit(TabNode t[static 1], size_t ix, UrlClient url_cli
     TabNode* n;
     try(  tab_node_current_node(t, &n));
     if (!n) return "error: current node not found";
-    HtmlDoc* d = &n->doc;
+
+    HtmlDoc* d;
+    try(  tab_node_current_doc(t, &d));
+    if (!d) return "error: current doc not found";
+
     ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(d);
     CURLU* curlu = curl_url_dup(url_cu(htmldoc_url(d)));
     if (!curlu) return "error: memory failure (curl_url_dup)";
+
     LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(inputs, ix);
     if (!nodeptr) {
         curl_url_cleanup(curlu);
@@ -186,7 +191,7 @@ Err htmldoc_tree_append_submit(TabNode t[static 1], size_t ix, UrlClient url_cli
         }
 
         TabNode newnode;
-        try( tab_node_init_from_curlu(&newnode, n, curlu, url_client));
+        try( tab_node_init_from_curlu(&newnode, n, curlu, url_client, method));
         if ((err=tab_node_append_move_child(n, &newnode))) {
             curl_url_cleanup(curlu);
             return err;

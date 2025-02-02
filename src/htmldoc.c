@@ -359,7 +359,7 @@ Err htmldoc_init(HtmlDoc d[static 1], const char* cstr_url) {
     };
     return Ok;
 }
-Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu) {
+Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu, HttpMethod method) {
     Url url = {0};
     try( url_init_from_curlu(&url, cu));
     lxb_html_document_t* document = lxb_html_document_create();
@@ -369,7 +369,7 @@ Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu) {
 
     *d = (HtmlDoc){
         .url=url,
-        .method=http_get,
+        .method=method,
         .lxbdoc=document,
         .cache=(DocCache){
             .textbuf=(TextBuf){.current_line=1},
@@ -386,9 +386,9 @@ Err htmldoc_init_fetch_browse(HtmlDoc d[static 1], const char* url, UrlClient ur
 }
 
 Err htmldoc_init_fetch_browse_from_curlu(
-    HtmlDoc d[static 1], CURLU* cu, UrlClient url_client[static 1]
+    HtmlDoc d[static 1], CURLU* cu, UrlClient url_client[static 1], HttpMethod method
 ) {
-    try(htmldoc_init_from_curlu(d, cu));
+    try(htmldoc_init_from_curlu(d, cu, method));
     try(htmldoc_fetch(d, url_client));//TODO: clean on failure
     return htmldoc_browse(d);
 }

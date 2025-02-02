@@ -72,7 +72,7 @@ htmldoc_method(HtmlDoc d[static 1]) { return d->method; }
 
 /* ctors */
 Err htmldoc_init(HtmlDoc d[static 1], const char* url);
-Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu);
+Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu, HttpMethod method);
 
 /* dtors */
 void htmldoc_reset(HtmlDoc htmldoc[static 1]) ;
@@ -164,7 +164,7 @@ Err parse_append_ahref(BrowseCtx ctx[static 1], const char* url, size_t len);
 Err htmldoc_init_fetch_browse(HtmlDoc d[static 1], const char* url, UrlClient url_client[static 1]);
 
 Err htmldoc_init_fetch_browse_from_curlu(
-    HtmlDoc d[static 1], CURLU* cu, UrlClient url_client[static 1]
+    HtmlDoc d[static 1], CURLU* cu, UrlClient url_client[static 1], HttpMethod method
 );
 
 static inline Err htmldoc_print_info(HtmlDoc d[static 1]) {
