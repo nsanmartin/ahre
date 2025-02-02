@@ -245,7 +245,7 @@ Err dbg_htmldoc_node_print(HtmlDocNode n[static 1], size_t ix, size_t h) {
     try( dbg_print_title(node));
 
     HtmlDocNode* it = arlfn(HtmlDocNode, begin)(n->childs);
-    const HtmlDocNode* beg = it;
+    //const HtmlDocNode* beg = it;
     const HtmlDocNode* end = arlfn(HtmlDocNode, end)(n->childs);
     for (; it != end; ++it) {
         try( dbg_htmldoc_node_print(it, ix, h+1));

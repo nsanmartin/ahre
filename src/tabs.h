@@ -11,32 +11,32 @@ void arl_of_htmldoc_tree_clean(ArlOf(HtmlDocTree)* t);
 typedef struct {
     ArlOf(HtmlDocTree) trees;
     size_t current_tree;
-} HtmlDocForest;
+} Tabs;
 
 
 /* getter */
 
-static inline ArlOf(HtmlDocTree)* _htmldoc_forest_trees_(HtmlDocForest f[static 1]) {
+static inline ArlOf(HtmlDocTree)* _htmldoc_forest_trees_(Tabs f[static 1]) {
     return &f->trees;
 }
 
-static inline size_t _htmldoc_forest_tree_count_(HtmlDocForest f[static 1]) {
+static inline size_t _htmldoc_forest_tree_count_(Tabs f[static 1]) {
     return _htmldoc_forest_trees_(f)->len;
 }
 
-static inline bool htmldoc_forest_is_empty(HtmlDocForest f[static 1]) {
+static inline bool htmldoc_forest_is_empty(Tabs f[static 1]) {
     return _htmldoc_forest_tree_count_(f) == 0;
 }
 
 static inline Err
-htmldoc_forest_current_tree(HtmlDocForest f[static 1], HtmlDocTree* out[static 1]) {
+htmldoc_forest_current_tree(Tabs f[static 1], HtmlDocTree* out[static 1]) {
     HtmlDocTree* current_tree = arlfn(HtmlDocTree, at)(&f->trees, f->current_tree);
     if (!current_tree && !htmldoc_forest_is_empty(f)) return "error: not current tree available";
     *out = current_tree;
     return Ok;
 }
 
-static inline Err htmldoc_forest_current_doc(HtmlDocForest f[static 1], HtmlDoc* out[static 1]) {
+static inline Err htmldoc_forest_current_doc(Tabs f[static 1], HtmlDoc* out[static 1]) {
     HtmlDocTree* t;
     try( htmldoc_forest_current_tree(f, &t));
     if (!t) { 
@@ -50,13 +50,13 @@ static inline Err htmldoc_forest_current_doc(HtmlDocForest f[static 1], HtmlDoc*
 }
 
 static inline Err
-htmldoc_forest_append_move_tree(HtmlDocForest f[static 1], HtmlDocTree t[static 1]) {
+htmldoc_forest_append_move_tree(Tabs f[static 1], HtmlDocTree t[static 1]) {
     if (!arlfn(HtmlDocTree, append)(&f->trees, t)) return "error: arl append failure";
     return Ok;
 }
 
 static inline Err htmldoc_forest_append_tree_from_url(
-    HtmlDocForest f[static 1], const char* url, UrlClient url_client[static 1]
+    Tabs f[static 1], const char* url, UrlClient url_client[static 1]
 ) {
     HtmlDocTree t = (HtmlDocTree){0};
     try( htmldoc_tree_init(&t, url, url_client));
@@ -70,13 +70,13 @@ static inline Err htmldoc_forest_append_tree_from_url(
 /* ctor */
 
 static inline Err htmldoc_forest_init(
-    HtmlDocForest f[static 1], const char* url, UrlClient url_client[static 1]
+    Tabs f[static 1], const char* url, UrlClient url_client[static 1]
 ) {
     return htmldoc_forest_append_tree_from_url(f, url, url_client);
 }
 
 /* dtor */
-static inline void htmldoc_forest_cleanup(HtmlDocForest f[static 1]) {
+static inline void htmldoc_forest_cleanup(Tabs f[static 1]) {
     arl_of_htmldoc_tree_clean(&f->trees);
 }
 #endif

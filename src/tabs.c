@@ -1,4 +1,4 @@
-#include "src/htmldoc_forest.h"
+#include "src/tabs.h"
 
 
 void arl_of_htmldoc_tree_clean(ArlOf(HtmlDocTree)* t) {

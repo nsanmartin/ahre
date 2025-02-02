@@ -285,7 +285,7 @@ Err tabs_eval(Session session[static 1], const char* line) {
     (void)session;
     (void)line;
     puts("tabs eval");
-    HtmlDocForest* f = session_htmldoc_forest(session);
+    Tabs* f = session_htmldoc_forest(session);
     printf("(%ld tabs)\n", f->trees.len);
     HtmlDocTree* it = arlfn(HtmlDocTree, begin)(&f->trees);
     const HtmlDocTree* beg = it;
