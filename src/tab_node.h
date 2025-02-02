@@ -242,7 +242,8 @@ Err dbg_tab_node_print(
         } else printf(".%ld", *it);
     }
     printf("%s", ": ");
-    try( dbg_print_title(node));
+    if (node) try( dbg_print_title(node));
+    else printf("<no title>");
 
     TabNode* it = arlfn(TabNode, begin)(n->childs);
     const TabNode* beg = it;
