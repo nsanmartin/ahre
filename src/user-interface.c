@@ -250,6 +250,7 @@ Err cmd_anchor_eval(Session session[static 1], const char* line) {
     switch (*line) {
         case '\'': return cmd_anchor_print(session, (size_t)linknum); 
         case '?': return cmd_anchor_print(session, (size_t)linknum); 
+        case '\0': 
         case '*': return cmd_anchor_asterisk(session, (size_t)linknum);
         default: return "?";
     }
@@ -263,6 +264,7 @@ Err cmd_input_eval(Session session[static 1], const char* line) {
     //if (*line && *cstr_skip_space(line + 1)) return "error unexpected:..."; TODO ^
     switch (*line) {
         case '?': return cmd_input_print(session, linknum);
+        case '\0': 
         case '*': return _cmd_submit_ix(session, linknum);
         case '=': return _cmd_input_ix(session, linknum, line + 1); 
         default: return "?";
@@ -294,6 +296,14 @@ Err tabs_eval(Session session[static 1], const char* line) {
         try( dbg_tab_node_print(it, it-beg, 0));
     }
     return Ok;
+}
+
+Err doc_eval(HtmlDoc d[static 1], const char* line) {
+    line = cstr_skip_space(line);
+    switch (*line) {
+        case '?': return htmldoc_print_info(d);
+        default: return "unknown doc command";
+    }
 }
 
 //TODO: new user interface:
@@ -329,6 +339,7 @@ Err process_line(Session session[static 1], const char* line) {
 
     if (!htmldoc_is_valid(htmldoc) ||!session->url_client) return "no document";
 
+    if (*line == '.') return doc_eval(htmldoc, line + 1);
     //TODO: implement search in textbuf
     if (*line == '/') return "to search in buffer use ':/' (not just '/')";
 

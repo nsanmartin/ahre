@@ -167,4 +167,13 @@ Err htmldoc_init_fetch_browse(HtmlDoc d[static 1], const char* url, UrlClient ur
 Err htmldoc_init_fetch_browse_from_curlu(
     HtmlDoc d[static 1], CURLU* cu, UrlClient url_client[static 1]
 );
+
+static inline Err htmldoc_print_info(HtmlDoc d[static 1]) {
+    char* buf;
+    try(url_cstr(htmldoc_url(d), &buf));
+    printf("%s\n", buf);
+    //Err res = err_fmt("current url:\n%s", buf);
+    curl_free(buf);
+    return Ok;
+}
 #endif
