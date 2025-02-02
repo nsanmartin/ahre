@@ -16,4 +16,5 @@ void print_html(lxb_html_document_t* document);
 Err lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf);
 
 
+Err cmd_open_url(Session session[static 1], const char* url);
 #endif

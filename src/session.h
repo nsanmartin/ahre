@@ -19,7 +19,7 @@ typedef struct {
 
 typedef struct Session {
     UrlClient* url_client;
-    HtmlDoc* htmldoc;
+    //HtmlDoc* htmldoc;
     HtmlDocForest htmldoc_forest;
     bool quit;
     SessionConf conf;
@@ -28,8 +28,9 @@ typedef struct Session {
 } Session;
 
 /* getters */
-TextBuf* session_current_buf(Session session[static 1]);
-HtmlDoc* session_current_doc(Session session[static 1]);
+Err session_current_buf(Session session[static 1], TextBuf* out[static 1]);
+Err session_current_doc(Session session[static 1], HtmlDoc* out[static 1]);
+
 static inline UrlClient* session_url_client(Session session[static 1]) {
     return session->url_client;
 }
@@ -46,7 +47,7 @@ Err session_init(Session s[static 1], char* url, UserLineCallback callback);
 
 /* dtor */
 static inline void session_cleanup(Session s[static 1]) {
-    htmldoc_destroy(s->htmldoc);
+    //htmldoc_destroy(s->htmldoc);
     url_client_destroy(s->url_client);
     htmldoc_forest_cleanup(session_htmldoc_forest(s));
 }
@@ -55,8 +56,22 @@ void session_destroy(Session* session);
 
 /**/
 
-static inline Err session_open_url(Session s[static 1], const char* url) {
-    return htmldoc_forest_append_tree_from_url(session_htmldoc_forest(s), url);
+static inline Err
+session_open_url(Session s[static 1], const char* url, UrlClient url_client[static 1]) {
+    return htmldoc_forest_append_tree_from_url(session_htmldoc_forest(s), url, url_client);
+}
+
+static inline Err session_follow_ahref(Session s[static 1], size_t linknum) {
+    HtmlDocTree* current_tree;
+    try( htmldoc_forest_current_tree(session_htmldoc_forest(s), &current_tree));
+    if(current_tree)
+        return htmldoc_tree_append_ahref(current_tree , linknum, s->url_client);
+    
+    return "error: where is thew href if current tree is empty?";
+    //HtmlDocForest f = (HtmlDocForest){0};
+    //Err err = htmldoc_forest_init(&f, url, url_client);
+    //s->htmldoc_forest = f;
+    //return Ok;
 }
 
 int edcmd_print(Session session[static 1]);

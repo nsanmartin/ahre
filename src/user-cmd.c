@@ -4,7 +4,8 @@
 /* ah cmds */
 
 Err cmd_write(const char* fname, Session session[static 1]) {
-    TextBuf* buf = session_current_buf(session);
+    TextBuf* buf;
+    try( session_current_buf(session, &buf));
     if (fname && *(fname = cstr_skip_space(fname))) {
         FILE* fp = fopen(fname, "a");
         if (!fp) {

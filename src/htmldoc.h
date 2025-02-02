@@ -73,6 +73,7 @@ htmldoc_method(HtmlDoc d[static 1]) { return d->method; }
 
 /* ctors */
 Err htmldoc_init(HtmlDoc d[static 1], const char* url);
+Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu);
 
 /* dtors */
 void htmldoc_reset(HtmlDoc htmldoc[static 1]) ;
@@ -146,7 +147,7 @@ static inline bool file_exists(const char* path) { return access(path, F_OK) == 
 Err lexbor_read_doc_from_file(HtmlDoc htmldoc[static 1]) ;
 
 static inline Err htmldoc_fetch(HtmlDoc htmldoc[static 1], UrlClient url_client[static 1]) {
-    return curl_lexbor_fetch_document(url_client, htmldoc);
+        return curl_lexbor_fetch_document(url_client, htmldoc);
 }
 
 Err htmldoc_browse(HtmlDoc htmldoc[static 1]);
@@ -161,4 +162,9 @@ Err htmldoc_browse(HtmlDoc htmldoc[static 1]);
 /* htmldoc_tag_a.c */
 Err parse_href_attrs(lxb_dom_node_t* node, BrowseCtx ctx[static 1]);
 Err parse_append_ahref(BrowseCtx ctx[static 1], const char* url, size_t len);
+Err htmldoc_init_fetch_browse(HtmlDoc d[static 1], const char* url, UrlClient url_client[static 1]);
+
+Err htmldoc_init_fetch_browse_from_curlu(
+    HtmlDoc d[static 1], CURLU* cu, UrlClient url_client[static 1]
+);
 #endif

@@ -237,7 +237,8 @@ Err ed_eval(TextBuf textbuf[static 1], const char* line) {
 }
 
 Err shorcut_zb(Session session[static 1], const char* rest) {
-    TextBuf* tb = session_current_buf(session);
+    TextBuf* tb;
+    try( session_current_buf(session, &tb));
     if(*textbuf_current_line(tb) == 1) return "No more lines at the beginning";
 
     const char* cmd = "print";
@@ -266,7 +267,8 @@ Err shorcut_zb(Session session[static 1], const char* rest) {
 Err shorcut_zf(Session session[static 1], const char* rest) {
     const char* cmd = "print";
     if (*rest == 'n') { cmd = "n"; ++rest; }
-    TextBuf* tb = session_current_buf(session);
+    TextBuf* tb;
+    try( session_current_buf(session, &tb));
     if(*textbuf_current_line(tb) >= textbuf_line_count(tb)) return "No more lines in buffer";
     if (*rest) {
         rest = cstr_skip_space(rest);
@@ -285,7 +287,8 @@ Err shorcut_zf(Session session[static 1], const char* rest) {
 }
 
 Err shorcut_zz(Session session[static 1], const char* rest) {
-    TextBuf* tb = session_current_buf(session);
+    TextBuf* tb;
+    try( session_current_buf(session, &tb));
     const char* cmd = "print";
     if (*rest == 'n') { cmd = "n"; ++rest; }
     if (*rest) {

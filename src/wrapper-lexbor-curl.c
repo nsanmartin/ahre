@@ -310,3 +310,30 @@ Err mk_submit_url (
     return "not yet supported method";
 }
 
+Err lexcurl_dup_curl_with_anchors_href(lxb_dom_node_t* anchor, CURLU* u[static 1]) {
+
+    const lxb_char_t* data;
+    size_t data_len;
+    lexbor_find_attr_value(anchor, "href", &data, &data_len);
+    if (!data || !data_len)
+        return "anchor does not have href";
+
+    CURLU* dup = curl_url_dup(*u);
+    if (!dup) return "error: memory failure (curl_url_dup)";
+    BufOf(const_char)*buf = &(BufOf(const_char)){0};
+    if ( !buffn(const_char, append)(buf, (const char*)data, data_len)
+       ||!buffn(const_char, append)(buf, "\0", 1)
+    ) {
+        buffn(const_char, clean)(buf);
+        curl_url_cleanup(dup);
+        return "error: buffn append failure";
+    }
+    Err err = curlu_set_url(dup, buf->items);
+    buffn(const_char, clean)(buf);
+    if (err) {
+        curl_url_cleanup(dup);
+        return err;
+    }
+    *u = dup;
+    return Ok;
+}

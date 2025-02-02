@@ -40,39 +40,47 @@ Err cmd_cookies(Session session[static 1], const char* url) {
     return url_client_print_cookies(session_url_client(session));
 }
 
-///TODO: move this to session
-Err cmd_set_url(Session session[static 1], const char* url) {
-    HtmlDoc* htmldoc = session_current_doc(session);
-
+Err cmd_open_url(Session session[static 1], const char* url) {
     url = cstr_trim_space((char*)url);
-    if (!*url) { /* if not url given just print current url */
-        char* buf;
-        try(url_cstr(htmldoc_url(htmldoc), &buf));
-        Err res = err_fmt("current url:\n%s", buf);
-        curl_free(buf);
-        return res;
-    }
-
-    HtmlDoc* newdoc = htmldoc_create(url);
-    if (!newdoc) { return err_fmt("error: could not create doc from %s", url); }
-
-    Err err = htmldoc_fetch(newdoc, session->url_client);
-    if (err) {
-        htmldoc_destroy(newdoc);
-        return err;
-    }
-
-    htmldoc_destroy(htmldoc);
-    session->htmldoc = newdoc;
-    ///
-    ///
-    try( session_open_url(session, url));
-    return Ok;
+    return session_open_url(session, url, session->url_client);
 }
+
+///TODO: move this to session
+///TODO: use open url, no set anymore
+///Err cmd_set_url(Session session[static 1], const char* url) {
+///    //HtmlDoc* htmldoc = session_current_doc(session);
+///    HtmlDoc* htmldoc = session->htmldoc;
+///
+///    url = cstr_trim_space((char*)url);
+///    if (!*url) { /* if not url given just print current url */
+///        char* buf;
+///        try(url_cstr(htmldoc_url(htmldoc), &buf));
+///        Err res = err_fmt("current url:\n%s", buf);
+///        curl_free(buf);
+///        return res;
+///    }
+///
+///    HtmlDoc* newdoc = htmldoc_create(url);
+///    if (!newdoc) { return err_fmt("error: could not create doc from %s", url); }
+///
+///    Err err = htmldoc_fetch(newdoc, session->url_client);
+///    if (err) {
+///        htmldoc_destroy(newdoc);
+///        return err;
+///    }
+///
+///    htmldoc_destroy(htmldoc);
+///    session->htmldoc = newdoc;
+///    ///
+///    ///
+///    try( session_open_url(session, url, session->url_client));
+///    return Ok;
+///}
 
 
 static Err _get_input_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outnode[static 1]) {
-    HtmlDoc* htmldoc = session_current_doc(session);
+    HtmlDoc* htmldoc;
+    try( session_current_doc(session, &htmldoc));
     ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(htmldoc);
     LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(inputs, ix);
     if (!nodeptr) return "input element number invalid";
@@ -122,7 +130,8 @@ Err _cmd_submit_ix(Session session[static 1], size_t ix) {
     Err err = Ok;
     HtmlDoc* newdoc;
 
-    HtmlDoc* htmldoc = session_current_doc(session);
+    HtmlDoc* htmldoc;
+    try( session_current_doc(session, &htmldoc));
     ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(htmldoc);
     CURLU* curlu = curl_url_dup(url_cu(htmldoc_url(htmldoc)));
     if (!curlu) return "error: memory failure (curl_url_dup)";
@@ -167,7 +176,7 @@ Err _cmd_submit_ix(Session session[static 1], size_t ix) {
             return err;
         }
 
-        session->htmldoc = newdoc;
+        ///session->htmldoc = newdoc;
         htmldoc_destroy(htmldoc);
         //TODO: change this when multi docs gets implemented
     
@@ -210,37 +219,39 @@ Err dup_curl_with_anchors_href(lxb_dom_node_t* anchor, CURLU* u[static 1]) {
 }
 
 Err cmd_anchor_asterisk(Session session[static 1], size_t linknum) {
-    Err err;
-    HtmlDoc* newdoc;
+    //Err err;
+    //HtmlDoc* newdoc;
 
-    HtmlDoc* htmldoc = session_current_doc(session);
-    ArlOf(LxbNodePtr)* anchors = htmldoc_anchors(htmldoc);
+    //HtmlDoc* htmldoc = session->htmldoc;
+    //ArlOf(LxbNodePtr)* anchors = htmldoc_anchors(htmldoc);
 
-    LxbNodePtr* a = arlfn(LxbNodePtr, at)(anchors, linknum);
-    if (!a) return "link number invalid";
+    //LxbNodePtr* a = arlfn(LxbNodePtr, at)(anchors, linknum);
+    //if (!a) return "link number invalid";
 
-    CURLU* curlu = url_cu(htmldoc_url(htmldoc));
-    try( dup_curl_with_anchors_href(*a, &curlu));
+    //CURLU* curlu = url_cu(htmldoc_url(htmldoc));
+    //try( dup_curl_with_anchors_href(*a, &curlu));
 
-    //TODO: remove duplicte code.
-    if (!(newdoc=htmldoc_create(NULL))) {
-        curl_url_cleanup(curlu);
-        return "error creating htmldoc";
-    };
+    ////TODO: remove duplicte code.
+    //if (!(newdoc=htmldoc_create(NULL))) {
+    //    curl_url_cleanup(curlu);
+    //    return "error creating htmldoc";
+    //};
 
-    htmldoc_url(newdoc)->cu=curlu;
-    if ((err=htmldoc_fetch(newdoc, session_url_client(session)))) {
-        htmldoc_destroy(newdoc);
-        return err;
-    }
+    //htmldoc_url(newdoc)->cu=curlu;
+    //if ((err=htmldoc_fetch(newdoc, session_url_client(session)))) {
+    //    htmldoc_destroy(newdoc);
+    //    return err;
+    //}
 
-    if ((err=htmldoc_browse(newdoc))) {
-        htmldoc_destroy(newdoc);
-        return err;
-    }
+    //if ((err=htmldoc_browse(newdoc))) {
+    //    htmldoc_destroy(newdoc);
+    //    return err;
+    //}
 
-    session->htmldoc = newdoc;
-    htmldoc_destroy(htmldoc);
+    //session->htmldoc = newdoc;
+    //htmldoc_destroy(htmldoc);
+
+    try( session_follow_ahref(session, linknum));
     return Ok;
 }
 
@@ -251,7 +262,8 @@ Err cmd_ahre(Session session[static 1], const char* link) {
 }
 
 static Err _get_image_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outnode[static 1]) {
-    HtmlDoc* htmldoc = session_current_doc(session);
+    HtmlDoc* htmldoc;
+    try( session_current_doc(session, &htmldoc));
     ArlOf(LxbNodePtr)* images = htmldoc_imgs(htmldoc);
     LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(images, ix);
     if (!nodeptr) return "image number invalid";
@@ -273,7 +285,7 @@ Err cmd_image_print(Session session[static 1], size_t ix) {
 bool htmldoc_is_valid(HtmlDoc htmldoc[static 1]) {
     ////TODO: remove, not needed since URLU
     //return htmldoc->url && htmldoc->lxbdoc && htmldoc->lxbdoc->body;
-    return htmldoc->lxbdoc && htmldoc->lxbdoc->body;
+    return htmldoc && htmldoc->lxbdoc && htmldoc->lxbdoc->body;
 }
 
 /* */
@@ -287,7 +299,7 @@ Err cmd_eval(Session session[static 1], const char* line) {
     if ((rest = substr_match(line, "ahref", 2))) { return cmd_ahre(session, rest); } //TODO: deprecate, impl [%p
     if ((rest = substr_match(line, "attr", 2))) { return "TODO: attr"; }
     if ((rest = substr_match(line, "class", 3))) { return "TODO: class"; }
-    if ((rest = substr_match(line, "clear", 3))) { return cmd_clear(session); }
+    ///if ((rest = substr_match(line, "clear", 3))) { return cmd_clear(session); }
     if ((rest = substr_match(line, "fetch", 1))) { return cmd_fetch(session); }
     if ((rest = substr_match(line, "tag", 2))) { return cmd_tag(rest, session); }
     //TODO: define shorcut_z and pass the rest
@@ -299,7 +311,8 @@ Err cmd_eval(Session session[static 1], const char* line) {
 }
 
 Err cmd_anchor_print(Session session[static 1], size_t linknum) {
-    HtmlDoc* htmldoc = session_current_doc(session);
+    HtmlDoc* htmldoc;
+    try( session_current_doc(session, &htmldoc));
     ArlOf(LxbNodePtr)* anchors = htmldoc_anchors(htmldoc);
 
     LxbNodePtr* a = arlfn(LxbNodePtr, at)(anchors, (size_t)linknum);
@@ -374,20 +387,26 @@ Err process_line(Session session[static 1], const char* line) {
     if ((rest = substr_match(line, "browse", 1))) { return cmd_browse(session, rest); }
     if ((rest = substr_match(line, "cookies", 1))) { return cmd_cookies(session, rest); }
     if ((rest = substr_match(line, "echo", 1))) return puts(rest) < 0 ? "error: puts failed" : Ok;
-    if ((rest = substr_match(line, "go", 1))) { return cmd_browse(session, rest); }
+    if ((rest = substr_match(line, "go", 1))) { return cmd_open_url(session, rest); }
     if ((rest = substr_match(line, "quit", 1)) && !*rest) { session->quit = true; return Ok;}
     if ((rest = substr_match(line, "setopt", 1))) { return cmd_setopt(session, rest); }
-    if ((rest = substr_match(line, "url", 1))) { return cmd_set_url(session, rest); }
+    ///if ((rest = substr_match(line, "url", 1))) { return cmd_set_url(session, rest); }
 
-    if (!htmldoc_is_valid(session_current_doc(session)) ||!session->url_client) return "no document";
+    HtmlDoc* htmldoc;
+    try( session_current_doc(session, &htmldoc));
+
+    if (!htmldoc_is_valid(htmldoc) ||!session->url_client) return "no document";
 
     //TODO: implement search in textbuf
     if (*line == '/') return "to search in buffer use ':/' (not just '/')";
 
     //TODO: obtain range from line and pase it already parsed to eval fn
 
-    if (*line == ':') return ed_eval(session_current_buf(session), line + 1);
-    if (*line == '<') return ed_eval(htmldoc_sourcebuf(session_current_doc(session)), line + 1);
+
+    TextBuf* tb;
+    try( session_current_buf(session, &tb));
+    if (*line == ':') return ed_eval(tb, line + 1);
+    if (*line == '<') return ed_eval(htmldoc_sourcebuf(htmldoc), line + 1);
     if (*line == ANCHOR_OPEN_STR[0]) return cmd_anchor_eval(session, line + 1);
     if (*line == INPUT_OPEN_STR[0]) return cmd_input_eval(session, line + 1);
     if (*line == IMAGE_OPEN_STR[0]) return cmd_image_eval(session, line + 1);

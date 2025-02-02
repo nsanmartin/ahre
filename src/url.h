@@ -71,6 +71,10 @@ static inline Err url_init(Url u[static 1],  const char* cstr) {
     return res;
 }
 
+static inline Err url_init_from_curlu(Url u[static 1],  CURLU* cu) {
+    u->cu = cu;
+    return Ok;
+}
 //TODO make url_int call this one
 static inline Err curlu_set_url(CURLU* u,  const char* cstr) {
     CURLUcode code = curl_url_set(u, CURLUPART_URL, cstr, CURLU_DEFAULT_SCHEME);

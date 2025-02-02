@@ -325,6 +325,7 @@ Err browse_tag_pre(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx c
 
 /* external linkage */
 
+//TODO: eprecate, always init woit fetch ? (and if bad url?)
 Err htmldoc_init(HtmlDoc d[static 1], const char* cstr_url) {
     Url url = {0};
     if (cstr_url && *cstr_url) {
@@ -357,6 +358,39 @@ Err htmldoc_init(HtmlDoc d[static 1], const char* cstr_url) {
         }
     };
     return Ok;
+}
+Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu) {
+    Url url = {0};
+    try( url_init_from_curlu(&url, cu));
+    lxb_html_document_t* document = lxb_html_document_create();
+    if (!document) {
+        return "error: lxb failed to create html document";
+    }
+
+    *d = (HtmlDoc){
+        .url=url,
+        .method=http_get,
+        .lxbdoc=document,
+        .cache=(DocCache){
+            .textbuf=(TextBuf){.current_line=1},
+            .sourcebuf=(TextBuf){.current_line=1}
+        }
+    };
+    return Ok;
+}
+
+Err htmldoc_init_fetch_browse(HtmlDoc d[static 1], const char* url, UrlClient url_client[static 1]) {
+    try(htmldoc_init(d, url));
+    try(htmldoc_fetch(d, url_client));//TODO: clean on failure
+    return htmldoc_browse(d);
+}
+
+Err htmldoc_init_fetch_browse_from_curlu(
+    HtmlDoc d[static 1], CURLU* cu, UrlClient url_client[static 1]
+) {
+    try(htmldoc_init_from_curlu(d, cu));
+    try(htmldoc_fetch(d, url_client));//TODO: clean on failure
+    return htmldoc_browse(d);
 }
 
 HtmlDoc* htmldoc_create(const char* url) {

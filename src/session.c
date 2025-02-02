@@ -2,12 +2,23 @@
 #include "src/session.h"
 
 
-HtmlDoc* session_current_doc(Session session[static 1]) {
-    return session->htmldoc;
+Err session_current_doc(Session session[static 1], HtmlDoc* out[static 1]) {
+    //return session->htmldoc;
+    //(gdb) p session->htmldoc_forest .trees .items[0].head.doc.cache.textbuf
+
+    HtmlDocForest* f = session_htmldoc_forest(session);
+    HtmlDoc* d;
+    try( htmldoc_forest_current_doc(f, &d));
+    *out = d;
+    return Ok;
+
 }
 
-TextBuf* session_current_buf(Session session[static 1]) {
-    return htmldoc_textbuf(session_current_doc(session));
+Err session_current_buf(Session session[static 1], TextBuf* out[static 1]) {
+    HtmlDoc* d;
+    try( session_current_doc(session, &d));
+    *out = htmldoc_textbuf(d);
+    return Ok;
 }
 
 
@@ -16,30 +27,20 @@ Err session_init(Session s[static 1], char* url, UserLineCallback callback) {
     UrlClient* url_client = url_client_create();
     if (!url_client) { return "error:  url_client_create failure"; }
 
-    HtmlDoc* htmldoc = htmldoc_create(cstr_trim_space((char*)url));
-    if (!htmldoc) {
-        url_client_destroy(url_client);
-        return "error: htmldoc_create failure";
-    }
-
     HtmlDocForest f = (HtmlDocForest){0};
-
-    if (htmldoc_lxbdoc(htmldoc) && url_cu(htmldoc_url(htmldoc))) {
-        Err err = htmldoc_fetch(htmldoc, url_client);
-        if (err) { log_error(err); }
-        err = htmldoc_browse(htmldoc);
-        if (err) { log_error(err); }
-        //// ><M
-        try( htmldoc_forest_init(&f, url));
-            
+    Err err = htmldoc_forest_init(&f, url, url_client);
+    if (err) {
+        htmldoc_forest_cleanup(&f);
+        f = (HtmlDocForest){0};
+        puts(err);
     }
+
     *s = (Session) {
-        .url_client=url_client,
-        .user_line_callback=callback,
-        .htmldoc=htmldoc,
-        .htmldoc_forest=f,
-        .quit=false,
-        .conf=mkSessionConf
+        .url_client         = url_client,
+        .user_line_callback = callback,
+        .htmldoc_forest     = f,
+        .quit               = false,
+        .conf               = mkSessionConf
     };
 
     return Ok;
