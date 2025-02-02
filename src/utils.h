@@ -33,6 +33,8 @@ typedef const char const_char;
    if (buffn(char,append)(Buf_, (char*)LitStr, sizeof(LitStr)-1)) {\
        return "could not append"; }}while(0)
 
+typedef enum { http_get = 0, http_post = 1 } HttpMethod;
+
 static inline int buf_append_hexp(void* p, BufOf(char)*buf) {
     char num_buff[256];
     int len = snprintf(num_buff, 256, "%p", p);

@@ -30,11 +30,11 @@ static inline Err cmd_tag(const char* rest, Session session[static 1]) {
 
 
 static inline Err cmd_browse(Session session[static 1], const char* rest) {
-    return cmd_open_url(session, rest);
-    //if (*rest) try(cmd_set_url(session, rest));
-    //HtmlDoc* htmldoc = session_current_doc(session);
-    //htmldoc_reset(htmldoc);
-    //return htmldoc_browse(htmldoc);
+    if (*rest) return "browse cmd accept no params";
+    HtmlDoc* htmldoc;
+    try( session_current_doc(session, &htmldoc));
+    htmldoc_reset(htmldoc);
+    return htmldoc_browse(htmldoc);
 }
 
 #endif

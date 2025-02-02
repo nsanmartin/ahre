@@ -12,6 +12,7 @@
 #include "src/mem.h"
 #include "src/url-client.h"
 #include "src/utils.h"
+#include "src/wrapper-lexbor.h"
 #include "src/wrapper-lexbor-curl.h"
 #include "src/doc-elem.h"
 #include "src/url.h"
@@ -29,8 +30,6 @@ typedef struct {
     ArlOf(LxbNodePtr) inputs;
     LxbNodePtr title;
 } DocCache;
-
-typedef enum { http_get = 0, http_post = 1 } HttpMethod;
 
 typedef struct {
     Url url;
@@ -169,6 +168,7 @@ Err htmldoc_init_fetch_browse_from_curlu(
 );
 
 static inline Err htmldoc_print_info(HtmlDoc d[static 1]) {
+    try( dbg_print_title(*htmldoc_title(d)));
     char* buf;
     try(url_cstr(htmldoc_url(d), &buf));
     printf("%s\n", buf);
