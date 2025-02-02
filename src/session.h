@@ -67,11 +67,17 @@ static inline Err session_follow_ahref(Session s[static 1], size_t linknum) {
     if(current_tree)
         return htmldoc_tree_append_ahref(current_tree , linknum, s->url_client);
     
-    return "error: where is thew href if current tree is empty?";
-    //HtmlDocForest f = (HtmlDocForest){0};
-    //Err err = htmldoc_forest_init(&f, url, url_client);
-    //s->htmldoc_forest = f;
-    //return Ok;
+    return "error: where is the href if current tree is empty?";
+}
+
+static inline Err session_press_submit(Session s[static 1], size_t ix) {
+    HtmlDocTree* current_tree;
+    try( htmldoc_forest_current_tree(session_htmldoc_forest(s), &current_tree));
+    if(current_tree)
+        return htmldoc_tree_append_submit(current_tree , ix, s->url_client);
+
+    
+    return "error: where is the input if current tree is empty?";
 }
 
 int edcmd_print(Session session[static 1]);

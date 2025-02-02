@@ -2,6 +2,7 @@
 #define AHRE_HTMLDOC_TREE_H__
 
 #include "src/htmldoc.h"
+#include "src/wrapper-lexbor.h"
 #include "src/wrapper-lexbor-curl.h"
 
 struct ArlOf(HtmlDocNode);
@@ -59,6 +60,15 @@ static inline Err  htmldoc_node_current_doc(HtmlDocNode n[static 1], HtmlDoc* ou
     return Ok;
 }
 
+static inline Err
+htmldoc_node_append_move_child(HtmlDocNode n[static 1], HtmlDocNode newnode[static 1]) {
+    if (!arlfn(HtmlDocNode, append)(htmldoc_node_childs(n), newnode))
+        return "error: mem failure arl";
+    n->current_ix = htmldoc_node_child_count(n);
+    if (!n->current_ix) return "error: no items after appending";
+    --n->current_ix; /* the ix of last one */
+    return Ok;
+}
 
 /* ctor */
 static inline Err
@@ -110,8 +120,9 @@ static inline Err htmldoc_tree_current_doc(HtmlDocTree t[static 1], HtmlDoc* out
 }
 
 static inline Err htmldoc_tree_current_node(HtmlDocTree t[static 1], HtmlDocNode* out[static 1]) {
-    try( htmldoc_node_current_node(htmldoc_tree_head(t), out));
-    return Ok;
+    return htmldoc_node_current_node(htmldoc_tree_head(t), out);
+    //try( htmldoc_node_current_node(htmldoc_tree_head(t), out));
+    //return Ok;
 }
 
 
@@ -144,13 +155,56 @@ Err htmldoc_tree_append_ahref(HtmlDocTree t[static 1], size_t linknum, UrlClient
 
     HtmlDocNode newnode;
     try( htmldoc_node_init_from_curlu(&newnode, n, curlu, url_client));
+    Err err;
+    if ((err=htmldoc_node_append_move_child(n, &newnode))) {
+        curl_url_cleanup(curlu);
+        return err;
+    }
+    //if (!arlfn(HtmlDocNode, append)(htmldoc_node_childs(n), &newnode))
+    //    return "error: mem failure arl";
 
-    if (!arlfn(HtmlDocNode, append)(htmldoc_node_childs(n), &newnode))
-        return "error: mem failure arl";
+    //n->current_ix = htmldoc_node_child_count(n);
+    //if (!n->current_ix) return "error: no items after appending";
+    //--n->current_ix; /* the iux of last one */
+    return Ok;
+}
 
-    n->current_ix = htmldoc_node_child_count(n);
-    if (!n->current_ix) return "error: no items after appending";
-    --n->current_ix; /* the iux of last one */
+static inline
+Err htmldoc_tree_append_submit(HtmlDocTree t[static 1], size_t ix, UrlClient url_client[static 1])
+{
+    HtmlDocNode* n;
+    try(  htmldoc_tree_current_node(t, &n));
+    if (!n) return "error: current node not found";
+    HtmlDoc* d = &n->doc;
+    ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(d);
+    CURLU* curlu = curl_url_dup(url_cu(htmldoc_url(d)));
+    if (!curlu) return "error: memory failure (curl_url_dup)";
+    LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(inputs, ix);
+    if (!nodeptr) {
+        curl_url_cleanup(curlu);
+        return "link number invalid";
+    }
+    if (!_lexbor_attr_has_value(*nodeptr, "type", "submit")) {
+        curl_url_cleanup(curlu);
+        return "warn: not submit input";
+    }
+
+    lxb_dom_node_t* form = _find_parent_form(*nodeptr);
+    if (form) {
+        HttpMethod method;
+        Err err;
+        if ((err = mk_submit_url(url_client, form, &curlu, &method))) {
+            curl_url_cleanup(curlu);
+            return err;
+        }
+
+        HtmlDocNode newnode;
+        try( htmldoc_node_init_from_curlu(&newnode, n, curlu, url_client));
+        if ((err=htmldoc_node_append_move_child(n, &newnode))) {
+            curl_url_cleanup(curlu);
+            return err;
+        }
+    } else { puts("expected form, not found"); }
     return Ok;
 }
 

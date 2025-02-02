@@ -36,4 +36,10 @@ static inline bool lexbor_str_eq(const char* s, const lxb_char_t* lxb_str, size_
 }
 
 Err dbg_print_title(lxb_dom_node_t* title) ;
+Err mk_submit_url (
+    UrlClient url_client[static 1],
+    lxb_dom_node_t* form,
+    CURLU* out[static 1],
+    HttpMethod doc_method[static 1] 
+);
 #endif

@@ -3,9 +3,6 @@
 
 
 Err session_current_doc(Session session[static 1], HtmlDoc* out[static 1]) {
-    //return session->htmldoc;
-    //(gdb) p session->htmldoc_forest .trees .items[0].head.doc.cache.textbuf
-
     HtmlDocForest* f = session_htmldoc_forest(session);
     HtmlDoc* d;
     try( htmldoc_forest_current_doc(f, &d));

@@ -127,61 +127,7 @@ Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) 
 
 
 Err _cmd_submit_ix(Session session[static 1], size_t ix) {
-    Err err = Ok;
-    HtmlDoc* newdoc;
-
-    HtmlDoc* htmldoc;
-    try( session_current_doc(session, &htmldoc));
-    ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(htmldoc);
-    CURLU* curlu = curl_url_dup(url_cu(htmldoc_url(htmldoc)));
-    if (!curlu) return "error: memory failure (curl_url_dup)";
-
-
-
-    LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(inputs, ix);
-    if (!nodeptr) {
-        curl_url_cleanup(curlu);
-        return "link number invalid";
-    }
-    if (!_lexbor_attr_has_value(*nodeptr, "type", "submit")) {
-        curl_url_cleanup(curlu);
-        return "warn: not submit input";
-    }
-
-    lxb_dom_node_t* form = _find_parent_form(*nodeptr);
-    if (form) {
-
-   
-        UrlClient* url_client = session_url_client(session);
-        HttpMethod method;
-        if ((err = mk_submit_url(url_client, form, &curlu, &method))) {
-            curl_url_cleanup(curlu);
-            return err;
-        }
-        ////TODO: all this is duplicated, refactor!
-        if (!(newdoc=htmldoc_create(NULL))) {
-            curl_url_cleanup(curlu);
-            return "error creating htmldoc";
-        };
-        htmldoc_url(newdoc)->cu=curlu;
-        newdoc->method = method;
-
-        if ((err=htmldoc_fetch(newdoc, session_url_client(session)))) {
-            htmldoc_destroy(newdoc);
-            return err;
-        }
-
-        if ((err=htmldoc_browse(newdoc))) {
-            htmldoc_destroy(newdoc);
-            return err;
-        }
-
-        ///session->htmldoc = newdoc;
-        htmldoc_destroy(htmldoc);
-        //TODO: change this when multi docs gets implemented
-    
-    } else { puts("expected form, not found"); }
-    return Ok;
+    return session_press_submit(session, ix);
 }
 
 Err cmd_submit(Session session[static 1], const char* line) {
@@ -219,37 +165,6 @@ Err dup_curl_with_anchors_href(lxb_dom_node_t* anchor, CURLU* u[static 1]) {
 }
 
 Err cmd_anchor_asterisk(Session session[static 1], size_t linknum) {
-    //Err err;
-    //HtmlDoc* newdoc;
-
-    //HtmlDoc* htmldoc = session->htmldoc;
-    //ArlOf(LxbNodePtr)* anchors = htmldoc_anchors(htmldoc);
-
-    //LxbNodePtr* a = arlfn(LxbNodePtr, at)(anchors, linknum);
-    //if (!a) return "link number invalid";
-
-    //CURLU* curlu = url_cu(htmldoc_url(htmldoc));
-    //try( dup_curl_with_anchors_href(*a, &curlu));
-
-    ////TODO: remove duplicte code.
-    //if (!(newdoc=htmldoc_create(NULL))) {
-    //    curl_url_cleanup(curlu);
-    //    return "error creating htmldoc";
-    //};
-
-    //htmldoc_url(newdoc)->cu=curlu;
-    //if ((err=htmldoc_fetch(newdoc, session_url_client(session)))) {
-    //    htmldoc_destroy(newdoc);
-    //    return err;
-    //}
-
-    //if ((err=htmldoc_browse(newdoc))) {
-    //    htmldoc_destroy(newdoc);
-    //    return err;
-    //}
-
-    //session->htmldoc = newdoc;
-    //htmldoc_destroy(htmldoc);
 
     try( session_follow_ahref(session, linknum));
     return Ok;
