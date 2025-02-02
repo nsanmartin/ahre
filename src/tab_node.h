@@ -226,21 +226,29 @@ Err htmldoc_tree_append_url(TabNode t[static 1], const char* url) {
 }
 
 static inline 
-Err dbg_tab_node_print(TabNode n[static 1], size_t ix, size_t h) {
+Err dbg_tab_node_print(TabNode n[static 1], size_t ix, ArlOf(size_t) stack[static 1]) {
+    if (!arlfn(size_t, append)(stack, &ix)) {
+        arlfn(size_t, clean)(stack);
+        return "error: arl append failure";
+    }
     HtmlDoc* d = &n->doc;
     LxbNodePtr node = *htmldoc_title(d);
-    if (h) {
-        if (h > INT_MAX) return "error: well that's a large tree";
-        printf("%*c", (int)(h), ' ');
+    for(size_t* it = arlfn(size_t, begin)(stack); it != arlfn(size_t, end)(stack); ++it) {
+        printf(".%ld", *it);
     }
-    printf("%ld: ", ix);
+    printf("%s", ": ");
     try( dbg_print_title(node));
 
     TabNode* it = arlfn(TabNode, begin)(n->childs);
     const TabNode* beg = it;
     const TabNode* end = arlfn(TabNode, end)(n->childs);
     for (; it != end; ++it) {
-        try( dbg_tab_node_print(it, it-beg, h+1));
+        size_t subix = it-beg;
+        try( dbg_tab_node_print(it, subix, stack));
+    }
+    if (!arlfn(size_t, pop)(stack)) {
+        arlfn(size_t, clean)(stack);
+        return "error: arl pop failure";
     }
     return Ok;
 }

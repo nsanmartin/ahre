@@ -1,6 +1,6 @@
 #ifndef AHRE_TABS_H__
 #define AHRE_TABS_H__
-#include "src/htmldoc_tree.h"
+#include "src/tab_node.h"
 
 ///#define T TabNode
 ///// #define TClean htmldoc_tree_cleanup
@@ -93,13 +93,18 @@ static inline void tablist_cleanup(TabList f[static 1]) {
 }
 
 static inline Err tablist_print_info(TabList f[static 1]) {
-    printf("(%ld tabs)\n", f->tabs.len);
+    ArlOf(size_t)* stack = &(ArlOf(size_t)){0};
+    printf("(%ld tabs)\n\n", f->tabs.len);
     TabNode* it = arlfn(TabNode, begin)(&f->tabs);
     const TabNode* beg = it;
     const TabNode* end = arlfn(TabNode, end)(&f->tabs);
+    
     for (; it != end; ++it) {
-        try( dbg_tab_node_print(it, it-beg, 0));
+        size_t ix = it-beg;
+        try( dbg_tab_node_print(it, ix, stack));
+        puts("");
     }
+    arlfn(size_t, clean)(stack);
     return Ok;
 }
 
