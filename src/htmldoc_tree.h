@@ -230,18 +230,36 @@ Err dbg_tab_node_print(TabNode n[static 1], size_t ix, size_t h) {
     HtmlDoc* d = &n->doc;
     LxbNodePtr node = *htmldoc_title(d);
     if (h) {
-        if (2*h > INT_MAX) return "error: well that's a large tree";
-        printf("%*c", (int)(2*h), ' ');
+        if (h > INT_MAX) return "error: well that's a large tree";
+        printf("%*c", (int)(h), ' ');
     }
-    printf("%ld : ", ix);
+    printf("%ld: ", ix);
     try( dbg_print_title(node));
 
     TabNode* it = arlfn(TabNode, begin)(n->childs);
-    //const TabNode* beg = it;
+    const TabNode* beg = it;
     const TabNode* end = arlfn(TabNode, end)(n->childs);
     for (; it != end; ++it) {
-        try( dbg_tab_node_print(it, ix, h+1));
+        try( dbg_tab_node_print(it, it-beg, h+1));
     }
     return Ok;
+}
+
+static inline void tab_node_set_as_current(TabNode n[static 1]) {
+    n->current_ix = tab_node_child_count(n);
+}
+
+static inline Err tab_node_move(TabNode tn[static 1], const char* line) {
+    size_t ix;
+    try( parse_size_t_or_throw(&line, &ix, 10));
+    tn = arlfn(TabNode,at)(tab_node_childs(tn), ix);
+    if (!tn) return "invalid tab child";
+    line = cstr_skip_space(line);
+    if (!*line) {
+        tab_node_set_as_current(tn);
+        return Ok;
+    }
+    if (*line != '.') return "invalid tab path";
+    return tab_node_move(tn, line + 1);
 }
 #endif

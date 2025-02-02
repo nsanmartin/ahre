@@ -108,9 +108,21 @@ static inline Err tablist_back(TabList tl[static 1]) {
     try( tablist_current_node(tl, &cn));
     if (!cn) return "can't go back with no current node";
     if (!cn->parent) return "can't go back if tab's root";
-    /* set prev as current */
-    TabNode* newcurrent = cn->parent;
-    newcurrent->current_ix = tab_node_child_count(newcurrent);
+    tab_node_set_as_current(cn->parent);
     return Ok;
+}
+
+static inline Err tablist_move_to_node(TabList tl[static 1], const char* line) {
+    size_t ix;
+    try( parse_size_t_or_throw(&line, &ix, 10));
+    TabNode* tn = arlfn(TabNode,at)(_tablist_tabs_(tl), ix);
+    if (!tn) return "invalid tab";
+    line = cstr_skip_space(line);
+    if (!*line) {
+        tab_node_set_as_current(tn);
+        return Ok;
+    }
+    if (*line != '.') return "invalid tab path";
+    return tab_node_move(tn, line + 1);
 }
 #endif

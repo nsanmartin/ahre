@@ -108,4 +108,5 @@ static inline Err bufofchar_append(BufOf(char) buf[static 1], char* s, size_t le
 #define bufofchar_append_lit__(Buffer, LitStr) \
     bufofchar_append(Buffer, LitStr, sizeof(LitStr)-1)
 
+Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) ;
 #endif
