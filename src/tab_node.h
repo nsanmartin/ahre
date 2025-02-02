@@ -259,21 +259,61 @@ Err dbg_tab_node_print(
     return Ok;
 }
 
-static inline void tab_node_set_as_current(TabNode n[static 1]) {
+static inline Err
+tab_node_get_child_index_of(TabNode n[static 1], TabNode child[static 1], size_t out[static 1]) {
+    TabNode* beg = arlfn(TabNode, begin)(tab_node_childs(n));
+    TabNode* end = arlfn(TabNode, end)(tab_node_childs(n));
+    if (child < beg || end <= child) return "error: pointer not in range (tabnode not a child of)";
+    *out = child - beg;
+    return Ok;
+}
+
+static inline Err tab_node_set_as_current(TabNode n[static 1]) {
     n->current_ix = tab_node_child_count(n);
+    TabNode* it = n->parent;
+    while(it) {
+        size_t ix;
+        try( tab_node_get_child_index_of(it, n, &ix));
+        it->current_ix = ix;
+        n = it;
+        it = n->parent;
+    }
+    return Ok;
+}
+
+static inline Err
+tab_node_find_node(TabNode tn[static 1], const char* line, TabNode* out[static 1]) {
+    line = cstr_skip_space(line);
+    if (*line) {
+        size_t ix;
+        try( parse_size_t_or_throw(&line, &ix, 10));
+        tn = arlfn(TabNode,at)(tab_node_childs(tn), ix);
+        if (!tn) return "invalid tab child";
+        line = cstr_skip_space(line);
+    }
+    if (!*line) {
+        *out = tn;
+        return Ok;
+    }
+    if (*line != '.') return "invalid tab path";
+    return tab_node_find_node(tn, line + 1, out);
 }
 
 static inline Err tab_node_move(TabNode tn[static 1], const char* line) {
-    size_t ix;
-    try( parse_size_t_or_throw(&line, &ix, 10));
-    tn = arlfn(TabNode,at)(tab_node_childs(tn), ix);
-    if (!tn) return "invalid tab child";
     line = cstr_skip_space(line);
+    if (*line) {
+        size_t ix;
+        try( parse_size_t_or_throw(&line, &ix, 10));
+        tn = arlfn(TabNode,at)(tab_node_childs(tn), ix);
+        if (!tn) return "invalid tab child";
+        line = cstr_skip_space(line);
+    }
     if (!*line) {
         tab_node_set_as_current(tn);
         return Ok;
     }
     if (*line != '.') return "invalid tab path";
     return tab_node_move(tn, line + 1);
+
 }
 #endif

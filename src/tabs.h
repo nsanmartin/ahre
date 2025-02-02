@@ -28,6 +28,7 @@ static inline bool tablist_is_empty(TabList f[static 1]) {
     return _tablist_tab_count_(f) == 0;
 }
 
+static inline size_t* _tablist_current_tab_ix_(TabList f[static 1]) { return &f->current_tab; }
 static inline Err
 tablist_current_tab(TabList f[static 1], TabNode* out[static 1]) {
     TabNode* current_tab = arlfn(TabNode, at)(&f->tabs, f->current_tab);
@@ -125,12 +126,19 @@ static inline Err tablist_move_to_node(TabList tl[static 1], const char* line) {
     try( parse_size_t_or_throw(&line, &ix, 10));
     TabNode* tn = arlfn(TabNode,at)(_tablist_tabs_(tl), ix);
     if (!tn) return "invalid tab";
+
     line = cstr_skip_space(line);
     if (!*line) {
         tab_node_set_as_current(tn);
         return Ok;
     }
     if (*line != '.') return "invalid tab path";
-    return tab_node_move(tn, line + 1);
+
+    TabNode* search;
+    try( tab_node_find_node(tn, line + 1, &search));
+    try( tab_node_set_as_current(search));
+    *_tablist_current_tab_ix_(tl) = ix;
+    return Ok;
+
 }
 #endif
