@@ -25,11 +25,13 @@ Err session_init(Session s[static 1], char* url, UserLineCallback callback) {
     if (!url_client) { return "error:  url_client_create failure"; }
 
     HtmlDocForest f = (HtmlDocForest){0};
-    Err err = htmldoc_forest_init(&f, url, url_client);
-    if (err) {
-        htmldoc_forest_cleanup(&f);
-        f = (HtmlDocForest){0};
-        puts(err);
+    if (url) {
+        Err err = htmldoc_forest_init(&f, url, url_client);
+        if (err) {
+            htmldoc_forest_cleanup(&f);
+            f = (HtmlDocForest){0};
+            puts(err);
+        }
     }
 
     *s = (Session) {

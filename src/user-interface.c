@@ -280,6 +280,22 @@ Err cmd_image_eval(Session session[static 1], const char* line) {
     }
     return Ok;
 }
+
+Err tabs_eval(Session session[static 1], const char* line) {
+    (void)session;
+    (void)line;
+    puts("tabs eval");
+    HtmlDocForest* f = session_htmldoc_forest(session);
+    printf("(%ld tabs)\n", f->trees.len);
+    HtmlDocTree* it = arlfn(HtmlDocTree, begin)(&f->trees);
+    const HtmlDocTree* beg = it;
+    const HtmlDocTree* end = arlfn(HtmlDocTree, end)(&f->trees);
+    for (; it != end; ++it) {
+        try( dbg_htmldoc_node_print(&it->head, it-beg, 0));
+    }
+    return Ok;
+}
+
 //TODO: new user interface:
 // first non space char identify th resource:
 // { => anchor
@@ -307,6 +323,7 @@ Err process_line(Session session[static 1], const char* line) {
     if ((rest = substr_match(line, "setopt", 1))) { return cmd_setopt(session, rest); }
     ///if ((rest = substr_match(line, "url", 1))) { return cmd_set_url(session, rest); }
 
+    if (*line == '|') return tabs_eval(session, line + 1);
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
 

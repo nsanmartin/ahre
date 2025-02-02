@@ -232,4 +232,24 @@ Err htmldoc_tree_append_url(HtmlDocTree t[static 1], const char* url) {
     cn->current_ix = len - 1;
     return Ok;
 }
+
+static inline 
+Err dbg_htmldoc_node_print(HtmlDocNode n[static 1], size_t ix, size_t h) {
+    HtmlDoc* d = &n->doc;
+    LxbNodePtr node = *htmldoc_title(d);
+    if (h) {
+        if (2*h > INT_MAX) return "error: well that's a large tree";
+        printf("%*c", (int)(2*h), ' ');
+    }
+    printf("%ld : ", ix);
+    try( dbg_print_title(node));
+
+    HtmlDocNode* it = arlfn(HtmlDocNode, begin)(n->childs);
+    const HtmlDocNode* beg = it;
+    const HtmlDocNode* end = arlfn(HtmlDocNode, end)(n->childs);
+    for (; it != end; ++it) {
+        try( dbg_htmldoc_node_print(it, ix, h+1));
+    }
+    return Ok;
+}
 #endif
