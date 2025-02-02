@@ -94,6 +94,9 @@ static inline void tablist_cleanup(TabList f[static 1]) {
 
 static inline Err tablist_print_info(TabList f[static 1]) {
     ArlOf(size_t)* stack = &(ArlOf(size_t)){0};
+
+    TabNode* current_node;
+    try( tablist_current_node(f, &current_node));
     printf("(%ld tabs)\n\n", f->tabs.len);
     TabNode* it = arlfn(TabNode, begin)(&f->tabs);
     const TabNode* beg = it;
@@ -101,7 +104,7 @@ static inline Err tablist_print_info(TabList f[static 1]) {
     
     for (; it != end; ++it) {
         size_t ix = it-beg;
-        try( dbg_tab_node_print(it, ix, stack));
+        try( dbg_tab_node_print(it, ix, stack, current_node));
         puts("");
     }
     arlfn(size_t, clean)(stack);

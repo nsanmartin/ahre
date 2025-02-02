@@ -226,7 +226,9 @@ Err htmldoc_tree_append_url(TabNode t[static 1], const char* url) {
 }
 
 static inline 
-Err dbg_tab_node_print(TabNode n[static 1], size_t ix, ArlOf(size_t) stack[static 1]) {
+Err dbg_tab_node_print(
+    TabNode n[static 1], size_t ix, ArlOf(size_t) stack[static 1], TabNode* current_node
+) {
     if (!arlfn(size_t, append)(stack, &ix)) {
         arlfn(size_t, clean)(stack);
         return "error: arl append failure";
@@ -234,7 +236,10 @@ Err dbg_tab_node_print(TabNode n[static 1], size_t ix, ArlOf(size_t) stack[stati
     HtmlDoc* d = &n->doc;
     LxbNodePtr node = *htmldoc_title(d);
     for(size_t* it = arlfn(size_t, begin)(stack); it != arlfn(size_t, end)(stack); ++it) {
-        printf(".%ld", *it);
+        if (it == arlfn(size_t, begin)(stack)) {
+            if (n == current_node) printf("*%ld", *it);
+            else printf(" %ld", *it);
+        } else printf(".%ld", *it);
     }
     printf("%s", ": ");
     try( dbg_print_title(node));
@@ -244,7 +249,7 @@ Err dbg_tab_node_print(TabNode n[static 1], size_t ix, ArlOf(size_t) stack[stati
     const TabNode* end = arlfn(TabNode, end)(n->childs);
     for (; it != end; ++it) {
         size_t subix = it-beg;
-        try( dbg_tab_node_print(it, subix, stack));
+        try( dbg_tab_node_print(it, subix, stack, current_node));
     }
     if (!arlfn(size_t, pop)(stack)) {
         arlfn(size_t, clean)(stack);
