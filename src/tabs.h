@@ -36,6 +36,18 @@ tablist_current_tab(TabList f[static 1], TabNode* out[static 1]) {
     return Ok;
 }
 
+static inline Err
+tablist_current_node(TabList f[static 1], TabNode* out[static 1]) {
+    TabNode* root;
+    try( tablist_current_tab(f, &root));
+    if (!root) { 
+        *out = NULL;
+        return Ok;
+    }
+
+    return tab_node_current_node(root, out);
+}
+
 static inline Err tablist_current_doc(TabList f[static 1], HtmlDoc* out[static 1]) {
     TabNode* t;
     try( tablist_current_tab(f, &t));
@@ -59,7 +71,6 @@ static inline Err tablist_append_tree_from_url(
     TabList f[static 1], const char* url, UrlClient url_client[static 1]
 ) {
     TabNode tn = (TabNode){0};
-    ///try( htmldoc_tree_init(&tn, url, url_client));
     try( tab_node_init(&tn, 0x0, url, url_client));
     try( tablist_append_move_tree(f, &tn));
     if (!f->tabs.len) return "error: expecting tabs in the tab list after appending a tab";
@@ -79,5 +90,27 @@ static inline Err tablist_init(
 /* dtor */
 static inline void tablist_cleanup(TabList f[static 1]) {
     arl_of_htmldoc_tree_clean(&f->tabs);
+}
+
+static inline Err tablist_print_info(TabList f[static 1]) {
+    printf("(%ld tabs)\n", f->tabs.len);
+    TabNode* it = arlfn(TabNode, begin)(&f->tabs);
+    const TabNode* beg = it;
+    const TabNode* end = arlfn(TabNode, end)(&f->tabs);
+    for (; it != end; ++it) {
+        try( dbg_tab_node_print(it, it-beg, 0));
+    }
+    return Ok;
+}
+
+static inline Err tablist_back(TabList tl[static 1]) {
+    TabNode* cn;
+    try( tablist_current_node(tl, &cn));
+    if (!cn) return "can't go back with no current node";
+    if (!cn->parent) return "can't go back if tab's root";
+    /* set prev as current */
+    TabNode* newcurrent = cn->parent;
+    newcurrent->current_ix = tab_node_child_count(newcurrent);
+    return Ok;
 }
 #endif

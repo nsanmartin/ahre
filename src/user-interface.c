@@ -284,16 +284,13 @@ Err cmd_image_eval(Session session[static 1], const char* line) {
 }
 
 Err tabs_eval(Session session[static 1], const char* line) {
-    (void)session;
-    (void)line;
-    puts("tabs eval");
     TabList* f = session_tablist(session);
-    printf("(%ld tabs)\n", f->tabs.len);
-    TabNode* it = arlfn(TabNode, begin)(&f->tabs);
-    const TabNode* beg = it;
-    const TabNode* end = arlfn(TabNode, end)(&f->tabs);
-    for (; it != end; ++it) {
-        try( dbg_tab_node_print(it, it-beg, 0));
+
+    line = cstr_skip_space(line);
+    switch (*line) {
+        case '?': return tablist_print_info(f);
+        case '<': return tablist_back(f);
+        default: return "unknown doc command";
     }
     return Ok;
 }
