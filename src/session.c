@@ -3,9 +3,9 @@
 
 
 Err session_current_doc(Session session[static 1], HtmlDoc* out[static 1]) {
-    Tabs* f = session_htmldoc_forest(session);
+    TabList* f = session_tablist(session);
     HtmlDoc* d;
-    try( htmldoc_forest_current_doc(f, &d));
+    try( tablist_current_doc(f, &d));
     *out = d;
     return Ok;
 
@@ -24,12 +24,12 @@ Err session_init(Session s[static 1], char* url, UserLineCallback callback) {
     UrlClient* url_client = url_client_create();
     if (!url_client) { return "error:  url_client_create failure"; }
 
-    Tabs f = (Tabs){0};
+    TabList f = (TabList){0};
     if (url) {
-        Err err = htmldoc_forest_init(&f, url, url_client);
+        Err err = tablist_init(&f, url, url_client);
         if (err) {
-            htmldoc_forest_cleanup(&f);
-            f = (Tabs){0};
+            tablist_cleanup(&f);
+            f = (TabList){0};
             puts(err);
         }
     }
@@ -37,7 +37,7 @@ Err session_init(Session s[static 1], char* url, UserLineCallback callback) {
     *s = (Session) {
         .url_client         = url_client,
         .user_line_callback = callback,
-        .tabs     = f,
+        .tablist            = f,
         .quit               = false,
         .conf               = mkSessionConf
     };

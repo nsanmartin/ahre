@@ -5,66 +5,66 @@
 #include "src/wrapper-lexbor.h"
 #include "src/wrapper-lexbor-curl.h"
 
-struct ArlOf(HtmlDocNode);
-typedef struct ArlOf(HtmlDocNode) ArlOf(HtmlDocNode);
+struct ArlOf(TabNode);
+typedef struct ArlOf(TabNode) ArlOf(TabNode);
 
-typedef struct HtmlDocNode HtmlDocNode;
-typedef struct HtmlDocNode {
-    HtmlDocNode* parent; 
+typedef struct TabNode TabNode;
+typedef struct TabNode {
+    TabNode* parent; 
     HtmlDoc doc;
-    ArlOf(HtmlDocNode)* childs;
+    ArlOf(TabNode)* childs;
     size_t current_ix; /* if ix == childs.len => current == doc */
-} HtmlDocNode;
+} TabNode;
 
 typedef struct {
-    HtmlDocNode head; /* owner */
+    TabNode head; /* owner */
 } HtmlDocTree;
 
-void htmldoc_node_cleanup(HtmlDocNode n[static 1]);
+void tab_node_cleanup(TabNode n[static 1]);
 
-#define T HtmlDocNode
-// #define TClean htmldoc_node_cleanup
+#define T TabNode
+// #define TClean tab_node_cleanup
 #include <arl.h>
 
 /* Node */
 /* getters */
-static inline ArlOf(HtmlDocNode)* htmldoc_node_childs(HtmlDocNode dn[static 1]) {
+static inline ArlOf(TabNode)* tab_node_childs(TabNode dn[static 1]) {
     return dn->childs;
 }
 
-static inline size_t htmldoc_node_child_count(HtmlDocNode dn[static 1]) {
+static inline size_t tab_node_child_count(TabNode dn[static 1]) {
     return dn->childs->len;
 }
 
-static inline HtmlDoc* htmldoc_node_doc(HtmlDocNode n[static 1]) {
+static inline HtmlDoc* tab_node_doc(TabNode n[static 1]) {
     return &n->doc;
 }
 
 
-static inline Err htmldoc_node_current_node(HtmlDocNode n[static 1], HtmlDocNode* out[static 1]) {
-    HtmlDocNode* prev = NULL;
+static inline Err tab_node_current_node(TabNode n[static 1], TabNode* out[static 1]) {
+    TabNode* prev = NULL;
     while (n) {
         prev = n;
-        n = arlfn(HtmlDocNode, at)(n->childs, n->current_ix);
+        n = arlfn(TabNode, at)(n->childs, n->current_ix);
     }
-    if (!prev) return "error: htmldoc_node_current_doc failure";
+    if (!prev) return "error: tab_node_current_node failure";
     *out = prev;
     return Ok;
 }
 
-static inline Err  htmldoc_node_current_doc(HtmlDocNode n[static 1], HtmlDoc* out[static 1] ) {
-    HtmlDocNode* cn;
-    try( htmldoc_node_current_node(n, &cn));
+static inline Err tab_node_current_doc(TabNode n[static 1], HtmlDoc* out[static 1] ) {
+    TabNode* cn;
+    try( tab_node_current_node(n, &cn));
     if (!cn) return "error: current node in NULL";
     *out = &(cn->doc);
     return Ok;
 }
 
 static inline Err
-htmldoc_node_append_move_child(HtmlDocNode n[static 1], HtmlDocNode newnode[static 1]) {
-    if (!arlfn(HtmlDocNode, append)(htmldoc_node_childs(n), newnode))
+tab_node_append_move_child(TabNode n[static 1], TabNode newnode[static 1]) {
+    if (!arlfn(TabNode, append)(tab_node_childs(n), newnode))
         return "error: mem failure arl";
-    n->current_ix = htmldoc_node_child_count(n);
+    n->current_ix = tab_node_child_count(n);
     if (!n->current_ix) return "error: no items after appending";
     --n->current_ix; /* the ix of last one */
     return Ok;
@@ -72,34 +72,33 @@ htmldoc_node_append_move_child(HtmlDocNode n[static 1], HtmlDocNode newnode[stat
 
 /* ctor */
 static inline Err
-_htmldoc_node_init_base_(HtmlDocNode n[static 1], HtmlDocNode* parent) {
-    *n = (HtmlDocNode){0};
+_tab_node_init_base_(TabNode n[static 1], TabNode* parent) {
+    *n = (TabNode){0};
     n->childs = std_malloc(sizeof *n->childs);
-    if (!n->childs) return "error: htmldoc_doc mem failure";
-    *n->childs = (ArlOf(HtmlDocNode)){0};
+    if (!n->childs) return "error: tab_node_init mem failure";
+    *n->childs = (ArlOf(TabNode)){0};
     n->parent = parent;
     return Ok;
 }
 
 static inline Err
-htmldoc_node_init_from_curlu(
-    HtmlDocNode n[static 1], HtmlDocNode* parent, CURLU* cu, UrlClient url_client[static 1]
+tab_node_init_from_curlu(
+    TabNode n[static 1], TabNode* parent, CURLU* cu, UrlClient url_client[static 1]
 ) {
-    try(_htmldoc_node_init_base_(n, parent));
-    try( htmldoc_init_fetch_browse_from_curlu(htmldoc_node_doc(n), cu, url_client));
+    try(_tab_node_init_base_(n, parent));
+    try( htmldoc_init_fetch_browse_from_curlu(tab_node_doc(n), cu, url_client));
     n->current_ix = n->childs->len;
     return Ok;
 }
 
 static inline Err
-htmldoc_node_init(
-    HtmlDocNode n[static 1], HtmlDocNode* parent, const char* url, UrlClient url_client[static 1]
+tab_node_init(
+    TabNode n[static 1], TabNode* parent, const char* url, UrlClient url_client[static 1]
 ) {
-    try(_htmldoc_node_init_base_(n, parent));
-    //try( htmldoc_init_fetch_browse(htmldoc_node_doc(n), url, url_client));
-    Err e = htmldoc_init_fetch_browse(htmldoc_node_doc(n), url, url_client);
+    try(_tab_node_init_base_(n, parent));
+    Err e = htmldoc_init_fetch_browse(tab_node_doc(n), url, url_client);
     if (e) {
-        htmldoc_node_cleanup(n);
+        tab_node_cleanup(n);
         return e;
     }
     n->current_ix = n->childs->len;
@@ -109,20 +108,18 @@ htmldoc_node_init(
 
 /* Tree */
 /* getters */
-static inline HtmlDocNode* htmldoc_tree_head(HtmlDocTree t[static 1]) { return &t->head; }
+static inline TabNode* htmldoc_tree_head(HtmlDocTree t[static 1]) { return &t->head; }
 static inline HtmlDoc* htmldoc_tree_head_doc(HtmlDocTree t[static 1]) {
     return &htmldoc_tree_head(t)->doc;
 }
 static inline Err htmldoc_tree_current_doc(HtmlDocTree t[static 1], HtmlDoc* out[static 1]) {
-    try( htmldoc_node_current_doc(htmldoc_tree_head(t), out));
+    try( tab_node_current_doc(htmldoc_tree_head(t), out));
     return Ok;
 
 }
 
-static inline Err htmldoc_tree_current_node(HtmlDocTree t[static 1], HtmlDocNode* out[static 1]) {
-    return htmldoc_node_current_node(htmldoc_tree_head(t), out);
-    //try( htmldoc_node_current_node(htmldoc_tree_head(t), out));
-    //return Ok;
+static inline Err htmldoc_tree_current_node(HtmlDocTree t[static 1], TabNode* out[static 1]) {
+    return tab_node_current_node(htmldoc_tree_head(t), out);
 }
 
 
@@ -130,7 +127,7 @@ static inline Err htmldoc_tree_current_node(HtmlDocTree t[static 1], HtmlDocNode
 static inline Err
 htmldoc_tree_init(HtmlDocTree t[static 1], const char* url, UrlClient url_client[static 1]) {
     *t = (HtmlDocTree){0};
-    try( htmldoc_node_init(htmldoc_tree_head(t), 0x0, url, url_client));
+    try( tab_node_init(htmldoc_tree_head(t), 0x0, url, url_client));
     return Ok;
 }
 
@@ -141,7 +138,7 @@ void htmldoc_tree_cleanup(HtmlDocTree t[static 1]);
 static inline
 Err htmldoc_tree_append_ahref(HtmlDocTree t[static 1], size_t linknum, UrlClient url_client[static 1])
 {
-    HtmlDocNode* n;
+    TabNode* n;
     try(  htmldoc_tree_current_node(t, &n));
     if (!n) return "error: current node not found";
     HtmlDoc* d = &n->doc;
@@ -153,26 +150,20 @@ Err htmldoc_tree_append_ahref(HtmlDocTree t[static 1], size_t linknum, UrlClient
     CURLU* curlu = url_cu(htmldoc_url(d));
     try( lexcurl_dup_curl_with_anchors_href(*a, &curlu));
 
-    HtmlDocNode newnode;
-    try( htmldoc_node_init_from_curlu(&newnode, n, curlu, url_client));
+    TabNode newnode;
+    try( tab_node_init_from_curlu(&newnode, n, curlu, url_client));
     Err err;
-    if ((err=htmldoc_node_append_move_child(n, &newnode))) {
+    if ((err=tab_node_append_move_child(n, &newnode))) {
         curl_url_cleanup(curlu);
         return err;
     }
-    //if (!arlfn(HtmlDocNode, append)(htmldoc_node_childs(n), &newnode))
-    //    return "error: mem failure arl";
-
-    //n->current_ix = htmldoc_node_child_count(n);
-    //if (!n->current_ix) return "error: no items after appending";
-    //--n->current_ix; /* the iux of last one */
     return Ok;
 }
 
 static inline
 Err htmldoc_tree_append_submit(HtmlDocTree t[static 1], size_t ix, UrlClient url_client[static 1])
 {
-    HtmlDocNode* n;
+    TabNode* n;
     try(  htmldoc_tree_current_node(t, &n));
     if (!n) return "error: current node not found";
     HtmlDoc* d = &n->doc;
@@ -198,9 +189,9 @@ Err htmldoc_tree_append_submit(HtmlDocTree t[static 1], size_t ix, UrlClient url
             return err;
         }
 
-        HtmlDocNode newnode;
-        try( htmldoc_node_init_from_curlu(&newnode, n, curlu, url_client));
-        if ((err=htmldoc_node_append_move_child(n, &newnode))) {
+        TabNode newnode;
+        try( tab_node_init_from_curlu(&newnode, n, curlu, url_client));
+        if ((err=tab_node_append_move_child(n, &newnode))) {
             curl_url_cleanup(curlu);
             return err;
         }
@@ -210,31 +201,31 @@ Err htmldoc_tree_append_submit(HtmlDocTree t[static 1], size_t ix, UrlClient url
 
 static inline
 Err htmldoc_tree_append_url(HtmlDocTree t[static 1], const char* url) {
-    HtmlDocNode* cn;
+    TabNode* cn;
     try( htmldoc_tree_current_node(t, &cn));
     if (!cn) { /* head is current node */
         cn = htmldoc_tree_head(t);
     }
 
-    HtmlDocNode new_node = (HtmlDocNode){.parent=cn};
+    TabNode new_node = (TabNode){.parent=cn};
     try( htmldoc_init(&new_node.doc, url));
     /* move */
-    HtmlDocNode* new_current = arlfn(HtmlDocNode, append)(
-        htmldoc_node_childs(cn), &new_node
+    TabNode* new_current = arlfn(TabNode, append)(
+        tab_node_childs(cn), &new_node
     );
     if (!new_current) {
         htmldoc_cleanup(&new_node.doc);
         return "error: arl append failure";
     }
 
-    size_t len = htmldoc_node_childs(cn)->len;
+    size_t len = tab_node_childs(cn)->len;
     if (!len) return "error: no childs after append";
     cn->current_ix = len - 1;
     return Ok;
 }
 
 static inline 
-Err dbg_htmldoc_node_print(HtmlDocNode n[static 1], size_t ix, size_t h) {
+Err dbg_tab_node_print(TabNode n[static 1], size_t ix, size_t h) {
     HtmlDoc* d = &n->doc;
     LxbNodePtr node = *htmldoc_title(d);
     if (h) {
@@ -244,11 +235,11 @@ Err dbg_htmldoc_node_print(HtmlDocNode n[static 1], size_t ix, size_t h) {
     printf("%ld : ", ix);
     try( dbg_print_title(node));
 
-    HtmlDocNode* it = arlfn(HtmlDocNode, begin)(n->childs);
-    //const HtmlDocNode* beg = it;
-    const HtmlDocNode* end = arlfn(HtmlDocNode, end)(n->childs);
+    TabNode* it = arlfn(TabNode, begin)(n->childs);
+    //const TabNode* beg = it;
+    const TabNode* end = arlfn(TabNode, end)(n->childs);
     for (; it != end; ++it) {
-        try( dbg_htmldoc_node_print(it, ix, h+1));
+        try( dbg_tab_node_print(it, ix, h+1));
     }
     return Ok;
 }
