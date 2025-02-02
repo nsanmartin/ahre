@@ -287,11 +287,11 @@ Err tabs_eval(Session session[static 1], const char* line) {
     puts("tabs eval");
     TabList* f = session_tablist(session);
     printf("(%ld tabs)\n", f->tabs.len);
-    HtmlDocTree* it = arlfn(HtmlDocTree, begin)(&f->tabs);
-    const HtmlDocTree* beg = it;
-    const HtmlDocTree* end = arlfn(HtmlDocTree, end)(&f->tabs);
+    TabNode* it = arlfn(TabNode, begin)(&f->tabs);
+    const TabNode* beg = it;
+    const TabNode* end = arlfn(TabNode, end)(&f->tabs);
     for (; it != end; ++it) {
-        try( dbg_tab_node_print(&it->head, it-beg, 0));
+        try( dbg_tab_node_print(it, it-beg, 0));
     }
     return Ok;
 }

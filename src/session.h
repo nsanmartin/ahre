@@ -60,7 +60,7 @@ session_open_url(Session s[static 1], const char* url, UrlClient url_client[stat
 }
 
 static inline Err session_follow_ahref(Session s[static 1], size_t linknum) {
-    HtmlDocTree* current_tab;
+    TabNode* current_tab;
     try( tablist_current_tab(session_tablist(s), &current_tab));
     if(current_tab)
         return htmldoc_tree_append_ahref(current_tab , linknum, s->url_client);
@@ -69,7 +69,7 @@ static inline Err session_follow_ahref(Session s[static 1], size_t linknum) {
 }
 
 static inline Err session_press_submit(Session s[static 1], size_t ix) {
-    HtmlDocTree* current_tab;
+    TabNode* current_tab;
     try( tablist_current_tab(session_tablist(s), &current_tab));
     if(current_tab)
         return htmldoc_tree_append_submit(current_tab , ix, s->url_client);

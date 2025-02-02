@@ -16,10 +16,6 @@ typedef struct TabNode {
     size_t current_ix; /* if ix == childs.len => current == doc */
 } TabNode;
 
-typedef struct {
-    TabNode head; /* owner */
-} HtmlDocTree;
-
 void tab_node_cleanup(TabNode n[static 1]);
 
 #define T TabNode
@@ -106,40 +102,40 @@ tab_node_init(
 }
 
 
-/* Tree */
-/* getters */
-static inline TabNode* htmldoc_tree_head(HtmlDocTree t[static 1]) { return &t->head; }
-static inline HtmlDoc* htmldoc_tree_head_doc(HtmlDocTree t[static 1]) {
-    return &htmldoc_tree_head(t)->doc;
-}
-static inline Err htmldoc_tree_current_doc(HtmlDocTree t[static 1], HtmlDoc* out[static 1]) {
-    try( tab_node_current_doc(htmldoc_tree_head(t), out));
-    return Ok;
-
-}
-
-static inline Err htmldoc_tree_current_node(HtmlDocTree t[static 1], TabNode* out[static 1]) {
-    return tab_node_current_node(htmldoc_tree_head(t), out);
-}
-
-
-/* ctor */
-static inline Err
-htmldoc_tree_init(HtmlDocTree t[static 1], const char* url, UrlClient url_client[static 1]) {
-    *t = (HtmlDocTree){0};
-    try( tab_node_init(htmldoc_tree_head(t), 0x0, url, url_client));
-    return Ok;
-}
-
-/* dtor */
-void htmldoc_tree_cleanup(HtmlDocTree t[static 1]);
+////* Tree */
+////* getters */
+///static inline TabNode* htmldoc_tree_head(TabNode t[static 1]) { return &t->head; }
+///static inline HtmlDoc* htmldoc_tree_head_doc(TabNode t[static 1]) {
+///    return &htmldoc_tree_head(t)->doc;
+///}
+///static inline Err htmldoc_tree_current_doc(TabNode t[static 1], HtmlDoc* out[static 1]) {
+///    try( tab_node_current_doc(htmldoc_tree_head(t), out));
+///    return Ok;
+///
+///}
+///
+///static inline Err tab_node_current_node(TabNode t[static 1], TabNode* out[static 1]) {
+///    return tab_node_current_node(htmldoc_tree_head(t), out);
+///}
+///
+///
+////* ctor */
+///static inline Err
+///htmldoc_tree_init(TabNode t[static 1], const char* url, UrlClient url_client[static 1]) {
+///    *t = (TabNode){0};
+///    try( tab_node_init(htmldoc_tree_head(t), 0x0, url, url_client));
+///    return Ok;
+///}
+///
+////* dtor */
+///void htmldoc_tree_cleanup(TabNode t[static 1]);
 
 /**/
 static inline
-Err htmldoc_tree_append_ahref(HtmlDocTree t[static 1], size_t linknum, UrlClient url_client[static 1])
+Err htmldoc_tree_append_ahref(TabNode t[static 1], size_t linknum, UrlClient url_client[static 1])
 {
     TabNode* n;
-    try(  htmldoc_tree_current_node(t, &n));
+    try(  tab_node_current_node(t, &n));
     if (!n) return "error: current node not found";
     HtmlDoc* d = &n->doc;
     ArlOf(LxbNodePtr)* anchors = htmldoc_anchors(d);
@@ -161,10 +157,10 @@ Err htmldoc_tree_append_ahref(HtmlDocTree t[static 1], size_t linknum, UrlClient
 }
 
 static inline
-Err htmldoc_tree_append_submit(HtmlDocTree t[static 1], size_t ix, UrlClient url_client[static 1])
+Err htmldoc_tree_append_submit(TabNode t[static 1], size_t ix, UrlClient url_client[static 1])
 {
     TabNode* n;
-    try(  htmldoc_tree_current_node(t, &n));
+    try(  tab_node_current_node(t, &n));
     if (!n) return "error: current node not found";
     HtmlDoc* d = &n->doc;
     ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(d);
@@ -200,11 +196,11 @@ Err htmldoc_tree_append_submit(HtmlDocTree t[static 1], size_t ix, UrlClient url
 }
 
 static inline
-Err htmldoc_tree_append_url(HtmlDocTree t[static 1], const char* url) {
+Err htmldoc_tree_append_url(TabNode t[static 1], const char* url) {
     TabNode* cn;
-    try( htmldoc_tree_current_node(t, &cn));
+    try( tab_node_current_node(t, &cn));
     if (!cn) { /* head is current node */
-        cn = htmldoc_tree_head(t);
+        cn = t;
     }
 
     TabNode new_node = (TabNode){.parent=cn};
