@@ -251,8 +251,14 @@ bool _lexbor_attr_has_value(
 Err dbg_print_title(lxb_dom_node_t* title) {
     if (!title) return "error: no title";
     lxb_dom_node_t* node = title->first_child; 
-    size_t len = lxb_dom_interface_text(node)->char_data.data.length;
-    const char* data = (const char*)lxb_dom_interface_text(node)->char_data.data.data;
+    lxb_dom_text_t* text = lxb_dom_interface_text(node);
+    //if (!text) return "invalid title in dom";//TODO: just return error?
+    if (!text) {
+        fprintf(stderr, "invalid title in dom\n");
+        return Ok;
+    }
+    size_t len = text->char_data.data.length;
+    const char* data = (const char*)text->char_data.data.data;
     fwrite(data, 1, len, stdout);
     fwrite("\n", 1, 1, stdout);
     return Ok;

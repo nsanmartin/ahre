@@ -54,23 +54,47 @@ static size_t _estimate_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
     return res + res / 12;
 }
 
+static size_t _mem_count_escape_codes_(const char* buf, size_t len) {
+    const char* it = buf;
+    size_t count = 0;
+    while (it && it < buf + len) {
+        it = memchr(it, '\033', buf + len - it);
+        if (it) {
+            ++it;
+            ++count;
+        }
+    }
+    return count;
+}
+
+static bool _char_is_point_of_break_(char c) {
+    return isspace(c) || c == '\033';
+}
+
 static Err _insert_line_splitting_(Str line[static 1], BufOf(char) buf[static 1], size_t maxlen) {
     size_t off = 0;
     size_t len = 0;
-    for (off = 0; off < line->len; ) {
-        if (off + maxlen >= line->len) {
-            len = line->len - off;
+    for (off = 0; off < str_len(line); ) {
+        char* beg = (char*)line->s + off;
+        if (off + maxlen >= str_len(line)) {
+            len = str_len(line) - off;
         } else {
             len = maxlen;
-            if (!isspace(line->s[off + len])) {
-                while (len && !isspace(line->s[off + len])) --len;
+            size_t esc_codes_len = _mem_count_escape_codes_(beg, len);
+            size_t esc_codes_mem = esc_codes_len * 4;
+            if (off + len + esc_codes_mem < str_len(line))
+                len += esc_codes_mem;
+            else len = str_len(line);
+            if (!_char_is_point_of_break_(line->s[off + len])) {
+                while (len && !_char_is_point_of_break_(line->s[off + len])) --len;
                 if (!len) len = maxlen;
             }
         }
-        char* beg = (char*)line->s + off;
         try( bufofchar_append(buf, beg, len)) ;
         try( bufofchar_append_lit__(buf, "\n")) ;
-        off += len + 1;
+        off += len;
+        if (beg + len < str_end(line) && isspace(beg[len]))
+            ++off;
     }
     return Ok;
 }

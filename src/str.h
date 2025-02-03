@@ -25,7 +25,9 @@ typedef struct {
 
 /* getters */
 size_t str_len(const Str s[static 1]);
+static inline const char* str_s(const Str s[static 1]) { return s->s; }
 bool str_is_empty(const Str s[static 1]);
+static inline const char* str_end(const Str s[static 1]) { return s->s + s->len; }
 
 /* ctor */
 int str_init(Str s[static 1], const char* cs);
