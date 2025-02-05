@@ -75,16 +75,16 @@ static Err _insert_line_splitting_(Str line[static 1], BufOf(char) buf[static 1]
     size_t off = 0;
     size_t len = 0;
     for (off = 0; off < str_len(line); ) {
-        char* beg = (char*)line->s + off;
-        if (off + maxlen >= str_len(line)) {
+        char* beg = (char*)str_beg(line) + off;
+        if (beg + maxlen >= str_end(line)) {
             len = str_len(line) - off;
         } else {
             len = maxlen;
             size_t esc_codes_len = _mem_count_escape_codes_(beg, len);
             size_t esc_codes_mem = esc_codes_len * 4;
-            if (off + len + esc_codes_mem < str_len(line))
+            if (beg + len + esc_codes_mem < str_end(line))
                 len += esc_codes_mem;
-            else len = str_len(line);
+
             if (!_char_is_point_of_break_(line->s[off + len])) {
                 while (len && !_char_is_point_of_break_(line->s[off + len])) --len;
                 if (!len) len = maxlen;

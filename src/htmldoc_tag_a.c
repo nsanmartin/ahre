@@ -11,32 +11,13 @@ _browse_childs(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[s
         ; it
         ; it = it->next
     ) {
-        assert(it);
         if (it->type == LXB_DOM_NODE_TYPE_TEXT) {
-            //DUP CODE
-            size_t len = lxb_dom_interface_text(it)->char_data.data.length;
-            const char* data = (const char*)lxb_dom_interface_text(it)->char_data.data.data;
-            if (mem_is_all_space((char*)data, len)) { continue; }
-
-            if (ctx->lazy_str.len) {
-                lxb_char_t* lazy_str = (lxb_char_t*)ctx->lazy_str.items;
-                size_t lazy_str_len = ctx->lazy_str.len;
-                while (lazy_str_len > 1 && isspace(lazy_str[0]) && isspace(lazy_str[1])) {
-                    ++lazy_str; -- lazy_str_len;
-                }
-                if(cb(lazy_str, lazy_str_len, ctx)) return "error serializing nl";
-                buffn(char, reset)(&ctx->lazy_str);
-            }
-
-            while((data = cstr_skip_space((const char*)data))) {
-                if (!*data) break;
-                const char* end = cstr_next_space((const char*)data);
-                if (data == end) break;
-                if (cb((lxb_char_t*)data, end-data, ctx)) return "error serializing html text elem";
-                if (cb((lxb_char_t*)" ", 1, ctx)) return "error serializing space";
-                data = end;
-            }
-        
+            const char* data;
+            size_t len;
+            try( lexbor_node_get_text(it, &data, &len));
+            if(!mem_skip_space_inplace(&data, &len)) { continue; }
+            try( browse_ctx_lazy_str_serialize(ctx, cb));
+            try( serialize_mem_skipping_space(data, len, cb, ctx));
         } else { 
             _browse_childs(it, cb, ctx);
         }
@@ -69,8 +50,6 @@ Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
      * elements do not have href attributes they do not create hyperlinks. */
     bool is_hyperlink = _node_has_href(node);
     if (is_hyperlink) {
-        if (!buffn(char, append)(&ctx->lazy_str, EscCodeBlue, sizeof(EscCodeBlue)-1))
-            return "error: failed to append to bufof";
 
 
         HtmlDoc* d = browse_ctx_htmldoc(ctx);
@@ -79,12 +58,10 @@ Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
         if (!arlfn(LxbNodePtr,append)(anchors, &node)) 
             return "error: lip set";
 
-        if (!buffn(char, append)(&ctx->lazy_str, EscCodeBlue, sizeof(EscCodeBlue)-1))
-            return "error: failed to append to bufof";
-        if (!buffn(char, append)(&ctx->lazy_str, ANCHOR_OPEN_STR, sizeof(ANCHOR_CLOSE_STR)-1))
-            return "error: failed to append to bufof";
+        try( browse_ctx_lazy_str_append(ctx, EscCodeBlue, sizeof (EscCodeBlue)-1));
+        try( browse_ctx_lazy_str_append(ctx, ANCHOR_OPEN_STR, sizeof (ANCHOR_OPEN_STR)-1));
         try(_append_unsigned_to_bufof_char_base36(anchor_num, &ctx->lazy_str));
-        if (!buffn(char, append)(&ctx->lazy_str, " ", 1)) return "error: failed to append to bufof";
+        try( browse_ctx_lazy_str_append(ctx, ELEM_ID_SEP, sizeof(ELEM_ID_SEP)-1));
     }
 
     try ( _browse_childs(node, cb, ctx));

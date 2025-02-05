@@ -113,6 +113,25 @@ static inline char* browse_ctx_lazy_str_items(BrowseCtx ctx[static 1]) {
     return browse_ctx_lazy_str(ctx)->items;
 }
 
+static inline Err browse_ctx_lazy_str_append(BrowseCtx ctx[static 1], char* s, size_t len) { 
+    return buffn(char, append)(browse_ctx_lazy_str(ctx), s, len)
+        ? Ok
+        : "error: failed to append to bufof (browse ctx lazy str)";
+}
+
+static inline Err
+browse_ctx_lazy_str_serialize(BrowseCtx ctx[static 1], lxb_html_serialize_cb_f cb) {
+    Err err = Ok;
+    if (browse_ctx_lazy_str_len(ctx)) {
+        err = cb((lxb_char_t*)browse_ctx_lazy_str_items(ctx), browse_ctx_lazy_str_len(ctx), ctx)
+        ? "error serializing lazy str"
+        : Ok
+        ;
+        buffn(char, reset)(browse_ctx_lazy_str(ctx));
+    }
+    return err;
+}
+
 
 static inline Err browse_ctx_init(BrowseCtx ctx[static 1], HtmlDoc htmldoc[static 1], bool color) {
     *ctx = (BrowseCtx) {.htmldoc=htmldoc, .color=color};
@@ -176,4 +195,8 @@ static inline Err htmldoc_print_info(HtmlDoc d[static 1]) {
     curl_free(buf);
     return Ok;
 }
+
+Err serialize_mem_skipping_space(
+    const char* data, size_t len, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]
+);
 #endif

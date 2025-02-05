@@ -8,4 +8,5 @@
 #define IMAGE_OPEN_STR  "("
 #define IMAGE_CLOSE_STR  ")"
 
+#define ELEM_ID_SEP "`"
 #endif

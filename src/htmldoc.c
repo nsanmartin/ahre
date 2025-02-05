@@ -89,7 +89,7 @@ _serialize_img_alt(lxb_dom_node_t* img, lxb_html_serialize_cb_f cb, BrowseCtx ct
     lexbor_find_attr_value(img, "alt", &alt, &alt_len);
 
     if (alt && alt_len) {
-        try_lxb_serialize(" ", 1, cb, ctx);
+        try_lxb_serialize(ELEM_ID_SEP, sizeof(ELEM_ID_SEP)-1, cb, ctx);
         if (cb(alt, alt_len, ctx)) return "error serializing img's alf";
     }
     return Ok;
@@ -173,13 +173,11 @@ browse_tag_input(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
 
 static Err
 browse_tag_div(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
-    if (browse_ctx_lazy_str_len(ctx)) {
+    if (browse_ctx_lazy_str_len(ctx)) 
         buffn(char, reset)(browse_ctx_lazy_str(ctx));
-    } else {
-        try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
-    }
+
+    try( browse_ctx_lazy_str_append(ctx, "\n", 1));
     return Ok;
 }
 
@@ -251,6 +249,22 @@ browse_tag_title(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     return Ok;
 }
 
+Err serialize_mem_skipping_space(
+    const char* data, size_t len, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]
+) {
+    StrView s = strview(data, len);
+
+    while(s.len) {
+        StrView word = strview_split_word(&s);
+        if (!word.len) break;
+        if (cb((lxb_char_t*)word.s, word.len, ctx)) return "error serializing html text elem";
+        strview_trim_space_left(&s);
+        if (!s.len) break;
+        if (cb((lxb_char_t*)" ", 1, ctx)) return "error serializing space";
+    }
+    return Ok;
+}
+
 static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     if (node) {
         if (node->type == LXB_DOM_NODE_TYPE_ELEMENT) {
@@ -266,6 +280,7 @@ static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCt
                 case LXB_TAG_INPUT: { return browse_tag_input(node, cb, ctx); }
                 case LXB_TAG_IMAGE: case LXB_TAG_IMG: { return browse_tag_img(node, cb, ctx); }
                 case LXB_TAG_LI: { return browse_tag_li(node, cb, ctx); }
+                case LXB_TAG_OL: { return browse_tag_ul(node, cb, ctx); }
                 case LXB_TAG_P: { return browse_tag_p(node, cb, ctx); }
                 case LXB_TAG_PRE: { return browse_tag_pre(node, cb, ctx); }
                 case LXB_TAG_SCRIPT: { /*printf("skip script\n");*/ return Ok; } 
@@ -275,8 +290,9 @@ static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCt
                 case LXB_TAG_UL: { return browse_tag_ul(node, cb, ctx); }
             }
         } else if (node->type == LXB_DOM_NODE_TYPE_TEXT) {
-            size_t len = lxb_dom_interface_text(node)->char_data.data.length;
-            const char* data = (const char*)lxb_dom_interface_text(node)->char_data.data.data;
+            const char* data;
+            size_t len;
+            try( lexbor_node_get_text(node, &data, &len));
 
             if(browse_ctx_pre_tag(ctx)) {
                 //TODO Whitespace inside this element is displayed as written,
@@ -286,27 +302,9 @@ static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCt
                 //https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
 
                 if (cb((lxb_char_t*)data, len, ctx)) return "error serializing html text elem";
-            } else if (!mem_is_all_space((char*)data, len)) {
-                if (browse_ctx_lazy_str_len(ctx)) {
-                    if(cb(
-                        (lxb_char_t*)browse_ctx_lazy_str_items(ctx),
-                        browse_ctx_lazy_str_len(ctx),
-                        ctx
-                      )
-                    )
-                        return "error serializing nl";
-                    buffn(char, reset)(browse_ctx_lazy_str(ctx));
-                }
-
-                while((data = cstr_skip_space((const char*)data))) {
-                    if (!*data) break;
-                    const char* end = cstr_next_space((const char*)data);
-                    if (data == end) break;
-                    if (cb((lxb_char_t*)data, end-data, ctx))
-                        return "error serializing html text elem";
-                    if (cb((lxb_char_t*)" ", 1, ctx)) return "error serializing space";
-                    data = end;
-                }
+            } else if (mem_skip_space_inplace(&data, &len)) {
+                try( browse_ctx_lazy_str_serialize(ctx, cb));
+                try( serialize_mem_skipping_space(data, len, cb, ctx));
             }
         }
 

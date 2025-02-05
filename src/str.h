@@ -25,7 +25,7 @@ typedef struct {
 
 /* getters */
 size_t str_len(const Str s[static 1]);
-static inline const char* str_s(const Str s[static 1]) { return s->s; }
+static inline const char* str_beg(const Str s[static 1]) { return s->s; }
 bool str_is_empty(const Str s[static 1]);
 static inline const char* str_end(const Str s[static 1]) { return s->s + s->len; }
 
@@ -58,9 +58,23 @@ inline static StrView strview(const char* s, size_t len) {
     return (StrView){.s=s, .len=len};
 }
 
+inline static StrView strview_copy(StrView s[static 1]) {
+    return (StrView){.s=s->s, .len=s->len};
+}
+
+inline static void strview_trim_space_left(StrView s[static 1]) {
+    while(s->len && isspace(*(s->s))) { ++s->s; --s->len; }
+}
+
 inline static void strview_trim_space(StrView s[static 1]) {
     while(s->len && isspace(*(s->s))) { ++s->s; --s->len; }
     while(s->len > 1 && isspace(s->s[s->len-1])) { --s->len; }
+}
+
+inline static StrView strview_split_word(StrView s[static 1]) {
+    StrView word = (StrView){.s=s->s};
+    while(s->len && !isspace(*(s->s))) { ++word.len; ++s->s; --s->len; }
+    return word;
 }
 
 Err str_prepend(Str s[static 1], const char* cs);
@@ -76,4 +90,25 @@ static inline const char* mem_to_dup_str(const char* data, size_t len) {
 const char* cstr_cat_dup(const char* s, const char* t);
 const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen);
 const char* parse_l(const char* tk, long lptr[static 1]);
+
+/* returns whether there is more bytes beyond the space */
+static inline bool
+mem_skip_space_inplace(const char* data[static 1], size_t len[static 1]) {
+    for(; *len && isspace(**data); --(*len), ++(*data))
+        ;
+    return *len != 0;
+}
+
+inline inline Str mem_next_space_str(const char* data, size_t len) {
+    while (len && !isspace(*data)) { --len; ++data; }
+    return (Str){.s=data, .len=len};
+}
+
+inline inline Str mem_get_word_str(const char* data, size_t len) {
+    Str res = {.s=data};
+    while (len && !isspace(*data)) { ++res.len; --len; ++data; }
+    return res;
+}
+
+
 #endif

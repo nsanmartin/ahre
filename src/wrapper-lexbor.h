@@ -42,4 +42,14 @@ Err mk_submit_url (
     CURLU* out[static 1],
     HttpMethod doc_method[static 1] 
 );
+
+static inline Err
+lexbor_node_get_text(lxb_dom_node_t* node, const char* data[static 1], size_t len[static 1]) {
+    lxb_dom_text_t* text = lxb_dom_interface_text(node);
+    if(!text) return "error: expecting not null lxb_dom_interface_text(node)";
+    *data = (const char*)text->char_data.data.data;
+    *len = text->char_data.data.length;
+    return Ok;
+}
+
 #endif
