@@ -199,4 +199,17 @@ static inline Err htmldoc_print_info(HtmlDoc d[static 1]) {
 Err serialize_mem_skipping_space(
     const char* data, size_t len, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]
 );
+
+Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]);
+
+static inline Err
+browse_list(
+    lxb_dom_node_t* it, lxb_dom_node_t* last, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]
+) {
+    for(; ; it = it->next) {
+        try( browse_rec(it, cb, ctx));
+        if (it == last) return Ok;
+    }
+}
+
 #endif

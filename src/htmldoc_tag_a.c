@@ -4,28 +4,6 @@
 #include "src/htmldoc.h"
 #include "src/wrapper-lexbor.h"
 
-static Err
-_browse_childs(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    if (!node) return Ok;
-    for ( lxb_dom_node_t* it = node->first_child
-        ; it
-        ; it = it->next
-    ) {
-        if (it->type == LXB_DOM_NODE_TYPE_TEXT) {
-            const char* data;
-            size_t len;
-            try( lexbor_node_get_text(it, &data, &len));
-            if(!mem_skip_space_inplace(&data, &len)) { continue; }
-            try( browse_ctx_lazy_str_serialize(ctx, cb));
-            try( serialize_mem_skipping_space(data, len, cb, ctx));
-        } else { 
-            _browse_childs(it, cb, ctx);
-        }
-
-    }
-    return Ok;
-}
-
 
 static inline  Err
 _append_unsigned_to_bufof_char_base36(uintmax_t ui, BufOf(char)* b) {
@@ -64,7 +42,7 @@ Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
         try( browse_ctx_lazy_str_append(ctx, ELEM_ID_SEP, sizeof(ELEM_ID_SEP)-1));
     }
 
-    try ( _browse_childs(node, cb, ctx));
+    try( browse_list(node->first_child, node->last_child, cb, ctx));
 
     /* If lazy string is not empty, node's childs didn't write anything so
      * there's nothig to close.

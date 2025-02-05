@@ -37,10 +37,6 @@ Err browse_tag_pre(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx c
 //_Thread_local static unsigned char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {0};
 
 
-
-static Err
-browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]);
-
 static lxb_status_t
 serialize_cb_browse(const lxb_char_t* data, size_t len, void* ctx) {
     TextBuf* textbuf = htmldoc_textbuf(browse_ctx_htmldoc(ctx));
@@ -56,15 +52,6 @@ lxb_status_t htmldoc_lexbor_serialize_unsigned(
     return serialize_unsigned(cb, ui, ctx, LXB_STATUS_ERROR);
 }
 
-
-static Err browse_list(
-    lxb_dom_node_t* it, lxb_dom_node_t* last, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]
-) {
-    for(; ; it = it->next) {
-        try( browse_rec(it, cb, ctx));
-        if (it == last) return Ok;
-    }
-}
 
 static Err
 browse_tag_br(lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
@@ -158,7 +145,7 @@ browse_tag_input(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
 
             lexbor_find_attr_value(node, "value", &s, &slen);
             if (slen) {
-                try (serialize_lit_str("|", cb, ctx));
+                try (serialize_lit_str(ELEM_ID_SEP, cb, ctx));
                 try (serialize_cstring(s, slen, cb, ctx));
             }
         } else {
@@ -265,7 +252,7 @@ Err serialize_mem_skipping_space(
     return Ok;
 }
 
-static Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     if (node) {
         if (node->type == LXB_DOM_NODE_TYPE_ELEMENT) {
 
