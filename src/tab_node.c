@@ -24,4 +24,3 @@ void htmldoc_tree_cleanup(TabNode t[static 1]) {
     *t = (TabNode){0};
 }
 
-

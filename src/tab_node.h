@@ -36,8 +36,21 @@ static inline HtmlDoc* tab_node_doc(TabNode n[static 1]) {
     return &n->doc;
 }
 
+static inline bool tab_node_have_current_child(TabNode n[static 1]) {
+    return n->current_ix != tab_node_child_count(n);
+}
+
+static inline TabNode* tab_node_current_child(TabNode n[static 1]) {
+     return arlfn(TabNode, at)(n->childs, n->current_ix);
+}
+
 static inline bool tab_node_is_current_in_tab(TabNode n[static 1]) {
-    return n->current_ix == tab_node_child_count(n);
+    if (tab_node_have_current_child(n)) return false;
+    if (!n->parent) return true;
+    while (n && n->parent && n == tab_node_current_child(n->parent)) {
+        n = n->parent;
+    }
+    return n->parent == NULL;
 }
 
 
@@ -211,6 +224,7 @@ Err dbg_tab_node_print(
     }
     HtmlDoc* d = &n->doc;
     LxbNodePtr title = *htmldoc_title(d);
+
     for(size_t* it = arlfn(size_t, begin)(stack); it != arlfn(size_t, end)(stack); ++it) {
         if (it == arlfn(size_t, begin)(stack)) {
             if (n == current_node) printf("[+] %ld.", *it);
@@ -269,37 +283,17 @@ static inline Err tab_node_set_as_current(TabNode n[static 1]) {
 static inline Err
 tab_node_find_node(TabNode tn[static 1], const char* line, TabNode* out[static 1]) {
     line = cstr_skip_space(line);
-    if (*line) {
-        size_t ix;
-        try( parse_size_t_or_throw(&line, &ix, 10));
-        tn = arlfn(TabNode,at)(tab_node_childs(tn), ix);
-        if (!tn) return "invalid tab child";
-        line = cstr_skip_space(line);
-    }
-    if (*line != '.') return "invalid tab path (full path must en with dot)";
-    line = cstr_skip_space(line + 1);
     if (!*line) {
         *out = tn;
         return Ok;
     }
+    size_t ix;
+    try( parse_size_t_or_throw(&line, &ix, 10));
+    tn = arlfn(TabNode,at)(tab_node_childs(tn), ix);
+    if (!tn) return "invalid tab child";
+    line = cstr_skip_space(line);
+    if (!*line || *line != '.') return "invalid tab path (full path must en with dot)";
     return tab_node_find_node(tn, line + 1, out);
 }
 
-static inline Err tab_node_move(TabNode tn[static 1], const char* line) {
-    line = cstr_skip_space(line);
-    if (*line) {
-        size_t ix;
-        try( parse_size_t_or_throw(&line, &ix, 10));
-        tn = arlfn(TabNode,at)(tab_node_childs(tn), ix);
-        if (!tn) return "invalid tab child";
-        line = cstr_skip_space(line);
-    }
-    if (!*line) {
-        tab_node_set_as_current(tn);
-        return Ok;
-    }
-    if (*line != '.') return "invalid tab path";
-    return tab_node_move(tn, line + 1);
-
-}
 #endif
