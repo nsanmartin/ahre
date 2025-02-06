@@ -288,6 +288,7 @@ Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[s
                 //first newline character is stripped. 
                 //https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
 
+                try( browse_ctx_lazy_str_serialize(ctx, cb));
                 if (cb((lxb_char_t*)data, len, ctx)) return "error serializing html text elem";
             } else if (mem_skip_space_inplace(&data, &len)) {
                 try( browse_ctx_lazy_str_serialize(ctx, cb));
