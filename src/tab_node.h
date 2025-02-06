@@ -36,6 +36,10 @@ static inline HtmlDoc* tab_node_doc(TabNode n[static 1]) {
     return &n->doc;
 }
 
+static inline bool tab_node_is_current_in_tab(TabNode n[static 1]) {
+    return n->current_ix == tab_node_child_count(n);
+}
+
 
 static inline Err tab_node_current_node(TabNode n[static 1], TabNode* out[static 1]) {
     TabNode* prev = NULL;
@@ -101,34 +105,6 @@ tab_node_init(
     return Ok;
 }
 
-
-////* Tree */
-////* getters */
-///static inline TabNode* htmldoc_tree_head(TabNode t[static 1]) { return &t->head; }
-///static inline HtmlDoc* htmldoc_tree_head_doc(TabNode t[static 1]) {
-///    return &htmldoc_tree_head(t)->doc;
-///}
-///static inline Err htmldoc_tree_current_doc(TabNode t[static 1], HtmlDoc* out[static 1]) {
-///    try( tab_node_current_doc(htmldoc_tree_head(t), out));
-///    return Ok;
-///
-///}
-///
-///static inline Err tab_node_current_node(TabNode t[static 1], TabNode* out[static 1]) {
-///    return tab_node_current_node(htmldoc_tree_head(t), out);
-///}
-///
-///
-////* ctor */
-///static inline Err
-///htmldoc_tree_init(TabNode t[static 1], const char* url, UrlClient url_client[static 1]) {
-///    *t = (TabNode){0};
-///    try( tab_node_init(htmldoc_tree_head(t), 0x0, url, url_client));
-///    return Ok;
-///}
-///
-////* dtor */
-///void htmldoc_tree_cleanup(TabNode t[static 1]);
 
 /**/
 static inline
@@ -234,16 +210,25 @@ Err dbg_tab_node_print(
         return "error: arl append failure";
     }
     HtmlDoc* d = &n->doc;
-    LxbNodePtr node = *htmldoc_title(d);
+    LxbNodePtr title = *htmldoc_title(d);
     for(size_t* it = arlfn(size_t, begin)(stack); it != arlfn(size_t, end)(stack); ++it) {
         if (it == arlfn(size_t, begin)(stack)) {
-            if (n == current_node) printf("*%ld", *it);
-            else printf(" %ld", *it);
-        } else printf(".%ld", *it);
+            if (n == current_node) printf("[+] %ld.", *it);
+            else if (tab_node_is_current_in_tab(n)) printf("[ ] %ld.", *it);
+            else printf("    %ld.", *it);
+        } else printf("%ld.", *it);
     }
-    printf("%s", ": ");
-    if (node) try( dbg_print_title(node));
-    else printf("<no title>");
+    printf("%s", " ");
+    if (title) try( dbg_print_title(title));
+    else {
+        char* buf;
+        Err e = url_cstr(htmldoc_url(d), &buf);
+        if (e) printf("error: %s\n", e);
+        else {
+            printf("%s\n", buf);
+            curl_free(buf);
+        }
+    }
 
     TabNode* it = arlfn(TabNode, begin)(n->childs);
     const TabNode* beg = it;
@@ -291,11 +276,12 @@ tab_node_find_node(TabNode tn[static 1], const char* line, TabNode* out[static 1
         if (!tn) return "invalid tab child";
         line = cstr_skip_space(line);
     }
+    if (*line != '.') return "invalid tab path (full path must en with dot)";
+    line = cstr_skip_space(line + 1);
     if (!*line) {
         *out = tn;
         return Ok;
     }
-    if (*line != '.') return "invalid tab path";
     return tab_node_find_node(tn, line + 1, out);
 }
 

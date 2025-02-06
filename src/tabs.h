@@ -98,7 +98,7 @@ static inline Err tablist_print_info(TabList f[static 1]) {
 
     TabNode* current_node;
     try( tablist_current_node(f, &current_node));
-    printf("(%ld tabs)\n\n", f->tabs.len);
+    printf("(%ld tab%s)\n", f->tabs.len, f->tabs.len > 1 ? "s": "");
     TabNode* it = arlfn(TabNode, begin)(&f->tabs);
     const TabNode* beg = it;
     const TabNode* end = arlfn(TabNode, end)(&f->tabs);
@@ -106,7 +106,6 @@ static inline Err tablist_print_info(TabList f[static 1]) {
     for (; it != end; ++it) {
         size_t ix = it-beg;
         try( dbg_tab_node_print(it, ix, stack, current_node));
-        puts("");
     }
     arlfn(size_t, clean)(stack);
     return Ok;
@@ -129,7 +128,7 @@ static inline Err tablist_move_to_node(TabList tl[static 1], const char* line) {
 
     line = cstr_skip_space(line);
     if (!*line) {
-        tab_node_set_as_current(tn);
+        tl->current_tab = ix;
         return Ok;
     }
     if (*line != '.') return "invalid tab path";

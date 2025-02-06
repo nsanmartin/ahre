@@ -74,6 +74,18 @@ input commands ({)
                   inputs.
 {<ID>?          : print information about element (attributes)
 
+pipe commands (|)
+=================
+
+Pipe commands switch between tabs. Tabs have each one its history. It is a tree
+where each document is a node. When following a link, a child is appended, when 
+navigating back, precious document is set current.
+
+|<      : goes back in history
+|?      : displays each tab with its history
+|2      : switchs to third tab
+|0.1.2. : switchs to first tab and navigates to third link of second link in history
+
 shortcuts
 ========
 
