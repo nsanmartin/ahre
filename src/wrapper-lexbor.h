@@ -52,4 +52,11 @@ lexbor_node_get_text(lxb_dom_node_t* node, const char* data[static 1], size_t le
     return Ok;
 }
 
+static inline bool lexbor_inside_tag(lxb_dom_node_t* node, lxb_tag_id_enum_t tag) {
+    while (node) {
+        if (node->parent->local_name == tag) return true;
+        node = node->parent;
+    }
+    return false;
+}
 #endif

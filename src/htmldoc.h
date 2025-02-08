@@ -91,20 +91,36 @@ static inline void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
 /* 
  * Browse context
  */
+#define T lxb_tag_id_enum_t
+#include <arl.h>
 
 typedef struct { 
     HtmlDoc* htmldoc;
     BufOf(char) lazy_str;
     bool color;
-    bool pre_tag;
+    ///ArlOf(lxb_tag_id_enum_t) stack;
 } BrowseCtx;
 
 static inline HtmlDoc* browse_ctx_htmldoc(BrowseCtx ctx[static 1]) { return ctx->htmldoc; }
 static inline TextBuf* browse_ctx_textbuf(BrowseCtx ctx[static 1]) {
     return htmldoc_textbuf(browse_ctx_htmldoc(ctx));
 }
+
 static inline bool browse_ctx_color(BrowseCtx ctx[static 1]) { return ctx->color; }
-static inline bool browse_ctx_pre_tag(BrowseCtx ctx[static 1]) { return ctx->pre_tag; }
+
+///static inline ArlOf(lxb_tag_id_enum_t)* browse_ctx_stack(BrowseCtx ctx[static 1]) {
+///    return &ctx->stack;
+///}
+
+///static inline lxb_tag_id_enum_t* browse_ctx_stack_backp(BrowseCtx ctx[static 1]) {
+///    ArlOf(lxb_tag_id_enum_t)* stack = browse_ctx_stack(ctx);
+///    return arlfn(lxb_tag_id_enum_t, back)(stack);
+///}
+///static inline bool browse_ctx_pre_tag(BrowseCtx ctx[static 1]) {
+///    lxb_tag_id_enum_t* backp = browse_ctx_stack_backp(ctx);
+///    return backp && *backp == LXB_TAG_PRE;
+///}
+
 static inline BufOf(char)* browse_ctx_lazy_str(BrowseCtx ctx[static 1]) { return &ctx->lazy_str; }
 static inline size_t browse_ctx_lazy_str_len(BrowseCtx ctx[static 1]) {
     return browse_ctx_lazy_str(ctx)->len;
@@ -119,17 +135,36 @@ static inline Err browse_ctx_lazy_str_append(BrowseCtx ctx[static 1], char* s, s
         : "error: failed to append to bufof (browse ctx lazy str)";
 }
 
+///static inline Err browse_ctx_push_tag(BrowseCtx ctx[static 1], lxb_tag_id_enum_t tag) {
+///    return arlfn(lxb_tag_id_enum_t, append)(browse_ctx_stack(ctx), &tag)
+///        ? Ok
+///        : "error: arlfn failed to appned";
+///}
+
+///static inline Err browse_ctx_pop_tag(BrowseCtx ctx[static 1], lxb_tag_id_enum_t tag) {
+///    lxb_tag_id_enum_t* backp = browse_ctx_stack_backp(ctx);
+///    if ( !backp || tag != *backp ) return "error: expected tag not found";
+///    --browse_ctx_stack(ctx)->len;
+///    return Ok;
+///}
+
+///static inline bool browse_ctx_inside_tag(BrowseCtx ctx[static 1], lxb_tag_id_enum_t tag) {
+///    ArlOf(lxb_tag_id_enum_t)* stack = browse_ctx_stack(ctx);
+///    return stack->len && memchr(stack->items, (char)tag, stack->len);
+///}
+
+
 static inline Err
 browse_ctx_lazy_str_serialize(BrowseCtx ctx[static 1], lxb_html_serialize_cb_f cb) {
-    Err err = Ok;
     if (browse_ctx_lazy_str_len(ctx)) {
-        err = cb((lxb_char_t*)browse_ctx_lazy_str_items(ctx), browse_ctx_lazy_str_len(ctx), ctx)
-        ? "error serializing lazy str"
-        : Ok
-        ;
+
+        lxb_status_t status = cb(
+            (lxb_char_t*)browse_ctx_lazy_str_items(ctx), browse_ctx_lazy_str_len(ctx), ctx
+        );
         buffn(char, reset)(browse_ctx_lazy_str(ctx));
+        if (status != LXB_STATUS_OK) return "error serializing lazy str";
     }
-    return err;
+    return Ok;
 }
 
 
@@ -140,13 +175,11 @@ static inline Err browse_ctx_init(BrowseCtx ctx[static 1], HtmlDoc htmldoc[stati
 
 static inline void browse_ctx_cleanup(BrowseCtx ctx[static 1]) {
     buffn(char, clean)(&ctx->lazy_str);
+    ///arlfn(lxb_tag_id_enum_t, clean)(browse_ctx_stack(ctx));
 }
 
 static inline void
 browse_ctx_set_color(BrowseCtx ctx[static 1], bool value) {  ctx->color = value; }
-
-static inline void
-browse_ctx_set_pre_tag(BrowseCtx ctx[static 1], bool value) { ctx->pre_tag = value; }
 
 
 /* external */
@@ -210,6 +243,7 @@ browse_list(
         try( browse_rec(it, cb, ctx));
         if (it == last) return Ok;
     }
+    return Ok;
 }
 
 #endif

@@ -1,4 +1,5 @@
 #include "src/constants.h"
+#include "src/debug.h"
 #include "src/error.h"
 #include "src/generic.h"
 #include "src/htmldoc.h"
@@ -54,17 +55,23 @@ lxb_status_t htmldoc_lexbor_serialize_unsigned(
 
 
 static Err
-browse_tag_br(lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    return serialize_lit_str("\n", cb, ctx);
+browse_tag_br(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    try( serialize_lit_str("\n", cb, ctx));
+    return browse_list(node->first_child, node->last_child, cb, ctx);
 }
 
 static Err
 browse_tag_center(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    try (serialize_lit_str("\n", cb, ctx));
-    try (serialize_cstring_debug("%(center:\n\n", cb, ctx));
-    try (browse_list(node->first_child, node->last_child, cb, ctx));
-    try (serialize_cstring_debug("%%center)\n", cb, ctx));
-    try (serialize_lit_str("\n", cb, ctx));
+    //TODO: store center boundaries (start = len on enter, end = len on ret) and then
+    // when fitting to width center those lines image.
+
+    ///try( browse_ctx_push_tag(ctx, LXB_TAG_CENTER));
+    try( serialize_lit_str("\n", cb, ctx));
+    try( serialize_cstring_debug("%(center:\n\n", cb, ctx));
+    try( browse_list(node->first_child, node->last_child, cb, ctx));
+    try( serialize_cstring_debug("%%center)\n", cb, ctx));
+    try( serialize_lit_str("\n", cb, ctx));
+    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_CENTER));
     return Ok;
 }
 
@@ -84,6 +91,7 @@ _serialize_img_alt(lxb_dom_node_t* img, lxb_html_serialize_cb_f cb, BrowseCtx ct
 
 static Err
 browse_tag_img(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    ///try( browse_ctx_push_tag(ctx, LXB_TAG_IMAGE));
     try (serialize_literal_color_str(EscCodeLightGreen, cb, ctx));
     HtmlDoc* d = browse_ctx_htmldoc(ctx);
     ArlOf(LxbNodePtr)* imgs = htmldoc_imgs(d);
@@ -95,14 +103,17 @@ browse_tag_img(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[s
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     try_lxb_serialize(IMAGE_CLOSE_STR, sizeof(IMAGE_CLOSE_STR)-1, cb, ctx);
     try (serialize_literal_color_str(EscCodeReset, cb, ctx));
+    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_IMAGE));
     return Ok;
 }
 
 static Err
 browse_tag_form(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    ///try( browse_ctx_push_tag(ctx, LXB_TAG_FORM));
     try (serialize_cstring_debug("\n", cb, ctx));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     try (serialize_cstring_debug("\n", cb, ctx));
+    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_FORM));
     return Ok;
 }
 
@@ -160,16 +171,19 @@ browse_tag_input(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
 
 static Err
 browse_tag_div(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    ///try( browse_ctx_push_tag(ctx, LXB_TAG_DIV));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     if (browse_ctx_lazy_str_len(ctx)) 
         buffn(char, reset)(browse_ctx_lazy_str(ctx));
 
     try( browse_ctx_lazy_str_append(ctx, "\n", 1));
+    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_DIV));
     return Ok;
 }
 
 static Err
 browse_tag_p(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    ///try( browse_ctx_push_tag(ctx, LXB_TAG_P));
     try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     if (browse_ctx_lazy_str_len(ctx)) {
@@ -177,11 +191,13 @@ browse_tag_p(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[sta
     } else {
         try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
     }
+    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_P));
     return Ok;
 }
 
 static Err
 browse_tag_tr(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    ///try( browse_ctx_push_tag(ctx, LXB_TAG_TR));
     try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     if (browse_ctx_lazy_str_len(ctx)) {
@@ -189,18 +205,22 @@ browse_tag_tr(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[st
     } else {
         try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
     }
+    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_TR));
     return Ok;
 }
 static Err
 browse_tag_ul(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    ///try( browse_ctx_push_tag(ctx, LXB_TAG_UL));
     try (serialize_lit_str("\n", cb, ctx));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     try (serialize_lit_str("\n", cb, ctx));
+    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_UL));
     return Ok;
 }
 
 static Err
 browse_tag_li(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    ///try( browse_ctx_push_tag(ctx, LXB_TAG_LI));
     // TODO: implement this more decently
     ////try (serialize_lit_str("\n * ", cb, ctx));
     try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n * "));
@@ -209,22 +229,43 @@ browse_tag_li(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[st
         buffn(char, reset)(browse_ctx_lazy_str(ctx));
     }
     try (serialize_lit_str("\n", cb, ctx));
+    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_LI));
     return Ok;
 }
 
 static Err
 browse_tag_h(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    try (serialize_lit_str("\n", cb, ctx));
+    //bool inside_a = browse_ctx_inside_tag(ctx, LXB_TAG_A);
+    //if (inside_a) puts("H inside A");
+    ///try( browse_ctx_push_tag(ctx, LXB_TAG_H1));
+    //try (serialize_lit_str("\nh1`", cb, ctx));
+    //if (!inside_a) try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
+    try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "h1`"));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
-    try (serialize_lit_str("\n", cb, ctx));
+    if (browse_ctx_lazy_str_len(ctx)) {
+        try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
+    } else try (serialize_lit_str("\n", cb, ctx));
+    ///try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\nh1`"));
+    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_H1));
+    return Ok;
+}
+
+static Err
+browse_tag_b(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    try (serialize_lit_str(EscCodeBold, cb, ctx));
+    try (browse_list(node->first_child, node->last_child, cb, ctx));
+    try (serialize_lit_str(EscCodeReset, cb, ctx));
+    try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), " "));
     return Ok;
 }
 
 static Err
 browse_tag_blockquote(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    ///try( browse_ctx_push_tag(ctx, LXB_TAG_BLOCKQUOTE));
     try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "``"));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     try (serialize_lit_str("''", cb, ctx));
+    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_BLOCKQUOTE));
     return Ok;
 }
 
@@ -252,14 +293,233 @@ Err serialize_mem_skipping_space(
     return Ok;
 }
 
+static const char* _dbg_node_types_[] = {
+    [0x00] = "LXB_DOM_NODE_TYPE_UNDEF"                 ,
+    [0x01] = "LXB_DOM_NODE_TYPE_ELEMENT"               ,
+    [0x02] = "LXB_DOM_NODE_TYPE_ATTRIBUTE"             ,
+    [0x03] = "LXB_DOM_NODE_TYPE_TEXT"                  ,
+    [0x04] = "LXB_DOM_NODE_TYPE_CDATA_SECTION"         ,
+    [0x05] = "LXB_DOM_NODE_TYPE_ENTITY_REFERENCE"      , // historical
+    [0x06] = "LXB_DOM_NODE_TYPE_ENTITY"                , // historical
+    [0x07] = "LXB_DOM_NODE_TYPE_PROCESSING_INSTRUCTION",
+    [0x08] = "LXB_DOM_NODE_TYPE_COMMENT"               ,
+    [0x09] = "LXB_DOM_NODE_TYPE_DOCUMENT"              ,
+    [0x0A] = "LXB_DOM_NODE_TYPE_DOCUMENT_TYPE"         ,
+    [0x0B] = "LXB_DOM_NODE_TYPE_DOCUMENT_FRAGMENT"     ,
+    [0x0C] = "LXB_DOM_NODE_TYPE_NOTATION"              , // historical
+    [0x0D] = "LXB_DOM_NODE_TYPE_LAST_ENTRY"
+};
+
+
+static const char* _dbg_tags_[] = {
+    [0x0000] = "    LXB_TAG__UNDEF             ",
+    [0x0001] = "    LXB_TAG__END_OF_FILE       ",
+    [0x0002] = "    LXB_TAG__TEXT              ",
+    [0x0003] = "    LXB_TAG__DOCUMENT          ",
+    [0x0004] = "    LXB_TAG__EM_COMMENT        ",
+    [0x0005] = "    LXB_TAG__EM_DOCTYPE        ",
+    [0x0006] = "    LXB_TAG_A                  ",
+    [0x0007] = "    LXB_TAG_ABBR               ",
+    [0x0008] = "    LXB_TAG_ACRONYM            ",
+    [0x0009] = "    LXB_TAG_ADDRESS            ",
+    [0x000a] = "    LXB_TAG_ALTGLYPH           ",
+    [0x000b] = "    LXB_TAG_ALTGLYPHDEF        ",
+    [0x000c] = "    LXB_TAG_ALTGLYPHITEM       ",
+    [0x000d] = "    LXB_TAG_ANIMATECOLOR       ",
+    [0x000e] = "    LXB_TAG_ANIMATEMOTION      ",
+    [0x000f] = "    LXB_TAG_ANIMATETRANSFORM   ",
+    [0x0010] = "    LXB_TAG_ANNOTATION_XML     ",
+    [0x0011] = "    LXB_TAG_APPLET             ",
+    [0x0012] = "    LXB_TAG_AREA               ",
+    [0x0013] = "    LXB_TAG_ARTICLE            ",
+    [0x0014] = "    LXB_TAG_ASIDE              ",
+    [0x0015] = "    LXB_TAG_AUDIO              ",
+    [0x0016] = "    LXB_TAG_B                  ",
+    [0x0017] = "    LXB_TAG_BASE               ",
+    [0x0018] = "    LXB_TAG_BASEFONT           ",
+    [0x0019] = "    LXB_TAG_BDI                ",
+    [0x001a] = "    LXB_TAG_BDO                ",
+    [0x001b] = "    LXB_TAG_BGSOUND            ",
+    [0x001c] = "    LXB_TAG_BIG                ",
+    [0x001d] = "    LXB_TAG_BLINK              ",
+    [0x001e] = "    LXB_TAG_BLOCKQUOTE         ",
+    [0x001f] = "    LXB_TAG_BODY               ",
+    [0x0020] = "    LXB_TAG_BR                 ",
+    [0x0021] = "    LXB_TAG_BUTTON             ",
+    [0x0022] = "    LXB_TAG_CANVAS             ",
+    [0x0023] = "    LXB_TAG_CAPTION            ",
+    [0x0024] = "    LXB_TAG_CENTER             ",
+    [0x0025] = "    LXB_TAG_CITE               ",
+    [0x0026] = "    LXB_TAG_CLIPPATH           ",
+    [0x0027] = "    LXB_TAG_CODE               ",
+    [0x0028] = "    LXB_TAG_COL                ",
+    [0x0029] = "    LXB_TAG_COLGROUP           ",
+    [0x002a] = "    LXB_TAG_DATA               ",
+    [0x002b] = "    LXB_TAG_DATALIST           ",
+    [0x002c] = "    LXB_TAG_DD                 ",
+    [0x002d] = "    LXB_TAG_DEL                ",
+    [0x002e] = "    LXB_TAG_DESC               ",
+    [0x002f] = "    LXB_TAG_DETAILS            ",
+    [0x0030] = "    LXB_TAG_DFN                ",
+    [0x0031] = "    LXB_TAG_DIALOG             ",
+    [0x0032] = "    LXB_TAG_DIR                ",
+    [0x0033] = "    LXB_TAG_DIV                ",
+    [0x0034] = "    LXB_TAG_DL                 ",
+    [0x0035] = "    LXB_TAG_DT                 ",
+    [0x0036] = "    LXB_TAG_EM                 ",
+    [0x0037] = "    LXB_TAG_EMBED              ",
+    [0x0038] = "    LXB_TAG_FEBLEND            ",
+    [0x0039] = "    LXB_TAG_FECOLORMATRIX      ",
+    [0x003a] = "    LXB_TAG_FECOMPONENTTRANSFER",
+    [0x003b] = "    LXB_TAG_FECOMPOSITE        ",
+    [0x003c] = "    LXB_TAG_FECONVOLVEMATRIX   ",
+    [0x003d] = "    LXB_TAG_FEDIFFUSELIGHTING  ",
+    [0x003e] = "    LXB_TAG_FEDISPLACEMENTMAP  ",
+    [0x003f] = "    LXB_TAG_FEDISTANTLIGHT     ",
+    [0x0040] = "    LXB_TAG_FEDROPSHADOW       ",
+    [0x0041] = "    LXB_TAG_FEFLOOD            ",
+    [0x0042] = "    LXB_TAG_FEFUNCA            ",
+    [0x0043] = "    LXB_TAG_FEFUNCB            ",
+    [0x0044] = "    LXB_TAG_FEFUNCG            ",
+    [0x0045] = "    LXB_TAG_FEFUNCR            ",
+    [0x0046] = "    LXB_TAG_FEGAUSSIANBLUR     ",
+    [0x0047] = "    LXB_TAG_FEIMAGE            ",
+    [0x0048] = "    LXB_TAG_FEMERGE            ",
+    [0x0049] = "    LXB_TAG_FEMERGENODE        ",
+    [0x004a] = "    LXB_TAG_FEMORPHOLOGY       ",
+    [0x004b] = "    LXB_TAG_FEOFFSET           ",
+    [0x004c] = "    LXB_TAG_FEPOINTLIGHT       ",
+    [0x004d] = "    LXB_TAG_FESPECULARLIGHTING ",
+    [0x004e] = "    LXB_TAG_FESPOTLIGHT        ",
+    [0x004f] = "    LXB_TAG_FETILE             ",
+    [0x0050] = "    LXB_TAG_FETURBULENCE       ",
+    [0x0051] = "    LXB_TAG_FIELDSET           ",
+    [0x0052] = "    LXB_TAG_FIGCAPTION         ",
+    [0x0053] = "    LXB_TAG_FIGURE             ",
+    [0x0054] = "    LXB_TAG_FONT               ",
+    [0x0055] = "    LXB_TAG_FOOTER             ",
+    [0x0056] = "    LXB_TAG_FOREIGNOBJECT      ",
+    [0x0057] = "    LXB_TAG_FORM               ",
+    [0x0058] = "    LXB_TAG_FRAME              ",
+    [0x0059] = "    LXB_TAG_FRAMESET           ",
+    [0x005a] = "    LXB_TAG_GLYPHREF           ",
+    [0x005b] = "    LXB_TAG_H1                 ",
+    [0x005c] = "    LXB_TAG_H2                 ",
+    [0x005d] = "    LXB_TAG_H3                 ",
+    [0x005e] = "    LXB_TAG_H4                 ",
+    [0x005f] = "    LXB_TAG_H5                 ",
+    [0x0060] = "    LXB_TAG_H6                 ",
+    [0x0061] = "    LXB_TAG_HEAD               ",
+    [0x0062] = "    LXB_TAG_HEADER             ",
+    [0x0063] = "    LXB_TAG_HGROUP             ",
+    [0x0064] = "    LXB_TAG_HR                 ",
+    [0x0065] = "    LXB_TAG_HTML               ",
+    [0x0066] = "    LXB_TAG_I                  ",
+    [0x0067] = "    LXB_TAG_IFRAME             ",
+    [0x0068] = "    LXB_TAG_IMAGE              ",
+    [0x0069] = "    LXB_TAG_IMG                ",
+    [0x006a] = "    LXB_TAG_INPUT              ",
+    [0x006b] = "    LXB_TAG_INS                ",
+    [0x006c] = "    LXB_TAG_ISINDEX            ",
+    [0x006d] = "    LXB_TAG_KBD                ",
+    [0x006e] = "    LXB_TAG_KEYGEN             ",
+    [0x006f] = "    LXB_TAG_LABEL              ",
+    [0x0070] = "    LXB_TAG_LEGEND             ",
+    [0x0071] = "    LXB_TAG_LI                 ",
+    [0x0072] = "    LXB_TAG_LINEARGRADIENT     ",
+    [0x0073] = "    LXB_TAG_LINK               ",
+    [0x0074] = "    LXB_TAG_LISTING            ",
+    [0x0075] = "    LXB_TAG_MAIN               ",
+    [0x0076] = "    LXB_TAG_MALIGNMARK         ",
+    [0x0077] = "    LXB_TAG_MAP                ",
+    [0x0078] = "    LXB_TAG_MARK               ",
+    [0x0079] = "    LXB_TAG_MARQUEE            ",
+    [0x007a] = "    LXB_TAG_MATH               ",
+    [0x007b] = "    LXB_TAG_MENU               ",
+    [0x007c] = "    LXB_TAG_META               ",
+    [0x007d] = "    LXB_TAG_METER              ",
+    [0x007e] = "    LXB_TAG_MFENCED            ",
+    [0x007f] = "    LXB_TAG_MGLYPH             ",
+    [0x0080] = "    LXB_TAG_MI                 ",
+    [0x0081] = "    LXB_TAG_MN                 ",
+    [0x0082] = "    LXB_TAG_MO                 ",
+    [0x0083] = "    LXB_TAG_MS                 ",
+    [0x0084] = "    LXB_TAG_MTEXT              ",
+    [0x0085] = "    LXB_TAG_MULTICOL           ",
+    [0x0086] = "    LXB_TAG_NAV                ",
+    [0x0087] = "    LXB_TAG_NEXTID             ",
+    [0x0088] = "    LXB_TAG_NOBR               ",
+    [0x0089] = "    LXB_TAG_NOEMBED            ",
+    [0x008a] = "    LXB_TAG_NOFRAMES           ",
+    [0x008b] = "    LXB_TAG_NOSCRIPT           ",
+    [0x008c] = "    LXB_TAG_OBJECT             ",
+    [0x008d] = "    LXB_TAG_OL                 ",
+    [0x008e] = "    LXB_TAG_OPTGROUP           ",
+    [0x008f] = "    LXB_TAG_OPTION             ",
+    [0x0090] = "    LXB_TAG_OUTPUT             ",
+    [0x0091] = "    LXB_TAG_P                  ",
+    [0x0092] = "    LXB_TAG_PARAM              ",
+    [0x0093] = "    LXB_TAG_PATH               ",
+    [0x0094] = "    LXB_TAG_PICTURE            ",
+    [0x0095] = "    LXB_TAG_PLAINTEXT          ",
+    [0x0096] = "    LXB_TAG_PRE                ",
+    [0x0097] = "    LXB_TAG_PROGRESS           ",
+    [0x0098] = "    LXB_TAG_Q                  ",
+    [0x0099] = "    LXB_TAG_RADIALGRADIENT     ",
+    [0x009a] = "    LXB_TAG_RB                 ",
+    [0x009b] = "    LXB_TAG_RP                 ",
+    [0x009c] = "    LXB_TAG_RT                 ",
+    [0x009d] = "    LXB_TAG_RTC                ",
+    [0x009e] = "    LXB_TAG_RUBY               ",
+    [0x009f] = "    LXB_TAG_S                  ",
+    [0x00a0] = "    LXB_TAG_SAMP               ",
+    [0x00a1] = "    LXB_TAG_SCRIPT             ",
+    [0x00a2] = "    LXB_TAG_SECTION            ",
+    [0x00a3] = "    LXB_TAG_SELECT             ",
+    [0x00a4] = "    LXB_TAG_SLOT               ",
+    [0x00a5] = "    LXB_TAG_SMALL              ",
+    [0x00a6] = "    LXB_TAG_SOURCE             ",
+    [0x00a7] = "    LXB_TAG_SPACER             ",
+    [0x00a8] = "    LXB_TAG_SPAN               ",
+    [0x00a9] = "    LXB_TAG_STRIKE             ",
+    [0x00aa] = "    LXB_TAG_STRONG             ",
+    [0x00ab] = "    LXB_TAG_STYLE              ",
+    [0x00ac] = "    LXB_TAG_SUB                ",
+    [0x00ad] = "    LXB_TAG_SUMMARY            ",
+    [0x00ae] = "    LXB_TAG_SUP                ",
+    [0x00af] = "    LXB_TAG_SVG                ",
+    [0x00b0] = "    LXB_TAG_TABLE              ",
+    [0x00b1] = "    LXB_TAG_TBODY              ",
+    [0x00b2] = "    LXB_TAG_TD                 ",
+    [0x00b3] = "    LXB_TAG_TEMPLATE           ",
+    [0x00b4] = "    LXB_TAG_TEXTAREA           ",
+    [0x00b5] = "    LXB_TAG_TEXTPATH           ",
+    [0x00b6] = "    LXB_TAG_TFOOT              ",
+    [0x00b7] = "    LXB_TAG_TH                 ",
+    [0x00b8] = "    LXB_TAG_THEAD              ",
+    [0x00b9] = "    LXB_TAG_TIME               ",
+    [0x00ba] = "    LXB_TAG_TITLE              ",
+    [0x00bb] = "    LXB_TAG_TR                 ",
+    [0x00bc] = "    LXB_TAG_TRACK              ",
+    [0x00bd] = "    LXB_TAG_TT                 ",
+    [0x00be] = "    LXB_TAG_U                  ",
+    [0x00bf] = "    LXB_TAG_UL                 ",
+    [0x00c0] = "    LXB_TAG_VAR                ",
+    [0x00c1] = "    LXB_TAG_VIDEO              ",
+    [0x00c2] = "    LXB_TAG_WBR                ",
+    [0x00c3] = "    LXB_TAG_XMP                ",
+    [0x00c4] = "    LXB_TAG__LAST_ENTRY        " 
+};
+
 Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     if (node) {
         if (node->type == LXB_DOM_NODE_TYPE_ELEMENT) {
 
             switch(node->local_name) {
                 case LXB_TAG_A: { return browse_tag_a(node, cb, ctx); }
+                case LXB_TAG_B: { return browse_tag_b(node, cb, ctx); }
                 case LXB_TAG_BLOCKQUOTE: { return browse_tag_blockquote(node, cb, ctx); }
-                case LXB_TAG_BR: { browse_tag_br(cb, ctx); break; }
+                case LXB_TAG_BR: { return browse_tag_br(node, cb, ctx); }
                 case LXB_TAG_CENTER: { return browse_tag_center(node, cb, ctx); } 
                 case LXB_TAG_DIV: { return browse_tag_div(node, cb, ctx); }
                 case LXB_TAG_FORM: { return browse_tag_form(node, cb, ctx); }
@@ -270,18 +530,25 @@ Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[s
                 case LXB_TAG_OL: { return browse_tag_ul(node, cb, ctx); }
                 case LXB_TAG_P: { return browse_tag_p(node, cb, ctx); }
                 case LXB_TAG_PRE: { return browse_tag_pre(node, cb, ctx); }
-                case LXB_TAG_SCRIPT: { /*printf("skip script\n");*/ return Ok; } 
-                case LXB_TAG_STYLE: { /*printf("skip style\n");*/ return Ok; } 
+                case LXB_TAG_SCRIPT: { log_todo__("%s", "[todo] implement script tag (skipping)"); return Ok; } 
+                case LXB_TAG_STYLE: { log_todo__("%s\n", "[todo?] skiping style"); return Ok; } 
                 case LXB_TAG_TITLE: { return browse_tag_title(node, ctx); } 
                 case LXB_TAG_TR: { return browse_tag_tr(node, cb, ctx); }
                 case LXB_TAG_UL: { return browse_tag_ul(node, cb, ctx); }
+                default: {
+                    if (node->local_name >= LXB_TAG__LAST_ENTRY)
+                        log_warn__("[warn] GT last entry : %lx\n", node->local_name);
+                    else log_todo__("[todo] TAG 'NOT' IMPLEMENTED: %s\n", _dbg_tags_[node->local_name]);
+                    return browse_list(node->first_child, node->last_child, cb, ctx);
+                }
             }
         } else if (node->type == LXB_DOM_NODE_TYPE_TEXT) {
             const char* data;
             size_t len;
             try( lexbor_node_get_text(node, &data, &len));
 
-            if(browse_ctx_pre_tag(ctx)) {
+            if (node->parent->local_name == LXB_TAG_PRE) {
+            //if(browse_ctx_pre_tag(ctx)) {
                 //TODO Whitespace inside this element is displayed as written,
                 //with one exception. If one or more leading newline characters
                 //are included immediately following the opening <pre> tag, the
@@ -293,9 +560,20 @@ Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[s
             } else if (mem_skip_space_inplace(&data, &len)) {
                 try( browse_ctx_lazy_str_serialize(ctx, cb));
                 try( serialize_mem_skipping_space(data, len, cb, ctx));
-            }
-        }
+            } 
+            if (node->first_child || node->last_child)
+                log_warn__("%s\n", "[warn] LXB_DOM_NODE_TYPE_TEXT with actual childs");
+            return Ok;
+        } else if (node->type == LXB_DOM_NODE_TYPE_DOCUMENT) {
+            return browse_list(node->first_child, node->last_child, cb, ctx);
+        } else {
+            log_warn__("Ignored node type: %s\n", _dbg_node_types_[node->type]);
+            return Ok;
+            //if (node->type != LXB_DOM_NODE_TYPE_DOCUMENT) { }
+        };
 
+        log_warn__("Node type unmanaged: %s\n", _dbg_node_types_[node->type]);
+        //puts("ESTO PASA???");
         try( browse_list(node->first_child, node->last_child, cb, ctx));
     }   
 
@@ -303,9 +581,9 @@ Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[s
 }
 
 Err browse_tag_pre(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    browse_ctx_set_pre_tag(ctx, true);
+    ///try( browse_ctx_push_tag(ctx, LXB_TAG_PRE));
     try( browse_list(node->first_child, node->last_child, cb, ctx));
-    browse_ctx_set_pre_tag(ctx, false);
+    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_PRE));
     return Ok;
 }
 

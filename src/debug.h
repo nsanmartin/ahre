@@ -15,104 +15,38 @@ static inline void dbg_print_url(Url u[static 1]) {
 }
 
 typedef enum {
-    DBG_LXB_TAG__UNDEF              = 0x0000, DBG_LXB_TAG__END_OF_FILE        = 0x0001,
-    DBG_LXB_TAG__TEXT               = 0x0002, DBG_LXB_TAG__DOCUMENT           = 0x0003,
-    DBG_LXB_TAG__EM_COMMENT         = 0x0004, DBG_LXB_TAG__EM_DOCTYPE         = 0x0005,
-    DBG_LXB_TAG_A                   = 0x0006, DBG_LXB_TAG_ABBR                = 0x0007,
-    DBG_LXB_TAG_ACRONYM             = 0x0008, DBG_LXB_TAG_ADDRESS             = 0x0009,
-    DBG_LXB_TAG_ALTGLYPH            = 0x000a, DBG_LXB_TAG_ALTGLYPHDEF         = 0x000b,
-    DBG_LXB_TAG_ALTGLYPHITEM        = 0x000c, DBG_LXB_TAG_ANIMATECOLOR        = 0x000d,
-    DBG_LXB_TAG_ANIMATEMOTION       = 0x000e, DBG_LXB_TAG_ANIMATETRANSFORM    = 0x000f,
-    DBG_LXB_TAG_ANNOTATION_XML      = 0x0010, DBG_LXB_TAG_APPLET              = 0x0011,
-    DBG_LXB_TAG_AREA                = 0x0012, DBG_LXB_TAG_ARTICLE             = 0x0013,
-    DBG_LXB_TAG_ASIDE               = 0x0014, DBG_LXB_TAG_AUDIO               = 0x0015,
-    DBG_LXB_TAG_B                   = 0x0016, DBG_LXB_TAG_BASE                = 0x0017,
-    DBG_LXB_TAG_BASEFONT            = 0x0018, DBG_LXB_TAG_BDI                 = 0x0019,
-    DBG_LXB_TAG_BDO                 = 0x001a, DBG_LXB_TAG_BGSOUND             = 0x001b,
-    DBG_LXB_TAG_BIG                 = 0x001c, DBG_LXB_TAG_BLINK               = 0x001d,
-    DBG_LXB_TAG_BLOCKQUOTE          = 0x001e, DBG_LXB_TAG_BODY                = 0x001f,
-    DBG_LXB_TAG_BR                  = 0x0020, DBG_LXB_TAG_BUTTON              = 0x0021,
-    DBG_LXB_TAG_CANVAS              = 0x0022, DBG_LXB_TAG_CAPTION             = 0x0023,
-    DBG_LXB_TAG_CENTER              = 0x0024, DBG_LXB_TAG_CITE                = 0x0025,
-    DBG_LXB_TAG_CLIPPATH            = 0x0026, DBG_LXB_TAG_CODE                = 0x0027,
-    DBG_LXB_TAG_COL                 = 0x0028, DBG_LXB_TAG_COLGROUP            = 0x0029,
-    DBG_LXB_TAG_DATA                = 0x002a, DBG_LXB_TAG_DATALIST            = 0x002b,
-    DBG_LXB_TAG_DD                  = 0x002c, DBG_LXB_TAG_DEL                 = 0x002d,
-    DBG_LXB_TAG_DESC                = 0x002e, DBG_LXB_TAG_DETAILS             = 0x002f,
-    DBG_LXB_TAG_DFN                 = 0x0030, DBG_LXB_TAG_DIALOG              = 0x0031,
-    DBG_LXB_TAG_DIR                 = 0x0032, DBG_LXB_TAG_DIV                 = 0x0033,
-    DBG_LXB_TAG_DL                  = 0x0034, DBG_LXB_TAG_DT                  = 0x0035,
-    DBG_LXB_TAG_EM                  = 0x0036, DBG_LXB_TAG_EMBED               = 0x0037,
-    DBG_LXB_TAG_FEBLEND             = 0x0038, DBG_LXB_TAG_FECOLORMATRIX       = 0x0039,
-    DBG_LXB_TAG_FECOMPONENTTRANSFER = 0x003a, DBG_LXB_TAG_FECOMPOSITE         = 0x003b,
-    DBG_LXB_TAG_FECONVOLVEMATRIX    = 0x003c, DBG_LXB_TAG_FEDIFFUSELIGHTING   = 0x003d,
-    DBG_LXB_TAG_FEDISPLACEMENTMAP   = 0x003e, DBG_LXB_TAG_FEDISTANTLIGHT      = 0x003f,
-    DBG_LXB_TAG_FEDROPSHADOW        = 0x0040, DBG_LXB_TAG_FEFLOOD             = 0x0041,
-    DBG_LXB_TAG_FEFUNCA             = 0x0042, DBG_LXB_TAG_FEFUNCB             = 0x0043,
-    DBG_LXB_TAG_FEFUNCG             = 0x0044, DBG_LXB_TAG_FEFUNCR             = 0x0045,
-    DBG_LXB_TAG_FEGAUSSIANBLUR      = 0x0046, DBG_LXB_TAG_FEIMAGE             = 0x0047,
-    DBG_LXB_TAG_FEMERGE             = 0x0048, DBG_LXB_TAG_FEMERGENODE         = 0x0049,
-    DBG_LXB_TAG_FEMORPHOLOGY        = 0x004a, DBG_LXB_TAG_FEOFFSET            = 0x004b,
-    DBG_LXB_TAG_FEPOINTLIGHT        = 0x004c, DBG_LXB_TAG_FESPECULARLIGHTING  = 0x004d,
-    DBG_LXB_TAG_FESPOTLIGHT         = 0x004e, DBG_LXB_TAG_FETILE              = 0x004f,
-    DBG_LXB_TAG_FETURBULENCE        = 0x0050, DBG_LXB_TAG_FIELDSET            = 0x0051,
-    DBG_LXB_TAG_FIGCAPTION          = 0x0052, DBG_LXB_TAG_FIGURE              = 0x0053,
-    DBG_LXB_TAG_FONT                = 0x0054, DBG_LXB_TAG_FOOTER              = 0x0055,
-    DBG_LXB_TAG_FOREIGNOBJECT       = 0x0056, DBG_LXB_TAG_FORM                = 0x0057,
-    DBG_LXB_TAG_FRAME               = 0x0058, DBG_LXB_TAG_FRAMESET            = 0x0059,
-    DBG_LXB_TAG_GLYPHREF            = 0x005a, DBG_LXB_TAG_H1                  = 0x005b,
-    DBG_LXB_TAG_H2                  = 0x005c, DBG_LXB_TAG_H3                  = 0x005d,
-    DBG_LXB_TAG_H4                  = 0x005e, DBG_LXB_TAG_H5                  = 0x005f,
-    DBG_LXB_TAG_H6                  = 0x0060, DBG_LXB_TAG_HEAD                = 0x0061,
-    DBG_LXB_TAG_HEADER              = 0x0062, DBG_LXB_TAG_HGROUP              = 0x0063,
-    DBG_LXB_TAG_HR                  = 0x0064, DBG_LXB_TAG_HTML                = 0x0065,
-    DBG_LXB_TAG_I                   = 0x0066, DBG_LXB_TAG_IFRAME              = 0x0067,
-    DBG_LXB_TAG_IMAGE               = 0x0068, DBG_LXB_TAG_IMG                 = 0x0069,
-    DBG_LXB_TAG_INPUT               = 0x006a, DBG_LXB_TAG_INS                 = 0x006b,
-    DBG_LXB_TAG_ISINDEX             = 0x006c, DBG_LXB_TAG_KBD                 = 0x006d,
-    DBG_LXB_TAG_KEYGEN              = 0x006e, DBG_LXB_TAG_LABEL               = 0x006f,
-    DBG_LXB_TAG_LEGEND              = 0x0070, DBG_LXB_TAG_LI                  = 0x0071,
-    DBG_LXB_TAG_LINEARGRADIENT      = 0x0072, DBG_LXB_TAG_LINK                = 0x0073,
-    DBG_LXB_TAG_LISTING             = 0x0074, DBG_LXB_TAG_MAIN                = 0x0075,
-    DBG_LXB_TAG_MALIGNMARK          = 0x0076, DBG_LXB_TAG_MAP                 = 0x0077,
-    DBG_LXB_TAG_MARK                = 0x0078, DBG_LXB_TAG_MARQUEE             = 0x0079,
-    DBG_LXB_TAG_MATH                = 0x007a, DBG_LXB_TAG_MENU                = 0x007b,
-    DBG_LXB_TAG_META                = 0x007c, DBG_LXB_TAG_METER               = 0x007d,
-    DBG_LXB_TAG_MFENCED             = 0x007e, DBG_LXB_TAG_MGLYPH              = 0x007f,
-    DBG_LXB_TAG_MI                  = 0x0080, DBG_LXB_TAG_MN                  = 0x0081,
-    DBG_LXB_TAG_MO                  = 0x0082, DBG_LXB_TAG_MS                  = 0x0083,
-    DBG_LXB_TAG_MTEXT               = 0x0084, DBG_LXB_TAG_MULTICOL            = 0x0085,
-    DBG_LXB_TAG_NAV                 = 0x0086, DBG_LXB_TAG_NEXTID              = 0x0087,
-    DBG_LXB_TAG_NOBR                = 0x0088, DBG_LXB_TAG_NOEMBED             = 0x0089,
-    DBG_LXB_TAG_NOFRAMES            = 0x008a, DBG_LXB_TAG_NOSCRIPT            = 0x008b,
-    DBG_LXB_TAG_OBJECT              = 0x008c, DBG_LXB_TAG_OL                  = 0x008d,
-    DBG_LXB_TAG_OPTGROUP            = 0x008e, DBG_LXB_TAG_OPTION              = 0x008f,
-    DBG_LXB_TAG_OUTPUT              = 0x0090, DBG_LXB_TAG_P                   = 0x0091,
-    DBG_LXB_TAG_PARAM               = 0x0092, DBG_LXB_TAG_PATH                = 0x0093,
-    DBG_LXB_TAG_PICTURE             = 0x0094, DBG_LXB_TAG_PLAINTEXT           = 0x0095,
-    DBG_LXB_TAG_PRE                 = 0x0096, DBG_LXB_TAG_PROGRESS            = 0x0097,
-    DBG_LXB_TAG_Q                   = 0x0098, DBG_LXB_TAG_RADIALGRADIENT      = 0x0099,
-    DBG_LXB_TAG_RB                  = 0x009a, DBG_LXB_TAG_RP                  = 0x009b,
-    DBG_LXB_TAG_RT                  = 0x009c, DBG_LXB_TAG_RTC                 = 0x009d,
-    DBG_LXB_TAG_RUBY                = 0x009e, DBG_LXB_TAG_S                   = 0x009f,
-    DBG_LXB_TAG_SAMP                = 0x00a0, DBG_LXB_TAG_SCRIPT              = 0x00a1,
-    DBG_LXB_TAG_SECTION             = 0x00a2, DBG_LXB_TAG_SELECT              = 0x00a3,
-    DBG_LXB_TAG_SLOT                = 0x00a4, DBG_LXB_TAG_SMALL               = 0x00a5,
-    DBG_LXB_TAG_SOURCE              = 0x00a6, DBG_LXB_TAG_SPACER              = 0x00a7,
-    DBG_LXB_TAG_SPAN                = 0x00a8, DBG_LXB_TAG_STRIKE              = 0x00a9,
-    DBG_LXB_TAG_STRONG              = 0x00aa, DBG_LXB_TAG_STYLE               = 0x00ab,
-    DBG_LXB_TAG_SUB                 = 0x00ac, DBG_LXB_TAG_SUMMARY             = 0x00ad,
-    DBG_LXB_TAG_SUP                 = 0x00ae, DBG_LXB_TAG_SVG                 = 0x00af,
-    DBG_LXB_TAG_TABLE               = 0x00b0, DBG_LXB_TAG_TBODY               = 0x00b1,
-    DBG_LXB_TAG_TD                  = 0x00b2, DBG_LXB_TAG_TEMPLATE            = 0x00b3,
-    DBG_LXB_TAG_TEXTAREA            = 0x00b4, DBG_LXB_TAG_TEXTPATH            = 0x00b5,
-    DBG_LXB_TAG_TFOOT               = 0x00b6, DBG_LXB_TAG_TH                  = 0x00b7,
-    DBG_LXB_TAG_THEAD               = 0x00b8, DBG_LXB_TAG_TIME                = 0x00b9,
-    DBG_LXB_TAG_TITLE               = 0x00ba, DBG_LXB_TAG_TR                  = 0x00bb,
-    DBG_LXB_TAG_TRACK               = 0x00bc, DBG_LXB_TAG_TT                  = 0x00bd,
-    DBG_LXB_TAG_U                   = 0x00be, DBG_LXB_TAG_UL                  = 0x00bf,
-    DBG_LXB_TAG_VAR                 = 0x00c0, DBG_LXB_TAG_VIDEO               = 0x00c1,
-    DBG_LXB_TAG_WBR                 = 0x00c2, DBG_LXB_TAG_XMP                 = 0x00c3,
-    DBG_LXB_TAG__LAST_ENTRY         = 0x00c4
-} DbgLxbTagEnum;
+    LOG_LVL_FATAL,
+    LOG_LVL_ERROR,
+    LOG_LVL_WARN,
+    LOG_LVL_INFO,
+    LOG_LVL_DEBUG,
+    LOG_LVL_TRACE,
+    LOG_LVL_TODO
+} LogLvl;
+
+static LogLvl _log_lvl_ = LOG_LVL_INFO;
+
+static const char* _log_lvl_str_[] = {
+    [LOG_LVL_FATAL] = "[fatal] ",
+    [LOG_LVL_ERROR] = "[error] ",
+    [LOG_LVL_WARN]  = "[warn] ",
+    [LOG_LVL_INFO]  = "[info] ",
+    [LOG_LVL_DEBUG] = "[debug] ",
+    [LOG_LVL_TRACE] = "[trace] ",
+    [LOG_LVL_TODO]  = "[todo] " 
+};
+
+static inline void log_lvl__(LogLvl level, const char* format, ...) {
+    if (_log_lvl_ < level) return;
+    printf(_log_lvl_str_[level]); 
+    va_list args;
+    va_start (args, format);
+    vprintf (format, args);
+    va_end (args);
+}
+
+
+#define log_warn__(Fmt, ...) log_lvl__(LOG_LVL_WARN, Fmt, __VA_ARGS__)
+#define log_info__(Fmt, ...) log_lvl__(LOG_LVL_INFO, Fmt, __VA_ARGS__)
+#define log_todo__(Fmt, ...) log_lvl__(LOG_LVL_TODO, Fmt, __VA_ARGS__)
 #endif

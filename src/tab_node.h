@@ -251,10 +251,10 @@ Err dbg_tab_node_print(
         size_t subix = it-beg;
         try( dbg_tab_node_print(it, subix, stack, current_node));
     }
-    if (!arlfn(size_t, pop)(stack)) {
+    if (!stack->len) {
         arlfn(size_t, clean)(stack);
         return "error: arl pop failure";
-    }
+    } else --stack->len;
     return Ok;
 }
 

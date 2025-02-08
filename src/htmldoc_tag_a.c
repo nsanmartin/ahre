@@ -21,8 +21,13 @@ static bool _node_has_href(lxb_dom_node_t* node) {
     return data && data_len;
 }
 
+bool browse_ctx_lazy_str_ends_newline(BufOf(char)* lstr) {
+    if (!lstr->len) return false;
+    return buffn(char, end)(lstr)[-1] == '\n';
+}
 
 Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    ///try( browse_ctx_push_tag(ctx, LXB_TAG_A));
     /* https://html.spec.whatwg.org/multipage/links.html#attr-hyperlink-href
      * The href attribute on a and area elements is not required; when those
      * elements do not have href attributes they do not create hyperlinks. */
@@ -47,13 +52,20 @@ Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
     /* If lazy string is not empty, node's childs didn't write anything so
      * there's nothig to close.
      */
-    if (ctx->lazy_str.len) {
+    if (browse_ctx_lazy_str_len(ctx)) {
         buffn(char, reset)(&ctx->lazy_str);
     } else if (is_hyperlink) {
+
+        BufOf(char)* lstr = browse_ctx_lazy_str(ctx);
+        while(browse_ctx_lazy_str_ends_newline(lstr)) {
+            --lstr->len;
+        }
+
         try ( serialize_lit_str(ANCHOR_CLOSE_STR, cb, ctx));
         try ( serialize_literal_color_str(EscCodeReset, cb, ctx));
     }
    
+    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_A));
     return Ok;
 }
 

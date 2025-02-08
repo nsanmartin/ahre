@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "src/cmd-ed.h"
+#include "src/constants.h"
 #include "src/range_parse.h"
 #include "src/re.h"
 #include "src/str.h"
@@ -269,7 +270,7 @@ Err shorcut_zf(Session session[static 1], const char* rest) {
     if (*rest == 'n') { cmd = "n"; ++rest; }
     TextBuf* tb;
     try( session_current_buf(session, &tb));
-    if(*textbuf_current_line(tb) >= textbuf_line_count(tb)) return "No more lines in buffer";
+    if(*textbuf_current_line(tb) > textbuf_line_count(tb)) return "No more lines in buffer";
     if (*rest) {
         rest = cstr_skip_space(rest);
         size_t incr;
