@@ -174,7 +174,7 @@ browse_tag_input(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
             return "error: lip set";
         }
         try( browse_ctx_lazy_str_serialize(ctx, cb));
-        try( _serialize_color_(cb, ctx, esc_code_light_green));
+        try( _serialize_color_(cb, ctx, esc_code_red));
         try (serialize_lit_str(INPUT_OPEN_STR, cb, ctx));
         try (_serialize_lazy_str_(ctx, cb, inputs->len-1));
         if (_input_is_text_type_(s, slen)) {

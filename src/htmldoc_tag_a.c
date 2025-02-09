@@ -49,7 +49,7 @@ Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
     *browse_ctx_dirty(ctx) = false;
     try( browse_list(node->first_child, node->last_child, cb, ctx));
 
-    try( browse_ctx_esc_code_pop(ctx));
+    if (is_hyperlink) try( browse_ctx_esc_code_pop(ctx));
     /* If not dirty, node's childs didn't write anything so
      * there's nothig to close.
      */
