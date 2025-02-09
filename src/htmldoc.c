@@ -172,11 +172,13 @@ browse_tag_input(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
 static Err
 browse_tag_div(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     ///try( browse_ctx_push_tag(ctx, LXB_TAG_DIV));
+    bool was_dirty = browse_ctx_dirty_get_set(ctx, false);
     try (browse_list(node->first_child, node->last_child, cb, ctx));
-    if (browse_ctx_lazy_str_len(ctx)) 
+    bool dirty = browse_ctx_dirty_get_append(ctx, was_dirty);
+    //if (browse_ctx_lazy_str_len(ctx)) 
+    if (!dirty) 
         buffn(char, reset)(browse_ctx_lazy_str(ctx));
-
-    try( browse_ctx_lazy_str_append(ctx, "\n", 1));
+    else try( browse_ctx_lazy_str_append(ctx, "\n", 1));
     ///try( browse_ctx_pop_tag(ctx, LXB_TAG_DIV));
     return Ok;
 }
@@ -553,9 +555,11 @@ Err browse_text(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[
         //first newline character is stripped. 
         //https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
 
+        *browse_ctx_dirty(ctx) = true;
         try( browse_ctx_lazy_str_serialize(ctx, cb));
         if (cb((lxb_char_t*)data, len, ctx)) return "error serializing html text elem";
     } else if (mem_skip_space_inplace(&data, &len)) {
+        *browse_ctx_dirty(ctx) = true;
         try( browse_ctx_lazy_str_serialize(ctx, cb));
         try( serialize_mem_skipping_space(data, len, cb, ctx));
     } 

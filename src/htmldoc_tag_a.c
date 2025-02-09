@@ -21,9 +21,9 @@ static bool _node_has_href(lxb_dom_node_t* node) {
     return data && data_len;
 }
 
-bool browse_ctx_lazy_str_ends_newline(BufOf(char)* lstr) {
-    if (!lstr->len) return false;
-    return buffn(char, end)(lstr)[-1] == '\n';
+bool browse_ctx_lazy_str_ends_two_newlines(BufOf(char)* lstr) {
+    if (lstr->len < 2) return false;
+    return buffn(char, end)(lstr)[-1] == '\n' && buffn(char, end)(lstr)[-2] == '\n';
 }
 
 Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
@@ -33,7 +33,6 @@ Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
      * elements do not have href attributes they do not create hyperlinks. */
     bool is_hyperlink = _node_has_href(node);
     if (is_hyperlink) {
-
 
         HtmlDoc* d = browse_ctx_htmldoc(ctx);
         ArlOf(LxbNodePtr)* anchors = htmldoc_anchors(d);
@@ -47,22 +46,24 @@ Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
         try( browse_ctx_lazy_str_append(ctx, ELEM_ID_SEP, sizeof(ELEM_ID_SEP)-1));
     }
 
+    *browse_ctx_dirty(ctx) = false;
     try( browse_list(node->first_child, node->last_child, cb, ctx));
 
-    /* If lazy string is not empty, node's childs didn't write anything so
+    /* If not dirty, node's childs didn't write anything so
      * there's nothig to close.
      */
-    if (browse_ctx_lazy_str_len(ctx)) {
+    if(!*browse_ctx_dirty(ctx)) {
         buffn(char, reset)(&ctx->lazy_str);
     } else if (is_hyperlink) {
 
         BufOf(char)* lstr = browse_ctx_lazy_str(ctx);
-        while(browse_ctx_lazy_str_ends_newline(lstr)) {
+        while(browse_ctx_lazy_str_ends_two_newlines(lstr)) {
             --lstr->len;
         }
 
         try ( serialize_lit_str(ANCHOR_CLOSE_STR, cb, ctx));
         try ( serialize_literal_color_str(EscCodeReset, cb, ctx));
+        try ( browse_ctx_lazy_str_serialize(ctx, cb));
     }
    
     ///try( browse_ctx_pop_tag(ctx, LXB_TAG_A));

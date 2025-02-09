@@ -98,6 +98,7 @@ typedef struct {
     HtmlDoc* htmldoc;
     BufOf(char) lazy_str;
     bool color;
+    bool dirty;
     ///ArlOf(lxb_tag_id_enum_t) stack;
 } BrowseCtx;
 
@@ -108,6 +109,18 @@ static inline TextBuf* browse_ctx_textbuf(BrowseCtx ctx[static 1]) {
 
 static inline bool browse_ctx_color(BrowseCtx ctx[static 1]) { return ctx->color; }
 
+static inline bool* browse_ctx_dirty(BrowseCtx ctx[static 1]) { return &ctx->dirty; }
+static inline bool browse_ctx_dirty_get_set(BrowseCtx ctx[static 1], bool value) {
+    bool was_dirty = *browse_ctx_dirty(ctx);
+    *browse_ctx_dirty(ctx) = value;
+    return was_dirty;
+}
+
+static inline bool browse_ctx_dirty_get_append(BrowseCtx ctx[static 1], bool value) {
+    bool was_dirty = *browse_ctx_dirty(ctx);
+    *browse_ctx_dirty(ctx) |= value;
+    return was_dirty;
+}
 ///static inline ArlOf(lxb_tag_id_enum_t)* browse_ctx_stack(BrowseCtx ctx[static 1]) {
 ///    return &ctx->stack;
 ///}
