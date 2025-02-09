@@ -46,11 +46,15 @@ serialize_cb_browse(const lxb_char_t* data, size_t len, void* ctx) {
         : LXB_STATUS_OK;
 }
 
-lxb_status_t htmldoc_lexbor_serialize_unsigned(
+Err _serialize_lazy_str_(
     BrowseCtx ctx[static 1], lxb_html_serialize_cb_f cb, uintmax_t ui
 )
 {
-    return serialize_unsigned(cb, ui, ctx, LXB_STATUS_ERROR);
+    lxb_status_t status = serialize_unsigned(cb, ui, ctx, LXB_STATUS_ERROR);
+    *browse_ctx_dirty(ctx) = true;
+    return status == LXB_STATUS_OK 
+        ? Ok
+        : "error: could not serialize unsigned";
 }
 
 static inline Err
@@ -95,13 +99,14 @@ _serialize_img_alt(lxb_dom_node_t* img, lxb_html_serialize_cb_f cb, BrowseCtx ct
 
 static Err
 browse_tag_img(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    try( browse_ctx_lazy_str_serialize(ctx, cb));
     try (serialize_literal_color_str(EscCodeLightGreen, cb, ctx));
     HtmlDoc* d = browse_ctx_htmldoc(ctx);
     ArlOf(LxbNodePtr)* imgs = htmldoc_imgs(d);
     const size_t img_count = len__(imgs);
     try( append_to_arlof_lxb_node__(imgs, &node));
     try_lxb_serialize(IMAGE_OPEN_STR, sizeof(IMAGE_OPEN_STR)-1, cb, ctx);
-    try_lxb (htmldoc_lexbor_serialize_unsigned(ctx, cb, img_count), "error serializing unsigned");
+    try( _serialize_lazy_str_(ctx, cb, img_count));
     try( _serialize_img_alt(node, cb, ctx));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     try_lxb_serialize(IMAGE_CLOSE_STR, sizeof(IMAGE_CLOSE_STR)-1, cb, ctx);
@@ -142,10 +147,10 @@ browse_tag_input(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
         if (!arlfn(LxbNodePtr,append)(inputs, &node)) {
             return "error: lip set";
         }
+        try( browse_ctx_lazy_str_serialize(ctx, cb));
         try (serialize_literal_color_str(EscCodeRed, cb, ctx));
         try (serialize_lit_str(INPUT_OPEN_STR, cb, ctx));
-        try_lxb (htmldoc_lexbor_serialize_unsigned(ctx, cb, inputs->len-1),
-            "error serializing unsigned");
+        try (_serialize_lazy_str_(ctx, cb, inputs->len-1));
         if (_input_is_text_type_(s, slen)) {
             lexbor_find_attr_value(node, "value", &s, &slen);
             if (slen) {
