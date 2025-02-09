@@ -45,38 +45,6 @@ Err cmd_open_url(Session session[static 1], const char* url) {
     return session_open_url(session, url, session->url_client);
 }
 
-///TODO: move this to session
-///TODO: use open url, no set anymore
-///Err cmd_set_url(Session session[static 1], const char* url) {
-///    //HtmlDoc* htmldoc = session_current_doc(session);
-///    HtmlDoc* htmldoc = session->htmldoc;
-///
-///    url = cstr_trim_space((char*)url);
-///    if (!*url) { /* if not url given just print current url */
-///        char* buf;
-///        try(url_cstr(htmldoc_url(htmldoc), &buf));
-///        Err res = err_fmt("current url:\n%s", buf);
-///        curl_free(buf);
-///        return res;
-///    }
-///
-///    HtmlDoc* newdoc = htmldoc_create(url);
-///    if (!newdoc) { return err_fmt("error: could not create doc from %s", url); }
-///
-///    Err err = htmldoc_fetch(newdoc, session->url_client);
-///    if (err) {
-///        htmldoc_destroy(newdoc);
-///        return err;
-///    }
-///
-///    htmldoc_destroy(htmldoc);
-///    session->htmldoc = newdoc;
-///    ///
-///    ///
-///    try( session_open_url(session, url, session->url_client));
-///    return Ok;
-///}
-
 
 static Err _get_input_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outnode[static 1]) {
     HtmlDoc* htmldoc;

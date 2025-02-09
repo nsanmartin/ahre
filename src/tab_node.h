@@ -180,7 +180,10 @@ Err htmldoc_tree_append_submit(TabNode t[static 1], size_t ix, UrlClient url_cli
         }
 
         TabNode newnode;
-        try( tab_node_init_from_curlu(&newnode, n, curlu, url_client, method));
+        if ((err=tab_node_init_from_curlu(&newnode, n, curlu, url_client, method))) {
+            curl_url_cleanup(curlu);
+            return err;
+        };
         if ((err=tab_node_append_move_child(n, &newnode))) {
             curl_url_cleanup(curlu);
             return err;
