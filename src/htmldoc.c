@@ -156,6 +156,19 @@ static bool _input_is_submit_type_(const lxb_char_t* name, size_t len) {
 }
 
 static Err
+browse_tag_button(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    try( browse_ctx_lazy_str_serialize(ctx, cb));
+    try( _serialize_color_(cb, ctx, esc_code_red));
+    try (serialize_lit_str(INPUT_OPEN_STR, cb, ctx));
+    try (serialize_lit_str("%button not supported yet%|", cb, ctx));
+
+    try (browse_list(node->first_child, node->last_child, cb, ctx));
+    try (serialize_lit_str(INPUT_CLOSE_STR, cb, ctx));
+    try( _serialize_color_reset_(cb, ctx));
+    return Ok;
+}
+
+static Err
 browse_tag_input(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     const lxb_char_t* s;
     size_t slen;
@@ -186,7 +199,7 @@ browse_tag_input(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
                 try (serialize_cstring(s, slen, cb, ctx));
             }
         } else {
-            try (serialize_lit_str("[not supported input]", cb, ctx));
+            try (serialize_lit_str("[input not supported yet]", cb, ctx));
         }
         try (serialize_lit_str(INPUT_CLOSE_STR, cb, ctx));
         try( _serialize_color_reset_(cb, ctx));
@@ -530,6 +543,7 @@ Err browse_rec_tag(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx c
         case LXB_TAG_B: { return browse_tag_b(node, cb, ctx); }
         case LXB_TAG_BLOCKQUOTE: { return browse_tag_blockquote(node, cb, ctx); }
         case LXB_TAG_BR: { return browse_tag_br(node, cb, ctx); }
+        case LXB_TAG_BUTTON: { return browse_tag_button(node, cb, ctx); }
         case LXB_TAG_CENTER: { return browse_tag_center(node, cb, ctx); } 
         case LXB_TAG_DIV: { return browse_tag_div(node, cb, ctx); }
         case LXB_TAG_FORM: { return browse_tag_form(node, cb, ctx); }
