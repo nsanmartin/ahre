@@ -511,72 +511,77 @@ static const char* _dbg_tags_[] = {
     [0x00c4] = "    LXB_TAG__LAST_ENTRY        " 
 };
 
+Err browse_rec_tag(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    switch(node->local_name) {
+        case LXB_TAG_A: { return browse_tag_a(node, cb, ctx); }
+        case LXB_TAG_B: { return browse_tag_b(node, cb, ctx); }
+        case LXB_TAG_BLOCKQUOTE: { return browse_tag_blockquote(node, cb, ctx); }
+        case LXB_TAG_BR: { return browse_tag_br(node, cb, ctx); }
+        case LXB_TAG_CENTER: { return browse_tag_center(node, cb, ctx); } 
+        case LXB_TAG_DIV: { return browse_tag_div(node, cb, ctx); }
+        case LXB_TAG_FORM: { return browse_tag_form(node, cb, ctx); }
+        case LXB_TAG_H1: case LXB_TAG_H2: case LXB_TAG_H3: case LXB_TAG_H4: case LXB_TAG_H5: case LXB_TAG_H6: { return browse_tag_h(node, cb, ctx); }
+        case LXB_TAG_INPUT: { return browse_tag_input(node, cb, ctx); }
+        case LXB_TAG_IMAGE: case LXB_TAG_IMG: { return browse_tag_img(node, cb, ctx); }
+        case LXB_TAG_LI: { return browse_tag_li(node, cb, ctx); }
+        case LXB_TAG_OL: { return browse_tag_ul(node, cb, ctx); }
+        case LXB_TAG_P: { return browse_tag_p(node, cb, ctx); }
+        case LXB_TAG_PRE: { return browse_tag_pre(node, cb, ctx); }
+        case LXB_TAG_SCRIPT: { log_todo__("%s", "[todo] implement script tag (skipping)"); return Ok; } 
+        case LXB_TAG_STYLE: { log_todo__("%s\n", "[todo?] skiping style"); return Ok; } 
+        case LXB_TAG_TITLE: { return browse_tag_title(node, ctx); } 
+        case LXB_TAG_TR: { return browse_tag_tr(node, cb, ctx); }
+        case LXB_TAG_UL: { return browse_tag_ul(node, cb, ctx); }
+        default: {
+            if (node->local_name >= LXB_TAG__LAST_ENTRY)
+                log_warn__("node local name (TAG) greater than last entry: %lx\n", node->local_name);
+            else log_todo__("TAG 'NOT' IMPLEMENTED: %s\n", _dbg_tags_[node->local_name]);
+            return browse_list(node->first_child, node->last_child, cb, ctx);
+        }
+    }
+}
+
+Err browse_text(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    const char* data;
+    size_t len;
+    try( lexbor_node_get_text(node, &data, &len));
+
+    if (node->parent->local_name == LXB_TAG_PRE) { //if(browse_ctx_pre_tag(ctx)) {
+        //TODO Whitespace inside this element is displayed as written,
+        //with one exception. If one or more leading newline characters
+        //are included immediately following the opening <pre> tag, the
+        //first newline character is stripped. 
+        //https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
+
+        try( browse_ctx_lazy_str_serialize(ctx, cb));
+        if (cb((lxb_char_t*)data, len, ctx)) return "error serializing html text elem";
+    } else if (mem_skip_space_inplace(&data, &len)) {
+        try( browse_ctx_lazy_str_serialize(ctx, cb));
+        try( serialize_mem_skipping_space(data, len, cb, ctx));
+    } 
+    if (node->first_child || node->last_child)
+        log_warn__("%s\n", "LXB_DOM_NODE_TYPE_TEXT with actual childs");
+    return Ok;
+}
+
 Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     if (node) {
-        if (node->type == LXB_DOM_NODE_TYPE_ELEMENT) {
-
-            switch(node->local_name) {
-                case LXB_TAG_A: { return browse_tag_a(node, cb, ctx); }
-                case LXB_TAG_B: { return browse_tag_b(node, cb, ctx); }
-                case LXB_TAG_BLOCKQUOTE: { return browse_tag_blockquote(node, cb, ctx); }
-                case LXB_TAG_BR: { return browse_tag_br(node, cb, ctx); }
-                case LXB_TAG_CENTER: { return browse_tag_center(node, cb, ctx); } 
-                case LXB_TAG_DIV: { return browse_tag_div(node, cb, ctx); }
-                case LXB_TAG_FORM: { return browse_tag_form(node, cb, ctx); }
-                case LXB_TAG_H1: case LXB_TAG_H2: case LXB_TAG_H3: case LXB_TAG_H4: case LXB_TAG_H5: case LXB_TAG_H6: { return browse_tag_h(node, cb, ctx); }
-                case LXB_TAG_INPUT: { return browse_tag_input(node, cb, ctx); }
-                case LXB_TAG_IMAGE: case LXB_TAG_IMG: { return browse_tag_img(node, cb, ctx); }
-                case LXB_TAG_LI: { return browse_tag_li(node, cb, ctx); }
-                case LXB_TAG_OL: { return browse_tag_ul(node, cb, ctx); }
-                case LXB_TAG_P: { return browse_tag_p(node, cb, ctx); }
-                case LXB_TAG_PRE: { return browse_tag_pre(node, cb, ctx); }
-                case LXB_TAG_SCRIPT: { log_todo__("%s", "[todo] implement script tag (skipping)"); return Ok; } 
-                case LXB_TAG_STYLE: { log_todo__("%s\n", "[todo?] skiping style"); return Ok; } 
-                case LXB_TAG_TITLE: { return browse_tag_title(node, ctx); } 
-                case LXB_TAG_TR: { return browse_tag_tr(node, cb, ctx); }
-                case LXB_TAG_UL: { return browse_tag_ul(node, cb, ctx); }
-                default: {
-                    if (node->local_name >= LXB_TAG__LAST_ENTRY)
-                        log_warn__("[warn] GT last entry : %lx\n", node->local_name);
-                    else log_todo__("[todo] TAG 'NOT' IMPLEMENTED: %s\n", _dbg_tags_[node->local_name]);
-                    return browse_list(node->first_child, node->last_child, cb, ctx);
-                }
+        switch(node->type) {
+            case LXB_DOM_NODE_TYPE_ELEMENT: return browse_rec_tag(node, cb, ctx);
+            case LXB_DOM_NODE_TYPE_TEXT: return browse_text(node, cb, ctx);
+            //TODO: do not ignore these types?
+            case LXB_DOM_NODE_TYPE_DOCUMENT: 
+            case LXB_DOM_NODE_TYPE_DOCUMENT_TYPE: 
+            case LXB_DOM_NODE_TYPE_COMMENT:
+                return browse_list(node->first_child, node->last_child, cb, ctx);
+            default: {
+                if (node->type >= LXB_DOM_NODE_TYPE_LAST_ENTRY)
+                    log_warn__("lexbor node type greater than last entry: %lx\n", node->type);
+                else log_warn__("Ignored Node Type: %s\n", _dbg_node_types_[node->type]);
+                return Ok;
             }
-        } else if (node->type == LXB_DOM_NODE_TYPE_TEXT) {
-            const char* data;
-            size_t len;
-            try( lexbor_node_get_text(node, &data, &len));
-
-            if (node->parent->local_name == LXB_TAG_PRE) {
-            //if(browse_ctx_pre_tag(ctx)) {
-                //TODO Whitespace inside this element is displayed as written,
-                //with one exception. If one or more leading newline characters
-                //are included immediately following the opening <pre> tag, the
-                //first newline character is stripped. 
-                //https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
-
-                try( browse_ctx_lazy_str_serialize(ctx, cb));
-                if (cb((lxb_char_t*)data, len, ctx)) return "error serializing html text elem";
-            } else if (mem_skip_space_inplace(&data, &len)) {
-                try( browse_ctx_lazy_str_serialize(ctx, cb));
-                try( serialize_mem_skipping_space(data, len, cb, ctx));
-            } 
-            if (node->first_child || node->last_child)
-                log_warn__("%s\n", "[warn] LXB_DOM_NODE_TYPE_TEXT with actual childs");
-            return Ok;
-        } else if (node->type == LXB_DOM_NODE_TYPE_DOCUMENT) {
-            return browse_list(node->first_child, node->last_child, cb, ctx);
-        } else {
-            log_warn__("Ignored node type: %s\n", _dbg_node_types_[node->type]);
-            return Ok;
-            //if (node->type != LXB_DOM_NODE_TYPE_DOCUMENT) { }
-        };
-
-        log_warn__("Node type unmanaged: %s\n", _dbg_node_types_[node->type]);
-        //puts("ESTO PASA???");
-        try( browse_list(node->first_child, node->last_child, cb, ctx));
-    }   
-
+        }
+    }
     return Ok;
 }
 
