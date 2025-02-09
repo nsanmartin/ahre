@@ -106,17 +106,14 @@ browse_tag_img(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[s
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     try_lxb_serialize(IMAGE_CLOSE_STR, sizeof(IMAGE_CLOSE_STR)-1, cb, ctx);
     try( _reset_color_if_(node, cb, ctx));
-    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_IMAGE));
     return Ok;
 }
 
 static Err
 browse_tag_form(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    ///try( browse_ctx_push_tag(ctx, LXB_TAG_FORM));
     try (serialize_cstring_debug("\n", cb, ctx));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     try (serialize_cstring_debug("\n", cb, ctx));
-    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_FORM));
     return Ok;
 }
 
@@ -174,21 +171,17 @@ browse_tag_input(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
 
 static Err
 browse_tag_div(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    ///try( browse_ctx_push_tag(ctx, LXB_TAG_DIV));
     bool was_dirty = browse_ctx_dirty_get_set(ctx, false);
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     bool dirty = browse_ctx_dirty_get_append(ctx, was_dirty);
-    //if (browse_ctx_lazy_str_len(ctx)) 
     if (!dirty) 
         buffn(char, reset)(browse_ctx_lazy_str(ctx));
     else try( browse_ctx_lazy_str_append(ctx, "\n", 1));
-    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_DIV));
     return Ok;
 }
 
 static Err
 browse_tag_p(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    ///try( browse_ctx_push_tag(ctx, LXB_TAG_P));
     try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     if (browse_ctx_lazy_str_len(ctx)) {
@@ -196,13 +189,11 @@ browse_tag_p(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[sta
     } else {
         try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
     }
-    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_P));
     return Ok;
 }
 
 static Err
 browse_tag_tr(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    ///try( browse_ctx_push_tag(ctx, LXB_TAG_TR));
     try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     if (browse_ctx_lazy_str_len(ctx)) {
@@ -210,22 +201,18 @@ browse_tag_tr(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[st
     } else {
         try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
     }
-    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_TR));
     return Ok;
 }
 static Err
 browse_tag_ul(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    ///try( browse_ctx_push_tag(ctx, LXB_TAG_UL));
     try (serialize_lit_str("\n", cb, ctx));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     try (serialize_lit_str("\n", cb, ctx));
-    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_UL));
     return Ok;
 }
 
 static Err
 browse_tag_li(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    ///try( browse_ctx_push_tag(ctx, LXB_TAG_LI));
     // TODO: implement this more decently
     ////try (serialize_lit_str("\n * ", cb, ctx));
     try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n * "));
@@ -234,24 +221,16 @@ browse_tag_li(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[st
         buffn(char, reset)(browse_ctx_lazy_str(ctx));
     }
     try (serialize_lit_str("\n", cb, ctx));
-    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_LI));
     return Ok;
 }
 
 static Err
 browse_tag_h(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    //bool inside_a = browse_ctx_inside_tag(ctx, LXB_TAG_A);
-    //if (inside_a) puts("H inside A");
-    ///try( browse_ctx_push_tag(ctx, LXB_TAG_H1));
-    //try (serialize_lit_str("\nh1`", cb, ctx));
-    //if (!inside_a) try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
     try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "h1`"));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     if (browse_ctx_lazy_str_len(ctx)) {
         try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n"));
     } else try (serialize_lit_str("\n", cb, ctx));
-    ///try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\nh1`"));
-    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_H1));
     return Ok;
 }
 
@@ -266,11 +245,9 @@ browse_tag_b(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[sta
 
 static Err
 browse_tag_blockquote(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    ///try( browse_ctx_push_tag(ctx, LXB_TAG_BLOCKQUOTE));
     try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "``"));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     try (serialize_lit_str("''", cb, ctx));
-    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_BLOCKQUOTE));
     return Ok;
 }
 
@@ -593,9 +570,7 @@ Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[s
 }
 
 Err browse_tag_pre(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    ///try( browse_ctx_push_tag(ctx, LXB_TAG_PRE));
     try( browse_list(node->first_child, node->last_child, cb, ctx));
-    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_PRE));
     return Ok;
 }
 
