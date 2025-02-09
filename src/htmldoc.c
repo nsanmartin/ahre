@@ -53,6 +53,12 @@ lxb_status_t htmldoc_lexbor_serialize_unsigned(
     return serialize_unsigned(cb, ui, ctx, LXB_STATUS_ERROR);
 }
 
+static inline Err
+_reset_color_if_(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    if (!lexbor_inside_coloured_tag(node))
+        return serialize_lit_str(EscCodeReset, cb, ctx);
+    return Ok;
+}
 
 static Err
 browse_tag_br(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
@@ -65,13 +71,11 @@ browse_tag_center(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ct
     //TODO: store center boundaries (start = len on enter, end = len on ret) and then
     // when fitting to width center those lines image.
 
-    ///try( browse_ctx_push_tag(ctx, LXB_TAG_CENTER));
     try( serialize_lit_str("\n", cb, ctx));
     try( serialize_cstring_debug("%(center:\n\n", cb, ctx));
     try( browse_list(node->first_child, node->last_child, cb, ctx));
     try( serialize_cstring_debug("%%center)\n", cb, ctx));
     try( serialize_lit_str("\n", cb, ctx));
-    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_CENTER));
     return Ok;
 }
 
@@ -91,7 +95,6 @@ _serialize_img_alt(lxb_dom_node_t* img, lxb_html_serialize_cb_f cb, BrowseCtx ct
 
 static Err
 browse_tag_img(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    ///try( browse_ctx_push_tag(ctx, LXB_TAG_IMAGE));
     try (serialize_literal_color_str(EscCodeLightGreen, cb, ctx));
     HtmlDoc* d = browse_ctx_htmldoc(ctx);
     ArlOf(LxbNodePtr)* imgs = htmldoc_imgs(d);
@@ -102,7 +105,7 @@ browse_tag_img(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[s
     try( _serialize_img_alt(node, cb, ctx));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     try_lxb_serialize(IMAGE_CLOSE_STR, sizeof(IMAGE_CLOSE_STR)-1, cb, ctx);
-    try (serialize_literal_color_str(EscCodeReset, cb, ctx));
+    try( _reset_color_if_(node, cb, ctx));
     ///try( browse_ctx_pop_tag(ctx, LXB_TAG_IMAGE));
     return Ok;
 }
@@ -163,7 +166,7 @@ browse_tag_input(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
             try (serialize_lit_str("[not supported input]", cb, ctx));
         }
         try (serialize_lit_str(INPUT_CLOSE_STR, cb, ctx));
-        try (serialize_literal_color_str(EscCodeReset, cb, ctx));
+        try( _reset_color_if_(node, cb, ctx));
     }
     return Ok;
 }
@@ -256,7 +259,7 @@ static Err
 browse_tag_b(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     try (serialize_lit_str(EscCodeBold, cb, ctx));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
-    try (serialize_lit_str(EscCodeReset, cb, ctx));
+    try( _reset_color_if_(node, cb, ctx));
     try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), " "));
     return Ok;
 }

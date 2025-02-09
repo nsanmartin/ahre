@@ -6,7 +6,7 @@
 ///// #define TClean htmldoc_tree_cleanup
 ///#include <arl.h>
 
-void arl_of_htmldoc_tree_clean(ArlOf(TabNode)* t);
+void arl_of_tab_node_clean(ArlOf(TabNode)* t);
 
 typedef struct {
     ArlOf(TabNode) tabs;
@@ -90,7 +90,7 @@ static inline Err tablist_init(
 
 /* dtor */
 static inline void tablist_cleanup(TabList f[static 1]) {
-    arl_of_htmldoc_tree_clean(&f->tabs);
+    arl_of_tab_node_clean(&f->tabs);
 }
 
 static inline Err tablist_print_info(TabList f[static 1]) {

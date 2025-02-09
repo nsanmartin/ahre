@@ -38,7 +38,7 @@ static const char* _log_lvl_str_[] = {
 
 static inline void log_lvl__(LogLvl level, const char* format, ...) {
     if (_log_lvl_ < level) return;
-    printf(_log_lvl_str_[level]); 
+    printf("%s", _log_lvl_str_[level]); 
     va_list args;
     va_start (args, format);
     vprintf (format, args);

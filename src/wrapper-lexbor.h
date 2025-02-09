@@ -53,10 +53,26 @@ lexbor_node_get_text(lxb_dom_node_t* node, const char* data[static 1], size_t le
 }
 
 static inline bool lexbor_inside_tag(lxb_dom_node_t* node, lxb_tag_id_enum_t tag) {
-    while (node) {
+    while (node->parent) {
         if (node->parent->local_name == tag) return true;
         node = node->parent;
     }
     return false;
 }
+
+static inline bool lexbor_inside_coloured_tag(lxb_dom_node_t* node) {
+    while (node->parent) {
+        if ( node->parent->local_name == LXB_TAG_IMG
+          || node->parent->local_name == LXB_TAG_IMAGE
+          || node->parent->local_name == LXB_TAG_INPUT
+          || node->parent->local_name == LXB_TAG_B
+          || node->parent->local_name == LXB_TAG_A
+        )
+            return true;
+        node = node->parent;
+    }
+    return false;
+}
+
+
 #endif

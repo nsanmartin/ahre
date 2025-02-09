@@ -99,12 +99,12 @@ mem_skip_space_inplace(const char* data[static 1], size_t len[static 1]) {
     return *len != 0;
 }
 
-inline inline Str mem_next_space_str(const char* data, size_t len) {
+static inline Str mem_next_space_str(const char* data, size_t len) {
     while (len && !isspace(*data)) { --len; ++data; }
     return (Str){.s=data, .len=len};
 }
 
-inline inline Str mem_get_word_str(const char* data, size_t len) {
+static inline Str mem_get_word_str(const char* data, size_t len) {
     Str res = {.s=data};
     while (len && !isspace(*data)) { ++res.len; --len; ++data; }
     return res;
