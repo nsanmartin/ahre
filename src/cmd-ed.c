@@ -282,8 +282,9 @@ Err shorcut_zf(Session session[static 1], const char* rest) {
     };
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
     try( textbuf_eval_cmd(tb,cmd, &r));
-    *textbuf_current_line(tb) = r.end;
-
+    if (*textbuf_current_line(tb) == r.end)
+        puts("%{- last line -}%");
+    else *textbuf_current_line(tb) = r.end;
     return Ok;
 }
 
