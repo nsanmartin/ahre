@@ -57,11 +57,7 @@ Err _serialize_lazy_str_(
         : "error: could not serialize unsigned";
 }
 
-static Err _serialize_color_(
-    lxb_html_serialize_cb_f cb,
-    BrowseCtx ctx[static 1],
-    EscCode code
-) {
+static Err _serialize_color_(lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1], EscCode code) {
     if (browse_ctx_color(ctx)) {
         try( browse_ctx_exc_code_push(ctx, code));
         Str code_str;
@@ -74,6 +70,8 @@ static Err _serialize_color_(
 
 static Err _serialize_color_reset_(lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     if (browse_ctx_color(ctx)) {
+        if (LXB_STATUS_OK != cb((lxb_char_t*)EscCodeReset, sizeof(EscCodeReset)-1, ctx))
+            return "error serializing literal string";
         ArlOf(EscCode)* stack = browse_ctx_esc_code_stack(ctx);
         try( browse_ctx_esc_code_pop(ctx));
         EscCode* backp =  arlfn(EscCode, back)(stack);
@@ -81,9 +79,6 @@ static Err _serialize_color_reset_(lxb_html_serialize_cb_f cb, BrowseCtx ctx[sta
             Str code_str;
             try( esc_code_to_str(*backp, &code_str));
             if (LXB_STATUS_OK != cb((lxb_char_t*)code_str.s, code_str.len, ctx))
-                return "error serializing literal string";
-        } else {
-            if (LXB_STATUS_OK != cb((lxb_char_t*)EscCodeReset, sizeof(EscCodeReset)-1, ctx))
                 return "error serializing literal string";
         }
     }
@@ -267,8 +262,13 @@ browse_tag_h(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[sta
 
 static Err
 browse_tag_b(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    try( _serialize_color_(cb, ctx, esc_code_bold));
+    bool preexisting_lazy_str = browse_ctx_lazy_str_len(ctx);
+    if (preexisting_lazy_str) try( serialize_color_lazy_(ctx, esc_code_bold));
+    else try( _serialize_color_(cb, ctx, esc_code_bold));
+
     try (browse_list(node->first_child, node->last_child, cb, ctx));
+
+    if( browse_ctx_lazy_str_len(ctx)) log_warn__("%s", "we expect non empty <b> but there are here");
     try( _serialize_color_reset_(cb, ctx));
     try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), " "));
     return Ok;

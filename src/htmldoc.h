@@ -267,4 +267,14 @@ browse_list(
     return Ok;
 }
 
+static inline Err serialize_color_lazy_(BrowseCtx ctx[static 1], EscCode code) {
+    if (browse_ctx_color(ctx)) {
+        try( browse_ctx_exc_code_push(ctx, code));
+        Str code_str;
+        try( esc_code_to_str(code, &code_str));
+        try( browse_ctx_lazy_str_append(ctx, (char*)code_str.s, code_str.len));
+    }
+    return Ok;
+}
+ 
 #endif

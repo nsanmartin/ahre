@@ -39,8 +39,7 @@ Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
         if (!arlfn(LxbNodePtr,append)(anchors, &node)) 
             return "error: lip set";
 
-        try( browse_ctx_exc_code_push(ctx, esc_code_blue));
-        try( browse_ctx_lazy_str_append(ctx, EscCodeBlue, sizeof (EscCodeBlue)-1));
+        try( serialize_color_lazy_(ctx, esc_code_blue));
         try( browse_ctx_lazy_str_append(ctx, ANCHOR_OPEN_STR, sizeof (ANCHOR_OPEN_STR)-1));
         try(_append_unsigned_to_bufof_char_base36(anchor_num, &ctx->lazy_str));
         try( browse_ctx_lazy_str_append(ctx, ELEM_ID_SEP, sizeof(ELEM_ID_SEP)-1));
