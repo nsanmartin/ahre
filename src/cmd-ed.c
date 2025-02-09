@@ -3,6 +3,7 @@
 
 #include "src/cmd-ed.h"
 #include "src/constants.h"
+#include "src/escape_codes.h"
 #include "src/range_parse.h"
 #include "src/re.h"
 #include "src/str.h"

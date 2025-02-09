@@ -27,7 +27,6 @@ bool browse_ctx_lazy_str_ends_two_newlines(BufOf(char)* lstr) {
 }
 
 Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    ///try( browse_ctx_push_tag(ctx, LXB_TAG_A));
     /* https://html.spec.whatwg.org/multipage/links.html#attr-hyperlink-href
      * The href attribute on a and area elements is not required; when those
      * elements do not have href attributes they do not create hyperlinks. */
@@ -40,6 +39,7 @@ Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
         if (!arlfn(LxbNodePtr,append)(anchors, &node)) 
             return "error: lip set";
 
+        try( browse_ctx_exc_code_push(ctx, esc_code_blue));
         try( browse_ctx_lazy_str_append(ctx, EscCodeBlue, sizeof (EscCodeBlue)-1));
         try( browse_ctx_lazy_str_append(ctx, ANCHOR_OPEN_STR, sizeof (ANCHOR_OPEN_STR)-1));
         try(_append_unsigned_to_bufof_char_base36(anchor_num, &ctx->lazy_str));
@@ -49,6 +49,7 @@ Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
     *browse_ctx_dirty(ctx) = false;
     try( browse_list(node->first_child, node->last_child, cb, ctx));
 
+    try( browse_ctx_esc_code_pop(ctx));
     /* If not dirty, node's childs didn't write anything so
      * there's nothig to close.
      */
@@ -66,7 +67,6 @@ Err browse_tag_a(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
         try ( browse_ctx_lazy_str_serialize(ctx, cb));
     }
    
-    ///try( browse_ctx_pop_tag(ctx, LXB_TAG_A));
     return Ok;
 }
 

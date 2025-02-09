@@ -57,10 +57,36 @@ Err _serialize_lazy_str_(
         : "error: could not serialize unsigned";
 }
 
-static inline Err
-_reset_color_if_(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    if (!lexbor_inside_coloured_tag(node))
-        return serialize_lit_str(EscCodeReset, cb, ctx);
+static Err _serialize_color_(
+    lxb_html_serialize_cb_f cb,
+    BrowseCtx ctx[static 1],
+    EscCode code
+) {
+    if (browse_ctx_color(ctx)) {
+        try( browse_ctx_exc_code_push(ctx, code));
+        Str code_str;
+        try( esc_code_to_str(code, &code_str));
+        if (LXB_STATUS_OK != cb((lxb_char_t*)code_str.s, code_str.len, ctx))
+            return "error serializing literal string";
+    }
+    return Ok;
+}
+
+static Err _serialize_color_reset_(lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    if (browse_ctx_color(ctx)) {
+        ArlOf(EscCode)* stack = browse_ctx_esc_code_stack(ctx);
+        try( browse_ctx_esc_code_pop(ctx));
+        EscCode* backp =  arlfn(EscCode, back)(stack);
+        if (backp) {
+            Str code_str;
+            try( esc_code_to_str(*backp, &code_str));
+            if (LXB_STATUS_OK != cb((lxb_char_t*)code_str.s, code_str.len, ctx))
+                return "error serializing literal string";
+        } else {
+            if (LXB_STATUS_OK != cb((lxb_char_t*)EscCodeReset, sizeof(EscCodeReset)-1, ctx))
+                return "error serializing literal string";
+        }
+    }
     return Ok;
 }
 
@@ -100,7 +126,7 @@ _serialize_img_alt(lxb_dom_node_t* img, lxb_html_serialize_cb_f cb, BrowseCtx ct
 static Err
 browse_tag_img(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     try( browse_ctx_lazy_str_serialize(ctx, cb));
-    try (serialize_literal_color_str(EscCodeLightGreen, cb, ctx));
+    try( _serialize_color_(cb, ctx, esc_code_light_green));
     HtmlDoc* d = browse_ctx_htmldoc(ctx);
     ArlOf(LxbNodePtr)* imgs = htmldoc_imgs(d);
     const size_t img_count = len__(imgs);
@@ -110,7 +136,7 @@ browse_tag_img(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[s
     try( _serialize_img_alt(node, cb, ctx));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     try_lxb_serialize(IMAGE_CLOSE_STR, sizeof(IMAGE_CLOSE_STR)-1, cb, ctx);
-    try( _reset_color_if_(node, cb, ctx));
+    try( _serialize_color_reset_(cb, ctx));
     return Ok;
 }
 
@@ -148,7 +174,7 @@ browse_tag_input(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
             return "error: lip set";
         }
         try( browse_ctx_lazy_str_serialize(ctx, cb));
-        try (serialize_literal_color_str(EscCodeRed, cb, ctx));
+        try( _serialize_color_(cb, ctx, esc_code_light_green));
         try (serialize_lit_str(INPUT_OPEN_STR, cb, ctx));
         try (_serialize_lazy_str_(ctx, cb, inputs->len-1));
         if (_input_is_text_type_(s, slen)) {
@@ -168,7 +194,7 @@ browse_tag_input(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
             try (serialize_lit_str("[not supported input]", cb, ctx));
         }
         try (serialize_lit_str(INPUT_CLOSE_STR, cb, ctx));
-        try( _reset_color_if_(node, cb, ctx));
+        try( _serialize_color_reset_(cb, ctx));
     }
     return Ok;
 }
@@ -241,9 +267,9 @@ browse_tag_h(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[sta
 
 static Err
 browse_tag_b(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    try (serialize_lit_str(EscCodeBold, cb, ctx));
+    try( _serialize_color_(cb, ctx, esc_code_bold));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
-    try( _reset_color_if_(node, cb, ctx));
+    try( _serialize_color_reset_(cb, ctx));
     try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), " "));
     return Ok;
 }

@@ -7,6 +7,8 @@
 
 #include <lexbor/html/html.h>
 
+#include "src/constants.h"
+#include "src/escape_codes.h"
 #include "src/textbuf.h"
 #include "src/error.h"
 #include "src/mem.h"
@@ -91,7 +93,7 @@ static inline void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
 /* 
  * Browse context
  */
-#define T lxb_tag_id_enum_t
+#define T EscCode
 #include <arl.h>
 
 typedef struct { 
@@ -99,7 +101,7 @@ typedef struct {
     BufOf(char) lazy_str;
     bool color;
     bool dirty;
-    ///ArlOf(lxb_tag_id_enum_t) stack;
+    ArlOf(EscCode) esc_code_stack;
 } BrowseCtx;
 
 static inline HtmlDoc* browse_ctx_htmldoc(BrowseCtx ctx[static 1]) { return ctx->htmldoc; }
@@ -121,18 +123,24 @@ static inline bool browse_ctx_dirty_get_append(BrowseCtx ctx[static 1], bool val
     *browse_ctx_dirty(ctx) |= value;
     return was_dirty;
 }
-///static inline ArlOf(lxb_tag_id_enum_t)* browse_ctx_stack(BrowseCtx ctx[static 1]) {
-///    return &ctx->stack;
-///}
 
-///static inline lxb_tag_id_enum_t* browse_ctx_stack_backp(BrowseCtx ctx[static 1]) {
-///    ArlOf(lxb_tag_id_enum_t)* stack = browse_ctx_stack(ctx);
-///    return arlfn(lxb_tag_id_enum_t, back)(stack);
-///}
-///static inline bool browse_ctx_pre_tag(BrowseCtx ctx[static 1]) {
-///    lxb_tag_id_enum_t* backp = browse_ctx_stack_backp(ctx);
-///    return backp && *backp == LXB_TAG_PRE;
-///}
+static inline ArlOf(EscCode)* browse_ctx_esc_code_stack(BrowseCtx ctx[static 1]) {
+    return &ctx->esc_code_stack;
+}
+
+static inline Err browse_ctx_exc_code_push(BrowseCtx ctx[static 1], EscCode code) {
+    if (arlfn(EscCode, append)(browse_ctx_esc_code_stack(ctx), &code)) return Ok;
+    return "error: arlfn append failure";
+}
+
+static inline Err browse_ctx_esc_code_pop(BrowseCtx ctx[static 1]) {
+    return arlfn(EscCode, pop)(browse_ctx_esc_code_stack(ctx)) ? Ok : "error: empty stack";
+}
+
+static inline EscCode* browse_ctx_esc_code_stack_backp(BrowseCtx ctx[static 1]) {
+    ArlOf(EscCode)* stack = browse_ctx_esc_code_stack(ctx);
+    return arlfn(EscCode, back)(stack);
+}
 
 static inline BufOf(char)* browse_ctx_lazy_str(BrowseCtx ctx[static 1]) { return &ctx->lazy_str; }
 static inline size_t browse_ctx_lazy_str_len(BrowseCtx ctx[static 1]) {
@@ -188,7 +196,7 @@ static inline Err browse_ctx_init(BrowseCtx ctx[static 1], HtmlDoc htmldoc[stati
 
 static inline void browse_ctx_cleanup(BrowseCtx ctx[static 1]) {
     buffn(char, clean)(&ctx->lazy_str);
-    ///arlfn(lxb_tag_id_enum_t, clean)(browse_ctx_stack(ctx));
+    arlfn(EscCode, clean)(browse_ctx_esc_code_stack(ctx));
 }
 
 static inline void
