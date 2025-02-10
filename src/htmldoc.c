@@ -159,11 +159,11 @@ static Err
 browse_tag_button(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     try( browse_ctx_lazy_str_serialize(ctx, cb));
     try( _serialize_color_(cb, ctx, esc_code_red));
-    try (serialize_lit_str(INPUT_OPEN_STR, cb, ctx));
-    try (serialize_lit_str("%button not supported yet%|", cb, ctx));
+    try (serialize_lit_str(BUTTON_OPEN_STR, cb, ctx));
 
     try (browse_list(node->first_child, node->last_child, cb, ctx));
-    try (serialize_lit_str(INPUT_CLOSE_STR, cb, ctx));
+    try (serialize_lit_str(BUTTON_CLOSE_STR, cb, ctx));
+    try (serialize_lit_str(" % button not supported yet % ", cb, ctx));
     try( _serialize_color_reset_(cb, ctx));
     return Ok;
 }
@@ -210,12 +210,12 @@ browse_tag_input(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx
 
 static Err
 browse_tag_div(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
+    try( browse_ctx_lazy_str_append(ctx, "\n", 1));
     bool was_dirty = browse_ctx_dirty_get_set(ctx, false);
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     bool dirty = browse_ctx_dirty_get_append(ctx, was_dirty);
     if (!dirty) 
         buffn(char, reset)(browse_ctx_lazy_str(ctx));
-    else try( browse_ctx_lazy_str_append(ctx, "\n", 1));
     return Ok;
 }
 

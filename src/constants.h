@@ -8,6 +8,8 @@
 #define INPUT_CLOSE_STR  "}"
 #define IMAGE_OPEN_STR  "("
 #define IMAGE_CLOSE_STR  ")"
+#define BUTTON_OPEN_STR  "<"
+#define BUTTON_CLOSE_STR  ">"
 
 #define ELEM_ID_SEP "`"
 #endif
