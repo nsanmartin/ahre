@@ -1,6 +1,11 @@
 Ahre
+====
 
-A hypertext reference commuter
+A Hypertext REference browser.
+
+You may use edbrowse (https://github.com/CMB/edbrowse) or w3m
+(https://git.sr.ht/~rkta/w3m) instead.
+
 
 External dependencies
 ======== ============
