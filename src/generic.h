@@ -10,6 +10,7 @@
 
 
 #define len__(Ptr) (Ptr)->len
+#define items__(Ptr) (Ptr)->items
 
 
 #define len(Ptr) _Generic((Ptr), \

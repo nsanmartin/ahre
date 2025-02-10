@@ -74,5 +74,44 @@ static inline bool lexbor_inside_coloured_tag(lxb_dom_node_t* node) {
     return false;
 }
 
+static inline bool lexbor_tag_is_block(lxb_dom_node_t* node) {
+    return node
+        && (  node->local_name == LXB_TAG_ADDRESS
+           || node->local_name == LXB_TAG_ARTICLE
+           || node->local_name == LXB_TAG_ASIDE
+           || node->local_name == LXB_TAG_BLOCKQUOTE
+           || node->local_name == LXB_TAG_CANVAS
+           || node->local_name == LXB_TAG_DD
+           || node->local_name == LXB_TAG_DIV
+           || node->local_name == LXB_TAG_DL
+           || node->local_name == LXB_TAG_DT
+           || node->local_name == LXB_TAG_FIELDSET
+           || node->local_name == LXB_TAG_FIGCAPTION
+           || node->local_name == LXB_TAG_FIGURE
+           || node->local_name == LXB_TAG_FOOTER
+           || node->local_name == LXB_TAG_FORM
+           || node->local_name == LXB_TAG_H1
+           || node->local_name == LXB_TAG_H2
+           || node->local_name == LXB_TAG_H3
+           || node->local_name == LXB_TAG_H4
+           || node->local_name == LXB_TAG_H5
+           || node->local_name == LXB_TAG_H6
+           || node->local_name == LXB_TAG_HEADER
+           || node->local_name == LXB_TAG_HR
+           || node->local_name == LXB_TAG_LI
+           || node->local_name == LXB_TAG_MAIN
+           || node->local_name == LXB_TAG_NAV
+           || node->local_name == LXB_TAG_NOSCRIPT
+           || node->local_name == LXB_TAG_OL
+           || node->local_name == LXB_TAG_P
+           || node->local_name == LXB_TAG_PRE
+           || node->local_name == LXB_TAG_SECTION
+           || node->local_name == LXB_TAG_TABLE
+           || node->local_name == LXB_TAG_TFOOT
+           || node->local_name == LXB_TAG_UL
+           || node->local_name == LXB_TAG_VIDEO
+        );
+}
+
 
 #endif

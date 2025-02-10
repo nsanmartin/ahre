@@ -49,6 +49,29 @@ write_to_file(const unsigned char* data, size_t len, void* f) {
     return len - fwrite(data, 1, len, f);
 }
 
+static inline Err
+bufofchar_append_ui_as_str(BufOf(char) buf[static 1], uintmax_t ui) {
+    char numbuf[3 * sizeof ui] = {0};
+    size_t len = 0;
+    if ((len = snprintf(numbuf, (3 * sizeof ui), "%lu", ui)) > (3 * sizeof ui)) {
+        //TODO: provide more info about the error
+        return "error: could not convert ui to str";
+    }
+    if (buffn(char, append)(buf, numbuf, len)) return Ok;
+    return "error: could not append str_ui to bufof char";
+}
+
+Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[static 1]);
+
+
+static inline  Err
+bufofchar_append_ui_base36_as_str(BufOf(char) buf[static 1], uintmax_t ui) {
+    char numbf[3 * sizeof ui] = {0};
+    size_t len = 0;
+    try( uint_to_base36_str(numbf, 3 * sizeof ui, ui, &len));
+    if (!buffn(char, append)(buf, numbf, len)) return "error appending unsigned to bufof char";
+    return Ok;
+}
 static inline unsigned int
 serialize_unsigned(SerializeCallback cb, uintmax_t ui, void* ctx, unsigned int error_value) {
     char numbf[3 * sizeof ui] = {0};
@@ -58,6 +81,7 @@ serialize_unsigned(SerializeCallback cb, uintmax_t ui, void* ctx, unsigned int e
     }
     return cb((unsigned char*)numbf, len, ctx);
 }
+
 
 static inline  Err
 unsigned_to_str(uintmax_t ui, char* buf, size_t size , size_t len[static 1]) {

@@ -7,8 +7,8 @@
 
 #include <lexbor/html/html.h>
 
+//#include "src/browse.h"
 #include "src/constants.h"
-#include "src/escape_codes.h"
 #include "src/textbuf.h"
 #include "src/error.h"
 #include "src/mem.h"
@@ -90,118 +90,6 @@ static inline void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
     *htmldoc_cache(htmldoc) = (DocCache){0};
 }
 
-/* 
- * Browse context
- */
-#define T EscCode
-#include <arl.h>
-
-typedef struct { 
-    HtmlDoc* htmldoc;
-    BufOf(char) lazy_str;
-    bool color;
-    bool dirty;
-    ArlOf(EscCode) esc_code_stack;
-} BrowseCtx;
-
-static inline HtmlDoc* browse_ctx_htmldoc(BrowseCtx ctx[static 1]) { return ctx->htmldoc; }
-static inline TextBuf* browse_ctx_textbuf(BrowseCtx ctx[static 1]) {
-    return htmldoc_textbuf(browse_ctx_htmldoc(ctx));
-}
-
-static inline bool browse_ctx_color(BrowseCtx ctx[static 1]) { return ctx->color; }
-
-static inline bool* browse_ctx_dirty(BrowseCtx ctx[static 1]) { return &ctx->dirty; }
-static inline bool browse_ctx_dirty_get_set(BrowseCtx ctx[static 1], bool value) {
-    bool was_dirty = *browse_ctx_dirty(ctx);
-    *browse_ctx_dirty(ctx) = value;
-    return was_dirty;
-}
-
-static inline bool browse_ctx_dirty_get_append(BrowseCtx ctx[static 1], bool value) {
-    bool was_dirty = *browse_ctx_dirty(ctx);
-    *browse_ctx_dirty(ctx) |= value;
-    return was_dirty;
-}
-
-static inline ArlOf(EscCode)* browse_ctx_esc_code_stack(BrowseCtx ctx[static 1]) {
-    return &ctx->esc_code_stack;
-}
-
-static inline Err browse_ctx_exc_code_push(BrowseCtx ctx[static 1], EscCode code) {
-    if (arlfn(EscCode, append)(browse_ctx_esc_code_stack(ctx), &code)) return Ok;
-    return "error: arlfn append failure";
-}
-
-static inline Err browse_ctx_esc_code_pop(BrowseCtx ctx[static 1]) {
-    return arlfn(EscCode, pop)(browse_ctx_esc_code_stack(ctx)) ? Ok : "error: empty stack";
-}
-
-static inline EscCode* browse_ctx_esc_code_stack_backp(BrowseCtx ctx[static 1]) {
-    ArlOf(EscCode)* stack = browse_ctx_esc_code_stack(ctx);
-    return arlfn(EscCode, back)(stack);
-}
-
-static inline BufOf(char)* browse_ctx_lazy_str(BrowseCtx ctx[static 1]) { return &ctx->lazy_str; }
-static inline size_t browse_ctx_lazy_str_len(BrowseCtx ctx[static 1]) {
-    return browse_ctx_lazy_str(ctx)->len;
-}
-static inline char* browse_ctx_lazy_str_items(BrowseCtx ctx[static 1]) { 
-    return browse_ctx_lazy_str(ctx)->items;
-}
-
-static inline Err browse_ctx_lazy_str_append(BrowseCtx ctx[static 1], char* s, size_t len) { 
-    return buffn(char, append)(browse_ctx_lazy_str(ctx), s, len)
-        ? Ok
-        : "error: failed to append to bufof (browse ctx lazy str)";
-}
-
-///static inline Err browse_ctx_push_tag(BrowseCtx ctx[static 1], lxb_tag_id_enum_t tag) {
-///    return arlfn(lxb_tag_id_enum_t, append)(browse_ctx_stack(ctx), &tag)
-///        ? Ok
-///        : "error: arlfn failed to appned";
-///}
-
-///static inline Err browse_ctx_pop_tag(BrowseCtx ctx[static 1], lxb_tag_id_enum_t tag) {
-///    lxb_tag_id_enum_t* backp = browse_ctx_stack_backp(ctx);
-///    if ( !backp || tag != *backp ) return "error: expected tag not found";
-///    --browse_ctx_stack(ctx)->len;
-///    return Ok;
-///}
-
-///static inline bool browse_ctx_inside_tag(BrowseCtx ctx[static 1], lxb_tag_id_enum_t tag) {
-///    ArlOf(lxb_tag_id_enum_t)* stack = browse_ctx_stack(ctx);
-///    return stack->len && memchr(stack->items, (char)tag, stack->len);
-///}
-
-
-static inline Err
-browse_ctx_lazy_str_serialize(BrowseCtx ctx[static 1], lxb_html_serialize_cb_f cb) {
-    if (browse_ctx_lazy_str_len(ctx)) {
-
-        lxb_status_t status = cb(
-            (lxb_char_t*)browse_ctx_lazy_str_items(ctx), browse_ctx_lazy_str_len(ctx), ctx
-        );
-        buffn(char, reset)(browse_ctx_lazy_str(ctx));
-        if (status != LXB_STATUS_OK) return "error serializing lazy str";
-    }
-    return Ok;
-}
-
-
-static inline Err browse_ctx_init(BrowseCtx ctx[static 1], HtmlDoc htmldoc[static 1], bool color) {
-    *ctx = (BrowseCtx) {.htmldoc=htmldoc, .color=color};
-    return Ok;
-}
-
-static inline void browse_ctx_cleanup(BrowseCtx ctx[static 1]) {
-    buffn(char, clean)(&ctx->lazy_str);
-    arlfn(EscCode, clean)(browse_ctx_esc_code_stack(ctx));
-}
-
-static inline void
-browse_ctx_set_color(BrowseCtx ctx[static 1], bool value) {  ctx->color = value; }
-
 
 /* external */
 Err
@@ -232,8 +120,8 @@ Err htmldoc_browse(HtmlDoc htmldoc[static 1]);
     (browse_ctx_color(Context) ? serialize_lit_str(EscSeq, CallBack, Context) : Ok)
 
 /* htmldoc_tag_a.c */
-Err parse_href_attrs(lxb_dom_node_t* node, BrowseCtx ctx[static 1]);
-Err parse_append_ahref(BrowseCtx ctx[static 1], const char* url, size_t len);
+//Err parse_href_attrs(lxb_dom_node_t* node, BrowseCtx ctx[static 1]);
+//Err parse_append_ahref(BrowseCtx ctx[static 1], const char* url, size_t len);
 Err htmldoc_init_fetch_browse(HtmlDoc d[static 1], const char* url, UrlClient url_client[static 1]);
 
 Err htmldoc_init_fetch_browse_from_curlu(
@@ -250,31 +138,5 @@ static inline Err htmldoc_print_info(HtmlDoc d[static 1]) {
     return Ok;
 }
 
-Err serialize_mem_skipping_space(
-    const char* data, size_t len, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]
-);
 
-Err browse_rec(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]);
-
-static inline Err
-browse_list(
-    lxb_dom_node_t* it, lxb_dom_node_t* last, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]
-) {
-    for(; ; it = it->next) {
-        try( browse_rec(it, cb, ctx));
-        if (it == last) return Ok;
-    }
-    return Ok;
-}
-
-static inline Err serialize_color_lazy_(BrowseCtx ctx[static 1], EscCode code) {
-    if (browse_ctx_color(ctx)) {
-        try( browse_ctx_exc_code_push(ctx, code));
-        Str code_str;
-        try( esc_code_to_str(code, &code_str));
-        try( browse_ctx_lazy_str_append(ctx, (char*)code_str.s, code_str.len));
-    }
-    return Ok;
-}
- 
 #endif
