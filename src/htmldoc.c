@@ -244,7 +244,7 @@ browse_tag_tr(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[st
 }
 static Err
 browse_tag_ul(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
-    try (serialize_lit_str("\n", cb, ctx));
+    try (serialize_lit_str("\n\n", cb, ctx));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     try (serialize_lit_str("\n", cb, ctx));
     return Ok;
@@ -254,7 +254,7 @@ static Err
 browse_tag_li(lxb_dom_node_t* node, lxb_html_serialize_cb_f cb, BrowseCtx ctx[static 1]) {
     // TODO: implement this more decently
     ////try (serialize_lit_str("\n * ", cb, ctx));
-    try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), "\n * "));
+    try( append_to_bufof_char_lit_(browse_ctx_lazy_str(ctx), " * "));
     try (browse_list(node->first_child, node->last_child, cb, ctx));
     if (browse_ctx_lazy_str_len(ctx)) {
         buffn(char, reset)(browse_ctx_lazy_str(ctx));
