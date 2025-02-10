@@ -29,8 +29,6 @@ beginning with b).
 Ahre commands
 =============
 
-url      :  shows the url of the current document
-url <URL>:  sets current doc's url to <URL> and fetches it.
 browse   :  generate text buffer for html document.
 go <URL> :  sets the url of the current doc with <URL>, fetches and browses it
             (it does not show it).
@@ -85,6 +83,11 @@ navigating back, precious document is set current.
 |?      : displays each tab with its history
 |2      : switchs to third tab
 |0.1.2. : switchs to first tab and navigates to third link of second link in history
+
+dot commands (.)
+================
+
+.?  : shows info about the document
 
 shortcuts
 ========
