@@ -7,9 +7,9 @@
 #include "src/utils.h"
 
 //static constexpr size_t MAX_MSG_LEN = 512;
-#define MAX_MSG_LEN 1024
-_Thread_local size_t ERR_MSG_LEN = 0;
-_Thread_local char MSGBUF[MAX_MSG_LEN+1] = {0};
+#define MAX_MSG_LEN 1024u
+/* _Thread_local */ size_t ERR_MSG_LEN = 0;
+/* _Thread_local */ char MSGBUF[MAX_MSG_LEN+1] = {0};
 
 
 /*

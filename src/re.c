@@ -1,8 +1,8 @@
 #include <stdio.h>
-#include <regex.h>
 
 #include "src/error.h"
-
+#ifndef NO_REGEX
+#include <regex.h>
 
 Err regex_search_next_(const char* pattern, const char* string, const char** matchp) {
 
@@ -72,3 +72,4 @@ Err regex_maybe_find_next(const char* pattern, const char* string, size_t* off[1
 
     return Ok;
 }
+#endif

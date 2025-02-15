@@ -2,8 +2,8 @@
 #include "src/generic.h"
 
 /*  internal linkage */
-#define READ_FROM_FILE_BUFFER_LEN 4096
-_Thread_local static char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN + 1] = {0};
+#define READ_FROM_FILE_BUFFER_LEN 4096u
+/* _Thread_local */ static char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN + 1] = {0};
 
 static bool _get_line_(TextBuf tb[static 1], size_t n, Str out[static 1]) {
     size_t nlines = textbuf_line_count(tb);

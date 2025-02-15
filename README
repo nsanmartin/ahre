@@ -39,6 +39,10 @@ git submodule update --init
 mkdir build
 make
 
+To build using tcc the NO_REGEX flag must be passed:
+
+CC=tcc CFLAGS=-DNO_REGEX make
+
 Run
 ===
 

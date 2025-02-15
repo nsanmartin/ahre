@@ -1,4 +1,4 @@
-#define _POSIX_C_SOUCRE 200809L
+// #define _POSIX_C_SOUCRE 200809L
 #include <string.h>
 
 #include "src/cmd-ed.h"
@@ -279,7 +279,8 @@ Err shorcut_zf(Session session[static 1], const char* rest) {
         *session_conf_z_shorcut_len(session) = incr;
     } 
     Range r = (Range){
-        .beg=*textbuf_current_line(tb), .end=r.beg + *session_conf_z_shorcut_len(session)
+        .beg=*textbuf_current_line(tb),
+        .end=*textbuf_current_line(tb) + *session_conf_z_shorcut_len(session)
     };
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
     try( textbuf_eval_cmd(tb,cmd, &r));

@@ -14,10 +14,10 @@ Err browse_tag_pre(lxb_dom_node_t* node, BrowseCtx ctx[static 1]);
 
 /* internal linkage */
 //static constexpr size_t MAX_URL_LEN = 2048;
-#define MAX_URL_LEN 2048
+#define MAX_URL_LEN 2048u
 //static constexpr size_t READ_FROM_FILE_BUFFER_LEN = 4096;
-#define READ_FROM_FILE_BUFFER_LEN 4096
-#define LAZY_STR_BUF_LEN 1600
+#define READ_FROM_FILE_BUFFER_LEN 4096u
+#define LAZY_STR_BUF_LEN 1600u
 
 #define serialize_cstring(Ptr, Len, CallBack, Context) \
     ((LXB_STATUS_OK != CallBack((lxb_char_t*)Ptr, Len, Context)) \
@@ -204,7 +204,18 @@ browse_tag_h(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 }
 
 static Err
+browse_tag_code(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
+    try( browse_ctx_buf_append_lit__(ctx, " `"));
+    bool was_empty = browse_ctx_empty_get_set(ctx, true);
+    try (browse_list_inline(node->first_child, node->last_child, ctx));
+    browse_ctx_empty_get_set_and(ctx, was_empty);
+    try( browse_ctx_buf_append_lit__(ctx, "` "));
+    return Ok;
+}
+
+static Err
 browse_tag_b(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
+    try( browse_ctx_buf_append_lit__(ctx, " "));
     try( browse_ctx_buf_append_color_(ctx, esc_code_bold));
     bool was_empty = browse_ctx_empty_get_set(ctx, true);
     try (browse_list_inline(node->first_child, node->last_child, ctx));
@@ -215,6 +226,7 @@ browse_tag_b(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 }
 
 static Err browse_tag_em(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
+    try( browse_ctx_buf_append_lit__(ctx, " "));
     try( browse_ctx_buf_append_color_(ctx, esc_code_underline));
     bool was_empty = browse_ctx_empty_get_set(ctx, true);
     try (browse_list_inline(node->first_child, node->last_child, ctx));
@@ -226,6 +238,7 @@ static Err browse_tag_em(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 
 static Err
 browse_tag_i(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
+    try( browse_ctx_buf_append_lit__(ctx, " "));
     try( browse_ctx_buf_append_color_(ctx, esc_code_italic));
     bool was_empty = browse_ctx_empty_get_set(ctx, true);
     try (browse_list_inline(node->first_child, node->last_child, ctx));
@@ -492,6 +505,7 @@ Err browse_rec_tag(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
         case LXB_TAG_BR: { return browse_tag_br(node, ctx); }
         case LXB_TAG_BUTTON: { return browse_tag_button(node, ctx); }
         case LXB_TAG_CENTER: { return browse_tag_center(node, ctx); } 
+        case LXB_TAG_CODE: { return browse_tag_code(node, ctx); } 
         case LXB_TAG_DIV: { return browse_tag_div(node, ctx); }
         case LXB_TAG_EM: { return browse_tag_em(node, ctx); }
         case LXB_TAG_FORM: { return browse_tag_form(node, ctx); }
@@ -507,6 +521,7 @@ Err browse_rec_tag(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
         case LXB_TAG_STYLE: { log_todo__("%s\n", "[todo?] skiping style"); return Ok; } 
         case LXB_TAG_TITLE: { return browse_tag_title(node, ctx); } 
         case LXB_TAG_TR: { return browse_tag_tr(node, ctx); }
+        case LXB_TAG_TT: { return browse_tag_code(node, ctx); }
         case LXB_TAG_UL: { return browse_tag_ul(node, ctx); }
         default: {
             if (node->local_name >= LXB_TAG__LAST_ENTRY)
