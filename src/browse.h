@@ -32,6 +32,12 @@ static inline bool* browse_ctx_empty(BrowseCtx ctx[static 1]) { return &ctx->emp
 static inline BufOf(char)* browse_ctx_buf(BrowseCtx ctx[static 1]) { return &ctx->buf; }
 
 
+static inline BufOf(char) browse_ctx_buf_get_reset(BrowseCtx ctx[static 1]) {
+    BufOf(char) tmp = *browse_ctx_buf(ctx);
+    ctx->buf = (BufOf(char)){0};
+    return tmp;
+}
+
 static inline void browse_ctx_swap_buf(BrowseCtx ctx[static 1], BufOf(char) buf[static 1]) {
     BufOf(char) tmp = *buf;
     *buf = *browse_ctx_buf(ctx);

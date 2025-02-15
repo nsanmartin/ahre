@@ -50,7 +50,7 @@ static inline bool tab_node_is_current_in_tab(TabNode n[static 1]) {
     while (n && n->parent && n == tab_node_current_child(n->parent)) {
         n = n->parent;
     }
-    return n->parent == NULL;
+    return !n || n->parent == NULL;
 }
 
 
@@ -99,7 +99,11 @@ tab_node_init_from_curlu(
     TabNode n[static 1], TabNode* parent, CURLU* cu, UrlClient url_client[static 1], HttpMethod method
 ) {
     try(_tab_node_init_base_(n, parent));
-    try( htmldoc_init_fetch_browse_from_curlu(tab_node_doc(n), cu, url_client, method));
+    Err err = htmldoc_init_fetch_browse_from_curlu(tab_node_doc(n), cu, url_client, method);
+    if (err) {
+        tab_node_cleanup(n);
+        return err;
+    }
     n->current_ix = n->childs->len;
     return Ok;
 }

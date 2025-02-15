@@ -43,19 +43,18 @@ Err browse_tag_a(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
         if (!arlfn(LxbNodePtr,append)(anchors, &node)) 
             return "error: lip set";
 
-        BufOf(char)* buf = &(BufOf(char)){0};
         if (browse_ctx_color(ctx)) try( browse_ctx_esc_code_push(ctx, esc_code_blue));
 
-        browse_ctx_swap_buf(ctx, buf);
+        BufOf(char) buf = browse_ctx_buf_get_reset(ctx);
         try( browse_list_inline(node->first_child, node->last_child, ctx));
-        browse_ctx_swap_buf(ctx, buf);
+        browse_ctx_swap_buf(ctx, &buf);
 
-        StrView content = strview(items__(buf), len__(buf));
+        StrView content = strview(buf.items, buf.len);
         bool left_newlines = _strview_trim_left_count_newlines_(&content);
         bool right_newlines = _strview_trim_right_count_newlines_(&content);
         Err err;
         if (left_newlines) if ((err=browse_ctx_buf_append_lit__(ctx, "\n"))) {
-            buffn(char, clean)(buf);
+            buffn(char, clean)(&buf);
             return err;
         }
         if ((err=browse_ctx_buf_append_color_esc_code(ctx, esc_code_blue))
@@ -64,12 +63,12 @@ Err browse_tag_a(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
             || (err=browse_ctx_buf_append_lit__(ctx, ELEM_ID_SEP))
             ///|| (err=browse_ctx_buf_append_lit__(ctx, " "))
         ) {
-            buffn(char, clean)(buf);
+            buffn(char, clean)(&buf);
             return err;
         }
 
         if (content.len) try( browse_ctx_buf_append(ctx, (char*)content.s, content.len));
-        buffn(char, clean)(buf);
+        buffn(char, clean)(&buf);
 
         try( browse_ctx_buf_append_lit__(ctx, ANCHOR_CLOSE_STR));
         try( browse_ctx_reset_color(ctx));

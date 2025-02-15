@@ -211,14 +211,13 @@ browse_tag_li(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 
 static Err
 browse_tag_h(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    BufOf(char)* buf = &(BufOf(char)){0};
     if (browse_ctx_color(ctx)) try( browse_ctx_esc_code_push(ctx, esc_code_bold));
 
-    browse_ctx_swap_buf(ctx, buf);
+    BufOf(char) buf = browse_ctx_buf_get_reset(ctx);
     try( browse_list_block(node->first_child, node->last_child, ctx));
-    browse_ctx_swap_buf(ctx, buf);
+    browse_ctx_swap_buf(ctx, &buf);
 
-    StrView content = strview(items__(buf), len__(buf));
+    StrView content = strview(buf.items, buf.len);
     _strview_trim_left_count_newlines_(&content);
     _strview_trim_right_count_newlines_(&content);
 
@@ -226,12 +225,12 @@ browse_tag_h(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     if (   (err=browse_ctx_buf_append_lit__(ctx, "\n# "))
         || (err=browse_ctx_buf_append_color_esc_code(ctx, esc_code_bold))
     ) {
-        buffn(char, clean)(buf);
+        buffn(char, clean)(&buf);
         return err;
     }
 
     if (content.len) try( browse_ctx_buf_append(ctx, (char*)content.s, content.len));
-    buffn(char, clean)(buf);
+    buffn(char, clean)(&buf);
     try( browse_ctx_reset_color(ctx));
     try( browse_ctx_buf_append_lit__(ctx, "\n"));
 
@@ -542,6 +541,8 @@ Err browse_rec_tag(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
         case LXB_TAG_CENTER: { return browse_tag_center(node, ctx); } 
         case LXB_TAG_CODE: { return browse_tag_code(node, ctx); } 
         case LXB_TAG_DIV: { return browse_tag_div(node, ctx); }
+        case LXB_TAG_DL: { return browse_list_block(node->first_child, node->last_child, ctx); }
+        case LXB_TAG_DT: { return browse_list_block(node->first_child, node->last_child, ctx); }
         case LXB_TAG_EM: { return browse_tag_em(node, ctx); }
         case LXB_TAG_FORM: { return browse_tag_form(node, ctx); }
         case LXB_TAG_H1: case LXB_TAG_H2: case LXB_TAG_H3: case LXB_TAG_H4: case LXB_TAG_H5: case LXB_TAG_H6: { return browse_tag_h(node, ctx); }
@@ -658,6 +659,7 @@ Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu, HttpMethod method) {
     try( url_init_from_curlu(&url, cu));
     lxb_html_document_t* document = lxb_html_document_create();
     if (!document) {
+        curl_url_cleanup(cu);
         return "error: lxb failed to create html document";
     }
 
@@ -675,7 +677,11 @@ Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu, HttpMethod method) {
 
 Err htmldoc_init_fetch_browse(HtmlDoc d[static 1], const char* url, UrlClient url_client[static 1]) {
     try(htmldoc_init(d, url));
-    try(htmldoc_fetch(d, url_client));//TODO: clean on failure
+    Err err = htmldoc_fetch(d, url_client);
+    if (err) {
+        htmldoc_cleanup(d);
+        return err;
+    }
     return htmldoc_browse(d);
 }
 
@@ -683,7 +689,11 @@ Err htmldoc_init_fetch_browse_from_curlu(
     HtmlDoc d[static 1], CURLU* cu, UrlClient url_client[static 1], HttpMethod method
 ) {
     try(htmldoc_init_from_curlu(d, cu, method));
-    try(htmldoc_fetch(d, url_client));//TODO: clean on failure
+    Err err = htmldoc_fetch(d, url_client);
+    if (err) {
+        curl_url_cleanup(cu);
+        return err;
+    }
     return htmldoc_browse(d);
 }
 
