@@ -1,7 +1,19 @@
 #! /bin/bash
-make clean && CC=tcc CFLAGS=-DNO_REGEX make && \
-    make clean && make && make test_all && make run_tests && \
-    make clean && make CC=clang && make test_all CC=clang && make run_tests CC=clang
+_run_tests_ () {
+    for f in build/test_*; do
+        ./${f}
+    done
+}
 
+_check_compiler_ () {
+    CComp=$1
+    CFlags=$2
+    make clean && \
+        CC=${CComp} CFLAGS=${CFlags} make && \
+        CC=${CComp} CFLAGS=${CFlags} make test_all && \
+        _run_tests_
+}
 
-
+_check_compiler_ tcc -DNO_REGEX && \
+    _check_compiler_ clang && \
+    _check_compiler_ gcc
