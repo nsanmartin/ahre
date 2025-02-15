@@ -66,7 +66,7 @@ inline static void strview_trim_space_left(StrView s[static 1]) {
     while(s->len && isspace(*(s->s))) { ++s->s; --s->len; }
 }
 
-inline static void strview_trim_space(StrView s[static 1]) {
+inline static void strview_trim_space_in_place(StrView s[static 1]) {
     while(s->len && isspace(*(s->s))) { ++s->s; --s->len; }
     while(s->len > 1 && isspace(s->s[s->len-1])) { --s->len; }
 }
@@ -75,6 +75,12 @@ inline static StrView strview_split_word(StrView s[static 1]) {
     StrView word = (StrView){.s=s->s};
     while(s->len && !isspace(*(s->s))) { ++word.len; ++s->s; --s->len; }
     return word;
+}
+
+inline static StrView strview_trim_from_mem(const char* s, size_t len) {
+    StrView rv = strview(s, len);
+    strview_trim_space_in_place(&rv);
+    return rv;
 }
 
 Err str_prepend(Str s[static 1], const char* cs);
@@ -109,6 +115,5 @@ static inline Str mem_get_word_str(const char* data, size_t len) {
     while (len && !isspace(*data)) { ++res.len; --len; ++data; }
     return res;
 }
-
 
 #endif

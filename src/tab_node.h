@@ -117,6 +117,8 @@ tab_node_init(
     try(_tab_node_init_base_(n, parent));
     Err e = htmldoc_init_fetch_browse(tab_node_doc(n), url, url_client);
     if (e) {
+        /* doc if initialized was cleaned by htmldoc_init_fetch_browse. */
+        n->doc = (HtmlDoc){0};
         tab_node_cleanup(n);
         return e;
     }
