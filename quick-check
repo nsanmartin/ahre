@@ -1,4 +1,7 @@
 #! /bin/bash
-make clean && make && make test_all && make run_tests
-make clean && make CC=clang && make test_all CC=clang && make run_tests CC=clang
+make clean && CC=tcc CFLAGS=-DNO_REGEX make && \
+    make clean && make && make test_all && make run_tests && \
+    make clean && make CC=clang && make test_all CC=clang && make run_tests CC=clang
+
+
 

@@ -18,9 +18,3 @@ void tab_node_cleanup(TabNode n[static 1]) {
     std_free(n->childs);
 }
 
-
-void htmldoc_tree_cleanup(TabNode t[static 1]) {
-    tab_node_cleanup(t);
-    *t = (TabNode){0};
-}
-

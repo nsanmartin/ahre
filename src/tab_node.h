@@ -1,5 +1,5 @@
-#ifndef AHRE_HTMLDOC_TREE_H__
-#define AHRE_HTMLDOC_TREE_H__
+#ifndef AHRE_TAB_NODE_H__
+#define AHRE_TAB_NODE_H__
 
 #include "src/htmldoc.h"
 #include "src/wrapper-lexbor.h"
@@ -121,7 +121,7 @@ tab_node_init(
 
 /**/
 static inline
-Err htmldoc_tree_append_ahref(TabNode t[static 1], size_t linknum, UrlClient url_client[static 1])
+Err tab_node_tree_append_ahref(TabNode t[static 1], size_t linknum, UrlClient url_client[static 1])
 {
     TabNode* n;
     try(  tab_node_current_node(t, &n));
@@ -136,8 +136,12 @@ Err htmldoc_tree_append_ahref(TabNode t[static 1], size_t linknum, UrlClient url
     try( lexcurl_dup_curl_with_anchors_href(*a, &curlu));
 
     TabNode newnode;
-    try( tab_node_init_from_curlu(&newnode, n, curlu, url_client, http_get));
     Err err;
+    if((err=tab_node_init_from_curlu(&newnode, n, curlu, url_client, http_get))) {
+        curl_url_cleanup(curlu);
+        return err;
+    };
+
     if ((err=tab_node_append_move_child(n, &newnode))) {
         curl_url_cleanup(curlu);
         return err;
@@ -146,7 +150,7 @@ Err htmldoc_tree_append_ahref(TabNode t[static 1], size_t linknum, UrlClient url
 }
 
 static inline
-Err htmldoc_tree_append_submit(TabNode t[static 1], size_t ix, UrlClient url_client[static 1])
+Err tab_node_tree_append_submit(TabNode t[static 1], size_t ix, UrlClient url_client[static 1])
 {
     TabNode* n;
     try(  tab_node_current_node(t, &n));
@@ -193,7 +197,7 @@ Err htmldoc_tree_append_submit(TabNode t[static 1], size_t ix, UrlClient url_cli
 }
 
 static inline
-Err htmldoc_tree_append_url(TabNode t[static 1], const char* url) {
+Err tab_node_tree_append_url(TabNode t[static 1], const char* url) {
     TabNode* cn;
     try( tab_node_current_node(t, &cn));
     if (!cn) { /* head is current node */

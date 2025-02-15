@@ -3,7 +3,7 @@
 #include "src/tab_node.h"
 
 ///#define T TabNode
-///// #define TClean htmldoc_tree_cleanup
+///// #define TClean tab_node_cleanup
 ///#include <arl.h>
 
 void arl_of_tab_node_clean(ArlOf(TabNode)* t);
