@@ -70,7 +70,7 @@ browse_tag_center(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     // when fitting to width center those lines image.
 
     try( browse_ctx_buf_append_lit__(ctx, "%{[center]:\n"));
-    try( browse_list_block(node->first_child, node->last_child, ctx));
+    try( browse_list(node->first_child, node->last_child, ctx));
     try( browse_ctx_buf_append_lit__(ctx, "%}[center]\n"));
     return Ok;
 }
@@ -85,7 +85,7 @@ brose_ctx_append_img_alt_(lxb_dom_node_t* img, BrowseCtx ctx[static 1]) {
     if (alt && alt_len) {
         try( browse_ctx_buf_append_lit__(ctx, ELEM_ID_SEP));
         try( browse_ctx_buf_append(ctx, (char*)alt, alt_len));
-        *browse_ctx_empty(ctx) = false;
+        ///*browse_ctx_empty(ctx) = false;
     }
     return Ok;
 }
@@ -105,7 +105,7 @@ browse_tag_img(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 
     try( browse_ctx_buf_append_lit__(ctx, IMAGE_CLOSE_STR));
     try( browse_ctx_reset_color(ctx));
-    *browse_ctx_empty(ctx) = false;
+    ///*browse_ctx_empty(ctx) = false;
     return Ok;
 }
 
@@ -137,7 +137,7 @@ browse_tag_button(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     try( browse_ctx_buf_append_lit__(ctx, BUTTON_CLOSE_STR));
     try( browse_ctx_buf_append_lit__(ctx, " % button not supported yet % "));
     try( browse_ctx_reset_color(ctx));
-    *browse_ctx_empty(ctx) = false;
+    ///*browse_ctx_empty(ctx) = false;
     return Ok;
 }
 
@@ -174,7 +174,7 @@ browse_tag_input(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
         }
         try( browse_ctx_buf_append_lit__(ctx, INPUT_CLOSE_STR));
         try( browse_ctx_reset_color(ctx));
-        *browse_ctx_empty(ctx) = false;
+        ///*browse_ctx_empty(ctx) = false;
     }
     return Ok;
 }
@@ -204,9 +204,26 @@ browse_tag_ul(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 
 static Err
 browse_tag_li(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    try( browse_ctx_buf_append_lit__(ctx, " * "));
-    *browse_ctx_empty(ctx) = false;
-    return browse_list_block(node->first_child, node->last_child, ctx);
+    BufOf(char) buf = browse_ctx_buf_get_reset(ctx);
+    Err err = browse_list(node->first_child, node->last_child, ctx);
+    browse_ctx_swap_buf(ctx, &buf);
+    if (err) {
+        buffn(char, clean)(&buf);
+        return err;
+    }
+
+    if (buf.len) {
+        if (   (err=browse_ctx_buf_append_lit__(ctx, " * "))
+            || (err=browse_ctx_buf_append(ctx, (char*)buf.items, buf.len))
+            || (err=browse_ctx_buf_append_lit__(ctx, "\n"))
+        ) {
+
+            buffn(char, clean)(&buf);
+            return err;
+        }
+    }
+    buffn(char, clean)(&buf);
+    return Ok;
 }
 
 static Err
@@ -240,9 +257,9 @@ browse_tag_h(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 static Err
 browse_tag_code(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     try( browse_ctx_buf_append_lit__(ctx, " `"));
-    bool was_empty = browse_ctx_empty_get_set(ctx, true);
+    ///bool was_empty = browse_ctx_empty_get_set(ctx, true);
     try (browse_list_inline(node->first_child, node->last_child, ctx));
-    browse_ctx_empty_get_set_and(ctx, was_empty);
+    //browse_ctx_empty_get_set_and(ctx, was_empty);
     try( browse_ctx_buf_append_lit__(ctx, "` "));
     return Ok;
 }
@@ -251,9 +268,9 @@ static Err
 browse_tag_b(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     try( browse_ctx_buf_append_lit__(ctx, " "));
     try( browse_ctx_buf_append_color_(ctx, esc_code_bold));
-    bool was_empty = browse_ctx_empty_get_set(ctx, true);
+    ///bool was_empty = browse_ctx_empty_get_set(ctx, true);
     try (browse_list_inline(node->first_child, node->last_child, ctx));
-    browse_ctx_empty_get_set_and(ctx, was_empty);
+    ///browse_ctx_empty_get_set_and(ctx, was_empty);
     try( browse_ctx_reset_color(ctx));
     try( browse_ctx_buf_append_lit__(ctx, " "));
     return Ok;
@@ -262,9 +279,9 @@ browse_tag_b(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 static Err browse_tag_em(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     try( browse_ctx_buf_append_lit__(ctx, " "));
     try( browse_ctx_buf_append_color_(ctx, esc_code_underline));
-    bool was_empty = browse_ctx_empty_get_set(ctx, true);
+    ///bool was_empty = browse_ctx_empty_get_set(ctx, true);
     try (browse_list_inline(node->first_child, node->last_child, ctx));
-    browse_ctx_empty_get_set_and(ctx, was_empty);
+    //browse_ctx_empty_get_set_and(ctx, was_empty);
     try( browse_ctx_reset_color(ctx));
     try( browse_ctx_buf_append_lit__(ctx, " "));
     return Ok;
@@ -274,9 +291,9 @@ static Err
 browse_tag_i(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     try( browse_ctx_buf_append_lit__(ctx, " "));
     try( browse_ctx_buf_append_color_(ctx, esc_code_italic));
-    bool was_empty = browse_ctx_empty_get_set(ctx, true);
+    ///bool was_empty = browse_ctx_empty_get_set(ctx, true);
     try (browse_list_inline(node->first_child, node->last_child, ctx));
-    browse_ctx_empty_get_set_and(ctx, was_empty);
+    //browse_ctx_empty_get_set_and(ctx, was_empty);
     try( browse_ctx_reset_color(ctx));
     try( browse_ctx_buf_append_lit__(ctx, " "));
     return Ok;
@@ -580,10 +597,10 @@ Err browse_text(lxb_dom_node_t* node,  BrowseCtx ctx[static 1]) {
         //first newline character is stripped. 
         //https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
 
-        *browse_ctx_empty(ctx) = false;
+        //*browse_ctx_empty(ctx) = false;
         try( browse_ctx_buf_append(ctx, (char*)data, len));
     } else if (mem_skip_space_inplace(&data, &len)) {
-        *browse_ctx_empty(ctx) = false;
+        ///*browse_ctx_empty(ctx) = false;
         try( browse_mem_skipping_space(data, len, ctx));
     } 
     if (node->first_child || node->last_child)
