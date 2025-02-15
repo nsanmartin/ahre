@@ -11,5 +11,5 @@
 #define BUTTON_OPEN_STR  "<"
 #define BUTTON_CLOSE_STR  ">"
 
-#define ELEM_ID_SEP "`"
+#define ELEM_ID_SEP "."
 #endif

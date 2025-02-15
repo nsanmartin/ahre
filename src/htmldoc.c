@@ -38,10 +38,28 @@ Err browse_tag_pre(lxb_dom_node_t* node, BrowseCtx ctx[static 1]);
 
 //_Thread_local static unsigned char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {0};
 
+size_t _strview_trim_left_count_newlines_(StrView s[static 1]) {
+    size_t newlines = 0;
+    while(s->len && isspace(*(s->s))) {
+        newlines += *(s->s) == '\n';
+        ++s->s;
+        --s->len;
+    }
+    return newlines;
+}
+
+size_t _strview_trim_right_count_newlines_(StrView s[static 1]) {
+    size_t newlines = 0;
+    while(s->len && isspace(s->s[s->len-1])) {
+        newlines += s->s[s->len-1] == '\n';
+        --s->len;
+    }
+    return newlines;
+}
+
 
 static Err
 browse_tag_br(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    try( browse_ctx_buf_commit(ctx));
     try( browse_ctx_buf_append_lit__(ctx, "\n"));
     return browse_list_inline(node->first_child, node->last_child, ctx);
 }
@@ -193,12 +211,29 @@ browse_tag_li(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 
 static Err
 browse_tag_h(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    try( browse_ctx_buf_append_color_(ctx, esc_code_bold));
-    //TODO: implement hN for each N
-    try( browse_ctx_buf_append_lit__(ctx, "# "));
-    //try( browse_ctx_buf_append_lit__(ctx, "h1`"));
-    try (browse_list_block(node->first_child, node->last_child, ctx));
+    BufOf(char)* buf = &(BufOf(char)){0};
+    if (browse_ctx_color(ctx)) try( browse_ctx_esc_code_push(ctx, esc_code_bold));
+
+    browse_ctx_swap_buf(ctx, buf);
+    try( browse_list_block(node->first_child, node->last_child, ctx));
+    browse_ctx_swap_buf(ctx, buf);
+
+    StrView content = strview(items__(buf), len__(buf));
+    _strview_trim_left_count_newlines_(&content);
+    _strview_trim_right_count_newlines_(&content);
+
+    Err err;
+    if (   (err=browse_ctx_buf_append_lit__(ctx, "\n# "))
+        || (err=browse_ctx_buf_append_color_esc_code(ctx, esc_code_bold))
+    ) {
+        buffn(char, clean)(buf);
+        return err;
+    }
+
+    if (content.len) try( browse_ctx_buf_append(ctx, (char*)content.s, content.len));
+    buffn(char, clean)(buf);
     try( browse_ctx_reset_color(ctx));
+    try( browse_ctx_buf_append_lit__(ctx, "\n"));
 
     return Ok;
 }
@@ -687,8 +722,7 @@ Err htmldoc_browse(HtmlDoc htmldoc[static 1]) {
     BrowseCtx ctx;
     try(browse_ctx_init(&ctx, htmldoc, true));
     Err err = browse_rec(lxb_dom_interface_node(lxbdoc), &ctx);
-        try( browse_ctx_buf_commit(&ctx));
-        try( browse_ctx_buf_commit(&ctx));
+    try( browse_ctx_buf_commit(&ctx));
     browse_ctx_cleanup(&ctx);
     if (err) return err;
     //TODO: join append-null and fit-lines together in a single static method so that

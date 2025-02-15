@@ -29,7 +29,16 @@ static inline BufOf(char)* browse_ctx_textbuf_buf_(BrowseCtx ctx[static 1]) {
 
 static inline bool browse_ctx_color(BrowseCtx ctx[static 1]) { return ctx->color; }
 static inline bool* browse_ctx_empty(BrowseCtx ctx[static 1]) { return &ctx->empty; }
+static inline BufOf(char)* browse_ctx_buf(BrowseCtx ctx[static 1]) { return &ctx->buf; }
 
+
+static inline void browse_ctx_swap_buf(BrowseCtx ctx[static 1], BufOf(char) buf[static 1]) {
+    BufOf(char) tmp = *buf;
+    *buf = *browse_ctx_buf(ctx);
+    ctx->buf = tmp;
+}
+
+        
 static inline bool browse_ctx_empty_get_set(BrowseCtx ctx[static 1], bool value) {
     bool was_empty = *browse_ctx_empty(ctx);
     *browse_ctx_empty(ctx) = value;
@@ -59,8 +68,6 @@ static inline EscCode* browse_ctx_esc_code_stack_backp(BrowseCtx ctx[static 1]) 
     ArlOf(EscCode)* stack = browse_ctx_esc_code_stack(ctx);
     return arlfn(EscCode, back)(stack);
 }
-
-static inline BufOf(char)* browse_ctx_buf(BrowseCtx ctx[static 1]) { return &ctx->buf; }
 
 static inline Err
 browse_ctx_buf_commit(BrowseCtx ctx[static 1]) {
@@ -132,11 +139,20 @@ browse_list_block( lxb_dom_node_t* it, lxb_dom_node_t* last, BrowseCtx ctx[stati
 
     *browse_ctx_empty(ctx) = inline_childs_count == 0;
     if (!*browse_ctx_empty(ctx)) {
-        try( browse_ctx_buf_commit(ctx));
         try( browse_ctx_buf_append_lit__(ctx, "\n"));
     }
     return Ok;
 }
+
+static inline Err browse_ctx_buf_append_color_esc_code(BrowseCtx ctx[static 1], EscCode code) {
+    if (browse_ctx_color(ctx)) {
+        Str code_str;
+        try( esc_code_to_str(code, &code_str));
+        try( browse_ctx_buf_append(ctx, (char*)code_str.s, code_str.len));
+    }
+    return Ok;
+}
+ 
 
 static inline Err browse_ctx_buf_append_color_(BrowseCtx ctx[static 1], EscCode code) {
     if (browse_ctx_color(ctx)) {
