@@ -706,11 +706,7 @@ Err htmldoc_init_fetch_browse_from_curlu(
     HtmlDoc d[static 1], CURLU* cu, UrlClient url_client[static 1], HttpMethod method
 ) {
     try(htmldoc_init_from_curlu(d, cu, method));
-    Err err = htmldoc_fetch(d, url_client);
-    if (err) {
-        curl_url_cleanup(cu);
-        return err;
-    }
+    try( htmldoc_fetch(d, url_client)); /* on failure do not free cu owned by caller */
     return htmldoc_browse(d);
 }
 

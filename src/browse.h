@@ -125,13 +125,10 @@ browse_list( lxb_dom_node_t* it, lxb_dom_node_t* last, BrowseCtx ctx[static 1]) 
 
 static inline Err
 browse_list_inline( lxb_dom_node_t* it, lxb_dom_node_t* last, BrowseCtx ctx[static 1]) {
-    ///bool empty_so_far = browse_ctx_empty_get_set(ctx, true);
     for(; it ; it = it->next) {
         try( browse_rec(it, ctx));
-        //if (!browse_ctx_empty_get_set(ctx, true)) empty_so_far = false;
         if (it == last) break;
     }
-    ///*browse_ctx_empty(ctx) = empty_so_far;
     return Ok;
 }
 
@@ -140,25 +137,18 @@ browse_list_block( lxb_dom_node_t* it, lxb_dom_node_t* last, BrowseCtx ctx[stati
     Err err;
     BufOf(char) buf = browse_ctx_buf_get_reset(ctx);
 
-    for(; it ; it = it->next) {
-        if ((err=browse_rec(it, ctx))) {
-            buffn(char, clean)(&buf);
-            return err;
-        }
-        if ( it == last ) break;
-    }
+    err = browse_list(it, last, ctx);
 
     browse_ctx_swap_buf(ctx, &buf);
+    if (err) {
+        buffn(char, clean)(&buf);
+        return err;
+    }
     if (buf.len) {
-        if ((err=browse_ctx_buf_append_lit__(ctx, "\n"))) {
-            buffn(char, clean)(&buf);
-            return err;
-        }
-        if ((err=browse_ctx_buf_append(ctx, (char*)buf.items, buf.len))) {
-            buffn(char, clean)(&buf);
-            return err;
-        }
-        if ((err=browse_ctx_buf_append_lit__(ctx, "\n"))) {
+        if (   (err=browse_ctx_buf_append_lit__(ctx, "\n"))
+            || (err=browse_ctx_buf_append(ctx, (char*)buf.items, buf.len))
+            || (err=browse_ctx_buf_append_lit__(ctx, "\n"))
+        ) {
             buffn(char, clean)(&buf);
             return err;
         }

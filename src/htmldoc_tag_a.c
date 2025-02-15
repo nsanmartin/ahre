@@ -6,15 +6,6 @@
 #include "src/wrapper-lexbor.h"
 
 
-//static inline  Err
-//_append_unsigned_to_bufof_char_base36(uintmax_t ui, BufOf(char)* b) {
-//    char numbf[3 * sizeof ui] = {0};
-//    size_t len = 0;
-//    try( uint_to_base36_str(numbf, 3 * sizeof ui, ui, &len));
-//    if (!buffn(char, append)(b, numbf, len)) return "error appending unsigned to bufof char";
-//    return Ok;
-//}
-
 static bool _node_has_href(lxb_dom_node_t* node) {
     const lxb_char_t* data;
     size_t data_len;
@@ -61,7 +52,6 @@ Err browse_tag_a(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
             || (err=browse_ctx_buf_append_lit__(ctx, ANCHOR_OPEN_STR))
             || (err=browse_ctx_buf_append_ui_base36_(ctx, anchor_num))
             || (err=browse_ctx_buf_append_lit__(ctx, ELEM_ID_SEP))
-            ///|| (err=browse_ctx_buf_append_lit__(ctx, " "))
         ) {
             buffn(char, clean)(&buf);
             return err;

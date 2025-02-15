@@ -101,6 +101,8 @@ tab_node_init_from_curlu(
     try(_tab_node_init_base_(n, parent));
     Err err = htmldoc_init_fetch_browse_from_curlu(tab_node_doc(n), cu, url_client, method);
     if (err) {
+        /* cu is owned by caller so if an erro occur we must not free it but him */
+        htmldoc_url(tab_node_doc(n))->cu = NULL;
         tab_node_cleanup(n);
         return err;
     }
@@ -147,7 +149,7 @@ Err tab_node_tree_append_ahref(TabNode t[static 1], size_t linknum, UrlClient ur
     };
 
     if ((err=tab_node_append_move_child(n, &newnode))) {
-        curl_url_cleanup(curlu);
+        tab_node_cleanup(&newnode);
         return err;
     }
     return Ok;
