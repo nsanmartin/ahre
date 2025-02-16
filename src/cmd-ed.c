@@ -125,12 +125,8 @@ Err ed_write(const char* rest, TextBuf textbuf[static 1]) {
     rest = cstr_trim_space((char*)rest);
     if (!*rest) return "invalid url name";
     FILE* fp = fopen(rest, "w");
-    if (!fp) {
-        return err_fmt("%s: could not open file: %s", __func__, rest); 
-    }
-    //if (fwrite(textbuf_items(textbuf), 1, len(textbuf), fp) != len(textbuf)) {
-    //    return err_fmt("%s: error writing to file: %s", __func__, rest);
-    //}
+    if (!fp) return err_fmt("%s: could not open file: %s", __func__, rest); 
+
     const char* items = textbuf_items(textbuf);
     const char* beg = items;
     size_t len = len(textbuf);

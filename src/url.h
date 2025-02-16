@@ -32,7 +32,7 @@ static Err _prepend_file_schema_(const char* path, BufOf(char) buf[static 1]) {
         char cwdbuf[4000];
         if(!getcwd(cwdbuf, 4000)) return "error: gwtcwd failed";
         try( bufofchar_append(buf, cwdbuf, strlen(cwdbuf)));
-        if (*path == '.') {
+        if (*path == '.' && path[1] != '/') {
             ++path;
         } else {
             try( bufofchar_append_lit__(buf, "/"));
@@ -43,13 +43,20 @@ static Err _prepend_file_schema_(const char* path, BufOf(char) buf[static 1]) {
     return Ok;
 }
 
+/* dtor */
+static inline void url_cleanup(Url u[static 1]) { curl_url_cleanup(u->cu); }
+
 /* ctor */
 static inline Err url_init(Url u[static 1],  const char* cstr) {
+    Err err;
     *u = (Url){.cu=curl_url()};
     if (!u->cu) return "error initializing CURLU";
     BufOf(char)* url_buf = &(BufOf(char)){0};
     if (_file_exists_(cstr)) {
-        try( _prepend_file_schema_(cstr, url_buf));
+        if((err=_prepend_file_schema_(cstr, url_buf))) {
+            url_cleanup(u);
+            return err;
+        }
         cstr = url_buf->items;
     }
 
@@ -61,6 +68,7 @@ static inline Err url_init(Url u[static 1],  const char* cstr) {
             break;
         case CURLUE_BAD_HANDLE: case CURLUE_OUT_OF_MEMORY:
             res = err_fmt("error setting CURLU: %s", curl_url_strerror(code));
+            url_cleanup(u);
             break;
         default:
             printf("(TODO: do something)warn: curl_url_set returned code: %s\n", curl_url_strerror(code));
@@ -89,6 +97,4 @@ static inline Err curlu_set_url(CURLU* u,  const char* cstr) {
     }
 }
 
-/* dtor */
-static inline void url_cleanup(Url u[static 1]) { curl_url_cleanup(u->cu); }
 #endif

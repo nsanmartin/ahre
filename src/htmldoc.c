@@ -644,14 +644,13 @@ Err browse_tag_pre(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 Err htmldoc_init(HtmlDoc d[static 1], const char* cstr_url) {
     Url url = {0};
     if (cstr_url && *cstr_url) {
-        if (strlen(cstr_url) > MAX_URL_LEN) {
-            return "cstr_url large is not supported.";
-        }
-        Err err = url_init(&url, cstr_url);
-        if (err) {
-            std_free((char*)cstr_url);
-            return err;
-        }
+        if (strlen(cstr_url) > MAX_URL_LEN) return "cstr_url large is not supported.";
+        try( url_init(&url, cstr_url));
+        ///Err err = url_init(&url, cstr_url);
+        ///if (err) {
+        ///    std_free((char*)cstr_url);
+        ///    return err;
+        ///}
     } else { cstr_url = 0x0; }
 
     lxb_html_document_t* document = lxb_html_document_create();
