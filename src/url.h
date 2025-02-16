@@ -32,7 +32,7 @@ static Err _prepend_file_schema_(const char* path, BufOf(char) buf[static 1]) {
         char cwdbuf[4000];
         if(!getcwd(cwdbuf, 4000)) return "error: gwtcwd failed";
         try( bufofchar_append(buf, cwdbuf, strlen(cwdbuf)));
-        if (*path == '.' && path[1] != '/') {
+        if (*path == '.' && path[1] == '/') {
             ++path;
         } else {
             try( bufofchar_append_lit__(buf, "/"));
