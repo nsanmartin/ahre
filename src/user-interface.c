@@ -14,6 +14,7 @@
 #include "src/utils.h"
 #include "src/wrapper-lexbor-curl.h"
 
+Err dbg_print_form(Session s[static 1], const char* line) ;
 
 //TODO: move this to wrapper-lexbor-curl.h
 Err mk_submit_url(UrlClient uc[static 1],
@@ -315,9 +316,33 @@ Err process_line(Session session[static 1], const char* line) {
     try( session_current_buf(session, &tb));
     if (*line == ':') return ed_eval(tb, line + 1);
     if (*line == '<') return ed_eval(htmldoc_sourcebuf(htmldoc), line + 1);
+    if (*line == '&') return dbg_print_form(session, line + 1);//TODO: form is &Form or something else
     if (*line == ANCHOR_OPEN_STR[0]) return cmd_anchor_eval(session, line + 1);
     if (*line == INPUT_OPEN_STR[0]) return cmd_input_eval(session, line + 1);
     if (*line == IMAGE_OPEN_STR[0]) return cmd_image_eval(session, line + 1);
 
     return cmd_eval(session, line);
+}
+
+Err dbg_print_form_info(lxb_dom_node_t* node) ;
+
+Err dbg_print_form(Session s[static 1], const char* line) {
+    line = cstr_skip_space(line);
+    long long unsigned linknum;
+    try( parse_base36_or_throw(&line, &linknum));
+    line = cstr_skip_space(line);
+    TabNode* current_tab;
+    try( tablist_current_tab(session_tablist(s), &current_tab));
+    if(!current_tab) return "error: no current tab";
+
+    TabNode* n;
+    try(  tab_node_current_node(current_tab, &n));
+    if (!n) return "error: current node not found";
+    HtmlDoc* d = &n->doc;
+    ArlOf(LxbNodePtr)* forms = htmldoc_forms(d);
+
+    LxbNodePtr* formp = arlfn(LxbNodePtr, at)(forms, linknum);
+    if (!formp) return "link number invalid";
+
+    return dbg_print_form_info(*formp);
 }

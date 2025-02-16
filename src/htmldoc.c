@@ -92,7 +92,19 @@ browse_tag_img(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 
 static Err
 browse_tag_form(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
+    ArlOf(LxbNodePtr)* forms = htmldoc_forms(browse_ctx_htmldoc(ctx));
+    if (!arlfn(LxbNodePtr,append)(forms, &node)) return "error: lip set";
+    try( browse_ctx_buf_append_color_(ctx, esc_code_purple));
+    try( browse_ctx_buf_append_lit__(ctx, FORM_OPEN_STR));
+    try( browse_ctx_buf_append_ui_base36_(ctx, len__(forms)-1));
+    try( browse_ctx_buf_append_lit__(ctx, "]:"));
+    try( browse_ctx_reset_color(ctx));
+
     try (browse_list_block(node->first_child, node->last_child, ctx));
+
+    try( browse_ctx_buf_append_color_(ctx, esc_code_purple));
+    try( browse_ctx_buf_append_lit__(ctx, FORM_CLOSE_STR));
+    try( browse_ctx_reset_color(ctx));
     return Ok;
 }
 
@@ -629,11 +641,6 @@ Err htmldoc_init(HtmlDoc d[static 1], const char* cstr_url) {
     if (cstr_url && *cstr_url) {
         if (strlen(cstr_url) > MAX_URL_LEN) return "cstr_url large is not supported.";
         try( url_init(&url, cstr_url));
-        ///Err err = url_init(&url, cstr_url);
-        ///if (err) {
-        ///    std_free((char*)cstr_url);
-        ///    return err;
-        ///}
     } else { cstr_url = 0x0; }
 
     lxb_html_document_t* document = lxb_html_document_create();
@@ -741,4 +748,40 @@ Err htmldoc_browse(HtmlDoc htmldoc[static 1]) {
     }
     return Ok;
 }
+
+Err _dbg_print_form_info_rec_(lxb_dom_node_t* node, int indent) {
+    if (!node) return Ok;
+    if (node->local_name == LXB_TAG_INPUT && !_lexbor_attr_has_value(node, "type", "submit")) {
+        const lxb_char_t* value;
+        size_t valuelen;
+        lexbor_find_attr_value(node, "value", &value, &valuelen);
+        if (!value || valuelen == 0) return Ok;
+
+        const lxb_char_t* name;
+        size_t namelen;
+        lexbor_find_attr_value(node, "name", &name, &namelen);
+        if (!name || namelen == 0) return Ok;
+
+        // dbg
+        printf("%*c", indent, ' ');
+        printf("%p->%p\t", (void*)node->parent,  (void*)node);
+        fwrite(name, 1, namelen, stdout);
+        printf("%s:", "\t");
+        fwrite(value, 1, valuelen, stdout);
+        puts("");
+        return Ok;
+    } 
+
+    for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
+        try( _dbg_print_form_info_rec_(it, indent+1));
+        if (it == node->last_child) { break; }
+    }
+    return Ok;
+}
+
+Err dbg_print_form_info(lxb_dom_node_t* node) {
+    if (node->local_name != LXB_TAG_FORM) { puts("dgb err, expecting a FORM"); return Ok; } 
+    return _dbg_print_form_info_rec_(node, 0);
+}
+
 

@@ -10,6 +10,8 @@
 #define IMAGE_CLOSE_STR  ")"
 #define BUTTON_OPEN_STR  "<"
 #define BUTTON_CLOSE_STR  ">"
+#define FORM_OPEN_STR  "&{[form "
+#define FORM_CLOSE_STR  "&}"
 
 #define ELEM_ID_SEP "."
 #endif

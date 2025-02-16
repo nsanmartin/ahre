@@ -30,6 +30,7 @@ typedef struct {
     ArlOf(LxbNodePtr) anchors;
     ArlOf(LxbNodePtr) imgs;
     ArlOf(LxbNodePtr) inputs;
+    ArlOf(LxbNodePtr) forms;
     LxbNodePtr title;
 } DocCache;
 
@@ -59,6 +60,9 @@ htmldoc_imgs(HtmlDoc d[static 1]) { return &d->cache.imgs; }
 static inline ArlOf(LxbNodePtr)*
 htmldoc_inputs(HtmlDoc d[static 1]) { return &d->cache.inputs; }
 
+static inline ArlOf(LxbNodePtr)*
+htmldoc_forms(HtmlDoc d[static 1]) { return &d->cache.forms; }
+
 static inline LxbNodePtr*
 htmldoc_title(HtmlDoc d[static 1]) { return &d->cache.title; }
 
@@ -87,6 +91,7 @@ static inline void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
     arlfn(LxbNodePtr,clean)(htmldoc_anchors(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_imgs(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
+    arlfn(LxbNodePtr,clean)(htmldoc_forms(htmldoc));
     *htmldoc_cache(htmldoc) = (DocCache){0};
 }
 

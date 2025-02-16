@@ -4,13 +4,15 @@
 #include "src/error.h"
 #include "src/str.h"
 
-#define EscCodeBlue  "\033[94m"
-#define EscCodeGreen  "\033[32m"
 #define EscCodeRed   "\033[91m"
+#define EscCodeLightGreen  "\033[92m"
+#define EscCodeBlue  "\033[94m"
+
+#define EscCodeGreen  "\033[32m"
 #define EscCodeReset "\033[0m"
 #define EscCodeYellow  "\033[33m"
+#define EscCodePurple  "\033[35m"
 
-#define EscCodeLightGreen  "\033[92m"
 
 #define EscCodeBold "\033[1m"
 #define EscCodeItalic "\033[3m"
@@ -21,6 +23,7 @@ typedef enum {
     esc_code_green,
     esc_code_red,
     esc_code_yellow,
+    esc_code_purple,
 
     esc_code_light_green,
 
@@ -39,6 +42,7 @@ static inline Err esc_code_to_str(EscCode code, Str out[static 1]) {
         case esc_code_green: _set_ptr_(out, EscCodeGreen);
         case esc_code_red: _set_ptr_(out, EscCodeRed);
         case esc_code_yellow: _set_ptr_(out, EscCodeYellow);
+        case esc_code_purple: _set_ptr_(out, EscCodePurple);
         case esc_code_light_green: _set_ptr_(out, EscCodeLightGreen);
         case esc_code_bold: _set_ptr_(out, EscCodeBold);
         case esc_code_italic: _set_ptr_(out, EscCodeItalic);

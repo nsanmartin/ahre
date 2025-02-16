@@ -190,11 +190,14 @@ static Err _make_submit_post_curlu_rec(
     CURLU* out
 ) {
     if (!node) return Ok;
-    else if (node->local_name == LXB_TAG_INPUT && !_lexbor_attr_has_value(node, "type", "submit")) {
-        try( _append_lexbor_name_value_attrs_if_both_(url_client, node, buf));
-    } 
+    if (node->local_name == LXB_TAG_FORM) {
+       log_warn__("%s", "ignoring form nested inside another form"); 
+       return Ok;
+    }
+    if (node->local_name == LXB_TAG_INPUT && !_lexbor_attr_has_value(node, "type", "submit"))
+        return _append_lexbor_name_value_attrs_if_both_(url_client, node, buf);
 
-    for(lxb_dom_node_t* it = node->first_child; ; it = it->next) {
+    for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
         try( _make_submit_post_curlu_rec(url_client, it, buf, out));
         if (it == node->last_child) { break; }
     }
@@ -256,20 +259,29 @@ _mk_submit_post_(UrlClient url_client[static 1], lxb_dom_node_t* form, CURLU* ou
     BufOf(const_char)* buf = url_client_postdata(url_client);
     buffn(const_char, reset)(buf);
 
-    if ((err=_make_submit_post_curlu_rec(url_client, form, buf, *out))) {
-        buffn(const_char, clean)(buf);
-        return err;
-    }
-
-    if (!buffn(const_char, append)(buf, "\0", 1)) return "error: BufOf.append failure";
-    //TODO: mode this somehow to `curl_lexbor_fetch_document`
-    if (len__(buf) /*check why len des not work*/) {
-        if (curl_easy_setopt(url_client->curl, CURLOPT_POSTFIELDS, buf->items+1)) {
-            ///buffn(const_char, clean)(buf);
-            return "error: curl postfields set failure";
-
+    for(lxb_dom_node_t* it = form->first_child; it ; it = it->next) {
+        if ((err=_make_submit_post_curlu_rec(url_client, it, buf, *out))) {
+            buffn(const_char, clean)(buf);
+            return err;
         }
+        if (it == form->last_child) break;
     }
+
+    //TODO: move this somehow to `curl_lexbor_fetch_document`
+    if (len__(buf)) {
+    
+        CURLcode code;
+        code = curl_easy_setopt(url_client->curl, CURLOPT_POSTFIELDSIZE, len__(buf)-1);
+        if (CURLE_OK != code) {
+            buffn(const_char, clean)(buf);
+            return "error: curl postfields size set failure";
+        }
+        code = curl_easy_setopt(url_client->curl, CURLOPT_POSTFIELDS, items__(buf)+1);
+        if (CURLE_OK != code) {
+            buffn(const_char, clean)(buf);
+            return "error: curl postfields set failure";
+        }
+    } else return "warn: no post fields, not submiting form";
 
     return Ok;
 }
@@ -290,15 +302,12 @@ Err mk_submit_url (
     size_t method_len;
     lexbor_find_attr_value(form, "method", &method, &method_len);
 
-    BufOf(const_char)* buf = &(BufOf(const_char)){0};
     if (action && action_len) {
+        BufOf(const_char)* buf = &(BufOf(const_char)){0};
         Err err = _submit_url_set_action(buf, action, action_len, *out);
-        if (err) {
-            buffn(const_char, clean)(buf);
-            return err;
-        }
+        buffn(const_char, clean)(buf);
+        if (err) return err;
     }
-    buffn(const_char, clean)(buf);
 
     if (!method_len || lexbor_str_eq("get", method, method_len)) {
         *doc_method = http_get;
