@@ -13,30 +13,13 @@ Err browse_tag_a(lxb_dom_node_t* node, BrowseCtx ctx[static 1]);
 Err browse_tag_pre(lxb_dom_node_t* node, BrowseCtx ctx[static 1]);
 
 /* internal linkage */
-//static constexpr size_t MAX_URL_LEN = 2048;
 #define MAX_URL_LEN 2048u
-//static constexpr size_t READ_FROM_FILE_BUFFER_LEN = 4096;
 #define READ_FROM_FILE_BUFFER_LEN 4096u
 #define LAZY_STR_BUF_LEN 1600u
-
-#define serialize_cstring(Ptr, Len, CallBack, Context) \
-    ((LXB_STATUS_OK != CallBack((lxb_char_t*)Ptr, Len, Context)) \
-    ?  "error serializing data" : Ok)
-
-#define try_lxb_serialize(Ptr, Len, CallBack, Context) \
-     if (LXB_STATUS_OK != CallBack((lxb_char_t*)Ptr, Len, Context)) \
-        return "error serializing data"
-
-#define serialize_cstring_debug(LitStr, CallBack, Context) \
-    serialize_cstring(LitStr, sizeof(LitStr) - 1, CallBack, Context)
 
 #define append_to_arlof_lxb_node__(ArrayList, NodePtr) \
     (arlfn(LxbNodePtr,append)(ArrayList, (NodePtr)) ? Ok : "error: lip set")
 
-#define append_to_bufof_char_lit_(Buffer, LitStr) \
-    (buffn(char, append)(Buffer,LitStr, sizeof(LitStr) - 1) ? Ok : "error: failed to append to bufof")
-
-//_Thread_local static unsigned char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN] = {0};
 
 size_t _strview_trim_left_count_newlines_(StrView s[static 1]) {
     size_t newlines = 0;

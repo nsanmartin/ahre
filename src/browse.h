@@ -87,7 +87,6 @@ static inline void browse_ctx_buf_reset(BrowseCtx ctx[static 1]) {
 
 static inline Err browse_ctx_init(BrowseCtx ctx[static 1], HtmlDoc htmldoc[static 1], bool color) {
     *ctx = (BrowseCtx) {.htmldoc=htmldoc, .color=color};
-    ///*ctx = (BrowseCtx) {.htmldoc=htmldoc, .color=color, .empty=true};
     return Ok;
 }
 
