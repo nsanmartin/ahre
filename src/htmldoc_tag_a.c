@@ -37,7 +37,7 @@ Err browse_tag_a(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
         if (browse_ctx_color(ctx)) try( browse_ctx_esc_code_push(ctx, esc_code_blue));
 
         BufOf(char) buf = browse_ctx_buf_get_reset(ctx);
-        try( browse_list_inline(node->first_child, node->last_child, ctx));
+        try( browse_list(node->first_child, node->last_child, ctx));
         browse_ctx_swap_buf(ctx, &buf);
 
         StrView content = strview(buf.items, buf.len);
@@ -66,7 +66,7 @@ Err browse_tag_a(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 
 
 
-    } else try( browse_list_inline(node->first_child, node->last_child, ctx));//TODO: do this?
+    } else try( browse_list(node->first_child, node->last_child, ctx));//TODO: do this?
    
     return Ok;
 }

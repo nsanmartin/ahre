@@ -61,7 +61,7 @@ size_t _strview_trim_right_count_newlines_(StrView s[static 1]) {
 static Err
 browse_tag_br(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     try( browse_ctx_buf_append_lit__(ctx, "\n"));
-    return browse_list_inline(node->first_child, node->last_child, ctx);
+    return browse_list(node->first_child, node->last_child, ctx);
 }
 
 static Err
@@ -100,7 +100,7 @@ browse_tag_img(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     try( browse_ctx_buf_append_ui_(ctx, img_count));
     try( brose_ctx_append_img_alt_(node, ctx));
 
-    try (browse_list_inline(node->first_child, node->last_child, ctx));
+    try (browse_list(node->first_child, node->last_child, ctx));
 
     try( browse_ctx_buf_append_lit__(ctx, IMAGE_CLOSE_STR));
     try( browse_ctx_reset_color(ctx));
@@ -130,7 +130,7 @@ browse_tag_button(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     try( browse_ctx_buf_append_color_(ctx, esc_code_red));
     try( browse_ctx_buf_append_lit__(ctx, BUTTON_OPEN_STR));
 
-    try (browse_list_inline(node->first_child, node->last_child, ctx));
+    try (browse_list(node->first_child, node->last_child, ctx));
 
     try( browse_ctx_buf_append_lit__(ctx, BUTTON_CLOSE_STR));
     try( browse_ctx_buf_append_lit__(ctx, " % button not supported yet % "));
@@ -208,7 +208,7 @@ browse_tag_p(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 static Err
 browse_tag_tr(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     try( browse_ctx_buf_append_lit__(ctx, "\n"));
-    try( browse_list_inline(node->first_child, node->last_child, ctx));
+    try( browse_list(node->first_child, node->last_child, ctx));
     return Ok;
 }
 
@@ -271,7 +271,7 @@ browse_tag_h(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 static Err
 browse_tag_code(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     try( browse_ctx_buf_append_lit__(ctx, " `"));
-    try (browse_list_inline(node->first_child, node->last_child, ctx));
+    try (browse_list(node->first_child, node->last_child, ctx));
     try( browse_ctx_buf_append_lit__(ctx, "` "));
     return Ok;
 }
@@ -280,7 +280,7 @@ static Err
 browse_tag_b(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     try( browse_ctx_buf_append_lit__(ctx, " "));
     try( browse_ctx_buf_append_color_(ctx, esc_code_bold));
-    try (browse_list_inline(node->first_child, node->last_child, ctx));
+    try (browse_list(node->first_child, node->last_child, ctx));
     try( browse_ctx_reset_color(ctx));
     try( browse_ctx_buf_append_lit__(ctx, " "));
     return Ok;
@@ -289,7 +289,7 @@ browse_tag_b(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 static Err browse_tag_em(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     try( browse_ctx_buf_append_lit__(ctx, " "));
     try( browse_ctx_buf_append_color_(ctx, esc_code_underline));
-    try (browse_list_inline(node->first_child, node->last_child, ctx));
+    try (browse_list(node->first_child, node->last_child, ctx));
     try( browse_ctx_reset_color(ctx));
     try( browse_ctx_buf_append_lit__(ctx, " "));
     return Ok;
@@ -299,7 +299,7 @@ static Err
 browse_tag_i(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     try( browse_ctx_buf_append_lit__(ctx, " "));
     try( browse_ctx_buf_append_color_(ctx, esc_code_italic));
-    try (browse_list_inline(node->first_child, node->last_child, ctx));
+    try (browse_list(node->first_child, node->last_child, ctx));
     try( browse_ctx_reset_color(ctx));
     try( browse_ctx_buf_append_lit__(ctx, " "));
     return Ok;
@@ -586,7 +586,7 @@ Err browse_rec_tag(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
             if (node->local_name >= LXB_TAG__LAST_ENTRY)
                 log_warn__("node local name (TAG) greater than last entry: %lx\n", node->local_name);
             else log_todo__("TAG 'NOT' IMPLEMENTED: %s\n", _dbg_tags_[node->local_name]);
-            return browse_list_inline(node->first_child, node->last_child, ctx);
+            return browse_list(node->first_child, node->last_child, ctx);
         }
     }
 }
@@ -620,7 +620,7 @@ Err browse_rec(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
             case LXB_DOM_NODE_TYPE_DOCUMENT: 
             case LXB_DOM_NODE_TYPE_DOCUMENT_TYPE: 
             case LXB_DOM_NODE_TYPE_COMMENT:
-                return browse_list_inline(node->first_child, node->last_child, ctx);
+                return browse_list(node->first_child, node->last_child, ctx);
             default: {
                 if (node->type >= LXB_DOM_NODE_TYPE_LAST_ENTRY)
                     log_warn__("lexbor node type greater than last entry: %lx\n", node->type);

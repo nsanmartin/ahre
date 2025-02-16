@@ -12,7 +12,6 @@
 typedef struct { 
     HtmlDoc* htmldoc;
     bool color;
-    //bool empty;
     BufOf(char) buf;
     ArlOf(EscCode) esc_code_stack;
 } BrowseCtx;
@@ -28,7 +27,6 @@ static inline BufOf(char)* browse_ctx_textbuf_buf_(BrowseCtx ctx[static 1]) {
 }
 
 static inline bool browse_ctx_color(BrowseCtx ctx[static 1]) { return ctx->color; }
-//static inline bool* browse_ctx_empty(BrowseCtx ctx[static 1]) { return &ctx->empty; }
 static inline BufOf(char)* browse_ctx_buf(BrowseCtx ctx[static 1]) { return &ctx->buf; }
 
 
@@ -45,18 +43,6 @@ static inline void browse_ctx_swap_buf(BrowseCtx ctx[static 1], BufOf(char) buf[
 }
 
         
-//static inline bool browse_ctx_empty_get_set(BrowseCtx ctx[static 1], bool value) {
-//    bool was_empty = *browse_ctx_empty(ctx);
-//    *browse_ctx_empty(ctx) = value;
-//    return was_empty;
-//}
-
-//static inline bool browse_ctx_empty_get_set_and(BrowseCtx ctx[static 1], bool value) {
-//    bool was_empty = *browse_ctx_empty(ctx);
-//    *browse_ctx_empty(ctx) &= value;
-//    return was_empty;
-//}
-
 static inline ArlOf(EscCode)* browse_ctx_esc_code_stack(BrowseCtx ctx[static 1]) {
     return &ctx->esc_code_stack;
 }
@@ -122,15 +108,6 @@ browse_list( lxb_dom_node_t* it, lxb_dom_node_t* last, BrowseCtx ctx[static 1]) 
     return Ok;
 }
 
-
-static inline Err
-browse_list_inline( lxb_dom_node_t* it, lxb_dom_node_t* last, BrowseCtx ctx[static 1]) {
-    for(; it ; it = it->next) {
-        try( browse_rec(it, ctx));
-        if (it == last) break;
-    }
-    return Ok;
-}
 
 static inline Err
 browse_list_block( lxb_dom_node_t* it, lxb_dom_node_t* last, BrowseCtx ctx[static 1]) {
