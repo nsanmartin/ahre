@@ -31,6 +31,7 @@ Err _lexbor_parse_chunk_end_(HtmlDoc htmldoc[static 1]) {
     if (LXB_STATUS_OK != lxb_status) 
         return err_fmt("error: lbx failed to parse html, status: %d", lxb_status);
 
+    try (textbuf_append_part(htmldoc_sourcebuf(htmldoc), "\0", 1));
     return textbuf_append_line_indexes(htmldoc_sourcebuf(htmldoc));
 }
 
