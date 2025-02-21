@@ -46,6 +46,20 @@ Err cmd_open_url(Session session[static 1], const char* url) {
     return session_open_url(session, url, session->url_client);
 }
 
+Err doc_cmd_hide(HtmlDoc d[static 1], const char* tags) {
+    size_t ts = 0;
+    Err err = htmldoc_tags_str_reduce_size_t(cstr_trim_space((char*)tags), &ts);
+    if (!err) { *htmldoc_hide_tags(d) |= (~ts); }
+    return err; 
+}
+
+Err doc_cmd_show(HtmlDoc d[static 1], const char* tags) {
+    size_t ts = 0;
+    Err err = htmldoc_tags_str_reduce_size_t(cstr_trim_space((char*)tags), &ts);
+    if (!err) { *htmldoc_hide_tags(d) &= (~ts); }
+    return err; 
+}
+
 
 static Err _get_input_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outnode[static 1]) {
     HtmlDoc* htmldoc;
@@ -264,11 +278,18 @@ Err tabs_eval(Session session[static 1], const char* line) {
     return Ok;
 }
 
+Err doc_eval_word(HtmlDoc d[static 1], const char* line) {
+    const char* rest;
+    if ((rest = substr_match(line, "hide", 1))) { return doc_cmd_hide(d, rest); }
+    if ((rest = substr_match(line, "show", 1))) { return doc_cmd_show(d, rest); }
+    return "unknown doc command";
+}
+
 Err doc_eval(HtmlDoc d[static 1], const char* line) {
     line = cstr_skip_space(line);
     switch (*line) {
         case '?': return htmldoc_print_info(d);
-        default: return "unknown doc command";
+        default: return doc_eval_word(d, line);
     }
 }
 
@@ -297,7 +318,6 @@ Err process_line(Session session[static 1], const char* line) {
     if ((rest = substr_match(line, "go", 1))) { return cmd_open_url(session, rest); }
     if ((rest = substr_match(line, "quit", 1)) && !*rest) { session->quit = true; return Ok;}
     if ((rest = substr_match(line, "setopt", 1))) { return cmd_setopt(session, rest); }
-    ///if ((rest = substr_match(line, "url", 1))) { return cmd_set_url(session, rest); }
 
     if (*line == '|') return tabs_eval(session, line + 1);
     HtmlDoc* htmldoc;

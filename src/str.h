@@ -77,6 +77,13 @@ inline static StrView strview_split_word(StrView s[static 1]) {
     return word;
 }
 
+inline static StrView cstr_split_word(const char* s[static 1]) {
+    StrView word = (StrView){.s=*s};
+    while(**s && !isspace(**s)) { ++(*s); ++word.len; }
+    while(**s && isspace(**s)) { ++(*s); }
+    return word;
+}
+
 inline static StrView strview_trim_from_mem(const char* s, size_t len) {
     StrView rv = strview(s, len);
     strview_trim_space_in_place(&rv);

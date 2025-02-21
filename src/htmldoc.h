@@ -19,6 +19,18 @@
 #include "src/doc-elem.h"
 #include "src/url.h"
 
+#define HIDE_OL 0x1u
+#define HIDE_UL 0x2u
+
+_Static_assert(sizeof(size_t) >= 2, "size_t type too small");
+_Static_assert(sizeof(size_t) >= sizeof(HIDE_OL), "size_t type too small");
+
+static inline size_t strview_to_hide_tag(StrView s) { 
+    if (!s.s || !s.len) return 0x0;
+    if (strncmp("ol", s.s, s.len) == 0) return HIDE_OL;
+    if (strncmp("ul", s.s, s.len) == 0) return HIDE_UL;
+    return 0x0;
+}
 
 typedef lxb_dom_node_t* LxbNodePtr;
 #define T LxbNodePtr
@@ -39,9 +51,13 @@ typedef struct {
     HttpMethod method;
     lxb_html_document_t* lxbdoc;
     DocCache cache;
+    size_t hide_tags;
 } HtmlDoc;
 
 /* getters */
+
+static inline size_t* htmldoc_hide_tags(HtmlDoc d[static 1]) { return &d->hide_tags; }
+
 static inline lxb_html_document_t*
 htmldoc_lxbdoc(HtmlDoc d[static 1]) { return d->lxbdoc; }
 
@@ -138,10 +154,21 @@ static inline Err htmldoc_print_info(HtmlDoc d[static 1]) {
     char* buf;
     try(url_cstr(htmldoc_url(d), &buf));
     printf("%s\n", buf);
-    //Err res = err_fmt("current url:\n%s", buf);
     curl_free(buf);
     return Ok;
 }
 
+
+static inline Err htmldoc_tags_str_reduce_size_t(const char* tags, size_t ts[static 1]) {
+    Err err = "no tags to reduce";
+    do {
+        StrView t = cstr_split_word(&tags);
+        if (!t.s || !t.len) return err;
+        size_t hide_tag = strview_to_hide_tag(t);
+        if (!hide_tag) return err_fmt("invalid tag: '%s'", t.s);
+        *ts |= hide_tag;
+        err = Ok;
+    } while (1);
+}
 
 #endif

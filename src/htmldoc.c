@@ -203,6 +203,7 @@ browse_tag_tr(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 
 static Err
 browse_tag_ul(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
+    if(browse_ctx_hide_tags(ctx, HIDE_UL)) return Ok;
     return browse_list_block(node->first_child, node->last_child, ctx);
 }
 

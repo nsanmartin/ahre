@@ -18,6 +18,12 @@ typedef struct {
 
 static inline HtmlDoc* browse_ctx_htmldoc(BrowseCtx ctx[static 1]) { return ctx->htmldoc; }
 
+
+static inline bool browse_ctx_hide_tags(BrowseCtx ctx[static 1], size_t tags) {
+    return *htmldoc_hide_tags(browse_ctx_htmldoc(ctx)) & tags;
+}
+
+
 static inline TextBuf* browse_ctx_textbuf(BrowseCtx ctx[static 1]) {
     return htmldoc_textbuf(browse_ctx_htmldoc(ctx));
 }
