@@ -30,6 +30,8 @@ static inline bool fatal_error(Err e) {
 // returns that value. If not it does nothing.
 #define try(Expr) do{Err ahre_err_=validate_err((Expr));if (ahre_err_) return ahre_err_;}while(0) 
 
+#define ok_then(Error, Expr) do{ if (!Error) { Error=validate_err((Expr));}} while(0) 
+
 #define trygotoerr(LV, Tag, ErrValue) if ((ErrValue)) do{ LV=ErrValue; goto Tag;}while(0)
 
 #define try_lxb(Value, RetVal) \

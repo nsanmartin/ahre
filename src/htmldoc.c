@@ -176,19 +176,13 @@ browse_tag_div(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     BufOf(char) buf = browse_ctx_buf_get_reset(ctx);
     Err err = browse_list(node->first_child, node->last_child, ctx);
     browse_ctx_swap_buf(ctx, &buf);
-    if (err) {
-        buffn(char, clean)(&buf);
-        return err;
-    }
 
-    StrView view = strview_trim_from_mem(buf.items, buf.len);
-    if (view.len) {
-        if (   (err=browse_ctx_buf_append_lit__(ctx, "\n"))
-            || (err=browse_ctx_buf_append(ctx, (char*)view.s, view.len))
-            || (err=browse_ctx_buf_append_lit__(ctx, "\n"))
-        ) {
-            buffn(char, clean)(&buf);
-            return err;
+    if (!err) {
+        StrView view = strview_trim_from_mem(buf.items, buf.len);
+        if (view.len) {
+            ok_then(err, browse_ctx_buf_append_lit__(ctx, "\n"));
+            ok_then(err, browse_ctx_buf_append(ctx, (char*)view.s, view.len));
+            ok_then(err, browse_ctx_buf_append_lit__(ctx, "\n"));
         }
     }
     buffn(char, clean)(&buf);
@@ -217,23 +211,21 @@ browse_tag_li(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     BufOf(char) buf = browse_ctx_buf_get_reset(ctx);
     Err err = browse_list(node->first_child, node->last_child, ctx);
     browse_ctx_swap_buf(ctx, &buf);
-    if (err) {
-        buffn(char, clean)(&buf);
-        return err;
-    }
 
-    if (buf.len) {
-        if (   (err=browse_ctx_buf_append_lit__(ctx, " * "))
-            || (err=browse_ctx_buf_append(ctx, (char*)buf.items, buf.len))
-            || (err=browse_ctx_buf_append_lit__(ctx, "\n"))
-        ) {
-            buffn(char, clean)(&buf);
-            return err;
+    if (!err && buf.len) {
+        StrView s = strview_trim_from_mem(buf.items, buf.len);
+        if (s.len) {
+            if (buf.items < s.s) err = browse_ctx_buf_append_lit__(ctx, "\n");
+            ok_then( err, browse_ctx_buf_append_lit__(ctx, " * "));
+            ok_then( err, browse_ctx_buf_append(ctx, (char*)s.s, s.len));
+            ok_then( err, browse_ctx_buf_append_lit__(ctx, "\n"));
         }
     }
+
     buffn(char, clean)(&buf);
     return Ok;
 }
+
 
 static Err
 browse_tag_h(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
