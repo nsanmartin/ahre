@@ -18,6 +18,8 @@
 #define EscCodeItalic "\033[3m"
 #define EscCodeUnderline "\033[4m"
 
+#define EscCodeClsScr "\033[1;1H\033[2J" 
+
 typedef enum {
     esc_code_blue,
     esc_code_green,

@@ -160,3 +160,16 @@ const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen) {
     return buf;
 }
 
+StrView str_split_line(StrView text[static 1]) {
+    StrView line = strview(text->s, text->len);
+    const char* nl = memchr(line.s, '\n', line.len);
+    if (nl) {
+        line.len = nl - line.s;
+        text->s = nl + 1;
+        text->len -= (line.len + 1);
+    } else  {
+        *text = (StrView){0};
+    }
+    return line;
+}
+

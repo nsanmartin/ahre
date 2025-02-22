@@ -311,6 +311,7 @@ Err shorcut_G(Session session[static 1], const char* rest) {
         .end=*textbuf_current_line(tb) + *session_conf_z_shorcut_len(session)
     };
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
+    fwrite(EscCodeClsScr, 1, sizeof(EscCodeClsScr)-1, stdout);
     try( textbuf_eval_cmd(tb,cmd, &r));
     if (*textbuf_current_line(tb) == r.end)
         puts("%{- last line -}%");

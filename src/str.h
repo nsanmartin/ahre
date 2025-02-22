@@ -123,4 +123,5 @@ static inline Str mem_get_word_str(const char* data, size_t len) {
     return res;
 }
 
+StrView str_split_line(StrView text[static 1]);
 #endif
