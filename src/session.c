@@ -19,7 +19,7 @@ Err session_current_buf(Session session[static 1], TextBuf* out[static 1]) {
 }
 
 
-Err session_init(Session s[static 1], char* url, UserLineCallback callback) {
+Err session_init(Session s[static 1], char* url) {
     *s = (Session){0};
     UrlClient* url_client = url_client_create();
     if (!url_client) { return "error:  url_client_create failure"; }
@@ -36,7 +36,6 @@ Err session_init(Session s[static 1], char* url, UserLineCallback callback) {
 
     *s = (Session) {
         .url_client         = url_client,
-        .user_line_callback = callback,
         .tablist            = f,
         .quit               = false,
         .conf               = mkSessionConf

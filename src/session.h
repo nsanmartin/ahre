@@ -22,8 +22,6 @@ typedef struct Session {
     TabList tablist;
     bool quit;
     SessionConf conf;
-    //TODO: do not use a callback here
-    Err (*user_line_callback)(Session* session, const char*);
 } Session;
 
 /* getters */
@@ -42,7 +40,7 @@ static inline TabList*
 session_tablist(Session s[static 1]) { return &s->tablist; }
 
 /* ctor */
-Err session_init(Session s[static 1], char* url, UserLineCallback callback);
+Err session_init(Session s[static 1], char* url);
 
 /* dtor */
 static inline void session_cleanup(Session s[static 1]) {

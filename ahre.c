@@ -15,7 +15,7 @@ void print_help(char* program) { printf("usage: %s <url>\n", program); }
 int loop_lexbor(char* url) {
     Err err;
     Session session;
-    if ((err=session_init(&session, url, process_line))) {
+    if ((err=session_init(&session, url))) {
         fprintf(stderr, "%s", err);
         return EXIT_FAILURE;
     }
