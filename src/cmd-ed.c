@@ -293,3 +293,27 @@ Err shorcut_zz(Session session[static 1], const char* rest) {
     return textbuf_eval_cmd(tb, cmd, &r);
 }
 
+Err shorcut_G(Session session[static 1], const char* rest) {
+    const char* cmd = "print";
+    if (*rest == 'n') { cmd = "n"; ++rest; }
+    TextBuf* tb;
+    try( session_current_buf(session, &tb));
+    *textbuf_current_line(tb) = 1;
+    if(*textbuf_current_line(tb) > textbuf_line_count(tb)) return "No lines in buffer";
+    if (*rest) {
+        rest = cstr_skip_space(rest);
+        size_t incr;
+        if (!parse_ull(rest, &incr)) return "invalid line number";
+        *session_conf_z_shorcut_len(session) = incr;
+    } 
+    Range r = (Range){
+        .beg=*textbuf_current_line(tb),
+        .end=*textbuf_current_line(tb) + *session_conf_z_shorcut_len(session)
+    };
+    if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
+    try( textbuf_eval_cmd(tb,cmd, &r));
+    if (*textbuf_current_line(tb) == r.end)
+        puts("%{- last line -}%");
+    else *textbuf_current_line(tb) = r.end;
+    return Ok;
+}

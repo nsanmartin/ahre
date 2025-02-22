@@ -55,4 +55,5 @@ Err shorcut_zf(Session session[static 1], const char* rest);
 Err shorcut_zb(Session session[static 1], const char* rest);
 Err shorcut_zn(Session session[static 1]);
 Err shorcut_zz(Session session[static 1], const char* rest);
+Err shorcut_G(Session session[static 1], const char* rest);
 #endif
