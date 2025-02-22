@@ -100,10 +100,25 @@ Err cmd_input(Session session[static 1], const char* line) {
 Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) {
     lxb_dom_node_t* node;
     try( _get_input_by_ix(session, ix, &node));
-    if (!*line) return "borrar?";
-    if (*line == ' ' || *line == '=') ++line;
 
-    try(lexbor_set_attr_value(node, "value", line));
+    const lxb_char_t* type;
+    size_t len;
+    lexbor_find_attr_value(node, "type", &type, &len);
+    if (lexbor_str_eq("password", type, len)) {
+        HtmlDoc* d;
+        try( session_current_doc(session, &d));
+        BufOf(char)* pass = &(BufOf(char)){0};
+        pass = lipfn(LxbNodePtr, BufOf(char), get_or_set)(htmldoc_pass(d), &node, pass);
+        if (!pass) return "error: lip failure";
+        buffn(char, reset)(pass);
+        if (!buffn(char, append)(pass, (char*)line, strlen(line)))
+            return "error: buf append failure";
+    } else {
+        if (!*line) return "borrar?";
+        if (*line == ' ' || *line == '=') ++line;
+
+        try(lexbor_set_attr_value(node, "value", line));
+    }
 
     return Ok;
 }

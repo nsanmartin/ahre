@@ -1,6 +1,7 @@
 #ifndef __LXB_WRAPPER_AHRE_H__
 #define __LXB_WRAPPER_AHRE_H__
 
+#include <strings.h>
 #include <lexbor/html/html.h>
 
 #include "src/textbuf.h"
@@ -32,7 +33,7 @@ bool _lexbor_attr_has_value(
 Err lexbor_node_to_str(lxb_dom_node_t* node, BufOf(const_char)* buf);
 
 static inline bool lexbor_str_eq(const char* s, const lxb_char_t* lxb_str, size_t len) {
-    return lxb_str && !strncmp(s, (const char*)lxb_str, len);
+    return lxb_str && !strncasecmp(s, (const char*)lxb_str, len);
 }
 
 Err dbg_print_title(lxb_dom_node_t* title) ;
