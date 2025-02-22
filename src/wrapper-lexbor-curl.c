@@ -22,6 +22,7 @@ Err _lexbor_parse_chunk_begin_(HtmlDoc htmldoc[static 1]) {
     lxb_html_document_t* lxbdoc = htmldoc->lxbdoc;
     if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(lxbdoc)) 
         return "error: lex failed to init html document";
+    textbuf_reset(htmldoc_sourcebuf(htmldoc));
     return Ok;
 }
 
@@ -223,22 +224,6 @@ static Err _submit_url_set_action(
     buffn(const_char, reset)(buf);
     return Ok;
 }
-
-//Err _get_form_method_(lxb_dom_node_t* form, HttpMethod out[static 1]) {
-//    const lxb_char_t* method;
-//    size_t len;
-//    lexbor_find_attr_value(form, "action", &method, &len);
-//    if (!method || !len || lexbor_str_eq("get", method, len)) {
-//        *out = http_get;
-//        return Ok;
-//    }
-//
-//    if (method && len && lexbor_str_eq("post", method, len)) {
-//        *out = http_post;
-//        return Ok;
-//    }
-//    return "error: unsuported method";
-//}
 
 static Err _mk_submit_get_(lxb_dom_node_t* form, CURLU* out[static 1]) {
     Err err;
