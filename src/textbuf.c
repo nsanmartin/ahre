@@ -5,36 +5,6 @@
 #define READ_FROM_FILE_BUFFER_LEN 4096u
 /* _Thread_local */ static char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN + 1] = {0};
 
-static bool _get_line_(TextBuf tb[static 1], size_t n, Str out[static 1]) {
-    size_t nlines = textbuf_line_count(tb);
-    if (nlines == 0 || nlines < n) return false;
-    ArlOf(size_t)* eols = textbuf_eols(tb);
-    if (n == 0) {
-        size_t* linelenptr = arlfn(size_t,at)(eols, n);
-        if (!linelenptr) return false; //"error: expecting len(eols) > 0";
-        *out = (Str){.s=textbuf_items(tb), .len=*linelenptr};
-        return true;
-    } else if (n < len__(eols)) {
-        size_t* begoffp = arlfn(size_t,at)(eols, n-1);
-        if (!begoffp) return false; //"error: expecting len(eols) >= n-1";
-        size_t* eoloffp = arlfn(size_t,at)(eols, n);
-        if (!eoloffp) return false; //"error: expecting len(eols) >= n";
-        *out = (Str){.s=textbuf_items(tb) + *begoffp + 1, .len=*eoloffp-*begoffp};
-        return true;
-    } else if (n == len__(eols)) {
-        size_t* begoffp = arlfn(size_t,at)(eols, n-1);
-        if (!begoffp) return false; //"error: expecting len(eols) >= n-1";
-        size_t eoloff = textbuf_len(tb);
-        *out = (Str){.s=textbuf_items(tb) + *begoffp, .len=eoloff - *begoffp};
-        return true;
-    }
-    /* n can't be grater than len(eols). If eols == 0 and line_count == 1, 0 will be
-     * the first line, there no be line == 1 (second) etc.
-    }
-    */
-    return false;
-}
-
 static size_t _compute_required_newlines_in_line_(size_t linelen, size_t maxlen) {
         return (linelen / maxlen) + (bool) (linelen % maxlen != 0);
 }
@@ -43,7 +13,7 @@ size_t _compute_required_newlines_(TextBuf tb[static 1], size_t maxlen) {
     size_t res = 0;
     size_t n = 0;
     Str line;
-    while (_get_line_(tb, n++, &line)) {
+    while (textbuf_get_line(tb, n++, &line)) {
         res += _compute_required_newlines_in_line_(line.len,  maxlen);
     }
     return res;
@@ -108,7 +78,7 @@ static Err _insert_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
     size_t n = 0;
     Str line;
     BufOf(char)* buf = &(BufOf(char)){0};
-    while (_get_line_(tb, n++, &line)) {
+    while (textbuf_get_line(tb, n++, &line)) {
         if (line.len && line.len <= maxlen) {
             try( bufofchar_append(buf, (char*)line.s, line.len));
         } else {
@@ -238,3 +208,32 @@ Err textbuf_append_line_indexes(TextBuf tb[static 1]) {
     return Ok;
 }
 
+bool textbuf_get_line(TextBuf tb[static 1], size_t n, Str out[static 1]) {
+    size_t nlines = textbuf_line_count(tb);
+    if (nlines == 0 || nlines < n) return false;
+    ArlOf(size_t)* eols = textbuf_eols(tb);
+    if (n == 0) {
+        size_t* linelenptr = arlfn(size_t,at)(eols, n);
+        if (!linelenptr) return false; //"error: expecting len(eols) > 0";
+        *out = (Str){.s=textbuf_items(tb), .len=*linelenptr};
+        return true;
+    } else if (n < len__(eols)) {
+        size_t* begoffp = arlfn(size_t,at)(eols, n-1);
+        if (!begoffp) return false; //"error: expecting len(eols) >= n-1";
+        size_t* eoloffp = arlfn(size_t,at)(eols, n);
+        if (!eoloffp) return false; //"error: expecting len(eols) >= n";
+        *out = (Str){.s=textbuf_items(tb) + *begoffp + 1, .len=*eoloffp-*begoffp};
+        return true;
+    } else if (n == len__(eols)) {
+        size_t* begoffp = arlfn(size_t,at)(eols, n-1);
+        if (!begoffp) return false; //"error: expecting len(eols) >= n-1";
+        size_t eoloff = textbuf_len(tb);
+        *out = (Str){.s=textbuf_items(tb) + *begoffp, .len=eoloff - *begoffp};
+        return true;
+    }
+    /* n can't be grater than len(eols). If eols == 0 and line_count == 1, 0 will be
+     * the first line, there no be line == 1 (second) etc.
+    }
+    */
+    return false;
+}

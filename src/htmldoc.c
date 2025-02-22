@@ -708,6 +708,7 @@ HtmlDoc* htmldoc_create(const char* url) {
 //TODO: rename this fn
 void htmldoc_reset(HtmlDoc htmldoc[static 1]) {
     textbuf_reset(htmldoc_textbuf(htmldoc));
+    textbuf_reset(htmldoc_sourcebuf(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_anchors(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_imgs(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
