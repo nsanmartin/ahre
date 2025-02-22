@@ -13,5 +13,5 @@
 #define FORM_OPEN_STR  "&{[form "
 #define FORM_CLOSE_STR  "&}"
 
-#define ELEM_ID_SEP "."
+#define ELEM_ID_SEP "\u02f2"
 #endif
