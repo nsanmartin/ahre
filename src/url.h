@@ -97,4 +97,15 @@ static inline Err curlu_set_url(CURLU* u,  const char* cstr) {
     }
 }
 
+static inline Err curlu_scheme_is_https(CURLU* cu, bool out[static 1]) {
+    char *scheme;
+    CURLUcode rc = curl_url_get(cu, CURLUPART_SCHEME, &scheme, 0);
+    if(rc != CURLUE_OK)
+        return "error: curl url get failure";
+
+    *out = strcasecmp("https", scheme) == 0;
+    curl_free(scheme);
+    return Ok;
+}
+
 #endif

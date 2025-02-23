@@ -157,25 +157,14 @@ size_t lexbor_parse_chunk_callback(char *in, size_t size, size_t nmemb, void* ou
 }
 
 
-Err lexbor_set_attr_value(
-    lxb_dom_node_t* node, const char* attr_name, const char* value
-)  {
-    lxb_dom_attr_t* attr;
-
-    attr = lxb_dom_element_first_attribute(lxb_dom_interface_element(node));
-    while (attr) {
-        size_t data_len;
-        const lxb_char_t* data = lxb_dom_attr_qualified_name(attr, &data_len);
-        if (lexbor_str_eq(attr_name, data, data_len))  {
-
-            //TODO: why node and not element like here?
-            if (LXB_STATUS_OK != lxb_dom_attr_set_value(attr, (const lxb_char_t *) value, strlen(value)))
-                return "error: lexbor failed to change attribute value";
-            return Ok;
-
-        }
-        attr = lxb_dom_element_next_attribute(attr);
-    }
+Err lexbor_set_attr_value(lxb_dom_node_t* node, const char* value)  {
+    lxb_dom_element_set_attribute(
+        lxb_dom_interface_element(node),
+        (const lxb_char_t*)"value",
+        sizeof("value")-1,
+        (const lxb_char_t*)value,
+        strlen(value)
+    );
     return Ok;
 }
 
@@ -217,13 +206,17 @@ Err lexbor_node_to_str(lxb_dom_node_t* node, BufOf(const_char)* buf) {
         size_t valuelen;
         const lxb_char_t* value = lxb_dom_attr_value(attr, &valuelen);
 
-        if (!buffn(const_char, append)(buf, indentstr, sizeof(indentstr)-1)) return "error: mem failure (BufOf.append)";
-        if (!buffn(const_char, append)(buf, (const char*)name, namelen)) return "error: mem failure (BufOf.append)";
+        if (!buffn(const_char, append)(buf, indentstr, sizeof(indentstr)-1))
+            return "error: mem failure (BufOf.append)";
+        if (!buffn(const_char, append)(buf, (const char*)name, namelen))
+            return "error: mem failure (BufOf.append)";
         if (!buffn(const_char, append)(buf, "=", 1)) return "error: mem failure (BufOf.append)";
         if (valuelen && valuelen) {
-            if (!buffn(const_char, append)(buf, (const char*)value, valuelen)) return "error: mem failure (BufOf.append)";
+            if (!buffn(const_char, append)(buf, (const char*)value, valuelen))
+                return "error: mem failure (BufOf.append)";
         } else {
-            if (!buffn(const_char, append)(buf, nullstr, sizeof(nullstr)-1)) return "error: mem failure (BufOf.append)";
+            if (!buffn(const_char, append)(buf, nullstr, sizeof(nullstr)-1))
+                return "error: mem failure (BufOf.append)";
         }
         if (!buffn(const_char, append)(buf, "\n", 1)) return "error: mem failure (BufOf.append)";
     }

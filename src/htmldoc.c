@@ -138,11 +138,6 @@ browse_tag_button(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     return Ok;
 }
 
-static void _get_pass_(HtmlDoc d[static 1], lxb_dom_node_t* node, BufOf(char)* out[static 1]) {
-    *out = NULL;
-    LipOf(LxbNodePtr,BufOf(char))* pass = htmldoc_pass(d);
-    if (pass) *out = lipfn(LxbNodePtr,BufOf(char), get)(pass, &node);
-}
 
 static Err
 browse_tag_input(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
@@ -155,7 +150,7 @@ browse_tag_input(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 
     HtmlDoc* d = browse_ctx_htmldoc(ctx);
     ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(d);
-    if (!arlfn(LxbNodePtr,append)(inputs, &node)) { return "error: lip set"; }
+    if (!arlfn(LxbNodePtr,append)(inputs, &node)) { return "error: arl set"; }
 
     try( browse_ctx_buf_append_color_(ctx, esc_code_red));
     try( browse_ctx_buf_append_lit__(ctx, INPUT_OPEN_STR));
@@ -173,10 +168,8 @@ browse_tag_input(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
             try( browse_ctx_buf_append(ctx, (char*)s, slen));
         }
     } else if (lexbor_str_eq("password", s, slen)) {
-        BufOf(char)* pass;
-        _get_pass_(browse_ctx_htmldoc(ctx), node, &pass);
-        if (pass) try( browse_ctx_buf_append_lit__(ctx, "=********"));
-        ///if (pass) try( browse_ctx_buf_append(ctx,pass->items, pass->len));
+        lexbor_find_attr_value(node, "value", &s, &slen);
+        if (slen) try( browse_ctx_buf_append_lit__(ctx, "=********"));
     } else {
         try( browse_ctx_buf_append_lit__(ctx, "[input not supported yet]"));
     }
@@ -643,7 +636,7 @@ Err browse_tag_pre(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 
 /* external linkage */
 
-//TODO: eprecate, always init woit fetch ? (and if bad url?)
+//TODO: deprecate, always init with fetch ? (and if bad url?)
 Err htmldoc_init(HtmlDoc d[static 1], const char* cstr_url) {
     Url url = {0};
     if (cstr_url && *cstr_url) {
@@ -669,8 +662,6 @@ Err htmldoc_init(HtmlDoc d[static 1], const char* cstr_url) {
             .sourcebuf=(TextBuf){.current_line=1}
         }
     };
-    if (lipfn(LxbNodePtr,BufOf(char),init)(htmldoc_pass(d), (LipInitArgs){.sz=2}))
-        return "error: lip init failure";
     return Ok;
 }
 Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu, HttpMethod method) {

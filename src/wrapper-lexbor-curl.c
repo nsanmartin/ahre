@@ -116,9 +116,7 @@ curl_lexbor_fetch_document(UrlClient url_client[static 1], HtmlDoc htmldoc[stati
 
 
 static Err _make_submit_get_curlu_rec(
-    lxb_dom_node_t* node,
-    BufOf(lxb_char_t) buf[static 1],
-    CURLU* out
+    lxb_dom_node_t* node, BufOf(lxb_char_t) buf[static 1], CURLU* out
 ) {
     if (!node) return Ok;
     else if (node->local_name == LXB_TAG_INPUT && !_lexbor_attr_has_value(node, "type", "submit")) {
@@ -132,6 +130,10 @@ static Err _make_submit_get_curlu_rec(
         size_t namelen;
         lexbor_find_attr_value(node, "name", &name, &namelen);
         if (!name || namelen == 0) return Ok;
+
+        if (strcasecmp("password", (char*)name) == 0)
+            return "warn: passwords not allowed in get requests";
+
 
         buffn(lxb_char_t, reset)(buf);
         if (  !buffn(lxb_char_t, append)(buf, (lxb_char_t*)name, namelen)
@@ -157,7 +159,10 @@ static Err _make_submit_get_curlu_rec(
 }
 
 static Err _append_lexbor_name_value_attrs_if_both_(
-    UrlClient url_client[static 1], lxb_dom_node_t node[static 1], BufOf(const_char) buf[static 1]
+    UrlClient url_client[static 1],
+    lxb_dom_node_t node[static 1],
+    bool is_https,
+    BufOf(const_char) buf[static 1]
 ) {
     char* escaped;
     const lxb_char_t* value;
@@ -169,6 +174,8 @@ static Err _append_lexbor_name_value_attrs_if_both_(
     size_t namelen;
     lexbor_find_attr_value(node, "name", &name, &namelen);
     if (!name || namelen == 0) return Ok;
+    if (strcasecmp("password", (char*)name) == 0 && !is_https)
+        return "warn: passwords allowed only under https";
 
     escaped = url_client_escape_url(url_client, (char*)value, valuelen);
     if (!escaped) return "error: curl_escape failure";
@@ -188,7 +195,8 @@ static Err _make_submit_post_curlu_rec(
     UrlClient url_client[static 1],
     lxb_dom_node_t* node,
     BufOf(const_char) buf[static 1],
-    CURLU* out
+    CURLU* out,
+    bool is_https
 ) {
     if (!node) return Ok;
     if (node->local_name == LXB_TAG_FORM) {
@@ -196,10 +204,10 @@ static Err _make_submit_post_curlu_rec(
        return Ok;
     }
     if (node->local_name == LXB_TAG_INPUT && !_lexbor_attr_has_value(node, "type", "submit"))
-        return _append_lexbor_name_value_attrs_if_both_(url_client, node, buf);
+        return _append_lexbor_name_value_attrs_if_both_(url_client, node, is_https, buf);
 
     for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
-        try( _make_submit_post_curlu_rec(url_client, it, buf, out));
+        try( _make_submit_post_curlu_rec(url_client, it, buf, out, is_https));
         if (it == node->last_child) { break; }
     }
     return Ok;
@@ -243,9 +251,11 @@ _mk_submit_post_(UrlClient url_client[static 1], lxb_dom_node_t* form, CURLU* ou
     Err err;
     BufOf(const_char)* buf = url_client_postdata(url_client);
     buffn(const_char, reset)(buf);
+    bool is_https;
+    try( curlu_scheme_is_https(*out, &is_https));
 
     for(lxb_dom_node_t* it = form->first_child; it ; it = it->next) {
-        if ((err=_make_submit_post_curlu_rec(url_client, it, buf, *out))) {
+        if ((err=_make_submit_post_curlu_rec(url_client, it, buf, *out, is_https))) {
             buffn(const_char, clean)(buf);
             return err;
         }

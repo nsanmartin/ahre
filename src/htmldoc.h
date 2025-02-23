@@ -36,18 +36,12 @@ typedef lxb_dom_node_t* LxbNodePtr;
 #define T LxbNodePtr
 #include <arl.h>
 
-#define KT LxbNodePtr
-#define VT BufOf(char)
-#define VTClean buffn(char, clean)
-#include <lip.h>
-
 typedef struct {
     TextBuf sourcebuf;
     TextBuf textbuf;
     ArlOf(LxbNodePtr) anchors;
     ArlOf(LxbNodePtr) imgs;
     ArlOf(LxbNodePtr) inputs;
-    LipOf(LxbNodePtr, BufOf(char)) pass;
     ArlOf(LxbNodePtr) forms;
     LxbNodePtr title;
 } DocCache;
@@ -82,9 +76,6 @@ htmldoc_imgs(HtmlDoc d[static 1]) { return &d->cache.imgs; }
 static inline ArlOf(LxbNodePtr)*
 htmldoc_inputs(HtmlDoc d[static 1]) { return &d->cache.inputs; }
 
-static inline LipOf(LxbNodePtr, BufOf(char))*
-htmldoc_pass(HtmlDoc d[static 1]) { return &d->cache.pass; }
-
 static inline ArlOf(LxbNodePtr)*
 htmldoc_forms(HtmlDoc d[static 1]) { return &d->cache.forms; }
 
@@ -117,7 +108,6 @@ static inline void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
     arlfn(LxbNodePtr,clean)(htmldoc_imgs(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_forms(htmldoc));
-    lipfn(LxbNodePtr,BufOf(char),clean)(htmldoc_pass(htmldoc));
     *htmldoc_cache(htmldoc) = (DocCache){0};
 }
 
