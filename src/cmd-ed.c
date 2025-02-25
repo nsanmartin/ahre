@@ -10,6 +10,8 @@
 #include "src/session.h"
 #include "src/textbuf.h"
 
+#define MsgLastLine EscCodePurple "%{- last line -}%" EscCodeReset
+
 static Err validate_range_for_buffer(TextBuf textbuf[static 1], Range range[static 1]) {
     if (!range->beg  || range->beg > range->end) { return  "error: unexpected bad range"; }
     if (textbuf_line_count(textbuf) < range->end) return "error: unexpected invalid range end";
@@ -265,7 +267,7 @@ Err shorcut_zf(Session session[static 1], const char* rest) {
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
     try( textbuf_eval_cmd(tb,cmd, &r));
     if (*textbuf_current_line(tb) == r.end)
-        puts("%{- last line -}%");
+        puts(MsgLastLine);
     else *textbuf_current_line(tb) = r.end;
     return Ok;
 }
@@ -314,7 +316,7 @@ Err shorcut_G(Session session[static 1], const char* rest) {
     fwrite(EscCodeClsScr, 1, sizeof(EscCodeClsScr)-1, stdout);
     try( textbuf_eval_cmd(tb,cmd, &r));
     if (*textbuf_current_line(tb) == r.end)
-        puts("%{- last line -}%");
+        puts(MsgLastLine);
     else *textbuf_current_line(tb) = r.end;
     return Ok;
 }
