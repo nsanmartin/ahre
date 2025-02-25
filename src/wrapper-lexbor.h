@@ -23,7 +23,7 @@ size_t lexbor_parse_chunk_callback(char *en, size_t size, size_t nmemb, void* ou
 void lexbor_find_attr_value(
     lxb_dom_node_t* node, const char* attr_name, const lxb_char_t* out[static 1], size_t* len
 ); 
-Err lexbor_set_attr_value( lxb_dom_node_t* node, const char* value);
+Err lexbor_set_attr_value( lxb_dom_node_t* node, const char* value, size_t valuelen);
 
 lxb_dom_node_t* _find_parent_form(lxb_dom_node_t* node) ;
 

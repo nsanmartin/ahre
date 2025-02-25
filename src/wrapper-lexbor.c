@@ -157,13 +157,13 @@ size_t lexbor_parse_chunk_callback(char *in, size_t size, size_t nmemb, void* ou
 }
 
 
-Err lexbor_set_attr_value(lxb_dom_node_t* node, const char* value)  {
+Err lexbor_set_attr_value(lxb_dom_node_t* node, const char* value, size_t valuelen)  {
     lxb_dom_element_set_attribute(
         lxb_dom_interface_element(node),
         (const lxb_char_t*)"value",
         sizeof("value")-1,
         (const lxb_char_t*)value,
-        strlen(value)
+        valuelen
     );
     return Ok;
 }

@@ -12,6 +12,7 @@
 #include "src/user-input.h"
 #include "src/user-interface.h"
 #include "src/utils.h"
+#include "src/readpass.h"
 #include "src/wrapper-lexbor-curl.h"
 
 Err dbg_print_form(Session s[static 1], const char* line) ;
@@ -82,20 +83,6 @@ Err cmd_input_print(Session session[static 1], size_t ix) {
     return write_err ? Ok : "error: fwrite failure";
 }
 
-Err cmd_input(Session session[static 1], const char* line) {
-    line = cstr_skip_space(line);
-    long long unsigned linknum;
-    try( parse_base36_or_throw(&line, &linknum));
-    line = cstr_skip_space(line);
-    lxb_dom_node_t* node;
-    try( _get_input_by_ix(session, linknum, &node));
-    if (!*line) return "delete?";
-    if (*line == ' ' || *line == '=') ++line;
-
-    try(lexbor_set_attr_value(node, line));
-
-    return Ok;
-}
 
 Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) {
     lxb_dom_node_t* node;
@@ -105,12 +92,20 @@ Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) 
     size_t len;
     lexbor_find_attr_value(node, "type", &type, &len);
 
-    if (!*line) return "delete?";
-    if (*line == ' ' || *line == '=') ++line;
+    Err err = Ok;
+    if (!*line) {
+        const char* prompt = "> ";
+        fwrite(prompt, 1, sizeof(prompt)-1, stdout);
+        ArlOf(char) masked = (ArlOf(char)){0};
+        err = readpass(&masked);
+        ok_then(err, lexbor_set_attr_value(node, masked.items, masked.len));
+        arlfn(char, clean)(&masked);
+    } else {
+        if (*line == ' ' || *line == '=') ++line;
+        err = lexbor_set_attr_value(node, line, strlen(line));
+    }
 
-    try(lexbor_set_attr_value(node, line));
-
-    return Ok;
+    return err;
 }
 
 

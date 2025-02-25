@@ -15,6 +15,9 @@ typedef const char const_char;
 #define BT const_char
 #include <buf.h>
 
+#define T char
+#include <arl.h>
+
 #define T size_t
 #include <arl.h>
 
