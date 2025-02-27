@@ -290,6 +290,7 @@ Err doc_eval(HtmlDoc d[static 1], const char* line) {
     line = cstr_skip_space(line);
     switch (*line) {
         case '?': return htmldoc_print_info(d);
+        case '>': return htmldoc_gt(d);
         default: return doc_eval_word(d, line);
     }
 }
@@ -313,7 +314,6 @@ Err process_line(Session session[static 1], const char* line) {
     if (!*line) { return Ok; }
     const char* rest = NULL;
     /* these commands does not require current valid document */
-    if ((rest = substr_match(line, "browse", 1))) { return cmd_browse(session, rest); }
     if ((rest = substr_match(line, "cookies", 1))) { return cmd_cookies(session, rest); }
     if ((rest = substr_match(line, "echo", 1))) return puts(rest) < 0 ? "error: puts failed" : Ok;
     if ((rest = substr_match(line, "go", 1))) { return cmd_open_url(session, rest); }
@@ -332,6 +332,7 @@ Err process_line(Session session[static 1], const char* line) {
 
     //TODO: obtain range from line and pase it already parsed to eval fn
 
+    if ((rest = substr_match(line, "browse", 1))) { return cmd_browse(session, rest); }
 
     TextBuf* tb;
     try( session_current_buf(session, &tb));

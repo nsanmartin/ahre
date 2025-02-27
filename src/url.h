@@ -5,6 +5,7 @@
 #include <limits.h>
 #include <curl/curl.h>
 
+#include "src/config.h"
 #include "src/error.h"
 
 typedef struct {
@@ -46,13 +47,27 @@ static Err _prepend_file_schema_(const char* path, BufOf(char) buf[static 1]) {
 /* dtor */
 static inline void url_cleanup(Url u[static 1]) { curl_url_cleanup(u->cu); }
 
+static inline Err get_url_alias(const char* cstr, BufOf(char)* out) {
+    if (cstr_starts_with("bookmark", cstr)) {
+        return get_bookmark_file(out);
+    }
+    return err_fmt("not a url alias: %s", cstr);
+}
+
 /* ctor */
 static inline Err url_init(Url u[static 1],  const char* cstr) {
     Err err;
     *u = (Url){.cu=curl_url()};
     if (!u->cu) return "error initializing CURLU";
     BufOf(char)* url_buf = &(BufOf(char)){0};
-    if (_file_exists_(cstr)) {
+    if (*cstr == '\\') {
+
+        if ((err=get_url_alias(cstr_skip_space(cstr + 1), url_buf))) {
+            url_cleanup(u);
+            return err;
+        }
+        cstr = url_buf->items;
+    } else if (_file_exists_(cstr)) {
         if((err=_prepend_file_schema_(cstr, url_buf))) {
             url_cleanup(u);
             return err;

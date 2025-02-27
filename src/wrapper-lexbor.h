@@ -115,4 +115,5 @@ static inline bool lexbor_tag_is_block(lxb_dom_node_t* node) {
 }
 
 
+Err lexbor_get_title_text_line(lxb_dom_node_t* node, BufOf(char)* out) ;
 #endif
