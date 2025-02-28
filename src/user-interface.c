@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "src/bookmark.h"
 #include "src/cmd-ed.h"
 #include "src/constants.h"
 #include "src/debug.h"
@@ -36,6 +37,41 @@ bool substr_match_all(const char* s, size_t len, const char* cmd) {
     return (s=substr_match(s, cmd, len)) && !*cstr_skip_space(s);
 }
 
+
+Err cmd_bookmarks(Session session[static 1], const char* url) {
+    HtmlDoc* htmldoc;
+    try( session_current_doc(session, &htmldoc));
+    ArlOf(BufOf(char)) list = (ArlOf(BufOf(char))){0};
+    lxb_dom_node_t* body;
+    try(bookmark_sections_body(htmldoc, &body));
+    Err err = Ok;
+    if (!*url) {
+        err = bookmark_sections(body, &list);
+        if (!err) {
+            BufOf(char)* it = arlfn(BufOf(char), begin)(&list);
+            for (; it != arlfn(BufOf(char), end)(&list); ++it) {
+                fwrite(it->items, 1, it->len, stdout);
+                fwrite("\n", 1, 1, stdout);
+            }
+        }
+        arlfn(BufOf(char),clean)(&list);
+    } else {
+        lxb_dom_node_t* section;
+        try( bookmark_section_get(body, url, &section));
+
+        if (section) {
+            const char* data;
+            size_t len;
+            try( lexbor_node_get_text(section->first_child, &data, &len));
+            if (len) {
+                fwrite(data, 1, len, stdout);
+                fwrite("\n", 1, 1, stdout);
+            }
+        } else err = "invalid section in bookmark";
+    }
+    fflush(stdout);
+    return err;
+}
 
 Err cmd_cookies(Session session[static 1], const char* url) {
     (void)url;
@@ -314,6 +350,7 @@ Err process_line(Session session[static 1], const char* line) {
     if (!*line) { return Ok; }
     const char* rest = NULL;
     /* these commands does not require current valid document */
+    if ((rest = substr_match(line, "bookmarks", 1))) { return cmd_bookmarks(session, rest); }
     if ((rest = substr_match(line, "cookies", 1))) { return cmd_cookies(session, rest); }
     if ((rest = substr_match(line, "echo", 1))) return puts(rest) < 0 ? "error: puts failed" : Ok;
     if ((rest = substr_match(line, "go", 1))) { return cmd_open_url(session, rest); }
@@ -332,7 +369,7 @@ Err process_line(Session session[static 1], const char* line) {
 
     //TODO: obtain range from line and pase it already parsed to eval fn
 
-    if ((rest = substr_match(line, "browse", 1))) { return cmd_browse(session, rest); }
+    if ((rest = substr_match(line, "draw", 1))) { return cmd_browse(session, rest); }
 
     TextBuf* tb;
     try( session_current_buf(session, &tb));

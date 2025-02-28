@@ -21,6 +21,18 @@ typedef const char const_char;
 #define T size_t
 #include <arl.h>
 
+static inline int buf_of_char_cmp(const void* xp, const void* yp) {
+    const BufOf(char)*x = xp;
+    const BufOf(char)*y = yp;
+    size_t min = (x->len < y->len) ? x->len : y->len;
+    return strncmp(x->items, y->items, min);
+}
+
+#define T BufOf(char)
+#define TClean buffn(char,clean)
+#define TCmp buf_of_char_cmp
+#include <arl.h>
+
 #include "src/str.h"
 #include "src/error.h"
 
