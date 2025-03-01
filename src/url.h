@@ -48,7 +48,7 @@ static Err _prepend_file_schema_(const char* path, BufOf(char) buf[static 1]) {
 static inline void url_cleanup(Url u[static 1]) { curl_url_cleanup(u->cu); }
 
 static inline Err get_url_alias(const char* cstr, BufOf(char)* out) {
-    if (cstr_starts_with("bookmark", cstr)) {
+    if (cstr_starts_with("bookmarks", cstr)) {
         return get_bookmark_file(out);
     }
     return err_fmt("not a url alias: %s", cstr);

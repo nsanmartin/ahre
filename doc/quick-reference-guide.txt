@@ -90,9 +90,31 @@ dot commands (.)
 .?  : shows info about the document
 
 shortcuts
-========
+=========
 
 zf [<NUM>}] : shortcut to :,+<NUM>p but setting NUM so that it does not exceeds
               line count and prints a message when already reached the last
               line. If num is not given the last one provided in a previous
               call is used (with a default value if it was not called).
+
+bookmarks
+=========
+
+bookmarks file is an html file the same as w3m's. The idea is to be able to share
+the bookmark between both programs. There is an "alias" got the bookmarks file so
+
+go \b
+
+will open it ('\' followed by anu substring og 'bookmarks' will work).
+
+To append the url of a document you can use the dot command:
+.+<SECTION>
+
+where '+' indicate "add to bookmars" and <SECTION> can be one of:
+1. a string starting with '/'
+2. a string not starting with '/'
+
+If (1.), for example, .+/foo, a section whos name starts with foo is sought.
+Only if it is found it will be appended (for ex. foo or foobar).
+If (2.), a full match will be sought. If found it wil be appended to that section,
+if not, the section will be created.
