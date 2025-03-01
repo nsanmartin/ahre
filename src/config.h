@@ -16,8 +16,7 @@ static inline Err get_config_dir(BufOf(char)* out) {
 }
 
 static inline Err get_bookmark_file(BufOf(char)* out) {
-    if (!buffn(char, append)(out, "file://", sizeof("file://")-1))
-        return "error: buf append failure";
+    //if (!buffn(char, append)(out, "file://", sizeof("file://")-1)) return "error: buf append failure";
     try( get_config_dir(out));
     if (!buffn(char, append)(out, "/bookmark.html", sizeof("/bookmark.html")-1)
       ||!buffn(char, append)(out, "\0", 1)

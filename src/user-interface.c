@@ -80,6 +80,14 @@ Err cmd_cookies(Session session[static 1], const char* url) {
 
 Err cmd_open_url(Session session[static 1], const char* url) {
     url = cstr_trim_space((char*)url);
+    if (*url == '\\') {
+        Str2 u = (Str2){0};
+        try (get_url_alias(cstr_skip_space(url + 1), &u));
+        Err err = session_open_url(session, u.items, session->url_client);
+        str2_clean(&u);
+        return err;
+    }
+
     return session_open_url(session, url, session->url_client);
 }
 
@@ -322,11 +330,12 @@ Err doc_eval_word(HtmlDoc d[static 1], const char* line) {
     return "unknown doc command";
 }
 
-Err doc_eval(HtmlDoc d[static 1], const char* line) {
+Err doc_eval(HtmlDoc d[static 1], const char* line, Session session[static 1]) {
     line = cstr_skip_space(line);
     switch (*line) {
         case '?': return htmldoc_print_info(d);
         case '>': return htmldoc_gt(d);
+        case '+': return bookmark_add_doc(d, cstr_skip_space(line + 1), session_url_client(session));
         default: return doc_eval_word(d, line);
     }
 }
@@ -363,7 +372,7 @@ Err process_line(Session session[static 1], const char* line) {
 
     if (!htmldoc_is_valid(htmldoc) ||!session->url_client) return "no document";
 
-    if (*line == '.') return doc_eval(htmldoc, line + 1);
+    if (*line == '.') return doc_eval(htmldoc, line + 1, session);
     //TODO: implement search in textbuf
     if (*line == '/') return "to search in buffer use ':/' (not just '/')";
 

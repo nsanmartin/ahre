@@ -116,4 +116,27 @@ static inline bool lexbor_tag_is_block(lxb_dom_node_t* node) {
 
 
 Err lexbor_get_title_text_line(lxb_dom_node_t* node, BufOf(char)* out) ;
+
+static inline void
+_search_title_rec_(lxb_dom_node_t* node, lxb_dom_node_t* title[static 1]) {
+    if (!node) return;
+    else if (node->local_name == LXB_TAG_TITLE) *title = node; 
+    else {
+        for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
+            _search_title_rec_(it, title);
+            if (*title) break;
+        }
+    }
+    return;
+}
+
+static inline Err
+lexbor_get_title_node(lxb_html_document_t* lxbdoc, lxb_dom_node_t* title[static 1]) {
+    lxb_dom_node_t* node = lxb_dom_interface_node(lxbdoc);
+    if (!node) return "error: no document";
+    *title = NULL;
+    _search_title_rec_(node, title);
+    return Ok;
+}
+
 #endif

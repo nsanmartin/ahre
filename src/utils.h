@@ -141,4 +141,10 @@ static inline Err bufofchar_append(BufOf(char) buf[static 1], char* s, size_t le
     bufofchar_append(Buffer, LitStr, sizeof(LitStr)-1)
 
 Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) ;
+
+/* * */
+#define Str2 BufOf(char)
+#define str2_clean buffn(char,clean)
+#define str2_append(Str2Ptr, Items, NItems) \
+    (buffn(char,append)(Str2Ptr, Items, NItems) ? Ok : "error: str2_append failure")
 #endif

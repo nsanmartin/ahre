@@ -60,14 +60,7 @@ static inline Err url_init(Url u[static 1],  const char* cstr) {
     *u = (Url){.cu=curl_url()};
     if (!u->cu) return "error initializing CURLU";
     BufOf(char)* url_buf = &(BufOf(char)){0};
-    if (*cstr == '\\') {
-
-        if ((err=get_url_alias(cstr_skip_space(cstr + 1), url_buf))) {
-            url_cleanup(u);
-            return err;
-        }
-        cstr = url_buf->items;
-    } else if (_file_exists_(cstr)) {
+    if (_file_exists_(cstr)) {
         if((err=_prepend_file_schema_(cstr, url_buf))) {
             url_cleanup(u);
             return err;

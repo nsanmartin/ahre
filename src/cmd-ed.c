@@ -121,6 +121,7 @@ Err ed_write(const char* rest, TextBuf textbuf[static 1]) {
         if (!end) end = items + len;
         size_t chunklen = end - beg;
         if (chunklen > 1 && fwrite(beg, 1, chunklen, fp) != chunklen) {
+            fclose(fp);
             return err_fmt("%s: error writing to file: %s", __func__, rest);
         }
         if (end + 1 < items + len) beg = ((char*)memchr(end + 1, 'm', items+len-(end+1))) + 1;

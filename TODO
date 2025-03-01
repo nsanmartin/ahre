@@ -34,6 +34,7 @@
 [ ] add cmd to show a and submit urls
 [ ] allow switch between source buf and textbuf (via current buf, doc etc).
 [ ] implement hashi arl reset
+[ ] #define BufOf(char) Str etc and move many Str to StrView
 
 # DONE
 [*] Accept files apart from urls
