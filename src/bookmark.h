@@ -298,69 +298,38 @@ bookmarks_save_to_disc(HtmlDoc bm[static 1], Str2 bmfile[static 1]) {
 static inline Err
 bookmark_add_doc(HtmlDoc d[static 1], const char* line, UrlClient url_client[static 1]) {
     if (!*line) return "not a valid bookmark section";
+    Err err = Ok; 
     
     HtmlDoc bm;
     Str2 bmfile = (Str2){0};
     try(_get_bookmarks_doc_(url_client, &bmfile, &bm));
 
-
-    //get url
     char* url;
-    Err err = url_cstr(htmldoc_url(d), &url);
-    if (err) {
-        str2_clean(&bmfile);
-        htmldoc_cleanup(&bm);
-        return err;
-    }
+    if ((err = url_cstr(htmldoc_url(d), &url))) goto clean_bmfile_and_bmdoc;
 
-    //get body
     lxb_dom_node_t* body;
-    err = bookmark_sections_body(&bm, &body);
-    if (err) {
-        str2_clean(&bmfile);
-        htmldoc_cleanup(&bm);
-        curl_free(url);
-        //TODO!: free anchor
-        return err;
-    }
+    if ((err = bookmark_sections_body(&bm, &body))) goto free_curl_url;
 
-    //get title
     Str2* title = &(Str2){0};
-    err = bookmark_mk_title(d, url, title);
-    if (err) {
-        str2_clean(&bmfile);
-        htmldoc_cleanup(&bm);
-        curl_free(url);
-        //TODO!: free anchor
-        return err;
-    }
+    if ((err = bookmark_mk_title(d, url, title))) goto free_curl_url;
 
-    //mk anchor
     lxb_dom_element_t* bm_entry;
-    err = bookmark_mk_entry(bm.lxbdoc, url, title, &bm_entry);
-    if (!err) {
-        ///get section
-        lxb_dom_node_t* section_ul;
-        err = bookmark_section_ul_get(body, line, &section_ul);
-        if (!err) {
-            if (section_ul) {
-                ///
-                lxb_dom_node_insert_child(
-                    lxb_dom_interface_node(section_ul), lxb_dom_interface_node(bm_entry)
-                );
-                ////
-            }
-        }
-    }
-    ///
+    if ((err = bookmark_mk_entry(bm.lxbdoc, url, title, &bm_entry))) goto clean_title;
+
+    lxb_dom_node_t* section_ul;
+    if ((err = bookmark_section_ul_get(body, line, &section_ul))) goto clean_title;
+    //TODO: wrap this
+    lxb_dom_node_insert_child(lxb_dom_interface_node(section_ul), lxb_dom_interface_node(bm_entry));
 
     err = bookmarks_save_to_disc(&bm, &bmfile);
 
-    str2_clean(&bmfile);
+clean_title:
     str2_clean(title);
-    htmldoc_cleanup(&bm);
+free_curl_url:
     curl_free(url);
-
+clean_bmfile_and_bmdoc:
+    str2_clean(&bmfile);
+    htmldoc_cleanup(&bm);
     return err;
 }
 
