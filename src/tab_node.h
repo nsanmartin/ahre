@@ -19,8 +19,10 @@ typedef struct TabNode {
 void tab_node_cleanup(TabNode n[static 1]);
 
 #define T TabNode
-// #define TClean tab_node_cleanup
+// #define TClean tab_node_cleanup //TODO: uncomment
 #include <arl.h>
+
+TabNode* arl_of_tab_node_append(ArlOf(TabNode)* list, TabNode tn[static 1]);
 
 /* Node */
 /* getters */
@@ -75,7 +77,7 @@ static inline Err tab_node_current_doc(TabNode n[static 1], HtmlDoc* out[static 
 
 static inline Err
 tab_node_append_move_child(TabNode n[static 1], TabNode newnode[static 1]) {
-    if (!arlfn(TabNode, append)(tab_node_childs(n), newnode))
+    if (!arl_of_tab_node_append(tab_node_childs(n), newnode))
         return "error: mem failure arl";
     n->current_ix = tab_node_child_count(n);
     if (!n->current_ix) return "error: no items after appending";
@@ -215,7 +217,7 @@ Err tab_node_tree_append_url(TabNode t[static 1], const char* url) {
     TabNode new_node = (TabNode){.parent=cn};
     try( htmldoc_init(&new_node.doc, url));
     /* move */
-    TabNode* new_current = arlfn(TabNode, append)(
+    TabNode* new_current = arl_of_tab_node_append(
         tab_node_childs(cn), &new_node
     );
     if (!new_current) {

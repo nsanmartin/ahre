@@ -64,7 +64,7 @@ static inline Err tablist_current_doc(TabList f[static 1], HtmlDoc* out[static 1
 
 static inline Err
 tablist_append_move_tree(TabList f[static 1], TabNode t[static 1]) {
-    if (!arlfn(TabNode, append)(&f->tabs, t)) return "error: arl append failure";
+    if (!arl_of_tab_node_append(&f->tabs, t))  return "error: arl append failure";
     return Ok;
 }
 
@@ -72,7 +72,7 @@ static inline Err
 tablist_append_tree_from_url(TabList f[static 1], const char* url, UrlClient url_client[static 1]) {
     TabNode tn = (TabNode){0};
     try( tab_node_init(&tn, 0x0, url, url_client));
-    Err err =tablist_append_move_tree(f, &tn);
+    Err err = tablist_append_move_tree(f, &tn);
     if (err) {
         tab_node_cleanup(&tn);
         return err;
