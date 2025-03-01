@@ -50,6 +50,28 @@ static inline void bookmark_sections_sort(ArlOf(BufOf(char))* list) {
     qsort(list->items, list->len, sizeof(BufOf(char)), buf_of_char_cmp);
 }
 
+static inline Err bookmark_section_insert(
+    lxb_dom_document_t *domdoc, lxb_dom_node_t* body, const char* q, lxb_dom_element_t* bm_entry
+) {
+    lxb_dom_element_t* section =
+        lxb_dom_document_create_element(domdoc, (const lxb_char_t*)"h2", 2, NULL);
+    if (!section) return "error: lxb elem create failure";
+    lxb_dom_text_t* domtext =
+        lxb_dom_document_create_text_node( domdoc, (const lxb_char_t*)q, strlen(q));
+    if (!domtext) return "error: lxb text create failure";//TODO: clean *out
+
+    lxb_dom_node_insert_child(lxb_dom_interface_node(section), lxb_dom_interface_node(domtext));
+    lxb_dom_node_insert_child(lxb_dom_interface_node(body), lxb_dom_interface_node(section));
+
+    lxb_dom_element_t* ul =
+        lxb_dom_document_create_element(domdoc, (const lxb_char_t*)"ul", 2, NULL);
+    if (!ul) return "error: lxb text create failure";//TODO: clean *out
+    lxb_dom_node_insert_child(lxb_dom_interface_node(ul), lxb_dom_interface_node(bm_entry));
+    lxb_dom_node_insert_child(lxb_dom_interface_node(body), lxb_dom_interface_node(ul));
+    return Ok;
+}
+
+
 static inline Err
 bookmark_section_get(lxb_dom_node_t* body, const char* q, lxb_dom_node_t* out[static 1]) {
     lxb_dom_node_t* res = NULL;
@@ -70,22 +92,23 @@ bookmark_section_get(lxb_dom_node_t* body, const char* q, lxb_dom_node_t* out[st
             }
         }
     }
-    if (!res) return "section not found in bookmark";
     *out = res;
     return Ok;
 }
 
 static inline Err
 bookmark_section_ul_get(lxb_dom_node_t* body, const char* q, lxb_dom_node_t* out[static 1]) {
+    *out = NULL;
     lxb_dom_node_t* section;
     try( bookmark_section_get(body, q, &section));
-    if (!section) return "error: expecting a section";
-    if (!section->next) return "error: expecting section's next (TEXT)";
-    lxb_dom_node_t* ul = section->next->next;
-    if (!ul) return "error: expecting section's next next";
-    if (section->next->next->local_name != LXB_TAG_UL) 
-        return "error: expecting section's next next to be ul";
-    *out = ul;
+    if (section) {
+        if (!section->next) return "error: expecting section's next (TEXT)";
+        lxb_dom_node_t* ul = section->next->next;
+        if (!ul) return "error: expecting section's next next";
+        if (section->next->next->local_name != LXB_TAG_UL) 
+            return "error: expecting section's next next to be ul";
+        *out = ul;
+    }
     return Ok;
 }
 
@@ -296,7 +319,14 @@ bookmarks_save_to_disc(HtmlDoc bm[static 1], Str2 bmfile[static 1]) {
 }
 
 static inline Err
-bookmark_add_doc(HtmlDoc d[static 1], const char* line, UrlClient url_client[static 1]) {
+bookmark_add_to_section(HtmlDoc d[static 1], const char* line, UrlClient url_client[static 1]) {
+    line = cstr_skip_space(line);
+    bool create_section_if_not_found = true;
+    if (*line == '/') {
+        ++line;
+         create_section_if_not_found = false;
+        line = cstr_skip_space(line);
+    }
     if (!*line) return "not a valid bookmark section";
     Err err = Ok; 
     
@@ -319,9 +349,15 @@ bookmark_add_doc(HtmlDoc d[static 1], const char* line, UrlClient url_client[sta
     lxb_dom_node_t* section_ul;
     if ((err = bookmark_section_ul_get(body, line, &section_ul))) goto clean_title;
     //TODO: wrap this
-    lxb_dom_node_insert_child(lxb_dom_interface_node(section_ul), lxb_dom_interface_node(bm_entry));
+    if (section_ul) {
+        lxb_dom_node_insert_child(
+                lxb_dom_interface_node(section_ul), lxb_dom_interface_node(bm_entry)
+            );
+    } else if(create_section_if_not_found) {
+        err = bookmark_section_insert(&(bm.lxbdoc->dom_document), body, line, bm_entry);
+    } else err = "section not found in bookmarks file";
 
-    err = bookmarks_save_to_disc(&bm, &bmfile);
+    ok_then(err, bookmarks_save_to_disc(&bm, &bmfile));
 
 clean_title:
     str2_clean(title);
@@ -333,4 +369,8 @@ clean_bmfile_and_bmdoc:
     return err;
 }
 
+static inline Err
+bookmark_add_doc(HtmlDoc d[static 1], const char* line, UrlClient url_client[static 1]) {
+    return bookmark_add_to_section(d, line, url_client);
+}
 #endif
