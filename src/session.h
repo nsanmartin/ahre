@@ -17,8 +17,8 @@ typedef struct {
 
 #define mkSessionConf (SessionConf){.color=true,.maxcols=90,.z_shorcut_len=42}
 
-#define SESSION_FLAGS_QUIT       0x1u
-#define SESSION_FLAGS_MONOCHROME 0x2u
+#define SESSION_FLAG_QUIT       0x1u
+#define SESSION_FLAG_MONOCHROME 0x2u
 
 typedef struct Session {
     UrlClient* url_client;
@@ -28,13 +28,12 @@ typedef struct Session {
 } Session;
 
 /* getters */
-static inline bool session_quit(Session s[static 1]) { return s->flags & SESSION_FLAGS_QUIT; }
-static inline void session_quit_set(Session s[static 1]) {
-    s->flags = s->flags ^ SESSION_FLAGS_QUIT;
-}
-static inline bool session_monochrome(Session s[static 1]) { return s->flags & SESSION_FLAGS_MONOCHROME; }
+static inline bool session_quit(Session s[static 1]) { return s->flags & SESSION_FLAG_QUIT; }
+static inline void session_quit_set(Session s[static 1]) { s->flags |= SESSION_FLAG_QUIT; }
+static inline bool session_monochrome(Session s[static 1]) { return s->flags & SESSION_FLAG_MONOCHROME; }
 static inline void session_monochrome_set(Session s[static 1], bool value) {
-    s->flags = s->flags ^ (value ? SESSION_FLAGS_MONOCHROME : 0);
+    if (value) s->flags |= SESSION_FLAG_MONOCHROME;
+    else s->flags &= ~SESSION_FLAG_MONOCHROME;
 }
 
 Err session_current_buf(Session session[static 1], TextBuf* out[static 1]);

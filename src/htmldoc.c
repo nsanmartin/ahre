@@ -592,7 +592,7 @@ Err browse_text(lxb_dom_node_t* node,  BrowseCtx ctx[static 1]) {
     size_t len;
     try( lexbor_node_get_text(node, &data, &len));
 
-    if (node->parent->local_name == LXB_TAG_PRE && data && len) {
+    if (browse_ctx_pre(ctx)) {
         //TODO Whitespace inside this element is displayed as written,
         //with one exception. If one or more leading newline characters
         //are included immediately following the opening <pre> tag, the
@@ -630,7 +630,9 @@ Err browse_rec(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 
 //TODO: is this fn needed?
 Err browse_tag_pre(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
+    browse_ctx_pre_set(ctx, true);
     try( browse_list_block(node->first_child, node->last_child, ctx));
+    browse_ctx_pre_set(ctx, false);
     return Ok;
 }
 

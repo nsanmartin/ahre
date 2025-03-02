@@ -36,6 +36,12 @@ static inline BufOf(char)* browse_ctx_textbuf_buf_(BrowseCtx ctx[static 1]) {
 }
 
 static inline bool browse_ctx_color(BrowseCtx ctx[static 1]) { return !(ctx->flags & DRAW_CTX_FLAG_MONOCHROME); }
+static inline bool browse_ctx_pre(BrowseCtx ctx[static 1]) { return (ctx->flags & DRAW_CTX_FLAG_PRE); }
+static inline void browse_ctx_pre_set(BrowseCtx ctx[static 1], bool value) {
+    if (value) ctx->flags |= DRAW_CTX_FLAG_PRE;
+    else ctx->flags &= ~DRAW_CTX_FLAG_PRE;
+}
+
 static inline BufOf(char)* browse_ctx_buf(BrowseCtx ctx[static 1]) { return &ctx->buf; }
 
 
