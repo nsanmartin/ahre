@@ -1,15 +1,17 @@
 #ifndef __AHRE_Ctx_H__
 #define __AHRE_Ctx_H__
 
-#include "src/utils.h"
 #include "src/htmldoc.h"
 #include "src/tabs.h"
+#include "src/user-input.h"
+#include "src/utils.h"
 
 typedef struct Session Session;
 
 typedef Err (*UserLineCallback)(Session* session, const char*);
 
 typedef struct {
+    UiIn uiin;
     bool color;
     size_t maxcols;
     size_t z_shorcut_len;
@@ -35,7 +37,6 @@ static inline void session_monochrome_set(Session s[static 1], bool value) {
     if (value) s->flags |= SESSION_FLAG_MONOCHROME;
     else s->flags &= ~SESSION_FLAG_MONOCHROME;
 }
-
 Err session_current_buf(Session session[static 1], TextBuf* out[static 1]);
 Err session_current_doc(Session session[static 1], HtmlDoc* out[static 1]);
 
@@ -43,6 +44,9 @@ static inline UrlClient* session_url_client(Session session[static 1]) {
     return session->url_client;
 }
 static inline SessionConf* session_conf(Session s[static 1]) { return &s->conf; }
+static inline UiIn session_conf_uiin(Session s[static 1]) {
+    return session_conf(s)->uiin;
+}
 static inline size_t* session_conf_z_shorcut_len(Session s[static 1]) {
     return &session_conf(s)->z_shorcut_len;
 }
