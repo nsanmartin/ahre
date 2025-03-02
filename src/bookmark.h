@@ -276,6 +276,7 @@ static inline Err _bm_to_source_rec_(lxb_dom_node_t* node, Str2 out[static 1]) {
         switch(node->type) {
             case LXB_DOM_NODE_TYPE_ELEMENT: return _bm_to_source_rec_tag_(node, out);
             case LXB_DOM_NODE_TYPE_TEXT: return _bm_to_source_append_text_(node, out);
+            case LXB_DOM_NODE_TYPE_COMMENT: return Ok;
             default: {
                 if (node->type >= LXB_DOM_NODE_TYPE_LAST_ENTRY)
                     log_warn__("lexbor node type greater than last entry: %lx\n", node->type);

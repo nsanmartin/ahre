@@ -296,7 +296,7 @@ Err shorcut_zz(Session session[static 1], const char* rest) {
     return textbuf_eval_cmd(tb, cmd, &r);
 }
 
-Err shorcut_G(Session session[static 1], const char* rest) {
+Err shorcut_gg(Session session[static 1], const char* rest) {
     const char* cmd = "print";
     if (*rest == 'n') { cmd = "n"; ++rest; }
     TextBuf* tb;
