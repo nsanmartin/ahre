@@ -36,9 +36,10 @@ session_monochrome_set(Session s[static 1], bool value) {
     session_conf_monochrome_set(session_conf(s), value);
 }
 static inline UiIn* session_uiin(Session s[static 1]) { return session_conf_uiin(session_conf(s)); }
-static inline size_t* session_nrows(Session s[static 1]) {
-    return session_conf_nrows(session_conf(s));
-}
+static inline size_t*
+session_nrows(Session s[static 1]) { return session_conf_nrows(session_conf(s)); }
+static inline size_t*
+session_ncols(Session s[static 1]) { return session_conf_ncols(session_conf(s)); }
 
 static inline TabList*
 session_tablist(Session s[static 1]) { return &s->tablist; }

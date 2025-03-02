@@ -52,6 +52,8 @@ Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) {
 }
 
 Err parse_base36_or_throw(const char** strptr, unsigned long long* num) {
+    //TODO: 
+    //parse_size_t_or_throw(strptr, num, 36);
     if (!strptr || !*strptr) return "error: unexpected NULL ptr";
     while(**strptr && isspace(**strptr)) ++*strptr;
     if (!**strptr) return "number not given";

@@ -22,3 +22,64 @@ Err cmd_write(const char* fname, Session session[static 1]) {
 }
 
 
+Err cmd_set_session_winsz(Session session[static 1]) {
+    size_t nrows, ncols;
+    try( ui_get_win_size(&nrows, &ncols));
+    *session_nrows(session) = nrows;
+    *session_ncols(session) = ncols;
+    return Ok;
+}
+
+Err cmd_set_session_ncols(Session session[static 1], const char* line) {
+    size_t ncols;
+    parse_size_t_or_throw(&line, &ncols, 10);
+    if (*cstr_skip_space(line)) return "invalid argument";
+    *session_ncols(session) = ncols;
+    return Ok;
+}
+
+Err cmd_set_session_monochrome(Session session[static 1], const char* line) {
+    line = cstr_skip_space(line);
+    if (*line == '0') session_monochrome_set(session, false);
+    else if (*line == '1') session_monochrome_set(session, true);
+    else return "monochrome option should be '0' or '1'";
+    return Ok;
+
+}
+
+Err cmd_set_session_input(Session session[static 1], const char* line) {
+    line = cstr_skip_space(line);
+    HtmlDoc* htmldoc;
+    try( session_current_doc(session, &htmldoc));
+
+    UiIn uiin;
+    const char* rest;
+    if ((rest = substr_match(line, "fgets", 1)) && !*rest) uiin = uiin_fgets;
+    else if ((rest = substr_match(line, "isocline", 1)) && !*rest) uiin = uiin_isocline;
+    else return "input option should be 'getline' or 'isocline'";
+    *session_uiin(session) = uiin;
+    return Ok;
+
+}
+
+
+Err cmd_set_session(Session session[static 1], const char* line) {
+    line = cstr_skip_space(line);
+    const char* rest;
+    if ((rest=substr_match(line, "input", 1))) return cmd_set_session_input(session, rest);
+    if ((rest=substr_match(line, "monochrome", 1))) return cmd_set_session_monochrome(session, rest);
+    if ((rest=substr_match(line, "ncols", 1))) return cmd_set_session_ncols(session, rest);
+    if ((rest=substr_match(line, "winsz", 1)) && !*rest) return cmd_set_session_winsz(session);
+    return "not a session option";
+}
+
+Err cmd_set_curl(Session session[static 1], const char* line);
+
+Err cmd_set(Session session[static 1], const char* line) {
+    line = cstr_skip_space(line);
+    const char* rest;
+    if ((rest = substr_match(line, "session", 1))) return cmd_set_session(session, rest);
+    if ((rest = substr_match(line, "curl", 1))) return cmd_set_curl(session, rest);
+    return "not a curl option";
+}
+

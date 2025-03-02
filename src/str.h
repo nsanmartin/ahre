@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef __AHRE_STR_H__
-#define __AHRE_STR_H__
+#ifndef AHRE_STR_H__
+#define AHRE_STR_H__
 
 #include <ctype.h>
 #include <string.h>
