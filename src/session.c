@@ -35,9 +35,13 @@ Err session_init(Session s[static 1], char* url) {
     }
 
     *s = (Session) {
-        .url_client         = url_client,
-        .tablist            = f,
-        .conf               = mkSessionConf
+        .url_client   = url_client,
+        .tablist      = f,
+        .conf         = (SessionConf){
+            .uiin          = uiin_isocline,
+            .maxcols       = 90,
+            .z_shorcut_len = 42
+        }
     };
 
     return Ok;

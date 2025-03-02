@@ -12,12 +12,11 @@ typedef Err (*UserLineCallback)(Session* session, const char*);
 
 typedef struct {
     UiIn uiin;
-    bool color;
     size_t maxcols;
     size_t z_shorcut_len;
+    unsigned flags;
 } SessionConf ;
 
-#define mkSessionConf (SessionConf){.color=true,.maxcols=90,.z_shorcut_len=42}
 
 #define SESSION_FLAG_QUIT       0x1u
 #define SESSION_FLAG_MONOCHROME 0x2u
@@ -25,18 +24,10 @@ typedef struct {
 typedef struct Session {
     UrlClient* url_client;
     TabList tablist;
-    unsigned flags;
     SessionConf conf;
 } Session;
 
 /* getters */
-static inline bool session_quit(Session s[static 1]) { return s->flags & SESSION_FLAG_QUIT; }
-static inline void session_quit_set(Session s[static 1]) { s->flags |= SESSION_FLAG_QUIT; }
-static inline bool session_monochrome(Session s[static 1]) { return s->flags & SESSION_FLAG_MONOCHROME; }
-static inline void session_monochrome_set(Session s[static 1], bool value) {
-    if (value) s->flags |= SESSION_FLAG_MONOCHROME;
-    else s->flags &= ~SESSION_FLAG_MONOCHROME;
-}
 Err session_current_buf(Session session[static 1], TextBuf* out[static 1]);
 Err session_current_doc(Session session[static 1], HtmlDoc* out[static 1]);
 
@@ -44,8 +35,22 @@ static inline UrlClient* session_url_client(Session session[static 1]) {
     return session->url_client;
 }
 static inline SessionConf* session_conf(Session s[static 1]) { return &s->conf; }
-static inline UiIn session_conf_uiin(Session s[static 1]) {
-    return session_conf(s)->uiin;
+static inline bool session_quit(Session s[static 1]) {
+    return session_conf(s)->flags & SESSION_FLAG_QUIT;
+}
+static inline void session_quit_set(Session s[static 1]) {
+    session_conf(s)->flags |= SESSION_FLAG_QUIT;
+}
+static inline bool session_monochrome(Session s[static 1]) {
+    return session_conf(s)->flags & SESSION_FLAG_MONOCHROME;
+}
+static inline void session_monochrome_set(Session s[static 1], bool value) {
+    if (value) session_conf(s)->flags |= SESSION_FLAG_MONOCHROME;
+    else session_conf(s)->flags &= ~SESSION_FLAG_MONOCHROME;
+}
+
+static inline UiIn* session_conf_uiin(Session s[static 1]) {
+    return &session_conf(s)->uiin;
 }
 static inline size_t* session_conf_z_shorcut_len(Session s[static 1]) {
     return &session_conf(s)->z_shorcut_len;

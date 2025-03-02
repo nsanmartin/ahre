@@ -27,7 +27,7 @@ Err mk_submit_url(UrlClient uc[static 1],
 
 Err read_line_from_user(Session session[static 1]) {
     char* line = 0x0;
-    try( read_user_input(session_conf_uiin(session), NULL, &line));
+    try( read_user_input(*session_conf_uiin(session), NULL, &line));
     Err err = process_line(session, line);
     destroy(line);
     return err;
