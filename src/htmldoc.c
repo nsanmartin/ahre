@@ -1,4 +1,4 @@
-#include "src/browse.h"
+#include "src/draw.h"
 #include "src/constants.h"
 #include "src/debug.h"
 #include "src/error.h"
@@ -9,8 +9,8 @@
 #include "src/utils.h"
 #include "src/wrapper-lexbor.h"
 
-Err browse_tag_a(lxb_dom_node_t* node, BrowseCtx ctx[static 1]);
-Err browse_tag_pre(lxb_dom_node_t* node, BrowseCtx ctx[static 1]);
+Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]);
+Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[static 1]);
 
 /* internal linkage */
 #define MAX_URL_LEN 2048u
@@ -42,69 +42,69 @@ size_t _strview_trim_right_count_newlines_(StrView s[static 1]) {
 
 
 static Err
-browse_tag_br(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    try( browse_ctx_buf_append_lit__(ctx, "\n"));
-    return browse_list(node->first_child, node->last_child, ctx);
+draw_tag_br(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    try( draw_ctx_buf_append_lit__(ctx, "\n"));
+    return draw_list(node->first_child, node->last_child, ctx);
 }
 
 static Err
-browse_tag_center(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
+draw_tag_center(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     //TODO: store center boundaries (start = len on enter, end = len on ret) and then
     // when fitting to width center those lines image.
 
-    try( browse_ctx_buf_append_lit__(ctx, "%{[center]:\n"));
-    try( browse_list(node->first_child, node->last_child, ctx));
-    try( browse_ctx_buf_append_lit__(ctx, "%}[center]\n"));
+    try( draw_ctx_buf_append_lit__(ctx, "%{[center]:\n"));
+    try( draw_list(node->first_child, node->last_child, ctx));
+    try( draw_ctx_buf_append_lit__(ctx, "%}[center]\n"));
     return Ok;
 }
 
 static Err
-brose_ctx_append_img_alt_(lxb_dom_node_t* img, BrowseCtx ctx[static 1]) {
+brose_ctx_append_img_alt_(lxb_dom_node_t* img, DrawCtx ctx[static 1]) {
 
     const lxb_char_t* alt;
     size_t alt_len;
     lexbor_find_attr_value(img, "alt", &alt, &alt_len);
 
     if (alt && alt_len) {
-        try( browse_ctx_buf_append_lit__(ctx, ELEM_ID_SEP));
-        try( browse_ctx_buf_append(ctx, (char*)alt, alt_len));
+        try( draw_ctx_buf_append_lit__(ctx, ELEM_ID_SEP));
+        try( draw_ctx_buf_append(ctx, (char*)alt, alt_len));
     }
     return Ok;
 }
 
 static Err
-browse_tag_img(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    try( browse_ctx_buf_append_color_(ctx, esc_code_light_green));
-    HtmlDoc* d = browse_ctx_htmldoc(ctx);
+draw_tag_img(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    try( draw_ctx_buf_append_color_(ctx, esc_code_light_green));
+    HtmlDoc* d = draw_ctx_htmldoc(ctx);
     ArlOf(LxbNodePtr)* imgs = htmldoc_imgs(d);
     const size_t img_count = len__(imgs);
     try( append_to_arlof_lxb_node__(imgs, &node));
-    try( browse_ctx_buf_append_lit__(ctx, IMAGE_OPEN_STR));
-    try( browse_ctx_buf_append_ui_(ctx, img_count));
+    try( draw_ctx_buf_append_lit__(ctx, IMAGE_OPEN_STR));
+    try( draw_ctx_buf_append_ui_(ctx, img_count));
     try( brose_ctx_append_img_alt_(node, ctx));
 
-    try (browse_list(node->first_child, node->last_child, ctx));
+    try (draw_list(node->first_child, node->last_child, ctx));
 
-    try( browse_ctx_buf_append_lit__(ctx, IMAGE_CLOSE_STR));
-    try( browse_ctx_reset_color(ctx));
+    try( draw_ctx_buf_append_lit__(ctx, IMAGE_CLOSE_STR));
+    try( draw_ctx_reset_color(ctx));
     return Ok;
 }
 
 static Err
-browse_tag_form(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    ArlOf(LxbNodePtr)* forms = htmldoc_forms(browse_ctx_htmldoc(ctx));
+draw_tag_form(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    ArlOf(LxbNodePtr)* forms = htmldoc_forms(draw_ctx_htmldoc(ctx));
     if (!arlfn(LxbNodePtr,append)(forms, &node)) return "error: lip set";
-    try( browse_ctx_buf_append_color_(ctx, esc_code_purple));
-    try( browse_ctx_buf_append_lit__(ctx, FORM_OPEN_STR));
-    try( browse_ctx_buf_append_ui_base36_(ctx, len__(forms)-1));
-    try( browse_ctx_buf_append_lit__(ctx, "]:"));
-    try( browse_ctx_reset_color(ctx));
+    try( draw_ctx_buf_append_color_(ctx, esc_code_purple));
+    try( draw_ctx_buf_append_lit__(ctx, FORM_OPEN_STR));
+    try( draw_ctx_buf_append_ui_base36_(ctx, len__(forms)-1));
+    try( draw_ctx_buf_append_lit__(ctx, "]:"));
+    try( draw_ctx_reset_color(ctx));
 
-    try (browse_list_block(node->first_child, node->last_child, ctx));
+    try (draw_list_block(node->first_child, node->last_child, ctx));
 
-    try( browse_ctx_buf_append_color_(ctx, esc_code_purple));
-    try( browse_ctx_buf_append_lit__(ctx, FORM_CLOSE_STR));
-    try( browse_ctx_reset_color(ctx));
+    try( draw_ctx_buf_append_color_(ctx, esc_code_purple));
+    try( draw_ctx_buf_append_lit__(ctx, FORM_CLOSE_STR));
+    try( draw_ctx_reset_color(ctx));
     return Ok;
 }
 
@@ -121,26 +121,26 @@ static bool _input_is_submit_type_(const lxb_char_t* name, size_t len) {
 }
 
 static Err
-browse_tag_button(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    HtmlDoc* d = browse_ctx_htmldoc(ctx);
+draw_tag_button(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    HtmlDoc* d = draw_ctx_htmldoc(ctx);
     ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(d);
     if (!arlfn(LxbNodePtr,append)(inputs, &node)) return "error: lip set";
 
-    try( browse_ctx_buf_append_color_(ctx, esc_code_red));
-    try( browse_ctx_buf_append_lit__(ctx, BUTTON_OPEN_STR));
-    try( browse_ctx_buf_append_ui_(ctx, len__(inputs)-1));
-    try( browse_ctx_buf_append_lit__(ctx, ELEM_ID_SEP_BUTTON));
+    try( draw_ctx_buf_append_color_(ctx, esc_code_red));
+    try( draw_ctx_buf_append_lit__(ctx, BUTTON_OPEN_STR));
+    try( draw_ctx_buf_append_ui_(ctx, len__(inputs)-1));
+    try( draw_ctx_buf_append_lit__(ctx, ELEM_ID_SEP_BUTTON));
 
-    try (browse_list(node->first_child, node->last_child, ctx));
+    try (draw_list(node->first_child, node->last_child, ctx));
 
-    try( browse_ctx_buf_append_lit__(ctx, BUTTON_CLOSE_STR));
-    try( browse_ctx_reset_color(ctx));
+    try( draw_ctx_buf_append_lit__(ctx, BUTTON_CLOSE_STR));
+    try( draw_ctx_reset_color(ctx));
     return Ok;
 }
 
 
 static Err
-browse_tag_input(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
+draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     const lxb_char_t* s;
     size_t slen;
 
@@ -148,49 +148,49 @@ browse_tag_input(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
     if (slen && !strcmp("hidden", (char*)s)) 
         return Ok;
 
-    HtmlDoc* d = browse_ctx_htmldoc(ctx);
+    HtmlDoc* d = draw_ctx_htmldoc(ctx);
     ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(d);
     if (!arlfn(LxbNodePtr,append)(inputs, &node)) { return "error: arl set"; }
 
-    try( browse_ctx_buf_append_color_(ctx, esc_code_red));
-    try( browse_ctx_buf_append_lit__(ctx, INPUT_OPEN_STR));
-    try( browse_ctx_buf_append_ui_(ctx, len__(inputs)-1));
+    try( draw_ctx_buf_append_color_(ctx, esc_code_red));
+    try( draw_ctx_buf_append_lit__(ctx, INPUT_OPEN_STR));
+    try( draw_ctx_buf_append_ui_(ctx, len__(inputs)-1));
     if (_input_is_text_type_(s, slen)) {
         lexbor_find_attr_value(node, "value", &s, &slen);
         if (slen) {
-            try( browse_ctx_buf_append_lit__(ctx, "="));
-            try( browse_ctx_buf_append(ctx, (char*)s, slen));
+            try( draw_ctx_buf_append_lit__(ctx, "="));
+            try( draw_ctx_buf_append(ctx, (char*)s, slen));
         }
     } else if (_input_is_submit_type_(s, slen)) {
         lexbor_find_attr_value(node, "value", &s, &slen);
         if (slen) {
-            try( browse_ctx_buf_append_lit__(ctx, ELEM_ID_SEP));
-            try( browse_ctx_buf_append(ctx, (char*)s, slen));
+            try( draw_ctx_buf_append_lit__(ctx, ELEM_ID_SEP));
+            try( draw_ctx_buf_append(ctx, (char*)s, slen));
         }
     } else if (lexbor_str_eq("password", s, slen)) {
         lexbor_find_attr_value(node, "value", &s, &slen);
-        if (slen) try( browse_ctx_buf_append_lit__(ctx, "=********"));
+        if (slen) try( draw_ctx_buf_append_lit__(ctx, "=********"));
     } else {
-        try( browse_ctx_buf_append_lit__(ctx, "[input not supported yet]"));
+        try( draw_ctx_buf_append_lit__(ctx, "[input not supported yet]"));
     }
-    try( browse_ctx_buf_append_lit__(ctx, INPUT_CLOSE_STR));
-    try( browse_ctx_reset_color(ctx));
+    try( draw_ctx_buf_append_lit__(ctx, INPUT_CLOSE_STR));
+    try( draw_ctx_reset_color(ctx));
     return Ok;
 }
 
 
 static Err
-browse_tag_div(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    BufOf(char) buf = browse_ctx_buf_get_reset(ctx);
-    Err err = browse_list(node->first_child, node->last_child, ctx);
-    browse_ctx_swap_buf(ctx, &buf);
+draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    BufOf(char) buf = draw_ctx_buf_get_reset(ctx);
+    Err err = draw_list(node->first_child, node->last_child, ctx);
+    draw_ctx_swap_buf(ctx, &buf);
 
     if (!err) {
         StrView view = strview_trim_from_mem(buf.items, buf.len);
         if (view.len) {
-            ok_then(err, browse_ctx_buf_append_lit__(ctx, "\n"));
-            ok_then(err, browse_ctx_buf_append(ctx, (char*)view.s, view.len));
-            ok_then(err, browse_ctx_buf_append_lit__(ctx, "\n"));
+            ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
+            ok_then(err, draw_ctx_buf_append(ctx, (char*)view.s, view.len));
+            ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
         }
     }
     buffn(char, clean)(&buf);
@@ -198,36 +198,36 @@ browse_tag_div(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 }
 
 static Err
-browse_tag_p(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    return browse_list_block(node->first_child, node->last_child, ctx);
+draw_tag_p(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    return draw_list_block(node->first_child, node->last_child, ctx);
 }
 
 static Err
-browse_tag_tr(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    try( browse_ctx_buf_append_lit__(ctx, "\n"));
-    try( browse_list(node->first_child, node->last_child, ctx));
+draw_tag_tr(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    try( draw_ctx_buf_append_lit__(ctx, "\n"));
+    try( draw_list(node->first_child, node->last_child, ctx));
     return Ok;
 }
 
 static Err
-browse_tag_ul(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    if(browse_ctx_hide_tags(ctx, HIDE_UL)) return Ok;
-    return browse_list_block(node->first_child, node->last_child, ctx);
+draw_tag_ul(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    if(draw_ctx_hide_tags(ctx, HIDE_UL)) return Ok;
+    return draw_list_block(node->first_child, node->last_child, ctx);
 }
 
 static Err
-browse_tag_li(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    BufOf(char) buf = browse_ctx_buf_get_reset(ctx);
-    Err err = browse_list(node->first_child, node->last_child, ctx);
-    browse_ctx_swap_buf(ctx, &buf);
+draw_tag_li(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    BufOf(char) buf = draw_ctx_buf_get_reset(ctx);
+    Err err = draw_list(node->first_child, node->last_child, ctx);
+    draw_ctx_swap_buf(ctx, &buf);
 
     if (!err && buf.len) {
         StrView s = strview_trim_from_mem(buf.items, buf.len);
         if (s.len) {
-            if (buf.items < s.s) err = browse_ctx_buf_append_lit__(ctx, "\n");
-            ok_then( err, browse_ctx_buf_append_lit__(ctx, " * "));
-            ok_then( err, browse_ctx_buf_append(ctx, (char*)s.s, s.len));
-            ok_then( err, browse_ctx_buf_append_lit__(ctx, "\n"));
+            if (buf.items < s.s) err = draw_ctx_buf_append_lit__(ctx, "\n");
+            ok_then( err, draw_ctx_buf_append_lit__(ctx, " * "));
+            ok_then( err, draw_ctx_buf_append(ctx, (char*)s.s, s.len));
+            ok_then( err, draw_ctx_buf_append_lit__(ctx, "\n"));
         }
     }
 
@@ -237,96 +237,96 @@ browse_tag_li(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 
 
 static Err
-browse_tag_h(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    if (browse_ctx_color(ctx)) try( browse_ctx_esc_code_push(ctx, esc_code_bold));
+draw_tag_h(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    if (draw_ctx_color(ctx)) try( draw_ctx_esc_code_push(ctx, esc_code_bold));
 
-    BufOf(char) buf = browse_ctx_buf_get_reset(ctx);
-    try( browse_list_block(node->first_child, node->last_child, ctx));
-    browse_ctx_swap_buf(ctx, &buf);
+    BufOf(char) buf = draw_ctx_buf_get_reset(ctx);
+    try( draw_list_block(node->first_child, node->last_child, ctx));
+    draw_ctx_swap_buf(ctx, &buf);
 
     StrView content = strview(buf.items, buf.len);
     _strview_trim_left_count_newlines_(&content);
     _strview_trim_right_count_newlines_(&content);
 
     Err err;
-    if (   (err=browse_ctx_buf_append_lit__(ctx, "\n# "))
-        || (err=browse_ctx_buf_append_color_esc_code(ctx, esc_code_bold))
+    if (   (err=draw_ctx_buf_append_lit__(ctx, "\n# "))
+        || (err=draw_ctx_buf_append_color_esc_code(ctx, esc_code_bold))
     ) {
         buffn(char, clean)(&buf);
         return err;
     }
 
-    if (content.len) try( browse_ctx_buf_append(ctx, (char*)content.s, content.len));
+    if (content.len) try( draw_ctx_buf_append(ctx, (char*)content.s, content.len));
     buffn(char, clean)(&buf);
-    try( browse_ctx_reset_color(ctx));
-    try( browse_ctx_buf_append_lit__(ctx, "\n"));
+    try( draw_ctx_reset_color(ctx));
+    try( draw_ctx_buf_append_lit__(ctx, "\n"));
 
     return Ok;
 }
 
 static Err
-browse_tag_code(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    try( browse_ctx_buf_append_lit__(ctx, " `"));
-    try (browse_list(node->first_child, node->last_child, ctx));
-    try( browse_ctx_buf_append_lit__(ctx, "` "));
+draw_tag_code(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    try( draw_ctx_buf_append_lit__(ctx, " `"));
+    try (draw_list(node->first_child, node->last_child, ctx));
+    try( draw_ctx_buf_append_lit__(ctx, "` "));
     return Ok;
 }
 
 static Err
-browse_tag_b(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    try( browse_ctx_buf_append_lit__(ctx, " "));
-    try( browse_ctx_buf_append_color_(ctx, esc_code_bold));
-    try (browse_list(node->first_child, node->last_child, ctx));
-    try( browse_ctx_reset_color(ctx));
-    try( browse_ctx_buf_append_lit__(ctx, " "));
+draw_tag_b(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    try( draw_ctx_buf_append_lit__(ctx, " "));
+    try( draw_ctx_buf_append_color_(ctx, esc_code_bold));
+    try (draw_list(node->first_child, node->last_child, ctx));
+    try( draw_ctx_reset_color(ctx));
+    try( draw_ctx_buf_append_lit__(ctx, " "));
     return Ok;
 }
 
-static Err browse_tag_em(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    try( browse_ctx_buf_append_lit__(ctx, " "));
-    try( browse_ctx_buf_append_color_(ctx, esc_code_underline));
-    try (browse_list(node->first_child, node->last_child, ctx));
-    try( browse_ctx_reset_color(ctx));
-    try( browse_ctx_buf_append_lit__(ctx, " "));
-    return Ok;
-}
-
-static Err
-browse_tag_i(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    try( browse_ctx_buf_append_lit__(ctx, " "));
-    try( browse_ctx_buf_append_color_(ctx, esc_code_italic));
-    try (browse_list(node->first_child, node->last_child, ctx));
-    try( browse_ctx_reset_color(ctx));
-    try( browse_ctx_buf_append_lit__(ctx, " "));
+static Err draw_tag_em(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    try( draw_ctx_buf_append_lit__(ctx, " "));
+    try( draw_ctx_buf_append_color_(ctx, esc_code_underline));
+    try (draw_list(node->first_child, node->last_child, ctx));
+    try( draw_ctx_reset_color(ctx));
+    try( draw_ctx_buf_append_lit__(ctx, " "));
     return Ok;
 }
 
 static Err
-browse_tag_blockquote(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    try( browse_ctx_buf_append_lit__(ctx, "``"));
-    try (browse_list_block(node->first_child, node->last_child, ctx));
-    try( browse_ctx_buf_append_lit__(ctx, "''"));
+draw_tag_i(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    try( draw_ctx_buf_append_lit__(ctx, " "));
+    try( draw_ctx_buf_append_color_(ctx, esc_code_italic));
+    try (draw_list(node->first_child, node->last_child, ctx));
+    try( draw_ctx_reset_color(ctx));
+    try( draw_ctx_buf_append_lit__(ctx, " "));
     return Ok;
 }
 
 static Err
-browse_tag_title(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    HtmlDoc* d = browse_ctx_htmldoc(ctx);
+draw_tag_blockquote(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    try( draw_ctx_buf_append_lit__(ctx, "``"));
+    try (draw_list_block(node->first_child, node->last_child, ctx));
+    try( draw_ctx_buf_append_lit__(ctx, "''"));
+    return Ok;
+}
+
+static Err
+draw_tag_title(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    HtmlDoc* d = draw_ctx_htmldoc(ctx);
     *htmldoc_title(d) = node;
     try( dbg_print_title(node));
     return Ok;
 }
 
-Err browse_mem_skipping_space(const char* data, size_t len, BrowseCtx ctx[static 1]) {
+Err draw_mem_skipping_space(const char* data, size_t len, DrawCtx ctx[static 1]) {
     StrView s = strview(data, len);
 
     while(s.len) {
         StrView word = strview_split_word(&s);
         if (!word.len) break;
-        try( browse_ctx_buf_append(ctx, (char*)word.s, word.len));
+        try( draw_ctx_buf_append(ctx, (char*)word.s, word.len));
         strview_trim_space_left(&s);
         if (!s.len) break;
-        try( browse_ctx_buf_append(ctx, " ", 1));
+        try( draw_ctx_buf_append(ctx, " ", 1));
     }
     return Ok;
 }
@@ -550,73 +550,73 @@ static const char* _dbg_tags_[] = {
     [0x00c4] = "    LXB_TAG__LAST_ENTRY        " 
 };
 
-Err browse_rec_tag(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
+Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     switch(node->local_name) {
-        case LXB_TAG_A: { return browse_tag_a(node, ctx); }
-        case LXB_TAG_B: { return browse_tag_b(node, ctx); }
-        case LXB_TAG_BLOCKQUOTE: { return browse_tag_blockquote(node, ctx); }
-        case LXB_TAG_BR: { return browse_tag_br(node, ctx); }
-        case LXB_TAG_BUTTON: { return browse_tag_button(node, ctx); }
-        case LXB_TAG_CENTER: { return browse_tag_center(node, ctx); } 
-        case LXB_TAG_CODE: { return browse_tag_code(node, ctx); } 
-        case LXB_TAG_DIV: { return browse_tag_div(node, ctx); }
-        case LXB_TAG_DL: { return browse_list_block(node->first_child, node->last_child, ctx); }
-        case LXB_TAG_DT: { return browse_list_block(node->first_child, node->last_child, ctx); }
-        case LXB_TAG_EM: { return browse_tag_em(node, ctx); }
-        case LXB_TAG_FORM: { return browse_tag_form(node, ctx); }
-        case LXB_TAG_H1: case LXB_TAG_H2: case LXB_TAG_H3: case LXB_TAG_H4: case LXB_TAG_H5: case LXB_TAG_H6: { return browse_tag_h(node, ctx); }
-        case LXB_TAG_I: { return browse_tag_i(node, ctx); }
-        case LXB_TAG_INPUT: { return browse_tag_input(node, ctx); }
-        case LXB_TAG_IMAGE: case LXB_TAG_IMG: { return browse_tag_img(node, ctx); }
-        case LXB_TAG_LI: { return browse_tag_li(node, ctx); }
-        case LXB_TAG_OL: { return browse_tag_ul(node, ctx); }
-        case LXB_TAG_P: { return browse_tag_p(node, ctx); }
-        case LXB_TAG_PRE: { return browse_tag_pre(node, ctx); }
+        case LXB_TAG_A: { return draw_tag_a(node, ctx); }
+        case LXB_TAG_B: { return draw_tag_b(node, ctx); }
+        case LXB_TAG_BLOCKQUOTE: { return draw_tag_blockquote(node, ctx); }
+        case LXB_TAG_BR: { return draw_tag_br(node, ctx); }
+        case LXB_TAG_BUTTON: { return draw_tag_button(node, ctx); }
+        case LXB_TAG_CENTER: { return draw_tag_center(node, ctx); } 
+        case LXB_TAG_CODE: { return draw_tag_code(node, ctx); } 
+        case LXB_TAG_DIV: { return draw_tag_div(node, ctx); }
+        case LXB_TAG_DL: { return draw_list_block(node->first_child, node->last_child, ctx); }
+        case LXB_TAG_DT: { return draw_list_block(node->first_child, node->last_child, ctx); }
+        case LXB_TAG_EM: { return draw_tag_em(node, ctx); }
+        case LXB_TAG_FORM: { return draw_tag_form(node, ctx); }
+        case LXB_TAG_H1: case LXB_TAG_H2: case LXB_TAG_H3: case LXB_TAG_H4: case LXB_TAG_H5: case LXB_TAG_H6: { return draw_tag_h(node, ctx); }
+        case LXB_TAG_I: { return draw_tag_i(node, ctx); }
+        case LXB_TAG_INPUT: { return draw_tag_input(node, ctx); }
+        case LXB_TAG_IMAGE: case LXB_TAG_IMG: { return draw_tag_img(node, ctx); }
+        case LXB_TAG_LI: { return draw_tag_li(node, ctx); }
+        case LXB_TAG_OL: { return draw_tag_ul(node, ctx); }
+        case LXB_TAG_P: { return draw_tag_p(node, ctx); }
+        case LXB_TAG_PRE: { return draw_tag_pre(node, ctx); }
         case LXB_TAG_SCRIPT: { log_todo__("%s", "[todo] implement script tag (skipping)"); return Ok; } 
         case LXB_TAG_STYLE: { log_todo__("%s\n", "[todo?] skiping style"); return Ok; } 
-        case LXB_TAG_TITLE: { return browse_tag_title(node, ctx); } 
-        case LXB_TAG_TR: { return browse_tag_tr(node, ctx); }
-        case LXB_TAG_TT: { return browse_tag_code(node, ctx); }
-        case LXB_TAG_UL: { return browse_tag_ul(node, ctx); }
+        case LXB_TAG_TITLE: { return draw_tag_title(node, ctx); } 
+        case LXB_TAG_TR: { return draw_tag_tr(node, ctx); }
+        case LXB_TAG_TT: { return draw_tag_code(node, ctx); }
+        case LXB_TAG_UL: { return draw_tag_ul(node, ctx); }
         default: {
             if (node->local_name >= LXB_TAG__LAST_ENTRY)
                 log_warn__("node local name (TAG) greater than last entry: %lx\n", node->local_name);
             else log_todo__("TAG 'NOT' IMPLEMENTED: %s\n", _dbg_tags_[node->local_name]);
-            return browse_list(node->first_child, node->last_child, ctx);
+            return draw_list(node->first_child, node->last_child, ctx);
         }
     }
 }
 
-Err browse_text(lxb_dom_node_t* node,  BrowseCtx ctx[static 1]) {
+Err draw_text(lxb_dom_node_t* node,  DrawCtx ctx[static 1]) {
     const char* data;
     size_t len;
     try( lexbor_node_get_text(node, &data, &len));
 
-    if (browse_ctx_pre(ctx)) {
+    if (draw_ctx_pre(ctx)) {
         //TODO Whitespace inside this element is displayed as written,
         //with one exception. If one or more leading newline characters
         //are included immediately following the opening <pre> tag, the
         //first newline character is stripped. 
         //https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
-        try( browse_ctx_buf_append(ctx, (char*)data, len));
+        try( draw_ctx_buf_append(ctx, (char*)data, len));
     } else if (mem_skip_space_inplace(&data, &len)) {
-        try( browse_mem_skipping_space(data, len, ctx));
+        try( draw_mem_skipping_space(data, len, ctx));
     } 
     if (node->first_child || node->last_child)
         log_warn__("%s\n", "LXB_DOM_NODE_TYPE_TEXT with actual childs");
     return Ok;
 }
 
-Err browse_rec(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
+Err draw_rec(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     if (node) {
         switch(node->type) {
-            case LXB_DOM_NODE_TYPE_ELEMENT: return browse_rec_tag(node, ctx);
-            case LXB_DOM_NODE_TYPE_TEXT: return browse_text(node, ctx);
+            case LXB_DOM_NODE_TYPE_ELEMENT: return draw_rec_tag(node, ctx);
+            case LXB_DOM_NODE_TYPE_TEXT: return draw_text(node, ctx);
             //TODO: do not ignore these types?
             case LXB_DOM_NODE_TYPE_DOCUMENT: 
             case LXB_DOM_NODE_TYPE_DOCUMENT_TYPE: 
             case LXB_DOM_NODE_TYPE_COMMENT:
-                return browse_list(node->first_child, node->last_child, ctx);
+                return draw_list(node->first_child, node->last_child, ctx);
             default: {
                 if (node->type >= LXB_DOM_NODE_TYPE_LAST_ENTRY)
                     log_warn__("lexbor node type greater than last entry: %lx\n", node->type);
@@ -629,10 +629,10 @@ Err browse_rec(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
 }
 
 //TODO: is this fn needed?
-Err browse_tag_pre(lxb_dom_node_t* node, BrowseCtx ctx[static 1]) {
-    browse_ctx_pre_set(ctx, true);
-    try( browse_list_block(node->first_child, node->last_child, ctx));
-    browse_ctx_pre_set(ctx, false);
+Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    draw_ctx_pre_set(ctx, true);
+    try( draw_list_block(node->first_child, node->last_child, ctx));
+    draw_ctx_pre_set(ctx, false);
     return Ok;
 }
 
@@ -687,7 +687,7 @@ Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu, HttpMethod method) {
     return Ok;
 }
 
-Err htmldoc_init_fetch_browse(
+Err htmldoc_init_fetch_draw(
     HtmlDoc d[static 1], const char* url, UrlClient url_client[static 1], bool monochrome
 ) {
     try(htmldoc_init(d, url));
@@ -696,15 +696,15 @@ Err htmldoc_init_fetch_browse(
         htmldoc_cleanup(d);
         return err;
     }
-    return htmldoc_browse(d, monochrome);
+    return htmldoc_draw(d, monochrome);
 }
 
-Err htmldoc_init_fetch_browse_from_curlu(
+Err htmldoc_init_fetch_draw_from_curlu(
     HtmlDoc d[static 1], CURLU* cu, UrlClient url_client[static 1], HttpMethod method, bool monochrome
 ) {
     try(htmldoc_init_from_curlu(d, cu, method));
     try( htmldoc_fetch(d, url_client)); /* on failure do not free cu owned by caller */
-    return htmldoc_browse(d, monochrome);
+    return htmldoc_draw(d, monochrome);
 }
 
 HtmlDoc* htmldoc_create(const char* url) {
@@ -738,13 +738,13 @@ inline void htmldoc_destroy(HtmlDoc* htmldoc) {
 }
 
 //TODO: pass the max cols and color from session conf
-Err htmldoc_browse(HtmlDoc htmldoc[static 1], bool monochrome) {
+Err htmldoc_draw(HtmlDoc htmldoc[static 1], bool monochrome) {
     lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(htmldoc);
-    BrowseCtx ctx;
-    try(browse_ctx_init(&ctx, htmldoc, monochrome));
-    Err err = browse_rec(lxb_dom_interface_node(lxbdoc), &ctx);
-    try( browse_ctx_buf_commit(&ctx));
-    browse_ctx_cleanup(&ctx);
+    DrawCtx ctx;
+    try(draw_ctx_init(&ctx, htmldoc, monochrome));
+    Err err = draw_rec(lxb_dom_interface_node(lxbdoc), &ctx);
+    try( draw_ctx_buf_commit(&ctx));
+    draw_ctx_cleanup(&ctx);
     if (err) return err;
     //TODO: join append-null and fit-lines together in a single static method so that
     //we always call all .

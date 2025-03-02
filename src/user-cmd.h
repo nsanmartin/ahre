@@ -15,7 +15,7 @@ Err cmd_fetch(Session session[static 1]) {
     CURLU* new_cu;
     try( url_curlu_dup(htmldoc_url(htmldoc), &new_cu));
     HtmlDoc newdoc;
-    Err err = htmldoc_init_fetch_browse_from_curlu(
+    Err err = htmldoc_init_fetch_draw_from_curlu(
         &newdoc,
         new_cu,
         session_url_client(session),
@@ -39,12 +39,12 @@ static inline Err cmd_tag(const char* rest, Session session[static 1]) {
 }
 
 
-static inline Err cmd_browse(Session session[static 1], const char* rest) {
-    if (*rest) return "browse cmd accept no params";
+static inline Err cmd_draw(Session session[static 1], const char* rest) {
+    if (*rest) return "draw cmd accept no params";
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
     htmldoc_reset(htmldoc);
-    return htmldoc_browse(htmldoc, session_monochrome(session));
+    return htmldoc_draw(htmldoc, session_monochrome(session));
 }
 
 #endif

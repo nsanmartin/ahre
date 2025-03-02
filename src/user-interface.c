@@ -378,7 +378,7 @@ Err process_line(Session session[static 1], const char* line) {
 
     //TODO: obtain range from line and pase it already parsed to eval fn
 
-    if ((rest = substr_match(line, "draw", 1))) { return cmd_browse(session, rest); }
+    if ((rest = substr_match(line, "draw", 1))) { return cmd_draw(session, rest); }
 
     TextBuf* tb;
     try( session_current_buf(session, &tb));

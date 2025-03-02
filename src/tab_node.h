@@ -101,7 +101,7 @@ tab_node_init_from_curlu(
     TabNode n[static 1], TabNode* parent, CURLU* cu, UrlClient url_client[static 1], HttpMethod method, bool monochrome
 ) {
     try(_tab_node_init_base_(n, parent));
-    Err err = htmldoc_init_fetch_browse_from_curlu(tab_node_doc(n), cu, url_client, method, monochrome);
+    Err err = htmldoc_init_fetch_draw_from_curlu(tab_node_doc(n), cu, url_client, method, monochrome);
     if (err) {
         /* cu is owned by caller so if an erro occur we must not free it but him */
         htmldoc_url(tab_node_doc(n))->cu = NULL;
@@ -117,9 +117,9 @@ tab_node_init(
     TabNode n[static 1], TabNode* parent, const char* url, UrlClient url_client[static 1], bool monochrome
 ) {
     try(_tab_node_init_base_(n, parent));
-    Err e = htmldoc_init_fetch_browse(tab_node_doc(n), url, url_client, monochrome);
+    Err e = htmldoc_init_fetch_draw(tab_node_doc(n), url, url_client, monochrome);
     if (e) {
-        /* doc if initialized was cleaned by htmldoc_init_fetch_browse. */
+        /* doc if initialized was cleaned by htmldoc_init_fetch_draw. */
         n->doc = (HtmlDoc){0};
         tab_node_cleanup(n);
         return e;
