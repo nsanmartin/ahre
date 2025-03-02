@@ -1,6 +1,7 @@
 #ifndef __USER_INPUT_AH_H__
 #define __USER_INPUT_AH_H__
 
+#include <errno.h>
 #include <stdio.h>
 
 typedef enum {

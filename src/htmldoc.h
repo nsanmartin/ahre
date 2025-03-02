@@ -17,6 +17,7 @@
 #include "src/wrapper-lexbor-curl.h"
 #include "src/doc-elem.h"
 #include "src/url.h"
+#include "src/session-conf.h"
 
 #define HIDE_OL 0x1u
 #define HIDE_UL 0x2u
@@ -130,7 +131,6 @@ static inline Err htmldoc_fetch(HtmlDoc htmldoc[static 1], UrlClient url_client[
         return curl_lexbor_fetch_document(url_client, htmldoc);
 }
 
-Err htmldoc_draw(HtmlDoc htmldoc[static 1], bool monochrome);
 
 #define serialize_lit_str(LitStr, CallBack, Context) \
  ((LXB_STATUS_OK != CallBack((lxb_char_t*)LitStr, sizeof(LitStr)-1, Context)) \
@@ -140,10 +140,19 @@ Err htmldoc_draw(HtmlDoc htmldoc[static 1], bool monochrome);
     (draw_ctx_color(Context) ? serialize_lit_str(EscSeq, CallBack, Context) : Ok)
 
 /* htmldoc_tag_a.c */
-Err htmldoc_init_fetch_draw(HtmlDoc d[static 1], const char* url, UrlClient url_client[static 1], bool monochrome);
+Err htmldoc_init_fetch_draw(
+    HtmlDoc d[static 1],
+    const char* url,
+    UrlClient url_client[static 1],
+    SessionConf sconf[static 1]
+);
 
 Err htmldoc_init_fetch_draw_from_curlu(
-    HtmlDoc d[static 1], CURLU* cu, UrlClient url_client[static 1], HttpMethod method, bool monochrome
+    HtmlDoc d[static 1],
+    CURLU* cu,
+    UrlClient url_client[static 1],
+    HttpMethod method,
+    SessionConf sconf[static 1]
 );
 
 static inline Err htmldoc_gt(HtmlDoc d[static 1]) {
@@ -188,4 +197,5 @@ static inline Err htmldoc_tags_str_reduce_size_t(const char* tags, size_t ts[sta
     } while (1);
 }
 
+Err htmldoc_draw(HtmlDoc htmldoc[static 1], SessionConf sconf[static 1]);
 #endif

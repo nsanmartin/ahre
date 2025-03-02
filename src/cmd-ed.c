@@ -233,11 +233,11 @@ Err shorcut_zb(Session session[static 1], const char* rest) {
         rest = cstr_skip_space(rest);
         size_t incr;
         if (!parse_ull(rest, &incr)) return "invalid line number";
-        *session_conf_z_shorcut_len(session) = incr;
+        *session_nrows(session) = incr;
     } 
-    size_t beg = *textbuf_current_line(tb) <= *session_conf_z_shorcut_len(session)
+    size_t beg = *textbuf_current_line(tb) <= *session_nrows(session)
         ? 1
-        : *textbuf_current_line(tb) - *session_conf_z_shorcut_len(session)
+        : *textbuf_current_line(tb) - *session_nrows(session)
         ;
     Range r = (Range){
         .beg=beg,
@@ -259,11 +259,11 @@ Err shorcut_zf(Session session[static 1], const char* rest) {
         rest = cstr_skip_space(rest);
         size_t incr;
         if (!parse_ull(rest, &incr)) return "invalid line number";
-        *session_conf_z_shorcut_len(session) = incr;
+        *session_nrows(session) = incr;
     } 
     Range r = (Range){
         .beg=*textbuf_current_line(tb),
-        .end=*textbuf_current_line(tb) + *session_conf_z_shorcut_len(session)
+        .end=*textbuf_current_line(tb) + *session_nrows(session)
     };
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
     try( textbuf_eval_cmd(tb,cmd, &r));
@@ -282,15 +282,15 @@ Err shorcut_zz(Session session[static 1], const char* rest) {
         rest = cstr_skip_space(rest);
         size_t incr;
         if (!parse_ull(rest, &incr)) return "invalid line number";
-        *session_conf_z_shorcut_len(session) = incr;
+        *session_nrows(session) = incr;
     } 
-    size_t beg = *textbuf_current_line(tb) <= *session_conf_z_shorcut_len(session) / 2
+    size_t beg = *textbuf_current_line(tb) <= *session_nrows(session) / 2
         ? 1
-        : *textbuf_current_line(tb) - *session_conf_z_shorcut_len(session) / 2
+        : *textbuf_current_line(tb) - *session_nrows(session) / 2
         ;
 
     Range r = (Range){
-        .beg=beg, .end=beg + *session_conf_z_shorcut_len(session)
+        .beg=beg, .end=beg + *session_nrows(session)
     };
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
     return textbuf_eval_cmd(tb, cmd, &r);
@@ -307,11 +307,11 @@ Err shorcut_gg(Session session[static 1], const char* rest) {
         rest = cstr_skip_space(rest);
         size_t incr;
         if (!parse_ull(rest, &incr)) return "invalid line number";
-        *session_conf_z_shorcut_len(session) = incr;
+        *session_nrows(session) = incr;
     } 
     Range r = (Range){
         .beg=*textbuf_current_line(tb),
-        .end=*textbuf_current_line(tb) + *session_conf_z_shorcut_len(session)
+        .end=*textbuf_current_line(tb) + *session_nrows(session)
     };
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
     fwrite(EscCodeClsScr, 1, sizeof(EscCodeClsScr)-1, stdout);

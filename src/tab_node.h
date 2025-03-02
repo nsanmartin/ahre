@@ -98,10 +98,15 @@ _tab_node_init_base_(TabNode n[static 1], TabNode* parent) {
 
 static inline Err
 tab_node_init_from_curlu(
-    TabNode n[static 1], TabNode* parent, CURLU* cu, UrlClient url_client[static 1], HttpMethod method, bool monochrome
+    TabNode n[static 1],
+    TabNode* parent,
+    CURLU* cu,
+    UrlClient url_client[static 1],
+    HttpMethod method,
+    SessionConf sconf[static 1]
 ) {
     try(_tab_node_init_base_(n, parent));
-    Err err = htmldoc_init_fetch_draw_from_curlu(tab_node_doc(n), cu, url_client, method, monochrome);
+    Err err = htmldoc_init_fetch_draw_from_curlu(tab_node_doc(n), cu, url_client, method, sconf);
     if (err) {
         /* cu is owned by caller so if an erro occur we must not free it but him */
         htmldoc_url(tab_node_doc(n))->cu = NULL;
@@ -114,10 +119,14 @@ tab_node_init_from_curlu(
 
 static inline Err
 tab_node_init(
-    TabNode n[static 1], TabNode* parent, const char* url, UrlClient url_client[static 1], bool monochrome
+    TabNode n[static 1],
+    TabNode* parent,
+    const char* url,
+    UrlClient url_client[static 1],
+    SessionConf sconf[static 1]
 ) {
     try(_tab_node_init_base_(n, parent));
-    Err e = htmldoc_init_fetch_draw(tab_node_doc(n), url, url_client, monochrome);
+    Err e = htmldoc_init_fetch_draw(tab_node_doc(n), url, url_client, sconf);
     if (e) {
         /* doc if initialized was cleaned by htmldoc_init_fetch_draw. */
         n->doc = (HtmlDoc){0};
@@ -132,7 +141,10 @@ tab_node_init(
 /**/
 static inline
 Err tab_node_tree_append_ahref(
-    TabNode t[static 1], size_t linknum, UrlClient url_client[static 1], bool monochrome
+    TabNode t[static 1],
+    size_t linknum,
+    UrlClient url_client[static 1],
+    SessionConf sconf[static 1]
 ) {
     TabNode* n;
     try(  tab_node_current_node(t, &n));
@@ -148,7 +160,7 @@ Err tab_node_tree_append_ahref(
 
     TabNode newnode;
     Err err;
-    if((err=tab_node_init_from_curlu(&newnode, n, curlu, url_client, http_get, monochrome))) {
+    if((err=tab_node_init_from_curlu(&newnode, n, curlu, url_client, http_get, sconf))) {
         curl_url_cleanup(curlu);
         return err;
     };
@@ -161,8 +173,12 @@ Err tab_node_tree_append_ahref(
 }
 
 static inline
-Err tab_node_tree_append_submit(TabNode t[static 1], size_t ix, UrlClient url_client[static 1], bool monochrome)
-{
+Err tab_node_tree_append_submit(
+    TabNode t[static 1],
+    size_t ix,
+    UrlClient url_client[static 1],
+    SessionConf sconf[static 1]
+) {
     TabNode* n;
     try(  tab_node_current_node(t, &n));
     if (!n) return "error: current node not found";
@@ -195,7 +211,7 @@ Err tab_node_tree_append_submit(TabNode t[static 1], size_t ix, UrlClient url_cl
         }
 
         TabNode newnode;
-        if ((err=tab_node_init_from_curlu(&newnode, n, curlu, url_client, method, monochrome))) {
+        if ((err=tab_node_init_from_curlu(&newnode, n, curlu, url_client, method, sconf))) {
             curl_url_cleanup(curlu);
             return err;
         };

@@ -27,7 +27,7 @@ Err mk_submit_url(UrlClient uc[static 1],
 
 Err read_line_from_user(Session session[static 1]) {
     char* line = 0x0;
-    try( read_user_input(*session_conf_uiin(session), NULL, &line));
+    try( read_user_input(*session_uiin(session), NULL, &line));
     Err err = process_line(session, line);
     destroy(line);
     return err;
@@ -413,4 +413,15 @@ Err dbg_print_form(Session s[static 1], const char* line) {
     if (!formp) return "link number invalid";
 
     return dbg_print_form_info(*formp);
+}
+
+#include <sys/ioctl.h>
+
+Err ui_get_win_size(size_t nrows[static 1], size_t ncols[static 1]) {
+    struct winsize w;
+    if (-1 == ioctl(STDOUT_FILENO, TIOCGWINSZ, &w))
+        return err_fmt("error: ioctl failure: %s", strerror(errno));
+    if (nrows) *nrows = w.ws_row;
+    if (ncols) *ncols = w.ws_col;
+    return Ok;
 }

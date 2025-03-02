@@ -688,7 +688,10 @@ Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu, HttpMethod method) {
 }
 
 Err htmldoc_init_fetch_draw(
-    HtmlDoc d[static 1], const char* url, UrlClient url_client[static 1], bool monochrome
+    HtmlDoc d[static 1],
+    const char* url,
+    UrlClient url_client[static 1],
+    SessionConf sconf[static 1]
 ) {
     try(htmldoc_init(d, url));
     Err err = htmldoc_fetch(d, url_client);
@@ -696,15 +699,19 @@ Err htmldoc_init_fetch_draw(
         htmldoc_cleanup(d);
         return err;
     }
-    return htmldoc_draw(d, monochrome);
+    return htmldoc_draw(d, sconf);
 }
 
 Err htmldoc_init_fetch_draw_from_curlu(
-    HtmlDoc d[static 1], CURLU* cu, UrlClient url_client[static 1], HttpMethod method, bool monochrome
+    HtmlDoc d[static 1],
+    CURLU* cu,
+    UrlClient url_client[static 1],
+    HttpMethod method,
+    SessionConf sconf[static 1]
 ) {
     try(htmldoc_init_from_curlu(d, cu, method));
     try( htmldoc_fetch(d, url_client)); /* on failure do not free cu owned by caller */
-    return htmldoc_draw(d, monochrome);
+    return htmldoc_draw(d, sconf);
 }
 
 HtmlDoc* htmldoc_create(const char* url) {
@@ -738,10 +745,10 @@ inline void htmldoc_destroy(HtmlDoc* htmldoc) {
 }
 
 //TODO: pass the max cols and color from session conf
-Err htmldoc_draw(HtmlDoc htmldoc[static 1], bool monochrome) {
+Err htmldoc_draw(HtmlDoc htmldoc[static 1], SessionConf sconf[static 1]) {
     lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(htmldoc);
     DrawCtx ctx;
-    try(draw_ctx_init(&ctx, htmldoc, monochrome));
+    try(draw_ctx_init(&ctx, htmldoc, sconf));
     Err err = draw_rec(lxb_dom_interface_node(lxbdoc), &ctx);
     try( draw_ctx_buf_commit(&ctx));
     draw_ctx_cleanup(&ctx);
@@ -750,7 +757,7 @@ Err htmldoc_draw(HtmlDoc htmldoc[static 1], bool monochrome) {
     //we always call all .
     if (textbuf_len(htmldoc_textbuf(htmldoc))) {
         try( textbuf_append_null(htmldoc_textbuf(htmldoc)));
-        return textbuf_fit_lines(htmldoc_textbuf(htmldoc), 90);
+        return textbuf_fit_lines(htmldoc_textbuf(htmldoc), *session_conf_ncols(sconf));
     }
     return Ok;
 }

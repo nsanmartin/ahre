@@ -17,4 +17,6 @@ Err lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf);
 
 
 Err cmd_open_url(Session session[static 1], const char* url);
+
+Err ui_get_win_size(size_t nrows[static 1], size_t ncols[static 1]) ;
 #endif

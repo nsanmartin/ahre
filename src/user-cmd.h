@@ -20,7 +20,7 @@ Err cmd_fetch(Session session[static 1]) {
         new_cu,
         session_url_client(session),
         http_get,
-        session_monochrome(session)
+        session_conf(session)
     );
     if (err) {
         curl_url_cleanup(new_cu);
@@ -44,7 +44,7 @@ static inline Err cmd_draw(Session session[static 1], const char* rest) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
     htmldoc_reset(htmldoc);
-    return htmldoc_draw(htmldoc, session_monochrome(session));
+    return htmldoc_draw(htmldoc, session_conf(session));
 }
 
 #endif

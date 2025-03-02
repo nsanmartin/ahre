@@ -5,6 +5,7 @@
 #include "src/htmldoc.h"
 #include "src/utils.h"
 #include "src/generic.h"
+#include "src/session-conf.h"
 
 #define T EscCode
 #include <arl.h>
@@ -100,8 +101,9 @@ static inline void draw_ctx_buf_reset(DrawCtx ctx[static 1]) {
     buffn(char, reset)(draw_ctx_buf(ctx));
 }
 
-static inline Err draw_ctx_init(DrawCtx ctx[static 1], HtmlDoc htmldoc[static 1], bool monochrome) {
-    unsigned flags = (monochrome? DRAW_CTX_FLAG_MONOCHROME: 0);
+static inline Err
+draw_ctx_init(DrawCtx ctx[static 1], HtmlDoc htmldoc[static 1], SessionConf sconf[static 1]) {
+    unsigned flags = (session_conf_monochrome(sconf)? DRAW_CTX_FLAG_MONOCHROME: 0);
     *ctx = (DrawCtx) {.htmldoc=htmldoc, .flags=flags};
     return Ok;
 }

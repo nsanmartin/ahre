@@ -16,4 +16,5 @@ _check_compiler_ () {
 
 _check_compiler_ tcc -DNO_REGEX && \
     _check_compiler_ clang && \
-    _check_compiler_ gcc
+    _check_compiler_ gcc && \
+    make clean

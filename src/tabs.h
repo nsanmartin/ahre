@@ -69,9 +69,14 @@ tablist_append_move_tree(TabList f[static 1], TabNode t[static 1]) {
 }
 
 static inline Err
-tablist_append_tree_from_url(TabList f[static 1], const char* url, UrlClient url_client[static 1], bool monochrome) {
+tablist_append_tree_from_url(
+    TabList f[static 1],
+    const char* url,
+    UrlClient url_client[static 1],
+    SessionConf sconf[static 1]
+) {
     TabNode tn = (TabNode){0};
-    try( tab_node_init(&tn, 0x0, url, url_client, monochrome));
+    try( tab_node_init(&tn, 0x0, url, url_client, sconf));
     Err err = tablist_append_move_tree(f, &tn);
     if (err) {
         tab_node_cleanup(&tn);
@@ -86,8 +91,13 @@ tablist_append_tree_from_url(TabList f[static 1], const char* url, UrlClient url
 /* ctor */
 
 static inline Err
-tablist_init(TabList f[static 1], const char* url, UrlClient url_client[static 1], bool monochrome) {
-    return tablist_append_tree_from_url(f, url, url_client, monochrome);
+tablist_init(
+    TabList f[static 1],
+    const char* url,
+    UrlClient url_client[static 1],
+    SessionConf sconf[static 1]
+) {
+    return tablist_append_tree_from_url(f, url, url_client, sconf);
 }
 
 /* dtor */

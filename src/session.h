@@ -1,25 +1,17 @@
-#ifndef __AHRE_Ctx_H__
-#define __AHRE_Ctx_H__
+#ifndef AHRE_SESSION_H__
+#define AHRE_SESSION_H__
 
+#include "src/session-conf.h"
 #include "src/htmldoc.h"
 #include "src/tabs.h"
 #include "src/user-input.h"
 #include "src/utils.h"
 
+//typedef struct HtmlDoc HtmlDoc;
 typedef struct Session Session;
 
 typedef Err (*UserLineCallback)(Session* session, const char*);
 
-typedef struct {
-    UiIn uiin;
-    size_t maxcols;
-    size_t z_shorcut_len;
-    unsigned flags;
-} SessionConf ;
-
-
-#define SESSION_FLAG_QUIT       0x1u
-#define SESSION_FLAG_MONOCHROME 0x2u
 
 typedef struct Session {
     UrlClient* url_client;
@@ -35,25 +27,17 @@ static inline UrlClient* session_url_client(Session session[static 1]) {
     return session->url_client;
 }
 static inline SessionConf* session_conf(Session s[static 1]) { return &s->conf; }
-static inline bool session_quit(Session s[static 1]) {
-    return session_conf(s)->flags & SESSION_FLAG_QUIT;
+static inline bool session_quit(Session s[static 1]) { return session_conf_quit(session_conf(s)); }
+static inline void session_quit_set(Session s[static 1]) { session_conf_quit_set(session_conf(s)); }
+static inline bool
+session_monochrome(Session s[static 1]) { return session_conf_monochrome(session_conf(s)); }
+static inline void
+session_monochrome_set(Session s[static 1], bool value) {
+    session_conf_monochrome_set(session_conf(s), value);
 }
-static inline void session_quit_set(Session s[static 1]) {
-    session_conf(s)->flags |= SESSION_FLAG_QUIT;
-}
-static inline bool session_monochrome(Session s[static 1]) {
-    return session_conf(s)->flags & SESSION_FLAG_MONOCHROME;
-}
-static inline void session_monochrome_set(Session s[static 1], bool value) {
-    if (value) session_conf(s)->flags |= SESSION_FLAG_MONOCHROME;
-    else session_conf(s)->flags &= ~SESSION_FLAG_MONOCHROME;
-}
-
-static inline UiIn* session_conf_uiin(Session s[static 1]) {
-    return &session_conf(s)->uiin;
-}
-static inline size_t* session_conf_z_shorcut_len(Session s[static 1]) {
-    return &session_conf(s)->z_shorcut_len;
+static inline UiIn* session_uiin(Session s[static 1]) { return session_conf_uiin(session_conf(s)); }
+static inline size_t* session_nrows(Session s[static 1]) {
+    return session_conf_nrows(session_conf(s));
 }
 
 static inline TabList*
@@ -75,7 +59,7 @@ void session_destroy(Session* session);
 static inline Err
 session_open_url(Session s[static 1], const char* url, UrlClient url_client[static 1]) {
     return tablist_append_tree_from_url(
-        session_tablist(s), url, url_client, session_monochrome(s)
+        session_tablist(s), url, url_client, session_conf(s)
     );
 }
 
@@ -83,7 +67,7 @@ static inline Err session_follow_ahref(Session s[static 1], size_t linknum) {
     TabNode* current_tab;
     try( tablist_current_tab(session_tablist(s), &current_tab));
     if(current_tab)
-        return tab_node_tree_append_ahref(current_tab , linknum, s->url_client, session_monochrome(s));
+        return tab_node_tree_append_ahref(current_tab , linknum, s->url_client, session_conf(s));
     
     return "error: where is the href if current tree is empty?";
 }
@@ -93,7 +77,7 @@ static inline Err session_press_submit(Session s[static 1], size_t ix) {
     try( tablist_current_tab(session_tablist(s), &current_tab));
     if(current_tab)
         return tab_node_tree_append_submit(
-            current_tab , ix, session_url_client(s), session_monochrome(s)
+            current_tab , ix, session_url_client(s), session_conf(s)
         );
 
     
