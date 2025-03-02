@@ -21,7 +21,7 @@ int loop_lexbor(char* url) {
     }
 
     init_user_input_history();
-    while (!session.quit) {
+    while (!session_quit(&session)) {
         if ((err = read_line_from_user(&session))) {
             fprintf(stderr, "%s\n", err);
         }

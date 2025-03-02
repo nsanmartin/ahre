@@ -17,14 +17,26 @@ typedef struct {
 
 #define mkSessionConf (SessionConf){.color=true,.maxcols=90,.z_shorcut_len=42}
 
+#define SESSION_FLAGS_QUIT       0x1u
+#define SESSION_FLAGS_MONOCHROME 0x2u
+
 typedef struct Session {
     UrlClient* url_client;
     TabList tablist;
-    bool quit;
+    unsigned flags;
     SessionConf conf;
 } Session;
 
 /* getters */
+static inline bool session_quit(Session s[static 1]) { return s->flags & SESSION_FLAGS_QUIT; }
+static inline void session_quit_set(Session s[static 1]) {
+    s->flags = s->flags ^ SESSION_FLAGS_QUIT;
+}
+static inline bool session_monochrome(Session s[static 1]) { return s->flags & SESSION_FLAGS_MONOCHROME; }
+static inline void session_monochrome_set(Session s[static 1], bool value) {
+    s->flags = s->flags ^ (value ? SESSION_FLAGS_MONOCHROME : 0);
+}
+
 Err session_current_buf(Session session[static 1], TextBuf* out[static 1]);
 Err session_current_doc(Session session[static 1], HtmlDoc* out[static 1]);
 
@@ -54,14 +66,16 @@ void session_destroy(Session* session);
 
 static inline Err
 session_open_url(Session s[static 1], const char* url, UrlClient url_client[static 1]) {
-    return tablist_append_tree_from_url(session_tablist(s), url, url_client);
+    return tablist_append_tree_from_url(
+        session_tablist(s), url, url_client, session_monochrome(s)
+    );
 }
 
 static inline Err session_follow_ahref(Session s[static 1], size_t linknum) {
     TabNode* current_tab;
     try( tablist_current_tab(session_tablist(s), &current_tab));
     if(current_tab)
-        return tab_node_tree_append_ahref(current_tab , linknum, s->url_client);
+        return tab_node_tree_append_ahref(current_tab , linknum, s->url_client, session_monochrome(s));
     
     return "error: where is the href if current tree is empty?";
 }
@@ -70,7 +84,9 @@ static inline Err session_press_submit(Session s[static 1], size_t ix) {
     TabNode* current_tab;
     try( tablist_current_tab(session_tablist(s), &current_tab));
     if(current_tab)
-        return tab_node_tree_append_submit(current_tab , ix, session_url_client(s));
+        return tab_node_tree_append_submit(
+            current_tab , ix, session_url_client(s), session_monochrome(s)
+        );
 
     
     return "error: where is the input if current tree is empty?";
@@ -79,5 +95,5 @@ static inline Err session_press_submit(Session s[static 1], size_t ix) {
 int edcmd_print(Session session[static 1]);
 
 Err dbg_session_summary(Session session[static 1]);
-Err cmd_setopt(Session session[static 1], const char* line);
+Err cmd_set(Session session[static 1], const char* line);
 #endif

@@ -9,11 +9,14 @@
 #define T EscCode
 #include <arl.h>
 
+#define DRAW_CTX_FLAG_MONOCHROME 0x1u
+#define DRAW_CTX_FLAG_PRE   0x2u
+
 typedef struct { 
     HtmlDoc* htmldoc;
-    bool color;
     BufOf(char) buf;
     ArlOf(EscCode) esc_code_stack;
+    unsigned flags;
 } BrowseCtx;
 
 static inline HtmlDoc* browse_ctx_htmldoc(BrowseCtx ctx[static 1]) { return ctx->htmldoc; }
@@ -32,7 +35,7 @@ static inline BufOf(char)* browse_ctx_textbuf_buf_(BrowseCtx ctx[static 1]) {
     return &browse_ctx_textbuf(ctx)->buf;
 }
 
-static inline bool browse_ctx_color(BrowseCtx ctx[static 1]) { return ctx->color; }
+static inline bool browse_ctx_color(BrowseCtx ctx[static 1]) { return !(ctx->flags & DRAW_CTX_FLAG_MONOCHROME); }
 static inline BufOf(char)* browse_ctx_buf(BrowseCtx ctx[static 1]) { return &ctx->buf; }
 
 
@@ -91,8 +94,9 @@ static inline void browse_ctx_buf_reset(BrowseCtx ctx[static 1]) {
     buffn(char, reset)(browse_ctx_buf(ctx));
 }
 
-static inline Err browse_ctx_init(BrowseCtx ctx[static 1], HtmlDoc htmldoc[static 1], bool color) {
-    *ctx = (BrowseCtx) {.htmldoc=htmldoc, .color=color};
+static inline Err browse_ctx_init(BrowseCtx ctx[static 1], HtmlDoc htmldoc[static 1], bool monochrome) {
+    unsigned flags = (monochrome? DRAW_CTX_FLAG_MONOCHROME: 0);
+    *ctx = (BrowseCtx) {.htmldoc=htmldoc, .flags=flags};
     return Ok;
 }
 
@@ -101,7 +105,10 @@ static inline void browse_ctx_cleanup(BrowseCtx ctx[static 1]) {
     arlfn(EscCode, clean)(browse_ctx_esc_code_stack(ctx));
 }
 
-static inline void browse_ctx_set_color(BrowseCtx ctx[static 1], bool value) {  ctx->color = value; }
+static inline void browse_ctx_set_color(BrowseCtx ctx[static 1], bool value) {
+    ctx->flags = ctx->flags ^ (value ? 0 : DRAW_CTX_FLAG_MONOCHROME);
+}
+
 Err browse_rec(lxb_dom_node_t* node, BrowseCtx ctx[static 1]);
 
 static inline Err

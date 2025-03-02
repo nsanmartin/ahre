@@ -156,8 +156,13 @@ bookmark_mk_entry(
 static inline Err
 _get_bookmarks_doc_(UrlClient url_client[static 1], Str2* bmfile, HtmlDoc out[static 1]) {
     try( get_bookmark_file(bmfile));
-    //TODO: why is browse necesarry here?
-    return htmldoc_init_fetch_browse(out, bmfile->items, url_client);
+    try(htmldoc_init(out, bmfile->items));
+    Err err = htmldoc_fetch(out, url_client);
+    if (err) {
+        htmldoc_cleanup(out);
+        return err;
+    }
+    return Ok;
 }
 
 static inline Err bookmark_mk_title(HtmlDoc d[static 1], char* url, Str2 title[static 1]) {

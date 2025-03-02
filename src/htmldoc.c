@@ -685,22 +685,24 @@ Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu, HttpMethod method) {
     return Ok;
 }
 
-Err htmldoc_init_fetch_browse(HtmlDoc d[static 1], const char* url, UrlClient url_client[static 1]) {
+Err htmldoc_init_fetch_browse(
+    HtmlDoc d[static 1], const char* url, UrlClient url_client[static 1], bool monochrome
+) {
     try(htmldoc_init(d, url));
     Err err = htmldoc_fetch(d, url_client);
     if (err) {
         htmldoc_cleanup(d);
         return err;
     }
-    return htmldoc_browse(d);
+    return htmldoc_browse(d, monochrome);
 }
 
 Err htmldoc_init_fetch_browse_from_curlu(
-    HtmlDoc d[static 1], CURLU* cu, UrlClient url_client[static 1], HttpMethod method
+    HtmlDoc d[static 1], CURLU* cu, UrlClient url_client[static 1], HttpMethod method, bool monochrome
 ) {
     try(htmldoc_init_from_curlu(d, cu, method));
     try( htmldoc_fetch(d, url_client)); /* on failure do not free cu owned by caller */
-    return htmldoc_browse(d);
+    return htmldoc_browse(d, monochrome);
 }
 
 HtmlDoc* htmldoc_create(const char* url) {
@@ -734,10 +736,10 @@ inline void htmldoc_destroy(HtmlDoc* htmldoc) {
 }
 
 //TODO: pass the max cols and color from session conf
-Err htmldoc_browse(HtmlDoc htmldoc[static 1]) {
+Err htmldoc_browse(HtmlDoc htmldoc[static 1], bool monochrome) {
     lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(htmldoc);
     BrowseCtx ctx;
-    try(browse_ctx_init(&ctx, htmldoc, true));
+    try(browse_ctx_init(&ctx, htmldoc, monochrome));
     Err err = browse_rec(lxb_dom_interface_node(lxbdoc), &ctx);
     try( browse_ctx_buf_commit(&ctx));
     browse_ctx_cleanup(&ctx);

@@ -26,7 +26,7 @@ Err session_init(Session s[static 1], char* url) {
 
     TabList f = (TabList){0};
     if (url) {
-        Err err = tablist_init(&f, url, url_client);
+        Err err = tablist_init(&f, url, url_client, session_monochrome(s));
         if (err) {
             tablist_cleanup(&f);
             f = (TabList){0};
@@ -37,7 +37,6 @@ Err session_init(Session s[static 1], char* url) {
     *s = (Session) {
         .url_client         = url_client,
         .tablist            = f,
-        .quit               = false,
         .conf               = mkSessionConf
     };
 

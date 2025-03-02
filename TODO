@@ -35,6 +35,8 @@
 [ ] allow switch between source buf and textbuf (via current buf, doc etc).
 [ ] implement hashi arl reset
 [ ] #define BufOf(char) Str etc and move many Str to StrView
+[ ] separate more htmldoc init from draw
+
 
 # DONE
 [*] Accept files apart from urls

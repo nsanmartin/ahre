@@ -354,7 +354,7 @@ Err doc_eval(HtmlDoc d[static 1], const char* line, Session session[static 1]) {
 //
 // when they make sense: a text input can be set, an anchor no, etc.
 Err process_line(Session session[static 1], const char* line) {
-    if (!line) { session->quit = true; return "no input received, exiting"; }
+    if (!line) { session_quit_set(session); return "no input received, exiting"; }
     line = cstr_skip_space(line);
     if (!*line) { return Ok; }
     const char* rest = NULL;
@@ -363,8 +363,8 @@ Err process_line(Session session[static 1], const char* line) {
     if ((rest = substr_match(line, "cookies", 1))) { return cmd_cookies(session, rest); }
     if ((rest = substr_match(line, "echo", 1))) return puts(rest) < 0 ? "error: puts failed" : Ok;
     if ((rest = substr_match(line, "go", 1))) { return cmd_open_url(session, rest); }
-    if ((rest = substr_match(line, "quit", 1)) && !*rest) { session->quit = true; return Ok;}
-    if ((rest = substr_match(line, "setopt", 1))) { return cmd_setopt(session, rest); }
+    if ((rest = substr_match(line, "quit", 1)) && !*rest) { session_quit_set(session); return Ok;}
+    if ((rest = substr_match(line, "set", 1))) { return cmd_set(session, rest); }
 
     if (*line == '|') return tabs_eval(session, line + 1);
     HtmlDoc* htmldoc;

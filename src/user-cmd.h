@@ -27,7 +27,7 @@ static inline Err cmd_browse(Session session[static 1], const char* rest) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
     htmldoc_reset(htmldoc);
-    return htmldoc_browse(htmldoc);
+    return htmldoc_browse(htmldoc, session_monochrome(session));
 }
 
 #endif
