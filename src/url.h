@@ -87,6 +87,12 @@ static inline Err url_init(Url u[static 1],  const char* cstr) {
     return res;
 }
 
+static inline Err url_curlu_dup(Url u[static 1], CURLU* out[static 1]) {
+    *out = curl_url_dup(url_cu(u));
+    if (!*out) return "error: curl_url_dup failure";
+    return Ok;
+}
+
 static inline Err url_init_from_curlu(Url u[static 1],  CURLU* cu) {
     u->cu = cu;
     return Ok;
