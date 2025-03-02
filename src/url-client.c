@@ -110,7 +110,7 @@ Err cmd_set_session_input(Session session[static 1], const char* line) {
 
     UiIn uiin;
     const char* rest;
-    if ((rest = substr_match(line, "getline", 1)) && !*rest) uiin = uiin_getline;
+    if ((rest = substr_match(line, "fgets", 1)) && !*rest) uiin = uiin_fgets;
     else if ((rest = substr_match(line, "isocline", 1)) && !*rest) uiin = uiin_isocline;
     else return "input option should be 'getline' or 'isocline'";
     *session_conf_uiin(session) = uiin;
