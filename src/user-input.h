@@ -30,7 +30,10 @@ static inline Err ui_fgets_readline(const char* prompt, char* out[static 1]) {
         *out = realloc(*out, len);
         if (!*out) return "error: realloc failure";
         char* line = fgets(*out + readlen, len - readlen, stdin);
-        if (!line) return err_fmt("error: fgets failure: %s", strerror(errno));
+        if (!line) {
+            if (feof(stdin)) { clearerr(stdin); *out[0] = '\0'; return Ok; }
+            return err_fmt("error: fgets failure: %s", strerror(errno));
+        }
         if (strchr(line, '\n')) return Ok;
         readlen = len - 1;
         len += DEFAULT_FGETS_SIZE;
