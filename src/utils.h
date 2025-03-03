@@ -61,11 +61,10 @@ static inline int buf_append_hexp(void* p, BufOf(char)*buf) {
 static inline void log_info(const char* msg) { puts(msg); }
 static inline void log_error(const char* msg) { perror(msg); }
 
-typedef unsigned int (*SerializeCallback)(const unsigned char* data, size_t len, void* ctx);
+typedef Err (*SerializeCallback)(const char* data, size_t len, void* ctx);
 
-static inline unsigned int
-write_to_file(const unsigned char* data, size_t len, void* f) {
-    return len - fwrite(data, 1, len, f);
+static inline Err write_to_file(const char* data, size_t len, void* f) {
+    return len - fwrite(data, 1, len, f) ? "error: fwrite failure": Ok;
 }
 
 static inline Err
@@ -91,14 +90,14 @@ bufofchar_append_ui_base36_as_str(BufOf(char) buf[static 1], uintmax_t ui) {
     if (!buffn(char, append)(buf, numbf, len)) return "error appending unsigned to bufof char";
     return Ok;
 }
-static inline unsigned int
-serialize_unsigned(SerializeCallback cb, uintmax_t ui, void* ctx, unsigned int error_value) {
+static inline Err
+serialize_unsigned(SerializeCallback cb, uintmax_t ui, void* ctx) {
     char numbf[3 * sizeof ui] = {0};
     size_t len = 0;
     if ((len = snprintf(numbf, (3 * sizeof ui), "%lu", ui)) > (3 * sizeof ui)) {
-        return error_value;
+        return "error: snprintf failure";
     }
-    return cb((unsigned char*)numbf, len, ctx);
+    return cb(numbf, len, ctx);
 }
 
 

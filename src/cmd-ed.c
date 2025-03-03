@@ -21,43 +21,18 @@ static Err validate_range_for_buffer(TextBuf textbuf[static 1], Range range[stat
 
     
 
-static Err
-textbuf_get_line_offset_range(
-    TextBuf textbuf[static 1], size_t lline, size_t rline, Range out[static 1]
-) {
-
-    if (lline > rline) return "error: inverted range";
-    if (line_num_to_left_offset(lline, textbuf, &out->beg)) {
-        return "error: bad range beg";
-    }
-
-    if (line_num_to_right_offset(rline, textbuf, &out->end)) {
-        return "error: bad range end";
-    }
-
-    if (out->beg >= out->end || out->end > textbuf->buf.len) {
-        return "error: bad offsets";
-    }
-    return Ok;
-}
 
 //TODO: reset color during number printing (and re-establish it after).
 static inline Err ed_print_n(TextBuf textbuf[static 1], Range range[static 1]) {
-
     try(validate_range_for_buffer(textbuf, range));
-
-    for (size_t line = range->beg; line <= range->end; ++line) {
-        Range r = {0};
-        try(textbuf_get_line_offset_range(textbuf, line, line, &r));
-
-        if (serialize_unsigned(write_to_file, line, stdout, -1))
-            return "error serializing unsigned";
-        fwrite("\t", 1, 1, stdout);
-        fwrite(textbuf->buf.items + r.beg, 1, r.end - r.beg, stdout);
+    StrView line;
+    for (size_t linum = range->beg; linum <= range->end; ++linum) {
+        if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
+        try( serialize_unsigned(write_to_file, linum, stdout));
+        if (1 != fwrite("\t", 1, 1, stdout)) return "error: fwrite failure";
+        if (line.len != fwrite(line.s, 1, line.len, stdout)) return "error: fwrite failure";
     }
-    fwrite(EscCodeReset, 1, sizeof(EscCodeReset)-1, stdout);
-    if (range->end == textbuf_line_count(textbuf)) 
-        fwrite("\n", 1, 1, stdout);
+
     return Ok;
 }
 
@@ -178,8 +153,8 @@ Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
 
     //fwrite(EscCodeReset, 1, sizeof(EscCodeReset)-1, stdout);
 
-    if (range->end == textbuf_line_count(textbuf)) 
-        fwrite("\n", 1, 1, stdout);
+    //if (range->end == textbuf_line_count(textbuf)) 
+    //    fwrite("\n", 1, 1, stdout);
     return Ok;
 }
 
@@ -234,9 +209,10 @@ Err shorcut_zb(Session session[static 1], const char* rest) {
         if (!parse_ull(rest, &incr)) return "invalid line number";
         *session_nrows(session) = incr;
     } 
-    size_t beg = *textbuf_current_line(tb) <= *session_nrows(session)
+    if (!*session_nrows(session)) return "invalid n rows";
+    size_t beg = *textbuf_current_line(tb) <= *session_nrows(session) - 1
         ? 1
-        : *textbuf_current_line(tb) - *session_nrows(session)
+        : *textbuf_current_line(tb) - *session_nrows(session) - 1
         ;
     Range r = (Range){
         .beg=beg,
@@ -260,9 +236,10 @@ Err shorcut_zf(Session session[static 1], const char* rest) {
         if (!parse_ull(rest, &incr)) return "invalid line number";
         *session_nrows(session) = incr;
     } 
+    if (!*session_nrows(session)) return "invalid n rows";
     Range r = (Range){
         .beg=*textbuf_current_line(tb),
-        .end=*textbuf_current_line(tb) + *session_nrows(session)
+        .end=*textbuf_current_line(tb) + *session_nrows(session) - 1
     };
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
     try( textbuf_eval_cmd(tb,cmd, &r));
@@ -283,13 +260,14 @@ Err shorcut_zz(Session session[static 1], const char* rest) {
         if (!parse_ull(rest, &incr)) return "invalid line number";
         *session_nrows(session) = incr;
     } 
-    size_t beg = *textbuf_current_line(tb) <= *session_nrows(session) / 2
+    if (!*session_nrows(session)) return "invalid n rows";
+    size_t beg = *textbuf_current_line(tb) <= (*session_nrows(session)-1) / 2
         ? 1
-        : *textbuf_current_line(tb) - *session_nrows(session) / 2
+        : *textbuf_current_line(tb) - (*session_nrows(session)-1) / 2
         ;
 
     Range r = (Range){
-        .beg=beg, .end=beg + *session_nrows(session)
+        .beg=beg, .end=beg + *session_nrows(session) -1
     };
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
     return textbuf_eval_cmd(tb, cmd, &r);
