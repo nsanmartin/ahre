@@ -77,6 +77,6 @@ Err textbuf_fit_lines(TextBuf tb[static 1], size_t maxlen);
 
 Err textbuf_append_line_indexes(TextBuf tb[static 1]);
 
-bool textbuf_get_line(TextBuf tb[static 1], size_t n, Str out[static 1]);
+bool textbuf_get_line(TextBuf tb[static 1], size_t n, StrView out[static 1]);
 
 #endif

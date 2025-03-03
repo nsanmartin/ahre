@@ -6,13 +6,13 @@
 
 /* internal linkage */
 
-static Str cstr_next_word_view(const char* s) {
-    if (!s || !*s) { return (Str){0}; }
+static StrView cstr_next_word_view(const char* s) {
+    if (!s || !*s) { return (StrView){0}; }
     while (*s && isspace(*s)) { ++s; }
     const char* end = s;
     while (*end && !isspace(*end)) { ++end; }
-    if (s == end) { return (Str){0}; }
-    return (Str){.s=s, .len=end-s};
+    if (s == end) { return (StrView){0}; }
+    return (StrView){.s=s, .len=end-s};
 }
 
 
@@ -32,7 +32,7 @@ lxb_inline lxb_status_t serialize(lxb_dom_node_t *node) {
 /* external linkage */
 
 Err lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* buf) {
-    Str tags = cstr_next_word_view(tag);
+    StrView tags = cstr_next_word_view(tag);
     if (tags.len == 0) { return "invalid tag"; }
 
     lxb_dom_collection_t* collection = lxb_dom_collection_make(&document->dom_document, 128);

@@ -63,8 +63,8 @@ static inline Err ed_print_n(TextBuf textbuf[static 1], Range range[static 1]) {
 
 /* */
 
-Str parse_pattern(const char* tk) {
-    Str res = {0};
+StrView parse_pattern(const char* tk) {
+    StrView res = {0};
     char delim = '/';
     if (!tk) { return res; }
     tk = cstr_skip_space(tk);
@@ -73,9 +73,9 @@ Str parse_pattern(const char* tk) {
     const char* end = strchr(tk, delim);
 
     if (!end) {
-        res = (Str){.s = tk, .len=strlen(tk)};
+        res = (StrView){.s = tk, .len=strlen(tk)};
     } else {
-        res = (Str){.s = tk, .len=end-tk};
+        res = (StrView){.s = tk, .len=end-tk};
     }
     return res;
 }
@@ -83,7 +83,7 @@ Str parse_pattern(const char* tk) {
 
 Err dbg_print_all_lines_nums(TextBuf textbuf[static 1]) {
     size_t lnum = 0;
-    Str line;
+    StrView line;
     for (;textbuf_get_line(textbuf, lnum, &line); ++lnum) {
         if (printf("%ld: ", lnum) < 0) return "error: printf failure";
         if (line.len != fwrite(line.s, 1, line.len, stdout)) return "error: fwrite failure";
@@ -134,7 +134,7 @@ Err ed_write(const char* rest, TextBuf textbuf[static 1]) {
 
 Err ed_global(TextBuf textbuf[static 1],  const char* rest) {
     (void)textbuf;
-    Str pattern = parse_pattern(rest);
+    StrView pattern = parse_pattern(rest);
     if (!pattern.s || !pattern.len) { return "Could not read pattern"; }
     printf("pattern: %s\n", pattern.s);
     return Ok;
@@ -170,7 +170,7 @@ Err ed_go(HtmlDoc htmldoc[static 1],  const char* rest, Range range[static 1]) {
 Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
     try(validate_range_for_buffer(textbuf, range));
 
-    Str line;
+    StrView line;
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: iavlid linum";
         if (line.len != fwrite(line.s, 1, line.len, stdout)) return "error: fwrite failure";

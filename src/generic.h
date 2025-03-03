@@ -14,8 +14,8 @@
 
 
 #define len(Ptr) _Generic((Ptr), \
-        Str*: str_len, \
-        const Str*: str_len, \
+        StrView*: strview_len, \
+        const StrView*: strview_len, \
         TextBuf*: textbuf_len, \
         const TextBuf*: textbuf_len \
     )(Ptr)

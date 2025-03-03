@@ -48,18 +48,16 @@ Err mem_get_indexes(char* data, size_t len, size_t offset, char c, ArlOf(size_t)
     return Ok;
 }
 
-inline size_t str_len(const Str s[static 1]) { return s->len; }
-inline bool str_is_empty(const Str s[static 1]) { return !s->s || len(s) == 0; }
 
-inline int str_init(Str s[static 1], const char* cs) {
-    *s = (Str){.s=cs, .len=cs?strlen(cs):0};
-    return cs && !len(s) ? -1 : 0;
-}
-
-inline int str_init_from_mem(Str s[static 1], const char* beg, const char* end) {
-    *s = (Str){.s=beg, .len=beg<=end?end-beg:0};
-    return beg > end ? -1 : 0;
-}
+//inline int str_init(Str s[static 1], const char* cs) {
+//    *s = (Str){.s=cs, .len=cs?strlen(cs):0};
+//    return cs && !len(s) ? -1 : 0;
+//}
+//
+//inline int str_init_from_mem(Str s[static 1], const char* beg, const char* end) {
+//    *s = (Str){.s=beg, .len=beg<=end?end-beg:0};
+//    return beg > end ? -1 : 0;
+//}
 
 
 inline const char* cstr_skip_space(const char* s) {
@@ -72,7 +70,7 @@ inline const char* cstr_next_space(const char* l) {
     return l;
 }
 
-inline void str_trim_space(Str* l) {
+inline void str_trim_space(StrView* l) {
     l->s = cstr_skip_space(l->s);
     l->len = cstr_next_space(l->s) - l->s;
 }
@@ -119,19 +117,19 @@ bool mem_is_all_space(const char* data, size_t len) {
     return !len;
 }
 
-Err str_prepend(Str s[static 1], const char* cs) {
-    if (!cs) return "error: invalid cstr (nullptr)";
-    size_t cslen = strlen(cs);
-    size_t len = s->len + cslen;
-    char* buf = malloc(len + 1);
-    if (!buf) return "error: not memory";
-    buf[len] = '\0';
-    memcpy(buf, cs, cslen);
-    memcpy(buf + cslen, s->s, s->len);
-    std_free((char*)s->s);
-    s->s = buf;
-    return Ok;
-}
+///Err str_prepend(Str s[static 1], const char* cs) {
+///    if (!cs) return "error: invalid cstr (nullptr)";
+///    size_t cslen = strlen(cs);
+///    size_t len = s->len + cslen;
+///    char* buf = malloc(len + 1);
+///    if (!buf) return "error: not memory";
+///    buf[len] = '\0';
+///    memcpy(buf, cs, cslen);
+///    memcpy(buf + cslen, s->s, s->len);
+///    std_free((char*)s->s);
+///    s->s = buf;
+///    return Ok;
+///}
 
 
 const char* cstr_cat_dup(const char* s, const char* t) {

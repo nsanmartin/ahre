@@ -157,7 +157,7 @@ draw_list_block( lxb_dom_node_t* it, lxb_dom_node_t* last, DrawCtx ctx[static 1]
 
 static inline Err draw_ctx_buf_append_color_esc_code(DrawCtx ctx[static 1], EscCode code) {
     if (draw_ctx_color(ctx)) {
-        Str code_str;
+        StrView code_str;
         try( esc_code_to_str(code, &code_str));
         try( draw_ctx_buf_append(ctx, (char*)code_str.s, code_str.len));
     }
@@ -168,7 +168,7 @@ static inline Err draw_ctx_buf_append_color_esc_code(DrawCtx ctx[static 1], EscC
 static inline Err draw_ctx_buf_append_color_(DrawCtx ctx[static 1], EscCode code) {
     if (draw_ctx_color(ctx)) {
         try( draw_ctx_esc_code_push(ctx, code));
-        Str code_str;
+        StrView code_str;
         try( esc_code_to_str(code, &code_str));
         try( draw_ctx_buf_append(ctx, (char*)code_str.s, code_str.len));
     }
@@ -192,7 +192,7 @@ static inline Err draw_ctx_reset_color(DrawCtx ctx[static 1]) {
         try( draw_ctx_esc_code_pop(ctx));
         EscCode* backp =  arlfn(EscCode, back)(stack);
         if (backp) {
-            Str code_str;
+            StrView code_str;
             try( esc_code_to_str(*backp, &code_str));
             try( draw_ctx_buf_append(ctx, (char*)code_str.s, code_str.len));
         }

@@ -12,7 +12,7 @@ static size_t _compute_required_newlines_in_line_(size_t linelen, size_t maxlen)
 size_t _compute_required_newlines_(TextBuf tb[static 1], size_t maxlen) {
     size_t res = 0;
     size_t n = 0;
-    Str line;
+    StrView line;
     while (textbuf_get_line(tb, n++, &line)) {
         res += _compute_required_newlines_in_line_(line.len,  maxlen);
     }
@@ -41,18 +41,18 @@ static bool _char_is_point_of_break_(char c) {
     return isspace(c) || c == '\033';
 }
 
-static Err _insert_line_splitting_(Str line[static 1], BufOf(char) buf[static 1], size_t maxlen) {
+static Err _insert_line_splitting_(StrView line[static 1], BufOf(char) buf[static 1], size_t maxlen) {
     size_t off = 0;
     size_t len = 0;
-    for (off = 0; off < str_len(line); ) {
-        char* beg = (char*)str_beg(line) + off;
-        if (beg + maxlen >= str_end(line)) {
-            len = str_len(line) - off;
+    for (off = 0; off < strview_len(line); ) {
+        char* beg = (char*)strview_beg(line) + off;
+        if (beg + maxlen >= strview_end(line)) {
+            len = strview_len(line) - off;
         } else {
             len = maxlen;
             size_t esc_codes_len = _mem_count_escape_codes_(beg, len);
             size_t esc_codes_mem = esc_codes_len * 4;
-            if (beg + len + esc_codes_mem < str_end(line))
+            if (beg + len + esc_codes_mem < strview_end(line))
                 len += esc_codes_mem;
 
             if (!_char_is_point_of_break_(line->s[off + len])) {
@@ -63,7 +63,7 @@ static Err _insert_line_splitting_(Str line[static 1], BufOf(char) buf[static 1]
         try( bufofchar_append(buf, beg, len)) ;
         try( bufofchar_append_lit__(buf, "\n")) ;
         off += len;
-        if (beg + len < str_end(line) && isspace(beg[len]))
+        if (beg + len < strview_end(line) && isspace(beg[len]))
             ++off;
     }
     return Ok;
@@ -76,7 +76,7 @@ static Err _insert_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
     if (!buffn(char, __ensure_extra_capacity)(textbuf_buf(tb), missing_newlines))
         return "error: bufof mem failure";
     size_t n = 0;
-    Str line;
+    StrView line;
     BufOf(char)* buf = &(BufOf(char)){0};
     while (textbuf_get_line(tb, n++, &line)) {
         if (line.len && line.len <= maxlen) {
@@ -208,27 +208,27 @@ Err textbuf_append_line_indexes(TextBuf tb[static 1]) {
     return Ok;
 }
 
-bool textbuf_get_line(TextBuf tb[static 1], size_t n, Str out[static 1]) {
+bool textbuf_get_line(TextBuf tb[static 1], size_t n, StrView out[static 1]) {
     size_t nlines = textbuf_line_count(tb);
     if (nlines == 0 || nlines < n) return false;
     ArlOf(size_t)* eols = textbuf_eols(tb);
     if (n == 0) {
         size_t* linelenptr = arlfn(size_t,at)(eols, n);
         if (!linelenptr) return false; //"error: expecting len(eols) > 0";
-        *out = (Str){.s=textbuf_items(tb), .len=*linelenptr};
+        *out = (StrView){.s=textbuf_items(tb), .len=*linelenptr};
         return true;
     } else if (n < len__(eols)) {
         size_t* begoffp = arlfn(size_t,at)(eols, n-1);
         if (!begoffp) return false; //"error: expecting len(eols) >= n-1";
         size_t* eoloffp = arlfn(size_t,at)(eols, n);
         if (!eoloffp) return false; //"error: expecting len(eols) >= n";
-        *out = (Str){.s=textbuf_items(tb) + *begoffp + 1, .len=*eoloffp-*begoffp};
+        *out = (StrView){.s=textbuf_items(tb) + *begoffp + 1, .len=*eoloffp-*begoffp};
         return true;
     } else if (n == len__(eols)) {
         size_t* begoffp = arlfn(size_t,at)(eols, n-1);
         if (!begoffp) return false; //"error: expecting len(eols) >= n-1";
         size_t eoloff = textbuf_len(tb);
-        *out = (Str){.s=textbuf_items(tb) + *begoffp, .len=eoloff - *begoffp};
+        *out = (StrView){.s=textbuf_items(tb) + *begoffp, .len=eoloff - *begoffp};
         return true;
     }
     /* n can't be grater than len(eols). If eols == 0 and line_count == 1, 0 will be
