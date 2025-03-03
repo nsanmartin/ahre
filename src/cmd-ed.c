@@ -170,14 +170,13 @@ Err ed_go(HtmlDoc htmldoc[static 1],  const char* rest, Range range[static 1]) {
 Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
     try(validate_range_for_buffer(textbuf, range));
 
-    for (size_t line = range->beg; line <= range->end; ++line) {
-        Range r = {0};
-        try (textbuf_get_line_offset_range(textbuf, line, line, &r));
-
-        fwrite(textbuf->buf.items + r.beg, 1, r.end - r.beg, stdout);
+    Str line;
+    for (size_t linum = range->beg; linum <= range->end; ++linum) {
+        if (!textbuf_get_line(textbuf, linum, &line)) return "error: iavlid linum";
+        if (line.len != fwrite(line.s, 1, line.len, stdout)) return "error: fwrite failure";
     }
 
-    fwrite(EscCodeReset, 1, sizeof(EscCodeReset)-1, stdout);
+    //fwrite(EscCodeReset, 1, sizeof(EscCodeReset)-1, stdout);
 
     if (range->end == textbuf_line_count(textbuf)) 
         fwrite("\n", 1, 1, stdout);
@@ -309,12 +308,13 @@ Err shorcut_gg(Session session[static 1], const char* rest) {
         if (!parse_ull(rest, &incr)) return "invalid line number";
         *session_nrows(session) = incr;
     } 
+    if (!*session_nrows(session)) return "invalid n rows";
     Range r = (Range){
         .beg=*textbuf_current_line(tb),
-        .end=*textbuf_current_line(tb) + *session_nrows(session)
+        .end=*textbuf_current_line(tb) + *session_nrows(session) - 1
     };
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
-    fwrite(EscCodeClsScr, 1, sizeof(EscCodeClsScr)-1, stdout);
+    //fwrite(EscCodeClsScr, 1, sizeof(EscCodeClsScr)-1, stdout);
     try( textbuf_eval_cmd(tb,cmd, &r));
     if (*textbuf_current_line(tb) == r.end)
         puts(MsgLastLine);
