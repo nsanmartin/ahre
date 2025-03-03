@@ -14,21 +14,23 @@ typedef struct {
 
 typedef struct {
     BufOf(char) buf;
-    size_t current_line;
+    size_t current_offset;
     ArlOf(size_t) eols;
     TextBufCache cache;
 } TextBuf;
 
 
 /* getters */
+static inline size_t* textbuf_current_offset(TextBuf tb[static 1]) { return &tb->current_offset; }
 static inline BufOf(char)*
 textbuf_buf(TextBuf t[static 1]) { return &t->buf; }
 
 static inline Range* textbuf_last_range(TextBuf t[static 1]) { return &t->cache.last_range; }
 
+static inline ArlOf(size_t)* textbuf_eols(TextBuf tb[static 1]) { return &tb->eols; }
 
 /* ctor */
-static inline int textbuf_init(TextBuf ab[static 1]) { *ab = (TextBuf){.current_line=1}; return 0; }
+static inline int textbuf_init(TextBuf ab[static 1]) { *ab = (TextBuf){0}; return 0; }
 
 /* dtors */
 void textbuf_cleanup(TextBuf b[static 1]);
@@ -39,9 +41,41 @@ Err textbuf_append_part(TextBuf ab[static 1], char* data, size_t len);
 size_t textbuf_len(TextBuf ab[static 1]);
 char* textbuf_items(TextBuf ab[static 1]);
 char* textbuf_line_offset(TextBuf ab[static 1], size_t line);
-static inline size_t* textbuf_current_line(TextBuf tb[static 1]) { return &tb->current_line; }
 
-static inline ArlOf(size_t)* textbuf_eols(TextBuf tb[static 1]) { return &tb->eols; }
+
+Err textbuf_get_line_of_offset(TextBuf tb[static 1], size_t off, size_t* out);
+
+
+/*todo return err*/
+static inline size_t textbuf_current_line(TextBuf tb[static 1]) {
+    size_t line;
+    Err err = textbuf_get_line_of_offset(tb, *textbuf_current_offset(tb), &line);
+    if (err) {
+        fprintf(stderr, "ERROR MSG: %s\n", "invalid current offset!");
+        return SIZE_MAX;
+    }
+    return line;
+}
+
+static inline size_t textbuf_eol_count(TextBuf textbuf[static 1]) {
+    return textbuf->eols.len;
+}
+
+static size_t textbuf_line_count(TextBuf textbuf[static 1]) {
+    size_t len = textbuf_len(textbuf);
+    if (!len) return 0;
+    return textbuf_eol_count(textbuf) + 1;
+}
+
+static inline Err textbuf_get_offset_of_line(TextBuf tb[static 1], size_t line, size_t* out) {
+    if (!line) return "error: unexpected invalid number (0)";
+    if (textbuf_line_count(tb) < line) return "error: unexpected invalid line number (too large)";
+    if (line == 1) { *out = 0; return Ok; }
+    size_t* nth_eol = arlfn(size_t,at)(textbuf_eols(tb), line - 2);
+    if (nth_eol) { *out = *nth_eol + 1; return Ok; }
+    return "ERROR: fix get offset of line";
+}
+
 size_t* textbuf_eol_at(TextBuf tb[static 1], size_t i);
 size_t textbuf_line_count(TextBuf textbuf [static 1]);
 size_t textbuf_eol_count(TextBuf textbuf[static 1]);
@@ -72,7 +106,7 @@ Err textbuf_read_from_file(TextBuf textbuf[static 1], const char* filename) ;
 Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) ;
 
 static inline char* textbuf_current_line_offset(TextBuf tb[static 1]) {
-    return textbuf_line_offset(tb, *textbuf_current_line(tb));
+    return textbuf_line_offset(tb, textbuf_current_line(tb));
 }
 Err textbuf_append_part(TextBuf textbuf[static 1], char* data, size_t len);
 Err textbuf_fit_lines(TextBuf tb[static 1], size_t maxlen);

@@ -658,11 +658,8 @@ Err htmldoc_init(HtmlDoc d[static 1], const char* cstr_url) {
     *d = (HtmlDoc){
         .url=url,
         .method=http_get,
-        .lxbdoc=document,
-        .cache=(DocCache){
-            .textbuf=(TextBuf){.current_line=1},
-            .sourcebuf=(TextBuf){.current_line=1}
-        }
+        .lxbdoc=document
+        //.cache=(DocCache){ .textbuf=(TextBuf){0}, .sourcebuf=(TextBuf){0} }
     };
     return Ok;
 }
@@ -678,11 +675,8 @@ Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu, HttpMethod method) {
     *d = (HtmlDoc){
         .url=url,
         .method=method,
-        .lxbdoc=document,
-        .cache=(DocCache){
-            .textbuf=(TextBuf){.current_line=1},
-            .sourcebuf=(TextBuf){.current_line=1}
-        }
+        .lxbdoc=document
+        //.cache=(DocCache){ .textbuf=(TextBuf){0}, .sourcebuf=(TextBuf){0} };
     };
     return Ok;
 }

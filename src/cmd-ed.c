@@ -30,9 +30,12 @@ static inline Err ed_print_n(TextBuf textbuf[static 1], Range range[static 1]) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
         try( serialize_unsigned(write_to_file, linum, stdout));
         if (1 != fwrite("\t", 1, 1, stdout)) return "error: fwrite failure";
-        if (line.len != fwrite(line.s, 1, line.len, stdout)) return "error: fwrite failure";
+        if (line.len) {
+            if (line.len != fwrite(line.s, 1, line.len, stdout)) return "error: fwrite failure";
+        } else if (1 != fwrite("\n", 1, 1, stdout)) return "error: fwrite failure";
     }
 
+    fflush(stdout);
     return Ok;
 }
 
@@ -57,11 +60,13 @@ StrView parse_pattern(const char* tk) {
 
 
 Err dbg_print_all_lines_nums(TextBuf textbuf[static 1]) {
-    size_t lnum = 0;
+    size_t lnum = 1;
     StrView line;
     for (;textbuf_get_line(textbuf, lnum, &line); ++lnum) {
-        if (printf("%ld: ", lnum) < 0) return "error: printf failure";
-        if (line.len != fwrite(line.s, 1, line.len, stdout)) return "error: fwrite failure";
+        if (printf("%ld: `", lnum) < 0) return "error: printf failure";
+        if (line.len > 1)
+            if (line.len-1 != fwrite(line.s, 1, line.len-1, stdout)) return "error: fwrite failure";
+        if (2 != fwrite("'\n", 1, 2, stdout)) return "error: fwrite failure";
     }
 
     return Ok;
@@ -144,17 +149,14 @@ Err ed_go(HtmlDoc htmldoc[static 1],  const char* rest, Range range[static 1]) {
 
 Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
     try(validate_range_for_buffer(textbuf, range));
-
     StrView line;
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
-        if (line.len != fwrite(line.s, 1, line.len, stdout)) return "error: fwrite failure";
+        if (line.len) {
+            if (line.len != fwrite(line.s, 1, line.len, stdout)) return "error: fwrite failure";
+        } else if (1 != fwrite("\n", 1, 1, stdout)) return "error: fwrite failure";
     }
-
-    //fwrite(EscCodeReset, 1, sizeof(EscCodeReset)-1, stdout);
-
-    //if (range->end == textbuf_line_count(textbuf)) 
-    //    fwrite("\n", 1, 1, stdout);
+    fflush(stdout);
     return Ok;
 }
 
@@ -191,14 +193,14 @@ Err ed_eval(TextBuf textbuf[static 1], const char* line) {
 
     if (range.end == 0) return "error: unexpected range with end == 0";
     if (range.end > textbuf_line_count(textbuf)) return "error: range end too large";
-    *textbuf_current_line(textbuf) = range.end;
+    try( textbuf_get_offset_of_line(textbuf, range.end,textbuf_current_offset(textbuf)));
     return textbuf_eval_cmd(textbuf, line, &range);
 }
 
 Err shorcut_zb(Session session[static 1], const char* rest) {
     TextBuf* tb;
     try( session_current_buf(session, &tb));
-    if(*textbuf_current_line(tb) == 1) return "No more lines at the beginning";
+    if(textbuf_current_line(tb) == 1) return "No more lines at the beginning";
 
     const char* cmd = "print";
     if (*rest == 'n') { cmd = "n"; ++rest; }
@@ -210,16 +212,16 @@ Err shorcut_zb(Session session[static 1], const char* rest) {
         *session_nrows(session) = incr;
     } 
     if (!*session_nrows(session)) return "invalid n rows";
-    size_t beg = *textbuf_current_line(tb) <= *session_nrows(session) - 1
+    size_t beg = textbuf_current_line(tb) <= *session_nrows(session) - 1
         ? 1
-        : *textbuf_current_line(tb) - *session_nrows(session) - 1
+        : textbuf_current_line(tb) - *session_nrows(session) - 1
         ;
     Range r = (Range){
         .beg=beg,
-        .end=*textbuf_current_line(tb)
+        .end=textbuf_current_line(tb)
     };
     try( textbuf_eval_cmd(tb, cmd, &r));
-    *textbuf_current_line(tb) = r.beg;
+    try( textbuf_get_offset_of_line(tb, r.beg,textbuf_current_offset(tb)));
 
     return Ok;
 }
@@ -229,7 +231,7 @@ Err shorcut_zf(Session session[static 1], const char* rest) {
     if (*rest == 'n') { cmd = "n"; ++rest; }
     TextBuf* tb;
     try( session_current_buf(session, &tb));
-    if(*textbuf_current_line(tb) > textbuf_line_count(tb)) return "No more lines in buffer";
+    if(textbuf_current_line(tb) > textbuf_line_count(tb)) return "No more lines in buffer";
     if (*rest) {
         rest = cstr_skip_space(rest);
         size_t incr;
@@ -238,14 +240,14 @@ Err shorcut_zf(Session session[static 1], const char* rest) {
     } 
     if (!*session_nrows(session)) return "invalid n rows";
     Range r = (Range){
-        .beg=*textbuf_current_line(tb),
-        .end=*textbuf_current_line(tb) + *session_nrows(session) - 1
+        .beg=textbuf_current_line(tb),
+        .end=textbuf_current_line(tb) + *session_nrows(session) - 1
     };
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
     try( textbuf_eval_cmd(tb,cmd, &r));
-    if (*textbuf_current_line(tb) == r.end)
+    if (textbuf_current_line(tb) == r.end)
         puts(MsgLastLine);
-    else *textbuf_current_line(tb) = r.end;
+    try( textbuf_get_offset_of_line(tb, r.end,textbuf_current_offset(tb)));
     return Ok;
 }
 
@@ -261,9 +263,9 @@ Err shorcut_zz(Session session[static 1], const char* rest) {
         *session_nrows(session) = incr;
     } 
     if (!*session_nrows(session)) return "invalid n rows";
-    size_t beg = *textbuf_current_line(tb) <= (*session_nrows(session)-1) / 2
+    size_t beg = textbuf_current_line(tb) <= (*session_nrows(session)-1) / 2
         ? 1
-        : *textbuf_current_line(tb) - (*session_nrows(session)-1) / 2
+        : textbuf_current_line(tb) - (*session_nrows(session)-1) / 2
         ;
 
     Range r = (Range){
@@ -278,8 +280,8 @@ Err shorcut_gg(Session session[static 1], const char* rest) {
     if (*rest == 'n') { cmd = "n"; ++rest; }
     TextBuf* tb;
     try( session_current_buf(session, &tb));
-    *textbuf_current_line(tb) = 1;
-    if(*textbuf_current_line(tb) > textbuf_line_count(tb)) return "No lines in buffer";
+    *textbuf_current_offset(tb) = 0;
+    if(textbuf_current_line(tb) > textbuf_line_count(tb)) return "No lines in buffer";
     if (*rest) {
         rest = cstr_skip_space(rest);
         size_t incr;
@@ -288,14 +290,14 @@ Err shorcut_gg(Session session[static 1], const char* rest) {
     } 
     if (!*session_nrows(session)) return "invalid n rows";
     Range r = (Range){
-        .beg=*textbuf_current_line(tb),
-        .end=*textbuf_current_line(tb) + *session_nrows(session) - 1
+        .beg=textbuf_current_line(tb),
+        .end=textbuf_current_line(tb) + *session_nrows(session) - 1
     };
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
     //fwrite(EscCodeClsScr, 1, sizeof(EscCodeClsScr)-1, stdout);
     try( textbuf_eval_cmd(tb,cmd, &r));
-    if (*textbuf_current_line(tb) == r.end)
+    if (textbuf_current_line(tb) == r.end)
         puts(MsgLastLine);
-    else *textbuf_current_line(tb) = r.end;
+    try( textbuf_get_offset_of_line(tb, r.end,textbuf_current_offset(tb)));
     return Ok;
 }

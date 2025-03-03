@@ -52,7 +52,7 @@ _Static_assert(sizeof(size_t) <= sizeof(uintmax_t), "range parser requires this 
 
 static ParseRv
 parse_linenum_search_regex(ParseRv tk, TextBuf tb[static 1], size_t out[static 1]) {
-    const char* buf = textbuf_current_line_offset(tb);
+    const char* buf = textbuf_items(tb) + *textbuf_current_offset(tb);
     if (!buf) { return to_range_parse_err("error: invalid current line"); }
     char* end = strchr(tk, '/');
     const char* res = end ? end + 1 : tk + strlen(tk);

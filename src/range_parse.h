@@ -50,7 +50,7 @@ Err textbuf_eval_cmd(TextBuf textbuf[static 1], const char* line, Range range[st
 static inline RangeParseCtx
 range_parse_ctx_from_textbuf(TextBuf tb[static 1]) {
     RangeParseCtx res = (RangeParseCtx){
-        .current_line = *textbuf_current_line(tb),
+        .current_line = textbuf_current_line(tb),
         .nlines       = textbuf_line_count(tb),
         .tb           = tb
     };

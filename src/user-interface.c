@@ -361,6 +361,7 @@ Err process_line(Session session[static 1], const char* line) {
     /* these commands does not require current valid document */
     if ((rest = csubstr_match(line, "bookmarks", 1))) { return cmd_bookmarks(session, rest); }
     if ((rest = csubstr_match(line, "cookies", 1))) { return cmd_cookies(session, rest); }
+    //TODO@ if ((rest = csubstr_match(line, "dbg", 1))) return cmd_dbg(session, rest)
     if ((rest = csubstr_match(line, "echo", 1))) return puts(rest) < 0 ? "error: puts failed" : Ok;
     if ((rest = csubstr_match(line, "go", 1))) { return cmd_open_url(session, rest); }
     if ((rest = csubstr_match(line, "quit", 1)) && !*rest) { session_quit_set(session); return Ok;}

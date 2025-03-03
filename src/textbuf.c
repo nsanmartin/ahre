@@ -100,14 +100,14 @@ static Err _insert_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
 void textbuf_cleanup(TextBuf b[static 1]) {
     buffn(char, clean)(&b->buf);
     arlfn(size_t, clean)(&b->eols);
-    *b = (TextBuf){.current_line=1};
+    *b = (TextBuf){0};
 }
 
 void textbuf_reset(TextBuf b[static 1]) {
     buffn(char, reset)(&b->buf);
     //TODO: use reset once avalable
     arlfn(size_t, clean)(&b->eols);
-    b->current_line = 1;
+    b->current_offset = 0;
 }
 
 inline void textbuf_destroy(TextBuf* b) {
@@ -121,20 +121,6 @@ inline char* textbuf_items(TextBuf textbuf[static 1]) { return textbuf->buf.item
 
 size_t* textbuf_eol_at(TextBuf tb[static 1], size_t i) {
     return arlfn(size_t, at)(&tb->eols, i);
-}
-
-inline size_t textbuf_eol_count(TextBuf textbuf[static 1]) {
-    return textbuf->eols.len;
-}
-
-size_t textbuf_line_count(TextBuf textbuf[static 1]) {
-    size_t len = textbuf_len(textbuf);
-    if (!len) return 0;
-    size_t* last_eolp = arlfn(size_t, back)(&textbuf->eols);
-    if (!last_eolp) return 1;
-    //const char* last_line = textbuf_items(textbuf) + *last_eolp;
-    size_t neols = textbuf_eol_count(textbuf);
-    return neols + 1;
 }
 
 
@@ -163,6 +149,21 @@ Err textbuf_read_from_file(TextBuf textbuf[static 1], const char* filename) {
     fclose(fp);
     try( textbuf_append_null(textbuf));
     return textbuf_fit_lines(textbuf, 90);
+}
+
+Err textbuf_get_line_of_offset(TextBuf tb[static 1], size_t off, size_t* out) {
+    size_t tb_len = textbuf_len(tb);
+    if (off > tb_len) return "error: offset out of range";
+    ArlOf(size_t)* eols = textbuf_eols(tb);
+    if (!len__(eols)) { *out = 1; return Ok; }
+    for ( size_t* it = arlfn(size_t,begin)(eols)
+        ; it != arlfn(size_t,end)(eols)
+        ; ++it
+    ) {
+        if (off <= *it) { *out = 1 + it - arlfn(size_t,begin)(eols); return Ok; }
+    }
+    *out = len__(eols);
+    return Ok;
 }
 
 Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) {
@@ -223,7 +224,7 @@ bool textbuf_get_line(TextBuf tb[static 1], size_t n, StrView out[static 1]) {
     if (n == 1) {
         /* first line: check its end */
         size_t* linelenptr = arlfn(size_t,at)(eols, 0);
-        if (linelenptr) *out = (StrView){.s=textbuf_items(tb), .len=*linelenptr};
+        if (linelenptr) *out = (StrView){.s=textbuf_items(tb), .len=1+*linelenptr};
         else *out = (StrView){.s=textbuf_items(tb), .len=textbuf_len(tb)};
         return true;
     } else if (n <= len__(eols)) {

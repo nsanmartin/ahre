@@ -9,13 +9,15 @@
 //const char* parse_range_impl(char* tk, size_t current_line, size_t len, Range* range);
 
 int test_0(void) {
-    //size_t current_line = 0;
     size_t len = 10;
     char* items = "1\n2\n3\n4\n5\n6\n7\n8\n9\nA";
     TextBuf tb = (TextBuf){
         .buf          = (BufOf(char)){.items=items, .len=strlen(items)},
-        .current_line = 1,
-        .eols         = (ArlOf(size_t)){.items=(size_t[10]){0},len=10,.capacity=10}
+        .eols         = (ArlOf(size_t)){
+            .items=(size_t[10]){ 1, 3, 5, 7, 9, 11, 13, 15, 17},
+            .len=10,
+            .capacity=10
+        }
     };
     Range range;
     RangeParseCtx ctx = range_parse_ctx_from_textbuf(&tb);
@@ -36,7 +38,7 @@ int test_0(void) {
     utest_assert(range.beg == 0, fail, __LINE__);
     utest_assert(range.end == 0, fail, __LINE__);
 
-    *textbuf_current_line(&tb) = 2;
+    *textbuf_current_offset(&tb) = 2;
     ctx = range_parse_ctx_from_textbuf(&tb);
     parse_range_impl(",4", &ctx, &range);
     utest_assert(range.beg == 2, fail, __LINE__);
