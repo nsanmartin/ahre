@@ -1,6 +1,10 @@
 #include "src/textbuf.h"
 #include "src/generic.h"
 
+/*
+ * TextBuf lines indexes are 1-based so be careful 
+ */
+
 /*  internal linkage */
 #define READ_FROM_FILE_BUFFER_LEN 4096u
 /* _Thread_local */ static char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN + 1] = {0};
@@ -11,7 +15,7 @@ static size_t _compute_required_newlines_in_line_(size_t linelen, size_t maxlen)
 
 size_t _compute_required_newlines_(TextBuf tb[static 1], size_t maxlen) {
     size_t res = 0;
-    size_t n = 0;
+    size_t n = 1;
     StrView line;
     while (textbuf_get_line(tb, n++, &line)) {
         res += _compute_required_newlines_in_line_(line.len,  maxlen);
@@ -74,8 +78,8 @@ static Err _insert_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
     size_t missing_newlines = _estimate_missing_newlines_(tb, maxlen);
     if (!missing_newlines) return Ok;
     if (!buffn(char, __ensure_extra_capacity)(textbuf_buf(tb), missing_newlines))
-        return "error: bufof mem failure";
-    size_t n = 0;
+        return err_fmt("error: %s: bufof mem failure", __func__);
+    size_t n = 1;
     StrView line;
     BufOf(char)* buf = &(BufOf(char)){0};
     while (textbuf_get_line(tb, n++, &line)) {
@@ -124,12 +128,13 @@ inline size_t textbuf_eol_count(TextBuf textbuf[static 1]) {
 }
 
 size_t textbuf_line_count(TextBuf textbuf[static 1]) {
-    size_t neols = textbuf_eol_count(textbuf);
     size_t len = textbuf_len(textbuf);
+    if (!len) return 0;
     size_t* last_eolp = arlfn(size_t, back)(&textbuf->eols);
-    return neols && last_eolp
-        ? neols + ( len == 1 + *last_eolp ? 0 : 1)
-        : (len ? 1 : 0);
+    if (!last_eolp) return 1;
+    //const char* last_line = textbuf_items(textbuf) + *last_eolp;
+    size_t neols = textbuf_eol_count(textbuf);
+    return neols + 1;
 }
 
 
@@ -172,7 +177,8 @@ Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) {
     //TODO: use binsearch
     while (it < end && *it < off) 
         ++it;
-    *out = 1 + (it-beg);
+    if (textbuf_eol_count(tb)) *out = 2 + (it-beg);
+    else *out = 1;
     return  Ok;
 }
 
@@ -209,23 +215,26 @@ Err textbuf_append_line_indexes(TextBuf tb[static 1]) {
 }
 
 bool textbuf_get_line(TextBuf tb[static 1], size_t n, StrView out[static 1]) {
+    if (n == 0) return false; /* lines indexes are 1-based! */
     size_t nlines = textbuf_line_count(tb);
     if (nlines == 0 || nlines < n) return false;
+
     ArlOf(size_t)* eols = textbuf_eols(tb);
-    if (n == 0) {
-        size_t* linelenptr = arlfn(size_t,at)(eols, n);
-        if (!linelenptr) return false; //"error: expecting len(eols) > 0";
-        *out = (StrView){.s=textbuf_items(tb), .len=*linelenptr};
+    if (n == 1) {
+        /* first line: check its end */
+        size_t* linelenptr = arlfn(size_t,at)(eols, 0);
+        if (linelenptr) *out = (StrView){.s=textbuf_items(tb), .len=*linelenptr};
+        else *out = (StrView){.s=textbuf_items(tb), .len=textbuf_len(tb)};
         return true;
-    } else if (n < len__(eols)) {
-        size_t* begoffp = arlfn(size_t,at)(eols, n-1);
+    } else if (n <= len__(eols)) {
+        size_t* begoffp = arlfn(size_t,at)(eols, n-2);
         if (!begoffp) return false; //"error: expecting len(eols) >= n-1";
-        size_t* eoloffp = arlfn(size_t,at)(eols, n);
+        size_t* eoloffp = arlfn(size_t,at)(eols, n-1);
         if (!eoloffp) return false; //"error: expecting len(eols) >= n";
         *out = (StrView){.s=textbuf_items(tb) + *begoffp + 1, .len=*eoloffp-*begoffp};
         return true;
-    } else if (n == len__(eols)) {
-        size_t* begoffp = arlfn(size_t,at)(eols, n-1);
+    } else if (n == len__(eols) + 1) {
+        size_t* begoffp = arlfn(size_t,at)(eols, n-2);
         if (!begoffp) return false; //"error: expecting len(eols) >= n-1";
         size_t eoloff = textbuf_len(tb);
         *out = (StrView){.s=textbuf_items(tb) + *begoffp, .len=eoloff - *begoffp};

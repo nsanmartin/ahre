@@ -129,7 +129,7 @@ tab_node_init(
     Err e = htmldoc_init_fetch_draw(tab_node_doc(n), url, url_client, sconf);
     if (e) {
         /* doc if initialized was cleaned by htmldoc_init_fetch_draw. */
-        n->doc = (HtmlDoc){0};
+        *tab_node_doc(n) = (HtmlDoc){0};
         tab_node_cleanup(n);
         return e;
     }

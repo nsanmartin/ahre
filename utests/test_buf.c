@@ -2,6 +2,7 @@
 
 #include <utests.h>
 #include <src/textbuf.c>
+#include <src/error.c>
 
 
 

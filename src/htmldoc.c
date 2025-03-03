@@ -186,7 +186,7 @@ draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     draw_ctx_swap_buf(ctx, &buf);
 
     if (!err) {
-        StrView view = strview_trim_from_mem(buf.items, buf.len);
+        StrView view = strview_from_mem_trim(buf.items, buf.len);
         if (view.len) {
             ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
             ok_then(err, draw_ctx_buf_append(ctx, (char*)view.s, view.len));
@@ -222,7 +222,7 @@ draw_tag_li(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     draw_ctx_swap_buf(ctx, &buf);
 
     if (!err && buf.len) {
-        StrView s = strview_trim_from_mem(buf.items, buf.len);
+        StrView s = strview_from_mem_trim(buf.items, buf.len);
         if (s.len) {
             if (buf.items < s.s) err = draw_ctx_buf_append_lit__(ctx, "\n");
             ok_then( err, draw_ctx_buf_append_lit__(ctx, " * "));
@@ -244,7 +244,7 @@ draw_tag_h(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     try( draw_list_block(node->first_child, node->last_child, ctx));
     draw_ctx_swap_buf(ctx, &buf);
 
-    StrView content = strview(buf.items, buf.len);
+    StrView content = strview_from_mem(buf.items, buf.len);
     _strview_trim_left_count_newlines_(&content);
     _strview_trim_right_count_newlines_(&content);
 
@@ -318,7 +318,7 @@ draw_tag_title(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 }
 
 Err draw_mem_skipping_space(const char* data, size_t len, DrawCtx ctx[static 1]) {
-    StrView s = strview(data, len);
+    StrView s = strview_from_mem(data, len);
 
     while(s.len) {
         StrView word = strview_split_word(&s);
@@ -695,11 +695,12 @@ Err htmldoc_init_fetch_draw(
 ) {
     try(htmldoc_init(d, url));
     Err err = htmldoc_fetch(d, url_client);
+    ok_then(err, htmldoc_draw(d, sconf));
     if (err) {
         htmldoc_cleanup(d);
         return err;
     }
-    return htmldoc_draw(d, sconf);
+    return Ok;
 }
 
 Err htmldoc_init_fetch_draw_from_curlu(
@@ -710,8 +711,14 @@ Err htmldoc_init_fetch_draw_from_curlu(
     SessionConf sconf[static 1]
 ) {
     try(htmldoc_init_from_curlu(d, cu, method));
-    try( htmldoc_fetch(d, url_client)); /* on failure do not free cu owned by caller */
-    return htmldoc_draw(d, sconf);
+    Err err = htmldoc_fetch(d, url_client); 
+    ok_then(err, htmldoc_draw(d, sconf));
+    if (err) {
+        d->url = (Url){0}; /* on failure do not free cu owned by caller */
+        htmldoc_cleanup(d);
+        return err;
+    }
+    return Ok;
 }
 
 HtmlDoc* htmldoc_create(const char* url) {
@@ -757,7 +764,7 @@ Err htmldoc_draw(HtmlDoc htmldoc[static 1], SessionConf sconf[static 1]) {
     //we always call all .
     if (textbuf_len(htmldoc_textbuf(htmldoc))) {
         try( textbuf_append_null(htmldoc_textbuf(htmldoc)));
-        return textbuf_fit_lines(htmldoc_textbuf(htmldoc), *session_conf_ncols(sconf));
+        try( textbuf_fit_lines(htmldoc_textbuf(htmldoc), *session_conf_ncols(sconf)));
     }
     return Ok;
 }

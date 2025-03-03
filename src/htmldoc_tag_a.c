@@ -40,7 +40,7 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         try( draw_list(node->first_child, node->last_child, ctx));
         draw_ctx_swap_buf(ctx, &buf);
 
-        StrView content = strview(buf.items, buf.len);
+        StrView content = strview_from_mem(buf.items, buf.len);
         bool left_newlines = _strview_trim_left_count_newlines_(&content);
         bool right_newlines = _strview_trim_right_count_newlines_(&content);
         Err err;

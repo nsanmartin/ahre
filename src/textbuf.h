@@ -65,7 +65,9 @@ static inline bool textbuf_is_empty(TextBuf ab[static 1]) {
     return !ab->buf.len;
 }
 
-static inline Err textbuf_append_null(TextBuf textbuf[static 1]) { return textbuf_append_part(textbuf, (char[]){0}, 1); }
+static inline Err textbuf_append_null(TextBuf textbuf[static 1]) {
+    return textbuf_append_part(textbuf, (char[]){0}, 1);
+}
 Err textbuf_read_from_file(TextBuf textbuf[static 1], const char* filename) ;
 Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) ;
 
@@ -77,6 +79,7 @@ Err textbuf_fit_lines(TextBuf tb[static 1], size_t maxlen);
 
 Err textbuf_append_line_indexes(TextBuf tb[static 1]);
 
+/* line indexes start at 1! */
 bool textbuf_get_line(TextBuf tb[static 1], size_t n, StrView out[static 1]);
 
 #endif

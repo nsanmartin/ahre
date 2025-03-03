@@ -35,22 +35,43 @@
 ///**/
 //void str_trim_space(Str* l);
 //char* str_ndup_cstr(const Str* url, size_t n);
+//char* url_cpy(const char* url) ;
 //
 
+/* mem fns */
 size_t mem_count_ocurrencies(char* data, size_t len, char c);
+bool mem_is_all_space(const char* data, size_t len);
+static inline const char* mem_to_dup_str(const char* data, size_t len) {
+    char* res = ah_malloc(len + 1);
+    if (!res) return NULL;
+    memcpy(res, data, len);
+    res[len] = '\0';
+    return res;
+}
 
+static inline bool
+mem_skip_space_inplace(const char* data[static 1], size_t len[static 1]) {
+    for(; *len && isspace(**data); --(*len), ++(*data))
+        ;
+    return *len != 0;
+}
+
+/* cstr fns */
 const char* cstr_skip_space(const char* s);
 const char* cstr_next_space(const char* l);
 const char* csubstr_match(const char* s, const char* cmd, size_t len);
 const char* csubword_match(const char* s, const char* cmd, size_t len);
-char* url_cpy(const char* url) ;
 const char* cstr_trim_space(char* s);
-bool mem_is_all_space(const char* data, size_t len);
 
 static inline bool cstr_starts_with(const char* s, const char* t) {
     return s && t && strncmp(s, t, strlen(t)) == 0;
 }
 
+const char* cstr_cat_dup(const char* s, const char* t);
+const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen);
+
+
+/* strview fns */
 typedef struct {
 	const char* s;
 	size_t len;
@@ -59,12 +80,12 @@ typedef struct {
 static inline const char* strview_beg(const StrView s[static 1]) { return s->s; }
 static inline const char* strview_end(const StrView s[static 1]) { return s->s + s->len; }
 static inline size_t strview_len(const StrView s[static 1]) { return s->len; }
-static inline bool str_is_empty(const StrView s[static 1]) { return !s->s || s->len == 0; }
-inline static StrView strview(const char* s, size_t len) {
+static inline bool strview_is_empty(const StrView s[static 1]) { return !s->s || s->len == 0; }
+inline static StrView strview_from_mem(const char* s, size_t len) {
     return (StrView){.s=s, .len=len};
 }
 
-inline static StrView strview_copy(StrView s[static 1]) {
+inline static StrView strview_from_strview(StrView s[static 1]) {
     return (StrView){.s=s->s, .len=s->len};
 }
 
@@ -90,44 +111,13 @@ inline static StrView cstr_split_word(const char* s[static 1]) {
     return word;
 }
 
-inline static StrView strview_trim_from_mem(const char* s, size_t len) {
-    StrView rv = strview(s, len);
+inline static StrView strview_from_mem_trim(const char* s, size_t len) {
+    StrView rv = strview_from_mem(s, len);
     strview_trim_space_in_place(&rv);
     return rv;
 }
 
-// Err str_prepend(Str s[static 1], const char* cs);
-
-static inline const char* mem_to_dup_str(const char* data, size_t len) {
-    char* res = ah_malloc(len + 1);
-    if (!res) return NULL;
-    memcpy(res, data, len);
-    res[len] = '\0';
-    return res;
-}
-
-const char* cstr_cat_dup(const char* s, const char* t);
-const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen);
 const char* parse_l(const char* tk, long lptr[static 1]);
-
-/* returns whether there is more bytes beyond the space */
-static inline bool
-mem_skip_space_inplace(const char* data[static 1], size_t len[static 1]) {
-    for(; *len && isspace(**data); --(*len), ++(*data))
-        ;
-    return *len != 0;
-}
-
-static inline StrView mem_next_space_str(const char* data, size_t len) {
-    while (len && !isspace(*data)) { --len; ++data; }
-    return (StrView){.s=data, .len=len};
-}
-
-static inline StrView mem_get_word_str(const char* data, size_t len) {
-    StrView res = {.s=data};
-    while (len && !isspace(*data)) { ++res.len; --len; ++data; }
-    return res;
-}
 
 StrView str_split_line(StrView text[static 1]);
 

@@ -172,7 +172,7 @@ Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
 
     StrView line;
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
-        if (!textbuf_get_line(textbuf, linum, &line)) return "error: iavlid linum";
+        if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
         if (line.len != fwrite(line.s, 1, line.len, stdout)) return "error: fwrite failure";
     }
 

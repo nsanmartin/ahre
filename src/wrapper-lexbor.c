@@ -245,7 +245,7 @@ Err lexbor_get_title_text_line(lxb_dom_node_t* title, BufOf(char)* out) {
     lxb_dom_node_t* node = title->first_child; 
     lxb_dom_text_t* text = lxb_dom_interface_text(node);
     if (!text) return Ok;
-    StrView text_view = strview((const char*)text->char_data.data.data, text->char_data.data.length);
+    StrView text_view = strview_from_mem((const char*)text->char_data.data.data, text->char_data.data.length);
     while (text_view.len && text_view.s) {
         StrView line = str_split_line(&text_view);
         if (line.len && !buffn(char, append)(out, (char*)line.s, line.len))
@@ -264,7 +264,7 @@ Err dbg_print_title(lxb_dom_node_t* title) {
         return Ok;
     }
     
-    StrView text_view = strview((const char*)text->char_data.data.data, text->char_data.data.length);
+    StrView text_view = strview_from_mem((const char*)text->char_data.data.data, text->char_data.data.length);
     while (text_view.len && text_view.s) {
         StrView line = str_split_line(&text_view);
         if (line.len) fwrite(line.s, 1, line.len, stdout);

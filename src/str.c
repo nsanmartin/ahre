@@ -4,21 +4,7 @@
 #include "src/str.h"
 
 
-char* url_cpy(const char* url) {
-    char* res = NULL;
-    if (url && *url) {
-        const char* end = cstr_next_space(url);
-        size_t len = end - url;
-        res = malloc(1 + len);
-        if (!res) { return NULL; }
-        memcpy(res, url, 1 + len);
-        memset(res + len, '\0', 1);
-    }
-    return res;
-}
-
-size_t
-mem_count_ocurrencies(char* data, size_t len, char c) {
+size_t mem_count_ocurrencies(char* data, size_t len, char c) {
     char* end = data + len;
     size_t count = 0;
 
@@ -47,17 +33,6 @@ Err mem_get_indexes(char* data, size_t len, size_t offset, char c, ArlOf(size_t)
 
     return Ok;
 }
-
-
-//inline int str_init(Str s[static 1], const char* cs) {
-//    *s = (Str){.s=cs, .len=cs?strlen(cs):0};
-//    return cs && !len(s) ? -1 : 0;
-//}
-//
-//inline int str_init_from_mem(Str s[static 1], const char* beg, const char* end) {
-//    *s = (Str){.s=beg, .len=beg<=end?end-beg:0};
-//    return beg > end ? -1 : 0;
-//}
 
 
 inline const char* cstr_skip_space(const char* s) {
@@ -159,7 +134,7 @@ const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen) {
 }
 
 StrView str_split_line(StrView text[static 1]) {
-    StrView line = strview(text->s, text->len);
+    StrView line = strview_from_mem(text->s, text->len);
     const char* nl = memchr(line.s, '\n', line.len);
     if (nl) {
         line.len = nl - line.s;

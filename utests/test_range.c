@@ -11,9 +11,11 @@
 int test_0(void) {
     //size_t current_line = 0;
     size_t len = 10;
+    char* items = "1\n2\n3\n4\n5\n6\n7\n8\n9\nA";
     TextBuf tb = (TextBuf){
-        .current_line=0,
-        .eols=(ArlOf(size_t)){.items=(size_t[10]){0},len=10,.capacity=10}
+        .buf          = (BufOf(char)){.items=items, .len=strlen(items)},
+        .current_line = 1,
+        .eols         = (ArlOf(size_t)){.items=(size_t[10]){0},len=10,.capacity=10}
     };
     Range range;
     RangeParseCtx ctx = range_parse_ctx_from_textbuf(&tb);
