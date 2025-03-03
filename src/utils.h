@@ -21,6 +21,10 @@ typedef const char const_char;
 #define T size_t
 #include <arl.h>
 
+typedef const char* const_char_ptr;
+#define T const_char_ptr
+#include <arl.h>
+
 static inline int buf_of_char_cmp(const void* xp, const void* yp) {
     const BufOf(char)*x = xp;
     const BufOf(char)*y = yp;

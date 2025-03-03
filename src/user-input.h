@@ -3,6 +3,7 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 typedef enum {
     uiin_fgets,

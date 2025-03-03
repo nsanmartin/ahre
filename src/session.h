@@ -45,7 +45,7 @@ static inline TabList*
 session_tablist(Session s[static 1]) { return &s->tablist; }
 
 /* ctor */
-Err session_init(Session s[static 1], char* url);
+Err session_init(Session s[static 1], SessionConf sconf[static 1]);
 
 /* dtor */
 static inline void session_cleanup(Session s[static 1]) {

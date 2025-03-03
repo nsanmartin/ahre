@@ -3,6 +3,30 @@
 
 /* ah cmds */
 
+Err cmd_fetch(Session session[static 1]) {
+    HtmlDoc* htmldoc;
+    try( session_current_doc(session, &htmldoc));
+
+    CURLU* new_cu;
+    try( url_curlu_dup(htmldoc_url(htmldoc), &new_cu));
+    HtmlDoc newdoc;
+    Err err = htmldoc_init_fetch_draw_from_curlu(
+        &newdoc,
+        new_cu,
+        session_url_client(session),
+        http_get,
+        session_conf(session)
+    );
+    if (err) {
+        curl_url_cleanup(new_cu);
+        return err;
+    }
+    htmldoc_cleanup(htmldoc);
+    *htmldoc = newdoc;
+    return err;
+}
+
+
 Err cmd_write(const char* fname, Session session[static 1]) {
     TextBuf* buf;
     try( session_current_buf(session, &buf));
