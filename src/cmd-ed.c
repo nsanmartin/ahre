@@ -191,12 +191,12 @@ Err textbuf_eval_cmd(TextBuf textbuf[static 1], const char* line, Range range[st
     const char* rest = 0x0;
 
     if (!*cstr_skip_space(line)) { return ed_print(textbuf, range); } /* default :NUM */
-    if ((rest = substr_match(line, "a", 1)) && !*rest) { return ed_print_all(textbuf); } //TODO: depre: use :%
-    if ((rest = substr_match(line, "l", 1)) && !*rest) { return dbg_print_all_lines_nums(textbuf); } //TODO: deprecate
-    if ((rest = substr_match(line, "g", 1)) && *rest) { return ed_global(textbuf, rest); }
-    if ((rest = substr_match(line, "n", 1)) && !*rest) { return ed_print_n(textbuf, range); }
-    if ((rest = substr_match(line, "print", 1)) && !*rest) { return ed_print(textbuf, range); }
-    if ((rest = substr_match(line, "write", 1))) { return ed_write(rest, textbuf); }
+    if ((rest = csubstr_match(line, "a", 1)) && !*rest) { return ed_print_all(textbuf); } //TODO: depre: use :%
+    if ((rest = csubstr_match(line, "l", 1)) && !*rest) { return dbg_print_all_lines_nums(textbuf); } //TODO: deprecate
+    if ((rest = csubstr_match(line, "g", 1)) && *rest) { return ed_global(textbuf, rest); }
+    if ((rest = csubstr_match(line, "n", 1)) && !*rest) { return ed_print_n(textbuf, range); }
+    if ((rest = csubstr_match(line, "print", 1)) && !*rest) { return ed_print(textbuf, range); }
+    if ((rest = csubstr_match(line, "write", 1))) { return ed_write(rest, textbuf); }
     return "unknown command";
 }
 
@@ -210,7 +210,7 @@ Err ed_eval(TextBuf textbuf[static 1], const char* line) {
     }
 
     const char* rest = 0x0;
-    if ((rest = substr_match(line, "e", 1)) && *rest) 
+    if ((rest = csubstr_match(line, "e", 1)) && *rest) 
         return ed_edit(textbuf, cstr_trim_space((char*)rest));
     if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
 

@@ -76,7 +76,7 @@ inline void str_trim_space(StrView* l) {
 }
 
 
-const char* substr_match(const char* s, const char* cmd, size_t len) {
+const char* csubstr_match(const char* s, const char* cmd, size_t len) {
     if (!*s || !isalpha(*s)) { return 0x0; }
 	for (; *s && isalpha(*s); ++s, ++cmd, (len?--len:len)) {
 		if (*s != *cmd) { return 0x0; }
@@ -88,7 +88,7 @@ const char* substr_match(const char* s, const char* cmd, size_t len) {
 	return cstr_skip_space(s);
 }
 
-const char* subword_match(const char* s, const char* cmd, size_t len) {
+const char* csubword_match(const char* s, const char* cmd, size_t len) {
     if (!*s || !isalpha(*s)) { return 0x0; }
 	for (; *cmd && *s && isalpha(*s); ++s, ++cmd, (len?--len:len)) {
 		if (*s != *cmd) { return 0x0; }

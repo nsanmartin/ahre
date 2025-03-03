@@ -65,9 +65,9 @@ void url_client_destroy(UrlClient* url_client) {
 const char* _parse_opt(const char* line, CURLoption opt[static 1]) {
 
     const char* rest;
-    if ((rest = substr_match(line, "noprogress", 1))) { *opt=CURLOPT_NOPROGRESS; return rest; }
-    if ((rest = substr_match(line, "useragent", 1))) { *opt=CURLOPT_USERAGENT; return rest; }
-    if ((rest = substr_match(line, "verbose", 1))) { *opt=CURLOPT_VERBOSE; return rest; }
+    if ((rest = csubstr_match(line, "noprogress", 1))) { *opt=CURLOPT_NOPROGRESS; return rest; }
+    if ((rest = csubstr_match(line, "useragent", 1))) { *opt=CURLOPT_USERAGENT; return rest; }
+    if ((rest = csubstr_match(line, "verbose", 1))) { *opt=CURLOPT_VERBOSE; return rest; }
     return NULL;
 }
 

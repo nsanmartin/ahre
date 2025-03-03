@@ -78,8 +78,8 @@ Err cmd_set_session_input(Session session[static 1], const char* line) {
 
     UiIn uiin;
     const char* rest;
-    if ((rest = substr_match(line, "fgets", 1)) && !*rest) uiin = uiin_fgets;
-    else if ((rest = substr_match(line, "isocline", 1)) && !*rest) uiin = uiin_isocline;
+    if ((rest = csubstr_match(line, "fgets", 1)) && !*rest) uiin = uiin_fgets;
+    else if ((rest = csubstr_match(line, "isocline", 1)) && !*rest) uiin = uiin_isocline;
     else return "input option should be 'getline' or 'isocline'";
     *session_uiin(session) = uiin;
     return Ok;
@@ -90,10 +90,10 @@ Err cmd_set_session_input(Session session[static 1], const char* line) {
 Err cmd_set_session(Session session[static 1], const char* line) {
     line = cstr_skip_space(line);
     const char* rest;
-    if ((rest=substr_match(line, "input", 1))) return cmd_set_session_input(session, rest);
-    if ((rest=substr_match(line, "monochrome", 1))) return cmd_set_session_monochrome(session, rest);
-    if ((rest=substr_match(line, "ncols", 1))) return cmd_set_session_ncols(session, rest);
-    if ((rest=substr_match(line, "winsz", 1)) && !*rest) return cmd_set_session_winsz(session);
+    if ((rest=csubstr_match(line, "input", 1))) return cmd_set_session_input(session, rest);
+    if ((rest=csubstr_match(line, "monochrome", 1))) return cmd_set_session_monochrome(session, rest);
+    if ((rest=csubstr_match(line, "ncols", 1))) return cmd_set_session_ncols(session, rest);
+    if ((rest=csubstr_match(line, "winsz", 1)) && !*rest) return cmd_set_session_winsz(session);
     return "not a session option";
 }
 
@@ -102,8 +102,8 @@ Err cmd_set_curl(Session session[static 1], const char* line);
 Err cmd_set(Session session[static 1], const char* line) {
     line = cstr_skip_space(line);
     const char* rest;
-    if ((rest = substr_match(line, "session", 1))) return cmd_set_session(session, rest);
-    if ((rest = substr_match(line, "curl", 1))) return cmd_set_curl(session, rest);
+    if ((rest = csubstr_match(line, "session", 1))) return cmd_set_session(session, rest);
+    if ((rest = csubstr_match(line, "curl", 1))) return cmd_set_curl(session, rest);
     return "not a curl option";
 }
 

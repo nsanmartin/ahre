@@ -40,8 +40,8 @@
 
 const char* cstr_skip_space(const char* s);
 const char* cstr_next_space(const char* l);
-const char* substr_match(const char* s, const char* cmd, size_t len);
-const char* subword_match(const char* s, const char* cmd, size_t len);
+const char* csubstr_match(const char* s, const char* cmd, size_t len);
+const char* csubword_match(const char* s, const char* cmd, size_t len);
 char* url_cpy(const char* url) ;
 const char* cstr_trim_space(char* s);
 bool mem_is_all_space(const char* data, size_t len);

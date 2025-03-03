@@ -34,7 +34,7 @@ Err read_line_from_user(Session session[static 1]) {
 }
 
 bool substr_match_all(const char* s, size_t len, const char* cmd) {
-    return (s=substr_match(s, cmd, len)) && !*cstr_skip_space(s);
+    return (s=csubstr_match(s, cmd, len)) && !*cstr_skip_space(s);
 }
 
 
@@ -238,17 +238,17 @@ bool htmldoc_is_valid(HtmlDoc htmldoc[static 1]) {
 Err cmd_eval(Session session[static 1], const char* line) {
     const char* rest = 0x0;
     line = cstr_skip_space(line);
-    if ((rest = substr_match(line, "ahref", 2))) { return cmd_ahre(session, rest); } //TODO: deprecate, impl [%p
-    if ((rest = substr_match(line, "attr", 2))) { return "TODO: attr"; }
-    if ((rest = substr_match(line, "class", 3))) { return "TODO: class"; }
-    ///if ((rest = substr_match(line, "clear", 3))) { return cmd_clear(session); }
-    if ((rest = substr_match(line, "fetch", 1))) { return cmd_fetch(session); }
-    if ((rest = subword_match(line, "gg", 2))) { return shorcut_gg(session, rest); }
-    if ((rest = substr_match(line, "tag", 2))) { return cmd_tag(rest, session); }
+    if ((rest = csubstr_match(line, "ahref", 2))) { return cmd_ahre(session, rest); } //TODO: deprecate, impl [%p
+    if ((rest = csubstr_match(line, "attr", 2))) { return "TODO: attr"; }
+    if ((rest = csubstr_match(line, "class", 3))) { return "TODO: class"; }
+    ///if ((rest = csubstr_match(line, "clear", 3))) { return cmd_clear(session); }
+    if ((rest = csubstr_match(line, "fetch", 1))) { return cmd_fetch(session); }
+    if ((rest = csubword_match(line, "gg", 2))) { return shorcut_gg(session, rest); }
+    if ((rest = csubstr_match(line, "tag", 2))) { return cmd_tag(rest, session); }
     //TODO: define shorcut_z and pass the rest
-    if ((rest = subword_match(line, "zb", 2))) { return shorcut_zb(session, rest); }
-    if ((rest = subword_match(line, "zf", 2))) { return shorcut_zf(session, rest); }
-    if ((rest = subword_match(line, "zz", 2))) { return shorcut_zz(session, rest); }
+    if ((rest = csubword_match(line, "zb", 2))) { return shorcut_zb(session, rest); }
+    if ((rest = csubword_match(line, "zf", 2))) { return shorcut_zf(session, rest); }
+    if ((rest = csubword_match(line, "zz", 2))) { return shorcut_zz(session, rest); }
 
     return "unknown cmd";
 }
@@ -325,8 +325,8 @@ Err tabs_eval(Session session[static 1], const char* line) {
 
 Err doc_eval_word(HtmlDoc d[static 1], const char* line) {
     const char* rest;
-    if ((rest = substr_match(line, "hide", 1))) { return doc_cmd_hide(d, rest); }
-    if ((rest = substr_match(line, "show", 1))) { return doc_cmd_show(d, rest); }
+    if ((rest = csubstr_match(line, "hide", 1))) { return doc_cmd_hide(d, rest); }
+    if ((rest = csubstr_match(line, "show", 1))) { return doc_cmd_show(d, rest); }
     return "unknown doc command";
 }
 
@@ -359,12 +359,12 @@ Err process_line(Session session[static 1], const char* line) {
     if (!*line) { return Ok; }
     const char* rest = NULL;
     /* these commands does not require current valid document */
-    if ((rest = substr_match(line, "bookmarks", 1))) { return cmd_bookmarks(session, rest); }
-    if ((rest = substr_match(line, "cookies", 1))) { return cmd_cookies(session, rest); }
-    if ((rest = substr_match(line, "echo", 1))) return puts(rest) < 0 ? "error: puts failed" : Ok;
-    if ((rest = substr_match(line, "go", 1))) { return cmd_open_url(session, rest); }
-    if ((rest = substr_match(line, "quit", 1)) && !*rest) { session_quit_set(session); return Ok;}
-    if ((rest = substr_match(line, "set", 1))) { return cmd_set(session, rest); }
+    if ((rest = csubstr_match(line, "bookmarks", 1))) { return cmd_bookmarks(session, rest); }
+    if ((rest = csubstr_match(line, "cookies", 1))) { return cmd_cookies(session, rest); }
+    if ((rest = csubstr_match(line, "echo", 1))) return puts(rest) < 0 ? "error: puts failed" : Ok;
+    if ((rest = csubstr_match(line, "go", 1))) { return cmd_open_url(session, rest); }
+    if ((rest = csubstr_match(line, "quit", 1)) && !*rest) { session_quit_set(session); return Ok;}
+    if ((rest = csubstr_match(line, "set", 1))) { return cmd_set(session, rest); }
 
     if (*line == '|') return tabs_eval(session, line + 1);
     HtmlDoc* htmldoc;
@@ -378,7 +378,7 @@ Err process_line(Session session[static 1], const char* line) {
 
     //TODO: obtain range from line and pase it already parsed to eval fn
 
-    if ((rest = substr_match(line, "draw", 1))) { return cmd_draw(session, rest); }
+    if ((rest = csubstr_match(line, "draw", 1))) { return cmd_draw(session, rest); }
 
     TextBuf* tb;
     try( session_current_buf(session, &tb));
