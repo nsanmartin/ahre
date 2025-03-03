@@ -33,10 +33,11 @@
 //int str_init(Str s[static 1], const char* cs);
 //
 ///**/
-//size_t mem_count_ocurrencies(char* data, size_t len, char c);
 //void str_trim_space(Str* l);
 //char* str_ndup_cstr(const Str* url, size_t n);
 //
+
+size_t mem_count_ocurrencies(char* data, size_t len, char c);
 
 const char* cstr_skip_space(const char* s);
 const char* cstr_next_space(const char* l);
