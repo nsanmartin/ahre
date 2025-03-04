@@ -81,15 +81,13 @@ Err cmd_set_session_monochrome(Session session[static 1], const char* line) {
 
 Err cmd_set_session_input(Session session[static 1], const char* line) {
     line = cstr_skip_space(line);
-    HtmlDoc* htmldoc;
-    try( session_current_doc(session, &htmldoc));
 
-    UiIn uiin;
+    UserInput uin;
     const char* rest;
-    if ((rest = csubstr_match(line, "fgets", 1)) && !*rest) uiin = uiin_fgets;
-    else if ((rest = csubstr_match(line, "isocline", 1)) && !*rest) uiin = uiin_isocline;
+    if ((rest = csubstr_match(line, "fgets", 1)) && !*rest) uin = uin_fgets();
+    else if ((rest = csubstr_match(line, "isocline", 1)) && !*rest) uin = uin_isocline();
     else return "input option should be 'getline' or 'isocline'";
-    *session_uiin(session) = uiin;
+    *session_uin(session) = uin;
     return Ok;
 
 }

@@ -2,8 +2,9 @@
 #include "src/user-out.h"
 
 static Err _read_input_opt_(SessionConf sconf[static 1], const char* optopt) {
-    if (!strcmp("fgets", optopt)) sconf->uiin = uiin_fgets;
-    else if (!strcmp("isocline", optopt)) sconf->uiin = uiin_isocline;
+    if (!optopt || !*optopt) return "invalid input option";
+    if (!strcmp("fgets", optopt)) sconf->uin = uin_fgets();
+    else if (!strcmp("isocline", optopt)) sconf->uin = uin_isocline();
     else return "invalid input iterface: must be fgets or isocline";
     return Ok;
 }
@@ -15,10 +16,10 @@ Err session_conf_from_options(int argc, char* argv[], CliParams cparams[static 1
     try( ui_get_win_size(&nrows, &ncols));
 
     *sconf = (SessionConf) {
-        .uiin        = uiin_isocline,
-        .ncols       = 90 > ncols ? ncols : 90,
-        .nrows       = nrows,
-        .uiwrite_msg = write_to_file
+        .uin            = uin_isocline(),
+        .ncols          = 90 > ncols ? ncols : 90,
+        .nrows          = nrows,
+        .uiwrite_msg_cb = write_to_file
     };
 
     for (int i = 1; i < argc; ++i) {

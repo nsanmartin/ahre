@@ -10,6 +10,7 @@ typedef const char* Err;
 //constexpr Err Ok = (Err)0x0;
 #define Ok ((Err)0x0)
 
+static inline Err err_skip(void) { return Ok; }
 Err err_fmt(Err fmt, ...);
 
 static Err FATAL_ERROR_PREFIX = "error";

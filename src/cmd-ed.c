@@ -201,6 +201,7 @@ Err ed_eval(TextBuf textbuf[static 1], const char* line) {
 }
 
 Err shorcut_zb(Session session[static 1], const char* rest) {
+    if (*session_nrows(session) <= 3) return "too few rows";
     TextBuf* tb;
     try( session_current_buf(session, &tb));
     if(textbuf_current_line(tb) == 1) return "No more lines at the beginning";
@@ -247,8 +248,8 @@ Err shorcut_zf(Session session[static 1], const char* rest) {
         ? textbuf_last_range(tb)->end
         : textbuf_current_line(tb)
         ;
-    Range r = (Range){ .beg=range_beg, .end=range_beg + *session_nrows(session) - 1 };
-
+    Range r = (Range){ .beg=range_beg, .end=range_beg + *session_nrows(session) - 2 };
+    if (r.end < r.beg) r.end = r.beg;
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
     try( textbuf_eval_cmd(tb,cmd, &r));
     if (textbuf_current_line(tb) == r.end)
@@ -258,6 +259,7 @@ Err shorcut_zf(Session session[static 1], const char* rest) {
 }
 
 Err shorcut_zz(Session session[static 1], const char* rest) {
+    if (*session_nrows(session) <= 3) return "too few rows";
     TextBuf* tb;
     try( session_current_buf(session, &tb));
     const char* cmd = "print";
@@ -269,19 +271,21 @@ Err shorcut_zz(Session session[static 1], const char* rest) {
         *session_nrows(session) = incr;
     } 
     if (!*session_nrows(session)) return "invalid n rows";
-    size_t beg = textbuf_current_line(tb) <= (*session_nrows(session)-1) / 2
+    size_t beg = textbuf_current_line(tb) <= (*session_nrows(session)-2) / 2
         ? 1
-        : textbuf_current_line(tb) - (*session_nrows(session)-1) / 2
+        : textbuf_current_line(tb) - (*session_nrows(session)-2) / 2
         ;
 
     Range r = (Range){
-        .beg=beg, .end=beg + *session_nrows(session) -1
+        .beg=beg, .end=beg + *session_nrows(session) - 2
     };
+    if (r.end < r.beg) r.end = r.beg;
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
     return textbuf_eval_cmd(tb, cmd, &r);
 }
 
 Err shorcut_gg(Session session[static 1], const char* rest) {
+    if (*session_nrows(session) <= 3) return "too few rows";
     const char* cmd = "print";
     if (*rest == 'n') { cmd = "n"; ++rest; }
     TextBuf* tb;
@@ -297,9 +301,10 @@ Err shorcut_gg(Session session[static 1], const char* rest) {
     if (!*session_nrows(session)) return "invalid n rows";
     Range r = (Range){
         .beg=textbuf_current_line(tb),
-        .end=textbuf_current_line(tb) + *session_nrows(session) - 1
+        .end=textbuf_current_line(tb) + *session_nrows(session) - 2
     };
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
+    if (r.end < r.beg) r.end = r.beg;
     //fwrite(EscCodeClsScr, 1, sizeof(EscCodeClsScr)-1, stdout);
     try( textbuf_eval_cmd(tb,cmd, &r));
     if (textbuf_current_line(tb) == r.end)
