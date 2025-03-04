@@ -11,6 +11,7 @@
 #include "src/url.h"
 #include "src/user-cmd.h"
 #include "src/user-input.h"
+#include "src/user-out.h"
 #include "src/user-interface.h"
 #include "src/utils.h"
 #include "src/readpass.h"
@@ -50,8 +51,8 @@ Err cmd_bookmarks(Session session[static 1], const char* url) {
         if (!err) {
             BufOf(char)* it = arlfn(BufOf(char), begin)(&list);
             for (; it != arlfn(BufOf(char), end)(&list); ++it) {
-                fwrite(it->items, 1, it->len, stdout);
-                fwrite("\n", 1, 1, stdout);
+                try( uiwrite__(strview__(it->items, it->len)));
+                try( uiwrite__(strview__("\n")));
             }
         }
         arlfn(BufOf(char),clean)(&list);
@@ -64,12 +65,12 @@ Err cmd_bookmarks(Session session[static 1], const char* url) {
             size_t len;
             try( lexbor_node_get_text(section->first_child, &data, &len));
             if (len) {
-                fwrite(data, 1, len, stdout);
-                fwrite("\n", 1, 1, stdout);
+                try(uiwrite__(strview__(data, len)));
+                try(uiwrite__(strview__("\n")));
             }
         } else err = "invalid section in bookmark";
     }
-    fflush(stdout);
+    try(uiflush());
     return err;
 }
 
@@ -120,11 +121,10 @@ Err cmd_input_print(Session session[static 1], size_t ix) {
     lxb_dom_node_t* node;
     try( _get_input_by_ix(session, ix, &node));
     BufOf(const_char)* buf = &(BufOf(const_char)){0};
-    //TODO: cleanup on failure
-    try( lexbor_node_to_str(node, buf));
-    bool write_err = fwrite(buf->items, sizeof(char), buf->len, stdout) == buf->len;
+    Err err = lexbor_node_to_str(node, buf);
+    ok_then(err,  uiwrite__(strview__(buf->items, buf->len)));
     buffn(const_char, clean)(buf);
-    return write_err ? Ok : "error: fwrite failure";
+    return err;
 }
 
 
@@ -138,8 +138,7 @@ Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) 
 
     Err err = Ok;
     if (!*line) {
-        const char* prompt = "> ";
-        fwrite(prompt, 1, sizeof(prompt)-1, stdout);
+        try( uiwrite__(strview__("> ")));
         ArlOf(char) masked = (ArlOf(char)){0};
         err = readpass(&masked);
         ok_then(err, lexbor_set_attr_value(node, masked.items, masked.len));
@@ -217,11 +216,10 @@ Err cmd_image_print(Session session[static 1], size_t ix) {
     lxb_dom_node_t* node;
     try( _get_image_by_ix(session, ix, &node));
     BufOf(const_char)* buf = &(BufOf(const_char)){0};
-    //TODO: cleanup on failure
-    try( lexbor_node_to_str(node, buf));
-    bool write_err = fwrite(buf->items, sizeof(char), buf->len, stdout) == buf->len;
+    Err err = lexbor_node_to_str(node, buf);
+    ok_then(err, uiwrite__(strview__(buf->items, buf->len)));
     buffn(const_char, clean)(buf);
-    return write_err ? Ok : "error: fwrite failure";
+    return err;
 }
 
 bool htmldoc_is_valid(HtmlDoc htmldoc[static 1]) {
@@ -263,9 +261,9 @@ Err cmd_anchor_print(Session session[static 1], size_t linknum) {
     
     BufOf(const_char)* buf = &(BufOf(const_char)){0};
     try( lexbor_node_to_str(*a, buf));
-    bool write_err = fwrite(buf->items, sizeof(char), buf->len, stdout) == buf->len;
+    Err err = uiwrite__(strview__(buf->items, buf->len));
     buffn(const_char, clean)(buf);
-    return write_err ? Ok : "error: fwrite failure";
+    return err;
 }
 
 

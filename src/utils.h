@@ -8,6 +8,9 @@
 #include <stdint.h>
 #include <limits.h>
 
+#define skip__(X)
+#define GET_MACRO__(_1,_2,_3,NAME,...) NAME
+
 #define BT char
 #include <buf.h>
 
@@ -61,23 +64,6 @@ static inline int buf_append_hexp(void* p, BufOf(char)*buf) {
 static inline void log_info(const char* msg) { puts(msg); }
 static inline void log_error(const char* msg) { perror(msg); }
 
-typedef Err (*SerializeCallback)(const char* data, size_t len, void* ctx);
-
-static inline Err write_to_file(const char* data, size_t len, void* f) {
-    return len - fwrite(data, 1, len, f) ? "error: fwrite failure": Ok;
-}
-
-static inline Err
-bufofchar_append_ui_as_str(BufOf(char) buf[static 1], uintmax_t ui) {
-    char numbuf[3 * sizeof ui] = {0};
-    size_t len = 0;
-    if ((len = snprintf(numbuf, (3 * sizeof ui), "%lu", ui)) > (3 * sizeof ui)) {
-        //TODO: provide more info about the error
-        return "error: could not convert ui to str";
-    }
-    if (buffn(char, append)(buf, numbuf, len)) return Ok;
-    return "error: could not append str_ui to bufof char";
-}
 
 Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[static 1]);
 
@@ -89,15 +75,6 @@ bufofchar_append_ui_base36_as_str(BufOf(char) buf[static 1], uintmax_t ui) {
     try( uint_to_base36_str(numbf, 3 * sizeof ui, ui, &len));
     if (!buffn(char, append)(buf, numbf, len)) return "error appending unsigned to bufof char";
     return Ok;
-}
-static inline Err
-serialize_unsigned(SerializeCallback cb, uintmax_t ui, void* ctx) {
-    char numbf[3 * sizeof ui] = {0};
-    size_t len = 0;
-    if ((len = snprintf(numbf, (3 * sizeof ui), "%lu", ui)) > (3 * sizeof ui)) {
-        return "error: snprintf failure";
-    }
-    return cb(numbf, len, ctx);
 }
 
 
@@ -146,8 +123,4 @@ static inline Err bufofchar_append(BufOf(char) buf[static 1], char* s, size_t le
 Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) ;
 
 /* * */
-#define Str2 BufOf(char)
-#define str2_clean buffn(char,clean)
-#define str2_append(Str2Ptr, Items, NItems) \
-    (buffn(char,append)(Str2Ptr, Items, NItems) ? Ok : "error: str2_append failure")
 #endif

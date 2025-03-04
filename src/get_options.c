@@ -1,4 +1,5 @@
 #include "src/get_options.h"
+#include "src/user-out.h"
 
 static Err _read_input_opt_(SessionConf sconf[static 1], const char* optopt) {
     if (!strcmp("fgets", optopt)) sconf->uiin = uiin_fgets;
@@ -16,7 +17,8 @@ Err session_conf_from_options(int argc, char* argv[], CliParams cparams[static 1
     *sconf = (SessionConf) {
         .uiin        = uiin_isocline,
         .ncols       = 90 > ncols ? ncols : 90,
-        .nrows       = nrows
+        .nrows       = nrows,
+        .uiwrite_msg = write_to_file
     };
 
     for (int i = 1; i < argc; ++i) {

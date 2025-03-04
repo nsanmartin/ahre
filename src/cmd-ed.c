@@ -1,4 +1,3 @@
-// #define _POSIX_C_SOUCRE 200809L
 #include <string.h>
 
 #include "src/cmd-ed.h"
@@ -9,6 +8,7 @@
 #include "src/str.h"
 #include "src/session.h"
 #include "src/textbuf.h"
+#include "src/user-out.h"
 
 #define MsgLastLine EscCodePurple "%{- last line -}%" EscCodeReset
 
@@ -28,14 +28,15 @@ static inline Err ed_print_n(TextBuf textbuf[static 1], Range range[static 1]) {
     StrView line;
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
-        try( serialize_unsigned(write_to_file, linum, stdout));
-        if (1 != fwrite("\t", 1, 1, stdout)) return "error: fwrite failure";
-        if (line.len) {
-            if (line.len != fwrite(line.s, 1, line.len, stdout)) return "error: fwrite failure";
-        } else if (1 != fwrite("\n", 1, 1, stdout)) return "error: fwrite failure";
+        try( serialize_unsigned(uiwrite_cb, linum, NULL));
+        try( uiwrite__(strview__("\t")));
+        if (line.len) try( uiwrite__(line));
+        else try( uiwrite__(strview__("\n")));
     }
 
-    fflush(stdout);
+    if (textbuf_line_count(textbuf) == range->end) try( uiwrite__(strview__("\n")));
+
+    try(uiflush());
     return Ok;
 }
 
@@ -63,12 +64,14 @@ Err dbg_print_all_lines_nums(TextBuf textbuf[static 1]) {
     size_t lnum = 1;
     StrView line;
     for (;textbuf_get_line(textbuf, lnum, &line); ++lnum) {
-        if (printf("%ld: `", lnum) < 0) return "error: printf failure";
-        if (line.len > 1)
-            if (line.len-1 != fwrite(line.s, 1, line.len-1, stdout)) return "error: fwrite failure";
-        if (2 != fwrite("'\n", 1, 2, stdout)) return "error: fwrite failure";
+        try( serialize_unsigned(uiwrite_cb, lnum, NULL));
+        try( uiwrite__(strview__("\t`")));
+        if (line.len > 1) {
+            try( uiwrite__(strview__(line.s, line.len-1)));
+        } 
+        try( uiwrite__(strview__("'\n")));
     }
-
+    try(uiflush());
     return Ok;
 }
 
@@ -153,10 +156,10 @@ Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
         if (line.len) {
-            if (line.len != fwrite(line.s, 1, line.len, stdout)) return "error: fwrite failure";
-        } else if (1 != fwrite("\n", 1, 1, stdout)) return "error: fwrite failure";
+            try( uiwrite__(line));
+        } else try( uiwrite__(strview__("\n")));
     }
-    fflush(stdout);
+    try(uiflush());
     return Ok;
 }
 
@@ -184,7 +187,7 @@ Err ed_eval(TextBuf textbuf[static 1], const char* line) {
     line = parse_range(line, &range, &ctx);
     if (range_parse_failure(line)) {
         return range_parse_failure_to_err(line);
-    }
+    } else *textbuf_last_range(textbuf) = range;
 
     const char* rest = 0x0;
     if ((rest = csubstr_match(line, "e", 1)) && *rest) 
@@ -239,10 +242,13 @@ Err shorcut_zf(Session session[static 1], const char* rest) {
         *session_nrows(session) = incr;
     } 
     if (!*session_nrows(session)) return "invalid n rows";
-    Range r = (Range){
-        .beg=textbuf_current_line(tb),
-        .end=textbuf_current_line(tb) + *session_nrows(session) - 1
-    };
+
+    size_t range_beg = (textbuf_last_range(tb)->beg && textbuf_last_range(tb)->end) 
+        ? textbuf_last_range(tb)->end
+        : textbuf_current_line(tb)
+        ;
+    Range r = (Range){ .beg=range_beg, .end=range_beg + *session_nrows(session) - 1 };
+
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
     try( textbuf_eval_cmd(tb,cmd, &r));
     if (textbuf_current_line(tb) == r.end)

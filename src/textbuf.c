@@ -235,11 +235,11 @@ bool textbuf_get_line(TextBuf tb[static 1], size_t n, StrView out[static 1]) {
         *out = (StrView){.s=textbuf_items(tb) + *begoffp + 1, .len=*eoloffp-*begoffp};
         return true;
     } else if (n == len__(eols) + 1) {
-        size_t* begoffp = arlfn(size_t,at)(eols, n-2);
-        if (!begoffp) return false; //"error: expecting len(eols) >= n-1";
+        size_t* begoffp = arlfn(size_t,back)(eols);
+        if (!begoffp) return false; //"error: expecting len(eols) > 0
         size_t eoloff = textbuf_len(tb);
-        *out = (StrView){.s=textbuf_items(tb) + *begoffp, .len=eoloff - *begoffp};
-        return true;
+        *out = (StrView){.s=textbuf_items(tb) + *begoffp + 1, .len=eoloff - *begoffp -1};
+        return out->len;
     }
     /* n can't be grater than len(eols). If eols == 0 and line_count == 1, 0 will be
      * the first line, there no be line == 1 (second) etc.

@@ -51,6 +51,14 @@ Err cmd_set_session_winsz(Session session[static 1]) {
     try( ui_get_win_size(&nrows, &ncols));
     *session_nrows(session) = nrows;
     *session_ncols(session) = ncols;
+    
+    SerializeCallback w = session_uiwrite_msg(session);
+    try( w(strview__("win: nrows = "), stdout));
+    try( serialize_unsigned(w, nrows, stdout));
+    try( w(strview__(", ncols = "), stdout));
+    try( serialize_unsigned(w, ncols, stdout));
+    try( w(strview__("\n"), stdout));
+
     return Ok;
 }
 

@@ -1,6 +1,7 @@
 #ifndef AHRE_SESSION_CONF_H__
 #define AHRE_SESSION_CONF_H__
 
+#include "src/utils.h"
 #include "src/user-input.h"
 
 #define SESSION_CONF_FLAG_QUIT       0x1u
@@ -11,6 +12,7 @@ typedef struct {
     size_t ncols;
     size_t nrows;
     unsigned flags;
+    SerializeCallback uiwrite_msg;
 } SessionConf ;
 
 static inline
@@ -29,5 +31,7 @@ static inline void session_conf_monochrome_set(SessionConf sc[static 1], bool va
 static inline UiIn* session_conf_uiin(SessionConf sc[static 1]) { return &sc->uiin; }
 static inline size_t* session_conf_nrows(SessionConf sc[static 1]) { return &sc->nrows; }
 static inline size_t* session_conf_ncols(SessionConf sc[static 1]) { return &sc->ncols; }
+static inline
+SerializeCallback session_conf_uiwrite_msg(SessionConf sc[static 1]) { return sc->uiwrite_msg; }
 
 #endif

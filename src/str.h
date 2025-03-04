@@ -17,6 +17,7 @@
 
 #include "src/error.h"
 #include "src/mem.h"
+#include "src/utils.h"
 
 //typedef struct {
 //	const char* s;
@@ -117,8 +118,44 @@ inline static StrView strview_from_mem_trim(const char* s, size_t len) {
     return rv;
 }
 
+#define Str2 BufOf(char)
+#define str2_clean buffn(char,clean)
+#define str2_append(Str2Ptr, Items, NItems) \
+    (buffn(char,append)(Str2Ptr, Items, NItems) ? Ok : "error: str2_append failure")
+
+#define strview_from_lit__(LitStr) strview_from_mem(LitStr, sizeof(LitStr)-1)
+static inline StrView strview_from_str__(Str2 s) {return strview_from_mem(s.items, s.len); }
+static inline StrView strview_from_strptr__(Str2 s[static 1]) {return strview_from_mem(s->items, s->len); }
+#define strview_from_strptr__(S) strview_from_mem((S)->items, (S)->len)
+#define strview__(...) GET_MACRO__(NULL,__VA_ARGS__,strview_from_mem,strview_from_lit__,skip__)(__VA_ARGS__)
+
+
 const char* parse_l(const char* tk, long lptr[static 1]);
 
 StrView str_split_line(StrView text[static 1]);
+
+typedef Err (*SerializeCallback)(StrView s, void* ctx);
+
+static inline Err
+bufofchar_append_ui_as_str(BufOf(char) buf[static 1], uintmax_t ui) {
+    char numbuf[3 * sizeof ui] = {0};
+    size_t len = 0;
+    if ((len = snprintf(numbuf, (3 * sizeof ui), "%lu", ui)) > (3 * sizeof ui)) {
+        //TODO: provide more info about the error
+        return "error: could not convert ui to str";
+    }
+    if (buffn(char, append)(buf, numbuf, len)) return Ok;
+    return "error: could not append str_ui to bufof char";
+}
+
+static inline Err
+serialize_unsigned(SerializeCallback cb, uintmax_t ui, void* ctx) {
+    char numbf[3 * sizeof ui] = {0};
+    size_t len = 0;
+    if ((len = snprintf(numbf, (3 * sizeof ui), "%lu", ui)) > (3 * sizeof ui)) {
+        return "error: snprintf failure";
+    }
+    return cb(strview_from_mem(numbf, len), ctx);
+}
 
 #endif
