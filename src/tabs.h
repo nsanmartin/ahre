@@ -32,7 +32,8 @@ static inline size_t* _tablist_current_tab_ix_(TabList f[static 1]) { return &f-
 static inline Err
 tablist_current_tab(TabList f[static 1], TabNode* out[static 1]) {
     TabNode* current_tab = arlfn(TabNode, at)(&f->tabs, f->current_tab);
-    if (!current_tab || tablist_is_empty(f)) return "error: not current tree available";
+    if (!current_tab) return "no tabs in session";
+    if (tablist_is_empty(f)) return "error: current tab has no nodes";
     *out = current_tab;
     return Ok;
 }
