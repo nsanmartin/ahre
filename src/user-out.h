@@ -4,8 +4,28 @@
 #include "src/utils.h"
 
 typedef Err (*WriteUserOutputCallback)(const char* mem, size_t len, void* ctx);
+typedef Err (*FlushUserOutputCallback)(void);
+
+typedef struct {
+    WriteUserOutputCallback write_msg;
+    FlushUserOutputCallback flush_msg;
+    WriteUserOutputCallback write_std;
+    FlushUserOutputCallback flush_std;
+} UserOutput;
 
 #define uiw_lit__(Cb, Lit) Cb(Lit,sizeof(Lit)-1,NULL)
+
+static inline Err uiw_strview(WriteUserOutputCallback wcb, StrView s[static 1]) {
+    return wcb(s->s, s->len,NULL);
+}
+
+static inline Err uiw_str(WriteUserOutputCallback wcb, Str2 s[static 1]) {
+    return wcb(s->items, s->len,NULL);
+}
+
+static inline Err uiw_mem(WriteUserOutputCallback wcb, const char* mem, size_t len) {
+    return wcb(mem, len,NULL);
+}
 
 static inline Err ui_write_unsigned(WriteUserOutputCallback wcb, uintmax_t ui) {
     char numbf[3 * sizeof ui] = {0};
@@ -23,31 +43,9 @@ static inline Err ui_write_callback_stdout(const char* mem, size_t len, void* ct
 }
 
 
-static inline Err ui_write_callback(const char* mem, size_t len, void* ctx) {
-    FILE* stream = ctx ? ctx : stdout;
-    return len - fwrite(mem, sizeof(const char), len, stream) ? "error: fwrite failure": Ok;
-}
-
-
-
-static inline Err uiwrite_cb(StrView s, void* null_) {
-    if (null_) return "error: unexpected context in uiwrite";
-    return s.len - fwrite(s.s, 1, s.len, stdout) ? "error: fwrite failure": Ok;
-}
-
-static inline Err uiflush(void) {
+static inline Err ui_flush_stdout(void) {
     if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
     return Ok;
 }
-
-static inline Err write_to_file(StrView s, void* f) {
-    return s.len - fwrite(s.s, 1, s.len, f) ? "error: fwrite failure": Ok;
-}
-
-typedef struct { StrView s; void* ctx; } UiWriteParams;
-static inline Err uiwrite_from_param(UiWriteParams p) { return uiwrite_cb(p.s, p.ctx); }
-
-#define uiwrite_str__(S) uiwrite_cb(S,NULL)
-#define uiwrite__(...) GET_MACRO__(NULL,__VA_ARGS__,uiwrite_cb,uiwrite_str__,skip__)(__VA_ARGS__)
 
 #endif

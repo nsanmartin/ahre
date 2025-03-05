@@ -26,17 +26,18 @@ static Err validate_range_for_buffer(TextBuf textbuf[static 1], Range range[stat
 static inline Err ed_print_n(TextBuf textbuf[static 1], Range range[static 1]) {
     try(validate_range_for_buffer(textbuf, range));
     StrView line;
+    WriteUserOutputCallback wcb = ui_write_callback_stdout; //TODO: parameterize
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
-        try( serialize_unsigned(uiwrite_cb, linum, NULL));
-        try( uiwrite__(strview__("\t")));
-        if (line.len) try( uiwrite__(line));
-        else try( uiwrite__(strview__("\n")));
+        try( ui_write_unsigned(wcb, linum));
+        try( uiw_lit__(wcb,"\t"));
+        if (line.len) try( uiw_strview(wcb,&line));
+        else try( uiw_lit__(wcb,"\n"));
     }
 
-    if (textbuf_line_count(textbuf) == range->end) try( uiwrite__(strview__("\n")));
+    if (textbuf_line_count(textbuf) == range->end) try( uiw_lit__(wcb,"\n"));
 
-    try(uiflush());
+    try(ui_flush_stdout());
     return Ok;
 }
 
@@ -63,15 +64,16 @@ StrView parse_pattern(const char* tk) {
 Err dbg_print_all_lines_nums(TextBuf textbuf[static 1]) {
     size_t lnum = 1;
     StrView line;
+    WriteUserOutputCallback wcb = ui_write_callback_stdout; //TODO: parameterize
     for (;textbuf_get_line(textbuf, lnum, &line); ++lnum) {
-        try( serialize_unsigned(uiwrite_cb, lnum, NULL));
-        try( uiwrite__(strview__("\t`")));
+        try( ui_write_unsigned(wcb, lnum));
+        try( uiw_lit__(wcb,"\t`"));
         if (line.len > 1) {
-            try( uiwrite__(strview__(line.s, line.len-1)));
+            try( uiw_mem(wcb,line.s, line.len-1));
         } 
-        try( uiwrite__(strview__("'\n")));
+        try( uiw_lit__(wcb,"'\n"));
     }
-    try(uiflush());
+    try(ui_flush_stdout());
     return Ok;
 }
 
@@ -153,13 +155,14 @@ Err ed_go(HtmlDoc htmldoc[static 1],  const char* rest, Range range[static 1]) {
 Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
     try(validate_range_for_buffer(textbuf, range));
     StrView line;
+    WriteUserOutputCallback wcb = ui_write_callback_stdout; //TODO PARAMTERIZE
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
         if (line.len) {
-            try( uiwrite__(line));
-        } else try( uiwrite__(strview__("\n")));
+            try( uiw_strview(wcb,&line));
+        } else try( uiw_lit__(wcb, "\n"));
     }
-    try(uiflush());
+    try(ui_flush_stdout());
     return Ok;
 }
 

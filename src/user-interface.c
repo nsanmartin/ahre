@@ -46,13 +46,14 @@ Err cmd_bookmarks(Session session[static 1], const char* url) {
     lxb_dom_node_t* body;
     try(bookmark_sections_body(htmldoc, &body));
     Err err = Ok;
+    WriteUserOutputCallback wcb = session_write_std(session);
     if (!*url) {
         err = bookmark_sections(body, &list);
         if (!err) {
             BufOf(char)* it = arlfn(BufOf(char), begin)(&list);
             for (; it != arlfn(BufOf(char), end)(&list); ++it) {
-                try( uiwrite__(strview__(it->items, it->len)));
-                try( uiwrite__(strview__("\n")));
+                try( uiw_str(wcb,it));
+                try( uiw_lit__(wcb,"\n"));
             }
         }
         arlfn(BufOf(char),clean)(&list);
@@ -65,12 +66,12 @@ Err cmd_bookmarks(Session session[static 1], const char* url) {
             size_t len;
             try( lexbor_node_get_text(section->first_child, &data, &len));
             if (len) {
-                try(uiwrite__(strview__(data, len)));
-                try(uiwrite__(strview__("\n")));
+                try(uiw_mem(wcb, data, len));
+                try(uiw_lit__(wcb,"\n"));
             }
         } else err = "invalid section in bookmark";
     }
-    try(uiflush());
+    try(ui_flush_stdout());
     return err;
 }
 
@@ -120,10 +121,10 @@ static Err _get_input_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t
 Err cmd_input_print(Session session[static 1], size_t ix) {
     lxb_dom_node_t* node;
     try( _get_input_by_ix(session, ix, &node));
-    BufOf(const_char)* buf = &(BufOf(const_char)){0};
+    BufOf(char)* buf = &(BufOf(char)){0};
     Err err = lexbor_node_to_str(node, buf);
-    ok_then(err,  uiwrite__(strview__(buf->items, buf->len)));
-    buffn(const_char, clean)(buf);
+    ok_then(err,  uiw_str(session_write_msg(session), buf));
+    buffn(char, clean)(buf);
     return err;
 }
 
@@ -136,11 +137,12 @@ Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) 
     size_t len;
     lexbor_find_attr_value(node, "type", &type, &len);
 
+    WriteUserOutputCallback wcb = session_write_msg(session);
     Err err = Ok;
     if (!*line) {
-        try( uiwrite__(strview__("> ")));
+        try( uiw_lit__(wcb, "> "));
         ArlOf(char) masked = (ArlOf(char)){0};
-        err = readpass_term(&masked, ui_write_callback);
+        err = readpass_term(&masked, wcb);
         ok_then(err, lexbor_set_attr_value(node, masked.items, masked.len));
         arlfn(char, clean)(&masked);
     } else {
@@ -215,10 +217,10 @@ static Err _get_image_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t
 Err cmd_image_print(Session session[static 1], size_t ix) {
     lxb_dom_node_t* node;
     try( _get_image_by_ix(session, ix, &node));
-    BufOf(const_char)* buf = &(BufOf(const_char)){0};
+    BufOf(char)* buf = &(BufOf(char)){0};
     Err err = lexbor_node_to_str(node, buf);
-    ok_then(err, uiwrite__(strview__(buf->items, buf->len)));
-    buffn(const_char, clean)(buf);
+    ok_then(err, uiw_str(session_write_msg(session),buf));
+    buffn(char, clean)(buf);
     return err;
 }
 
@@ -259,10 +261,10 @@ Err cmd_anchor_print(Session session[static 1], size_t linknum) {
     LxbNodePtr* a = arlfn(LxbNodePtr, at)(anchors, (size_t)linknum);
     if (!a) return "line number invalid";
     
-    BufOf(const_char)* buf = &(BufOf(const_char)){0};
+    BufOf(char)* buf = &(BufOf(char)){0};
     try( lexbor_node_to_str(*a, buf));
-    Err err = uiwrite__(strview__(buf->items, buf->len));
-    buffn(const_char, clean)(buf);
+    Err err = uiw_str(session_write_msg(session),buf);
+    buffn(char, clean)(buf);
     return err;
 }
 

@@ -15,6 +15,8 @@ typedef struct {
     size_t nrows;
     unsigned flags;
     WriteUserOutputCallback write_msg;
+    WriteUserOutputCallback write_std;
+    //TODO Add flush_msg and flush_std
 } SessionConf ;
 
 static inline
@@ -35,5 +37,7 @@ static inline size_t* session_conf_nrows(SessionConf sc[static 1]) { return &sc-
 static inline size_t* session_conf_ncols(SessionConf sc[static 1]) { return &sc->ncols; }
 static inline
 WriteUserOutputCallback session_conf_write_msg(SessionConf sc[static 1]) { return sc->write_msg; }
+static inline
+WriteUserOutputCallback session_conf_write_std(SessionConf sc[static 1]) { return sc->write_std; }
 
 #endif

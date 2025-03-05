@@ -193,10 +193,10 @@ void lexbor_find_attr_value(
     *out = NULL; *len = 0;
 }
 
-Err lexbor_node_to_str(lxb_dom_node_t* node, BufOf(const_char)* buf) {
+Err lexbor_node_to_str(lxb_dom_node_t* node, BufOf(char)* buf) {
     lxb_dom_attr_t* attr = lxb_dom_element_first_attribute(lxb_dom_interface_element(node));
-    const char* nullstr = "(null)";
-    const char* indentstr = "    ";
+    char* nullstr = "(null)";
+    char* indentstr = "    ";
     for (;attr;  attr = lxb_dom_element_next_attribute(attr)) {
         size_t namelen;
         const lxb_char_t* name = lxb_dom_attr_qualified_name(attr, &namelen);
@@ -206,19 +206,19 @@ Err lexbor_node_to_str(lxb_dom_node_t* node, BufOf(const_char)* buf) {
         size_t valuelen;
         const lxb_char_t* value = lxb_dom_attr_value(attr, &valuelen);
 
-        if (!buffn(const_char, append)(buf, indentstr, sizeof(indentstr)-1))
+        if (!buffn(char, append)(buf, indentstr, sizeof(indentstr)-1))
             return "error: mem failure (BufOf.append)";
-        if (!buffn(const_char, append)(buf, (const char*)name, namelen))
+        if (!buffn(char, append)(buf, (char*)name, namelen))
             return "error: mem failure (BufOf.append)";
-        if (!buffn(const_char, append)(buf, "=", 1)) return "error: mem failure (BufOf.append)";
+        if (!buffn(char, append)(buf, "=", 1)) return "error: mem failure (BufOf.append)";
         if (valuelen && valuelen) {
-            if (!buffn(const_char, append)(buf, (const char*)value, valuelen))
+            if (!buffn(char, append)(buf, (char*)value, valuelen))
                 return "error: mem failure (BufOf.append)";
         } else {
-            if (!buffn(const_char, append)(buf, nullstr, sizeof(nullstr)-1))
+            if (!buffn(char, append)(buf, nullstr, sizeof(nullstr)-1))
                 return "error: mem failure (BufOf.append)";
         }
-        if (!buffn(const_char, append)(buf, "\n", 1)) return "error: mem failure (BufOf.append)";
+        if (!buffn(char, append)(buf, "\n", 1)) return "error: mem failure (BufOf.append)";
     }
     return Ok;
 }

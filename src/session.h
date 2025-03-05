@@ -48,6 +48,9 @@ session_tablist(Session s[static 1]) { return &s->tablist; }
 static inline WriteUserOutputCallback session_write_msg(Session s[static 1]) {
     return session_conf_write_msg(session_conf(s));
 }
+static inline WriteUserOutputCallback session_write_std(Session s[static 1]) {
+    return session_conf_write_msg(session_conf(s));
+}
 /* ctor */
 Err session_init(Session s[static 1], SessionConf sconf[static 1]);
 

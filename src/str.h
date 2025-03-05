@@ -134,7 +134,7 @@ const char* parse_l(const char* tk, long lptr[static 1]);
 
 StrView str_split_line(StrView text[static 1]);
 
-typedef Err (*SerializeCallback)(StrView s, void* ctx);
+//typedef Err (*SerializeCallback)(StrView s, void* ctx);
 
 static inline Err
 bufofchar_append_ui_as_str(BufOf(char) buf[static 1], uintmax_t ui) {
@@ -148,14 +148,14 @@ bufofchar_append_ui_as_str(BufOf(char) buf[static 1], uintmax_t ui) {
     return "error: could not append str_ui to bufof char";
 }
 
-static inline Err
-serialize_unsigned(SerializeCallback cb, uintmax_t ui, void* ctx) {
-    char numbf[3 * sizeof ui] = {0};
-    size_t len = 0;
-    if ((len = snprintf(numbf, (3 * sizeof ui), "%lu", ui)) > (3 * sizeof ui)) {
-        return "error: snprintf failure";
-    }
-    return cb(strview_from_mem(numbf, len), ctx);
-}
+//static inline Err
+//serialize_unsigned(SerializeCallback cb, uintmax_t ui, void* ctx) {
+//    char numbf[3 * sizeof ui] = {0};
+//    size_t len = 0;
+//    if ((len = snprintf(numbf, (3 * sizeof ui), "%lu", ui)) > (3 * sizeof ui)) {
+//        return "error: snprintf failure";
+//    }
+//    return cb(strview_from_mem(numbf, len), ctx);
+//}
 
 #endif
