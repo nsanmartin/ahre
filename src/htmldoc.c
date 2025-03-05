@@ -762,39 +762,4 @@ Err htmldoc_draw(HtmlDoc htmldoc[static 1], SessionConf sconf[static 1]) {
     return Ok;
 }
 
-Err _dbg_print_form_info_rec_(lxb_dom_node_t* node, int indent) {
-    if (!node) return Ok;
-    if (node->local_name == LXB_TAG_INPUT && !_lexbor_attr_has_value(node, "type", "submit")) {
-        const lxb_char_t* value;
-        size_t valuelen;
-        lexbor_find_attr_value(node, "value", &value, &valuelen);
-        if (!value || valuelen == 0) return Ok;
-
-        const lxb_char_t* name;
-        size_t namelen;
-        lexbor_find_attr_value(node, "name", &name, &namelen);
-        if (!name || namelen == 0) return Ok;
-
-        // dbg
-        printf("%*c", indent, ' ');
-        printf("%p->%p\t", (void*)node->parent,  (void*)node);
-        fwrite(name, 1, namelen, stdout);
-        printf("%s:", "\t");
-        fwrite(value, 1, valuelen, stdout);
-        puts("");
-        return Ok;
-    } 
-
-    for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
-        try( _dbg_print_form_info_rec_(it, indent+1));
-        if (it == node->last_child) { break; }
-    }
-    return Ok;
-}
-
-Err dbg_print_form_info(lxb_dom_node_t* node) {
-    if (node->local_name != LXB_TAG_FORM) { puts("dgb err, expecting a FORM"); return Ok; } 
-    return _dbg_print_form_info_rec_(node, 0);
-}
-
 
