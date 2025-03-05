@@ -12,6 +12,7 @@
 
 #include "src/error.h"
 #include "src/utils.h"
+#include "src/user-out.h"
 
 enum KEY_ACTION{
 	KEY_NULL = 0,	    /* NULL */
@@ -36,7 +37,6 @@ enum KEY_ACTION{
 };
 
 
-/* Raw mode: 1960 magic shit. */
 static Err _switch_tty_to_raw_mode_(struct termios prev_termios[static 1]) {
 
     if (!isatty(STDIN_FILENO)) return "error: not a tty";
@@ -58,7 +58,7 @@ typedef enum {
     KeyEnter = 13
 } KeyStroke;
 
-Err readpass(ArlOf(char) arl[static 1]) {
+Err readpass_term(ArlOf(char) arl[static 1], WriteUserOutputCallback write) {
     Err err = Ok;
     struct termios prev_termios;
     try( _switch_tty_to_raw_mode_(&prev_termios));
@@ -75,7 +75,7 @@ Err readpass(ArlOf(char) arl[static 1]) {
             err = "error: arl append failure";
             break;
         }
-        fwrite("*", 1, 1, stdout);
+        try( uiw_lit__(write,"*")); 
     }
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &prev_termios) == -1) return "error: tcsetattr failure";
     fwrite("\n", 1, 1, stdout);

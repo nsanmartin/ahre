@@ -19,7 +19,7 @@ Err session_conf_from_options(int argc, char* argv[], CliParams cparams[static 1
         .uin            = uin_isocline(),
         .ncols          = 90 > ncols ? ncols : 90,
         .nrows          = nrows,
-        .uiwrite_msg_cb = write_to_file
+        .write_msg      = ui_write_callback_stdout
     };
 
     for (int i = 1; i < argc; ++i) {

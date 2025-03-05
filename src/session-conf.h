@@ -3,6 +3,7 @@
 
 #include "src/utils.h"
 #include "src/user-input.h"
+#include "src/user-out.h"
 
 #define SESSION_CONF_FLAG_QUIT       0x1u
 #define SESSION_CONF_FLAG_MONOCHROME 0x2u
@@ -13,7 +14,7 @@ typedef struct {
     size_t ncols;
     size_t nrows;
     unsigned flags;
-    SerializeCallback uiwrite_msg_cb;
+    WriteUserOutputCallback write_msg;
 } SessionConf ;
 
 static inline
@@ -33,6 +34,6 @@ static inline UserInput* session_conf_uin(SessionConf sc[static 1]) { return &sc
 static inline size_t* session_conf_nrows(SessionConf sc[static 1]) { return &sc->nrows; }
 static inline size_t* session_conf_ncols(SessionConf sc[static 1]) { return &sc->ncols; }
 static inline
-SerializeCallback session_conf_uiwrite_msg(SessionConf sc[static 1]) { return sc->uiwrite_msg_cb; }
+WriteUserOutputCallback session_conf_write_msg(SessionConf sc[static 1]) { return sc->write_msg; }
 
 #endif

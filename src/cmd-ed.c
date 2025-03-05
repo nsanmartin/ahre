@@ -165,12 +165,13 @@ Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
 
 
 Err textbuf_eval_cmd(TextBuf textbuf[static 1], const char* line, Range range[static 1]) {
+    line = cstr_skip_space(line);
 
     *textbuf_last_range(textbuf) = *range;
 
     const char* rest = 0x0;
 
-    if (!*cstr_skip_space(line)) { return ed_print(textbuf, range); } /* default :NUM */
+    if (!*line) { return ed_print(textbuf, range); } /* default :NUM */
     if ((rest = csubstr_match(line, "a", 1)) && !*rest) { return ed_print_all(textbuf); } //TODO: depre: use :%
     if ((rest = csubstr_match(line, "l", 1)) && !*rest) { return dbg_print_all_lines_nums(textbuf); } //TODO: deprecate
     if ((rest = csubstr_match(line, "g", 1)) && *rest) { return ed_global(textbuf, rest); }

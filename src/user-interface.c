@@ -140,7 +140,7 @@ Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) 
     if (!*line) {
         try( uiwrite__(strview__("> ")));
         ArlOf(char) masked = (ArlOf(char)){0};
-        err = readpass(&masked);
+        err = readpass_term(&masked, ui_write_callback);
         ok_then(err, lexbor_set_attr_value(node, masked.items, masked.len));
         arlfn(char, clean)(&masked);
     } else {

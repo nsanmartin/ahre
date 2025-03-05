@@ -52,12 +52,12 @@ Err cmd_set_session_winsz(Session session[static 1]) {
     *session_nrows(session) = nrows;
     *session_ncols(session) = ncols;
     
-    SerializeCallback w = session_uiwrite_msg(session);
-    try( w(strview__("win: nrows = "), stdout));
-    try( serialize_unsigned(w, nrows, stdout));
-    try( w(strview__(", ncols = "), stdout));
-    try( serialize_unsigned(w, ncols, stdout));
-    try( w(strview__("\n"), stdout));
+    WriteUserOutputCallback w = session_write_msg(session);
+    try( uiw_lit__(w, "win: nrows = ")); 
+    try( ui_write_unsigned(w, nrows));
+    try( uiw_lit__(w, ", ncols = "));
+    try( ui_write_unsigned(w, ncols));
+    try( uiw_lit__(w, "\n"));
 
     return Ok;
 }

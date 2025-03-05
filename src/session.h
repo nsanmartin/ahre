@@ -5,6 +5,7 @@
 #include "src/htmldoc.h"
 #include "src/tabs.h"
 #include "src/user-input.h"
+#include "src/user-out.h"
 #include "src/utils.h"
 
 //typedef struct HtmlDoc HtmlDoc;
@@ -44,8 +45,8 @@ session_ncols(Session s[static 1]) { return session_conf_ncols(session_conf(s));
 static inline TabList*
 session_tablist(Session s[static 1]) { return &s->tablist; }
 
-static inline SerializeCallback session_uiwrite_msg(Session s[static 1]) {
-    return session_conf_uiwrite_msg(session_conf(s));
+static inline WriteUserOutputCallback session_write_msg(Session s[static 1]) {
+    return session_conf_write_msg(session_conf(s));
 }
 /* ctor */
 Err session_init(Session s[static 1], SessionConf sconf[static 1]);
