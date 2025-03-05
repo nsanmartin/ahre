@@ -155,7 +155,8 @@ Err htmldoc_init_fetch_draw_from_curlu(
     SessionConf sconf[static 1]
 );
 
-static inline Err htmldoc_gt(HtmlDoc d[static 1]) {
+//TODO: what was this for? delete
+static inline Err htmldoc_gt(HtmlDoc d[static 1], UserOutput out[static 1]) {
     BufOf(char)* buf = &(BufOf(char)){0};
     buffn(char,append)(buf, "<li><a href=\"", sizeof( "<li><a href=\"")-1);
     char* url_buf;
@@ -169,9 +170,10 @@ static inline Err htmldoc_gt(HtmlDoc d[static 1]) {
     buffn(char,append)(buf, "\">", 2);
     try( lexbor_get_title_text_line(*htmldoc_title(d), buf));
     buffn(char,append)(buf, "</a>", 4);
-    fwrite(buf->items, 1, buf->len, stdout);
-    //fwrite(items__(buf), 1, len__(items), stdout);
+    try( uiw_str(out->write_msg, buf));
+    out->flush_msg();
     buffn(char,clean)(buf);
+
     return Ok;
 }
 

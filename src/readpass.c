@@ -58,7 +58,7 @@ typedef enum {
     KeyEnter = 13
 } KeyStroke;
 
-Err readpass_term(ArlOf(char) arl[static 1], WriteUserOutputCallback write) {
+Err readpass_term(ArlOf(char) arl[static 1], UserOutput out[static 1]) {
     Err err = Ok;
     struct termios prev_termios;
     try( _switch_tty_to_raw_mode_(&prev_termios));
@@ -75,9 +75,9 @@ Err readpass_term(ArlOf(char) arl[static 1], WriteUserOutputCallback write) {
             err = "error: arl append failure";
             break;
         }
-        try( uiw_lit__(write,"*")); 
+        try( uiw_lit__(out->write_msg,"*")); 
     }
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &prev_termios) == -1) return "error: tcsetattr failure";
-    fwrite("\n", 1, 1, stdout);
+    try( uiw_lit__(out->write_msg, "\n"));
     return err;
 }

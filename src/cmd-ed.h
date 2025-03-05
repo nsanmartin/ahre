@@ -41,15 +41,15 @@ line_num_to_right_offset(size_t lnum, TextBuf textbuf[static 1], size_t out[stat
     return -1;
 }
 
-static inline Err ed_print_last_range(TextBuf textbuf[static 1], WriteUserOutputCallback wcb) {
+static inline Err ed_print_last_range(TextBuf textbuf[static 1], UserOutput out[static 1]) {
     Range r = *textbuf_last_range(textbuf);
 
-    try( uiw_lit__(wcb, "last range: ("));
-    try( ui_write_unsigned(wcb, r.beg));
-    try( uiw_lit__(wcb, ", "));
-    try( ui_write_unsigned(wcb, r.end));
-    try( uiw_lit__(wcb, ")\n"));
-    try( ui_flush_stdout());
+    try( uiw_lit__(out->write_msg, "last range: ("));
+    try( ui_write_unsigned(out->write_msg, r.beg));
+    try( uiw_lit__(out->write_msg, ", "));
+    try( ui_write_unsigned(out->write_msg, r.end));
+    try( uiw_lit__(out->write_msg, ")\n"));
+    try( out->flush_msg());
     return Ok;
 }
 

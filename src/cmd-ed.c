@@ -309,7 +309,6 @@ Err shorcut_gg(Session session[static 1], const char* rest) {
     };
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
     if (r.end < r.beg) r.end = r.beg;
-    //fwrite(EscCodeClsScr, 1, sizeof(EscCodeClsScr)-1, stdout);
     try( textbuf_eval_cmd(tb,cmd, &r));
     if (textbuf_current_line(tb) == r.end)
         puts(MsgLastLine);

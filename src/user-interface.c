@@ -44,14 +44,14 @@ Err cmd_bookmarks(Session session[static 1], const char* url) {
     lxb_dom_node_t* body;
     try(bookmark_sections_body(htmldoc, &body));
     Err err = Ok;
-    WriteUserOutputCallback wcb = session_uout(session)->write_std;
+    UserOutput* out = session_uout(session);
     if (!*url) {
         err = bookmark_sections(body, &list);
         if (!err) {
             BufOf(char)* it = arlfn(BufOf(char), begin)(&list);
             for (; it != arlfn(BufOf(char), end)(&list); ++it) {
-                try( uiw_str(wcb,it));
-                try( uiw_lit__(wcb,"\n"));
+                try( uiw_str(out->write_std,it));
+                try( uiw_lit__(out->write_std,"\n"));
             }
         }
         arlfn(BufOf(char),clean)(&list);
@@ -64,12 +64,12 @@ Err cmd_bookmarks(Session session[static 1], const char* url) {
             size_t len;
             try( lexbor_node_get_text(section->first_child, &data, &len));
             if (len) {
-                try(uiw_mem(wcb, data, len));
-                try(uiw_lit__(wcb,"\n"));
+                try(uiw_mem(out->write_std, data, len));
+                try(uiw_lit__(out->write_std,"\n"));
             }
         } else err = "invalid section in bookmark";
     }
-    try(ui_flush_stdout());
+    try(out->flush_std());
     return err;
 }
 
@@ -136,12 +136,12 @@ Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) 
     size_t len;
     lexbor_find_attr_value(node, "type", &type, &len);
 
-    WriteUserOutputCallback wcb = session_uout(session)->write_msg;
+    UserOutput* out = session_uout(session);
     Err err = Ok;
     if (!*line) {
-        try( uiw_lit__(wcb, "> "));
+        try( uiw_lit__(out->write_std, "> "));
         ArlOf(char) masked = (ArlOf(char)){0};
-        err = readpass_term(&masked, wcb);
+        err = readpass_term(&masked, out);
         ok_then(err, lexbor_set_attr_value(node, masked.items, masked.len));
         arlfn(char, clean)(&masked);
     } else {
@@ -334,7 +334,7 @@ Err doc_eval(HtmlDoc d[static 1], const char* line, Session session[static 1]) {
     line = cstr_skip_space(line);
     switch (*line) {
         case '?': return htmldoc_print_info(d);
-        case '>': return htmldoc_gt(d);
+        case '>': return htmldoc_gt(d, session_uout(session));
         case '+': return bookmark_add_doc(d, cstr_skip_space(line + 1), session_url_client(session));
         default: return doc_eval_word(d, line);
     }
