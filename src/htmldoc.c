@@ -66,7 +66,7 @@ brose_ctx_append_img_alt_(lxb_dom_node_t* img, DrawCtx ctx[static 1]) {
     lexbor_find_attr_value(img, "alt", &alt, &alt_len);
 
     if (alt && alt_len) {
-        try( draw_ctx_buf_append_lit__(ctx, ELEM_ID_SEP));
+        try( draw_ctx_buf_append_lit__(ctx, IMAGE_CLOSE_STR));
         try( draw_ctx_buf_append(ctx, (char*)alt, alt_len));
     }
     return Ok;
@@ -85,7 +85,6 @@ draw_tag_img(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
     try (draw_list(node->first_child, node->last_child, ctx));
 
-    try( draw_ctx_buf_append_lit__(ctx, IMAGE_CLOSE_STR));
     try( draw_ctx_reset_color(ctx));
     return Ok;
 }
@@ -129,11 +128,11 @@ draw_tag_button(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     try( draw_ctx_buf_append_color_(ctx, esc_code_red));
     try( draw_ctx_buf_append_lit__(ctx, BUTTON_OPEN_STR));
     try( draw_ctx_buf_append_ui_(ctx, len__(inputs)-1));
-    try( draw_ctx_buf_append_lit__(ctx, ELEM_ID_SEP_BUTTON));
+    try( draw_ctx_buf_append_lit__(ctx, BUTTON_CLOSE_STR));
 
     try (draw_list(node->first_child, node->last_child, ctx));
 
-    try( draw_ctx_buf_append_lit__(ctx, BUTTON_CLOSE_STR));
+    //try( draw_ctx_buf_append_lit__(ctx, BUTTON_CLOSE_STR));
     try( draw_ctx_reset_color(ctx));
     return Ok;
 }
@@ -164,7 +163,7 @@ draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     } else if (_input_is_submit_type_(s, slen)) {
         lexbor_find_attr_value(node, "value", &s, &slen);
         if (slen) {
-            try( draw_ctx_buf_append_lit__(ctx, ELEM_ID_SEP));
+            try( draw_ctx_buf_append_lit__(ctx, INPUT_CLOSE_STR));
             try( draw_ctx_buf_append(ctx, (char*)s, slen));
         }
     } else if (lexbor_str_eq("password", s, slen)) {
@@ -173,7 +172,7 @@ draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     } else {
         try( draw_ctx_buf_append_lit__(ctx, "[input not supported yet]"));
     }
-    try( draw_ctx_buf_append_lit__(ctx, INPUT_CLOSE_STR));
+    //try( draw_ctx_buf_append_lit__(ctx, INPUT_CLOSE_STR));
     try( draw_ctx_reset_color(ctx));
     return Ok;
 }

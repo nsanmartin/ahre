@@ -51,7 +51,7 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         if ((err=draw_ctx_buf_append_color_esc_code(ctx, esc_code_blue))
             || (err=draw_ctx_buf_append_lit__(ctx, ANCHOR_OPEN_STR))
             || (err=draw_ctx_buf_append_ui_base36_(ctx, anchor_num))
-            || (err=draw_ctx_buf_append_lit__(ctx, ELEM_ID_SEP))
+            || (err=draw_ctx_buf_append_lit__(ctx, ANCHOR_CLOSE_STR))
         ) {
             buffn(char, clean)(&buf);
             return err;
@@ -60,7 +60,6 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         if (content.len) try( draw_ctx_buf_append(ctx, (char*)content.s, content.len));
         buffn(char, clean)(&buf);
 
-        try( draw_ctx_buf_append_lit__(ctx, ANCHOR_CLOSE_STR));
         try( draw_ctx_reset_color(ctx));
         if (right_newlines) try( draw_ctx_buf_append_lit__(ctx, "\n"));
 
