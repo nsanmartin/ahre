@@ -8,7 +8,6 @@
 #include "src/user-out.h"
 #include "src/utils.h"
 
-//typedef struct HtmlDoc HtmlDoc;
 typedef struct Session Session;
 
 typedef Err (*UserLineCallback)(Session* session, const char*);
@@ -37,6 +36,7 @@ session_monochrome_set(Session s[static 1], bool value) {
     session_conf_monochrome_set(session_conf(s), value);
 }
 static inline UserInput* session_uin(Session s[static 1]) { return session_conf_uin(session_conf(s)); }
+static inline UserOutput* session_uout(Session s[static 1]) { return session_conf_uout(session_conf(s)); }
 static inline size_t*
 session_nrows(Session s[static 1]) { return session_conf_nrows(session_conf(s)); }
 static inline size_t*
@@ -45,12 +45,6 @@ session_ncols(Session s[static 1]) { return session_conf_ncols(session_conf(s));
 static inline TabList*
 session_tablist(Session s[static 1]) { return &s->tablist; }
 
-static inline WriteUserOutputCallback session_write_msg(Session s[static 1]) {
-    return session_conf_write_msg(session_conf(s));
-}
-static inline WriteUserOutputCallback session_write_std(Session s[static 1]) {
-    return session_conf_write_msg(session_conf(s));
-}
 /* ctor */
 Err session_init(Session s[static 1], SessionConf sconf[static 1]);
 

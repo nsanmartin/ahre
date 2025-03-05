@@ -9,11 +9,6 @@
 
 #include "src/error.h"
 
-typedef enum {
-    uiin_fgets,
-    uiin_isocline
-} UiIn;
-
 typedef Err (*InitUserInputCallback)(void);
 typedef Err (*ReadUserInputCallback)(const char* prompt, char* line[static 1]);
 
@@ -57,15 +52,6 @@ static inline Err ui_fgets_readline(const char* prompt, char* out[static 1]) {
     }
 }
 
-static inline Err read_user_input(UiIn uiin, const char* prompt, char* out[static 1]) {
-    Err err = Ok;
-    switch (uiin) {
-        case uiin_isocline: *out = ic_readline(prompt); break;
-        case uiin_fgets: err = ui_fgets_readline(prompt, out); break;
-        default: err = "error: invalid user interface input type";
-    }
-    return err;
-}
 #define add_to_user_input_history(X) 
 
 static inline UserInput uin_isocline(void) {

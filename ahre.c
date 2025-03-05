@@ -8,6 +8,7 @@
 #include "src/htmldoc.h"
 #include "src/mem.h"
 #include "src/user-input.h"
+#include "src/user-out.h"
 #include "src/user-interface.h"
 
 
@@ -28,7 +29,12 @@ static int _loop_(Session session[static 1]) {
     init_user_input_history();
     while (!session_quit(session)) {
         if ((err = read_line_from_user(session))) {
-            fprintf(stderr, "%s\n", err);
+            WriteUserOutputCallback w = session_uout(session)->write_msg;
+            Err suberr = uiw_mem(w, err, strlen(err));
+            ok_then(suberr, uiw_lit__(w, "\n"));
+            if (suberr) { /* what else could I do */
+                fprintf(stderr, "a real error: %s\n", suberr);
+            }
         }
     }
     session_cleanup(session);

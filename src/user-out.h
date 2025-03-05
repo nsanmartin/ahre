@@ -13,6 +13,7 @@ typedef struct {
     FlushUserOutputCallback flush_std;
 } UserOutput;
 
+
 #define uiw_lit__(Cb, Lit) Cb(Lit,sizeof(Lit)-1,NULL)
 
 static inline Err uiw_strview(WriteUserOutputCallback wcb, StrView s[static 1]) {
@@ -48,4 +49,12 @@ static inline Err ui_flush_stdout(void) {
     return Ok;
 }
 
+static inline UserOutput uout_stdout(void) {
+    return (UserOutput) {
+        .write_msg = ui_write_callback_stdout,
+        .flush_msg = ui_flush_stdout,
+        .write_std = ui_write_callback_stdout,
+        .flush_std = ui_flush_stdout
+    };
+}
 #endif
