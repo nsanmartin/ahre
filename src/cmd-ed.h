@@ -28,7 +28,7 @@ line_num_to_right_offset(size_t lnum, TextBuf textbuf[static 1], size_t out[stat
 
     if (lnum == 0 || lnum > textbuf_line_count(textbuf)) { return -1; }
     if (lnum == textbuf_line_count(textbuf)/*+1*/) {
-        *out = len(textbuf);
+        *out = textbuf_len(textbuf);
         return 0;
     }
 

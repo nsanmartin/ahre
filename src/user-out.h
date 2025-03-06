@@ -28,6 +28,12 @@ static inline Err uiw_mem(WriteUserOutputCallback wcb, const char* mem, size_t l
     return wcb(mem, len,NULL);
 }
 
+static inline Err uilw_mem(WriteUserOutputCallback wcb, const char* mem, size_t len) {
+    Err err = wcb(mem, len,NULL);
+    ok_then(err, uiw_lit__(wcb, "\n"));
+    return err;
+}
+
 static inline Err ui_write_unsigned(WriteUserOutputCallback wcb, uintmax_t ui) {
     char numbf[3 * sizeof ui] = {0};
     size_t len = 0;

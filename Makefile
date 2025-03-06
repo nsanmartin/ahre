@@ -69,7 +69,7 @@ test_ed_write: utests/test_ed_write.c \
 
 
 tags: $(AHRE_HEADERS) $(AHRE_SRCS) clean-tags
-	ctags -R . 
+	ctags -R --exclude=.git --exclude=hashi/scripts .
 
 cscope.files: $(AHRE_HEADERS) $(AHRE_SRCS)
 	if [ -f cscope.files ]; then rm cscope.files; fi

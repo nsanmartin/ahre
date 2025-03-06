@@ -116,9 +116,6 @@ inline void textbuf_destroy(TextBuf* b) {
 }
 
 
-inline size_t textbuf_len(TextBuf textbuf[static 1]) { return textbuf->buf.len; }
-inline char* textbuf_items(TextBuf textbuf[static 1]) { return textbuf->buf.items; }
-
 size_t* textbuf_eol_at(TextBuf tb[static 1], size_t i) {
     return arlfn(size_t, at)(&tb->eols, i);
 }

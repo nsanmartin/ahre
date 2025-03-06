@@ -110,6 +110,8 @@ tab_node_init_from_curlu(
     if (err) {
         /* cu is owned by caller so if an erro occur we must not free it but him */
         htmldoc_url(tab_node_doc(n))->cu = NULL;
+        /* we don't want tab_node_cleanup to free node_doc again */
+        *tab_node_doc(n) = (HtmlDoc){0};
         tab_node_cleanup(n);
         return err;
     }
@@ -139,8 +141,7 @@ tab_node_init(
 
 
 /**/
-static inline
-Err tab_node_tree_append_ahref(
+static inline Err tab_node_tree_append_ahref(
     TabNode t[static 1],
     size_t linknum,
     UrlClient url_client[static 1],
@@ -156,6 +157,7 @@ Err tab_node_tree_append_ahref(
     if (!a) return "link number invalid";
 
     CURLU* curlu = url_cu(htmldoc_url(d));
+    //TODO: dup in htmldoc ctor
     try( lexcurl_dup_curl_with_anchors_href(*a, &curlu));
 
     TabNode newnode;

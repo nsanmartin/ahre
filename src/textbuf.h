@@ -38,8 +38,9 @@ void textbuf_reset(TextBuf b[static 1]);
 void textbuf_destroy(TextBuf* b);
 
 Err textbuf_append_part(TextBuf ab[static 1], char* data, size_t len);
-size_t textbuf_len(TextBuf ab[static 1]);
-char* textbuf_items(TextBuf ab[static 1]);
+static inline size_t textbuf_len(TextBuf textbuf[static 1]) { return textbuf->buf.len; }
+static inline char* textbuf_items(TextBuf textbuf[static 1]) { return textbuf->buf.items; }
+
 char* textbuf_line_offset(TextBuf ab[static 1], size_t line);
 
 

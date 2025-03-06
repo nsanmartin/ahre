@@ -19,6 +19,7 @@ typedef struct Session {
     SessionConf conf;
 } Session;
 
+Err process_line(Session session[static 1], const char* line) ;
 /* getters */
 Err session_current_buf(Session session[static 1], TextBuf* out[static 1]);
 Err session_current_doc(Session session[static 1], HtmlDoc* out[static 1]);
@@ -90,4 +91,29 @@ int edcmd_print(Session session[static 1]);
 
 Err dbg_session_summary(Session session[static 1]);
 Err cmd_set(Session session[static 1], const char* line);
+
+static inline Err session_read_user_input(Session s[static 1], char* line[static 1]) {
+    return session_uin(s)->read(NULL, line);
+}
+
+
+static inline Err session_consume_input(Session s[static 1], char* user_input) {
+    Err err = process_line(s, user_input);
+    std_free(user_input);
+    return err;
+}
+
+static inline Err session_show_error(Session s[static 1], Err err) {
+    err = uilw_mem(session_uout(s)->write_msg, err, strlen(err));
+    if (err) { /* what else could I do */
+        fprintf(stderr, "a real error: %s\n", err);
+    }
+    return err;
+}
+
+static inline Err session_show_output(Session s[static 1]) {
+    (void)s;
+    return Ok;
+}
+
 #endif

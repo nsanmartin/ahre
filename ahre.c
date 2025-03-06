@@ -24,20 +24,17 @@ static Err _open_many_urls_(Session session[static 1], ArlOf(const_char_ptr) url
     return Ok;
 }
 
-static int _loop_(Session session[static 1]) {
+static int _loop_(Session s[static 1]) {
     Err err;
     init_user_input_history();
-    while (!session_quit(session)) {
-        if ((err = read_line_from_user(session))) {
-            WriteUserOutputCallback w = session_uout(session)->write_msg;
-            Err suberr = uiw_mem(w, err, strlen(err));
-            ok_then(suberr, uiw_lit__(w, "\n"));
-            if (suberr) { /* what else could I do */
-                fprintf(stderr, "a real error: %s\n", suberr);
-            }
-        }
+    while (!session_quit(s)) {
+        char* line;
+        err = session_read_user_input(s, &line);
+        ok_then(err, session_consume_input(s, line));
+        ok_then(err, session_show_output(s));
+        if (err) if (session_show_error(s, err)) exit(EXIT_FAILURE); 
     }
-    session_cleanup(session);
+    session_cleanup(s);
     return EXIT_SUCCESS;
 }
 
