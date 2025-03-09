@@ -11,6 +11,7 @@
 #define skip__(X)
 #define GET_MACRO__(_1,_2,_3,NAME,...) NAME
 
+#define lit_len__(Lit) (sizeof(Lit)-1)
 #define BT char
 #include <buf.h>
 

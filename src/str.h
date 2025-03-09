@@ -79,6 +79,8 @@ typedef struct {
 	size_t len;
 } StrView;
 
+typedef StrView (*StrViewProvider)(void);
+
 static inline const char* strview_beg(const StrView s[static 1]) { return s->items; }
 static inline const char* strview_end(const StrView s[static 1]) { return s->items + s->len; }
 static inline size_t strview_len(const StrView s[static 1]) { return s->len; }
@@ -130,12 +132,9 @@ static inline StrView strview_from_strptr__(Str2 s[static 1]) {return strview_fr
 #define strview_from_strptr__(S) strview_from_mem((S)->items, (S)->len)
 #define strview__(...) GET_MACRO__(NULL,__VA_ARGS__,strview_from_mem,strview_from_lit__,skip__)(__VA_ARGS__)
 
-
 const char* parse_l(const char* tk, long lptr[static 1]);
 
 StrView str_split_line(StrView text[static 1]);
-
-//typedef Err (*SerializeCallback)(StrView s, void* ctx);
 
 static inline Err
 bufofchar_append_ui_as_str(BufOf(char) buf[static 1], uintmax_t ui) {

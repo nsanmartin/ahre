@@ -1,6 +1,6 @@
-#include "src/draw.h"
 #include "src/constants.h"
 #include "src/debug.h"
+#include "src/draw.h"
 #include "src/error.h"
 #include "src/generic.h"
 #include "src/htmldoc.h"
@@ -40,6 +40,34 @@ size_t _strview_trim_right_count_newlines_(StrView s[static 1]) {
     return newlines;
 }
 
+Err _hypertext_open_(
+    DrawCtx ctx[static 1],
+    ImpureDrawProcedure visual_effect,
+    StrViewProvider open_str_provider,
+    const size_t* id_num_ptr
+) {
+    if (visual_effect) try( visual_effect(ctx));
+    if (open_str_provider) try( draw_ctx_buf_append(ctx, open_str_provider()));
+    if (id_num_ptr) try( draw_ctx_buf_append_ui_base36_(ctx, *id_num_ptr));
+    return Ok;
+}
+
+Err _hypertext_sep_(DrawCtx ctx[static 1], StrViewProvider sep_str_provider) {
+    if (sep_str_provider) try( draw_ctx_buf_append(ctx, sep_str_provider()));
+    return Ok;
+}
+
+Err _hypertext_close_(
+    DrawCtx ctx[static 1],
+    ImpureDrawProcedure visual_effect,
+    StrViewProvider close_str_provider
+) {
+    if (close_str_provider) try( draw_ctx_buf_append(ctx, close_str_provider()));
+    if (visual_effect) try( visual_effect(ctx));
+    return Ok;
+}
+
+
 
 static Err
 draw_tag_br(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
@@ -66,26 +94,24 @@ brose_ctx_append_img_alt_(lxb_dom_node_t* img, DrawCtx ctx[static 1]) {
     lexbor_find_attr_value(img, "alt", &alt, &alt_len);
 
     if (alt && alt_len) {
-        try( draw_ctx_buf_append_lit__(ctx, IMAGE_CLOSE_STR));
-        try( draw_ctx_buf_append(ctx, (char*)alt, alt_len));
+        try( draw_ctx_buf_append_mem(ctx, (char*)alt, alt_len));
     }
     return Ok;
 }
 
 static Err
 draw_tag_img(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
-    try( draw_ctx_buf_append_color_(ctx, esc_code_light_green));
     HtmlDoc* d = draw_ctx_htmldoc(ctx);
     ArlOf(LxbNodePtr)* imgs = htmldoc_imgs(d);
     const size_t img_count = len__(imgs);
+
     try( append_to_arlof_lxb_node__(imgs, &node));
-    try( draw_ctx_buf_append_lit__(ctx, IMAGE_OPEN_STR));
-    try( draw_ctx_buf_append_ui_(ctx, img_count));
+
+    try( _hypertext_open_(ctx, draw_ctx_color_light_green, image_open_str, &img_count));
+    try( _hypertext_sep_(ctx, image_close_str));
     try( brose_ctx_append_img_alt_(node, ctx));
-
     try (draw_list(node->first_child, node->last_child, ctx));
-
-    try( draw_ctx_reset_color(ctx));
+    try( _hypertext_close_(ctx, draw_ctx_reset_color, NULL));
     return Ok;
 }
 
@@ -93,17 +119,15 @@ static Err
 draw_tag_form(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     ArlOf(LxbNodePtr)* forms = htmldoc_forms(draw_ctx_htmldoc(ctx));
     if (!arlfn(LxbNodePtr,append)(forms, &node)) return "error: lip set";
-    try( draw_ctx_buf_append_color_(ctx, esc_code_purple));
-    try( draw_ctx_buf_append_lit__(ctx, FORM_OPEN_STR));
-    try( draw_ctx_buf_append_ui_base36_(ctx, len__(forms)-1));
-    try( draw_ctx_buf_append_lit__(ctx, "]:"));
+    size_t form_id = len__(forms)-1;
+    try( _hypertext_open_(ctx, draw_ctx_color_purple, form_open_str, &form_id));
+    try( _hypertext_sep_(ctx, form_sep_str));
     try( draw_ctx_reset_color(ctx));
 
     try (draw_list_block(node->first_child, node->last_child, ctx));
 
     try( draw_ctx_buf_append_color_(ctx, esc_code_purple));
-    try( draw_ctx_buf_append_lit__(ctx, FORM_CLOSE_STR));
-    try( draw_ctx_reset_color(ctx));
+    try( _hypertext_close_(ctx, draw_ctx_reset_color, form_close_str));
     return Ok;
 }
 
@@ -124,22 +148,19 @@ draw_tag_button(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     HtmlDoc* d = draw_ctx_htmldoc(ctx);
     ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(d);
     if (!arlfn(LxbNodePtr,append)(inputs, &node)) return "error: lip set";
+    size_t input_id =len__(inputs)-1;
 
-    try( draw_ctx_buf_append_color_(ctx, esc_code_red));
-    try( draw_ctx_buf_append_lit__(ctx, BUTTON_OPEN_STR));
-    try( draw_ctx_buf_append_ui_(ctx, len__(inputs)-1));
-    try( draw_ctx_buf_append_lit__(ctx, BUTTON_CLOSE_STR));
+    try( _hypertext_open_(ctx, draw_ctx_color_red, button_open_str, &input_id));
+    try( _hypertext_sep_(ctx, elem_id_sep_default));
 
     try (draw_list(node->first_child, node->last_child, ctx));
 
-    //try( draw_ctx_buf_append_lit__(ctx, BUTTON_CLOSE_STR));
-    try( draw_ctx_reset_color(ctx));
+    try( _hypertext_close_(ctx, draw_ctx_reset_color, button_close_str));
     return Ok;
 }
 
 
-static Err
-draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     const lxb_char_t* s;
     size_t slen;
 
@@ -150,21 +171,31 @@ draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     HtmlDoc* d = draw_ctx_htmldoc(ctx);
     ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(d);
     if (!arlfn(LxbNodePtr,append)(inputs, &node)) { return "error: arl set"; }
+    size_t input_id = len__(inputs)-1;
 
-    try( draw_ctx_buf_append_color_(ctx, esc_code_red));
-    try( draw_ctx_buf_append_lit__(ctx, INPUT_OPEN_STR));
-    try( draw_ctx_buf_append_ui_(ctx, len__(inputs)-1));
+
+    /* submit */
+    if (_input_is_submit_type_(s, slen)) {
+
+        try( _hypertext_open_(ctx, draw_ctx_color_red, input_text_open_str, &input_id));
+        lexbor_find_attr_value(node, "value", &s, &slen);
+        if (slen)  {
+            try( _hypertext_sep_(ctx, input_submit_sep_str));
+            try( draw_ctx_buf_append_mem(ctx, (char*)s, slen));
+        }
+        try( _hypertext_close_(ctx, draw_ctx_reset_color, input_submit_close_str));
+        return Ok;
+
+    } 
+
+    /* other */
+    try( _hypertext_open_(ctx, draw_ctx_color_red, input_text_open_str, &input_id));
+    try( _hypertext_sep_(ctx, input_text_close_str));
     if (_input_is_text_type_(s, slen)) {
         lexbor_find_attr_value(node, "value", &s, &slen);
         if (slen) {
             try( draw_ctx_buf_append_lit__(ctx, "="));
-            try( draw_ctx_buf_append(ctx, (char*)s, slen));
-        }
-    } else if (_input_is_submit_type_(s, slen)) {
-        lexbor_find_attr_value(node, "value", &s, &slen);
-        if (slen) {
-            try( draw_ctx_buf_append_lit__(ctx, INPUT_CLOSE_STR));
-            try( draw_ctx_buf_append(ctx, (char*)s, slen));
+            try( draw_ctx_buf_append_mem(ctx, (char*)s, slen));
         }
     } else if (lexbor_str_eq("password", s, slen)) {
         lexbor_find_attr_value(node, "value", &s, &slen);
@@ -172,8 +203,7 @@ draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     } else {
         try( draw_ctx_buf_append_lit__(ctx, "[input not supported yet]"));
     }
-    //try( draw_ctx_buf_append_lit__(ctx, INPUT_CLOSE_STR));
-    try( draw_ctx_reset_color(ctx));
+    try( _hypertext_close_(ctx, draw_ctx_reset_color, NULL));
     return Ok;
 }
 
@@ -188,7 +218,7 @@ draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         StrView view = strview_from_mem_trim(buf.items, buf.len);
         if (view.len) {
             ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
-            ok_then(err, draw_ctx_buf_append(ctx, (char*)view.items, view.len));
+            ok_then(err, draw_ctx_buf_append_mem(ctx, (char*)view.items, view.len));
             ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
         }
     }
@@ -225,7 +255,7 @@ draw_tag_li(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         if (s.len) {
             if (buf.items < s.items) err = draw_ctx_buf_append_lit__(ctx, "\n");
             ok_then( err, draw_ctx_buf_append_lit__(ctx, " * "));
-            ok_then( err, draw_ctx_buf_append(ctx, (char*)s.items, s.len));
+            ok_then( err, draw_ctx_buf_append_mem(ctx, (char*)s.items, s.len));
             ok_then( err, draw_ctx_buf_append_lit__(ctx, "\n"));
         }
     }
@@ -237,7 +267,6 @@ draw_tag_li(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
 static Err
 draw_tag_h(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
-    if (draw_ctx_color(ctx)) try( draw_ctx_esc_code_push(ctx, esc_code_bold));
 
     BufOf(char) buf = draw_ctx_buf_get_reset(ctx);
     try( draw_list_block(node->first_child, node->last_child, ctx));
@@ -248,17 +277,14 @@ draw_tag_h(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     _strview_trim_right_count_newlines_(&content);
 
     Err err;
-    if (   (err=draw_ctx_buf_append_lit__(ctx, "\n# "))
-        || (err=draw_ctx_buf_append_color_esc_code(ctx, esc_code_bold))
-    ) {
+    if ((err=_hypertext_open_(ctx, draw_ctx_color_bold, h_tag_open_str, NULL))) {
         buffn(char, clean)(&buf);
         return err;
     }
 
-    if (content.len) try( draw_ctx_buf_append(ctx, (char*)content.items, content.len));
+    if (content.len) try( draw_ctx_buf_append_mem(ctx, (char*)content.items, content.len));
     buffn(char, clean)(&buf);
-    try( draw_ctx_reset_color(ctx));
-    try( draw_ctx_buf_append_lit__(ctx, "\n"));
+    try( _hypertext_close_(ctx, draw_ctx_reset_color, newline_str));
 
     return Ok;
 }
@@ -322,10 +348,10 @@ Err draw_mem_skipping_space(const char* data, size_t len, DrawCtx ctx[static 1])
     while(s.len) {
         StrView word = strview_split_word(&s);
         if (!word.len) break;
-        try( draw_ctx_buf_append(ctx, (char*)word.items, word.len));
+        try( draw_ctx_buf_append_mem(ctx, (char*)word.items, word.len));
         strview_trim_space_left(&s);
         if (!s.len) break;
-        try( draw_ctx_buf_append(ctx, " ", 1));
+        try( draw_ctx_buf_append_mem(ctx, " ", 1));
     }
     return Ok;
 }
@@ -580,7 +606,7 @@ Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         default: {
             if (node->local_name >= LXB_TAG__LAST_ENTRY)
                 log_warn__("node local name (TAG) greater than last entry: %lx\n", node->local_name);
-            else log_todo__("TAG 'NOT' IMPLEMENTED: %s\n", _dbg_tags_[node->local_name]);
+            else log_todo__("TAG 'NOT' IMPLEMENTED: %s", _dbg_tags_[node->local_name]);
             return draw_list(node->first_child, node->last_child, ctx);
         }
     }
@@ -597,7 +623,7 @@ Err draw_text(lxb_dom_node_t* node,  DrawCtx ctx[static 1]) {
         //are included immediately following the opening <pre> tag, the
         //first newline character is stripped. 
         //https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
-        try( draw_ctx_buf_append(ctx, (char*)data, len));
+        try( draw_ctx_buf_append_mem(ctx, (char*)data, len));
     } else if (mem_skip_space_inplace(&data, &len)) {
         try( draw_mem_skipping_space(data, len, ctx));
     } 

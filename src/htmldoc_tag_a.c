@@ -5,6 +5,18 @@
 #include "src/htmldoc.h"
 #include "src/wrapper-lexbor.h"
 
+Err _hypertext_open_(
+    DrawCtx ctx[static 1],
+    ImpureDrawProcedure visual_effect,
+    StrViewProvider open_str_provider,
+    const size_t* id_num
+);
+
+Err _hypertext_sep_(DrawCtx ctx[static 1], StrViewProvider sep_str_provider);
+
+Err _hypertext_close_(
+    DrawCtx ctx[static 1], ImpureDrawProcedure visual_effect, StrViewProvider close_str_provider
+);
 
 static bool _node_has_href(lxb_dom_node_t* node) {
     const lxb_char_t* data;
@@ -34,8 +46,6 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         if (!arlfn(LxbNodePtr,append)(anchors, &node)) 
             return "error: lip set";
 
-        if (draw_ctx_color(ctx)) try( draw_ctx_esc_code_push(ctx, esc_code_blue));
-
         BufOf(char) buf = draw_ctx_buf_get_reset(ctx);
         try( draw_list(node->first_child, node->last_child, ctx));
         draw_ctx_swap_buf(ctx, &buf);
@@ -48,19 +58,18 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
             buffn(char, clean)(&buf);
             return err;
         }
-        if ((err=draw_ctx_buf_append_color_esc_code(ctx, esc_code_blue))
-            || (err=draw_ctx_buf_append_lit__(ctx, ANCHOR_OPEN_STR))
-            || (err=draw_ctx_buf_append_ui_base36_(ctx, anchor_num))
-            || (err=draw_ctx_buf_append_lit__(ctx, ANCHOR_CLOSE_STR))
+
+        if ((err=_hypertext_open_(ctx, draw_ctx_color_blue, anchor_open_str, &anchor_num))
+          ||(err=_hypertext_sep_(ctx, anchor_sep_str))
         ) {
             buffn(char, clean)(&buf);
             return err;
         }
 
-        if (content.len) try( draw_ctx_buf_append(ctx, (char*)content.items, content.len));
+        if (content.len) try( draw_ctx_buf_append_mem(ctx, (char*)content.items, content.len));
         buffn(char, clean)(&buf);
 
-        try( draw_ctx_reset_color(ctx));
+        try( _hypertext_close_(ctx, draw_ctx_reset_color, anchor_close_str));
         if (right_newlines) try( draw_ctx_buf_append_lit__(ctx, "\n"));
 
 
