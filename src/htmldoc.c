@@ -40,30 +40,46 @@ size_t _strview_trim_right_count_newlines_(StrView s[static 1]) {
     return newlines;
 }
 
-Err _hypertext_open_(
+Err _hypertext_id_open_(
     DrawCtx ctx[static 1],
     ImpureDrawProcedure visual_effect,
     StrViewProvider open_str_provider,
-    const size_t* id_num_ptr
+    const size_t* id_num_ptr,
+    StrViewProvider sep_str_provider
 ) {
     if (visual_effect) try( visual_effect(ctx));
     if (open_str_provider) try( draw_ctx_buf_append(ctx, open_str_provider()));
     if (id_num_ptr) try( draw_ctx_buf_append_ui_base36_(ctx, *id_num_ptr));
-    return Ok;
-}
-
-Err _hypertext_sep_(DrawCtx ctx[static 1], StrViewProvider sep_str_provider) {
     if (sep_str_provider) try( draw_ctx_buf_append(ctx, sep_str_provider()));
     return Ok;
 }
 
-Err _hypertext_close_(
+Err _hypertext_open_(
+    DrawCtx ctx[static 1], ImpureDrawProcedure visual_effect, StrViewProvider prefix_str_provider
+) {
+    if (visual_effect) try( visual_effect(ctx));
+    if (prefix_str_provider) try( draw_ctx_buf_append(ctx, prefix_str_provider()));
+    return Ok;
+}
+
+
+Err _hypertext_id_close_(
     DrawCtx ctx[static 1],
     ImpureDrawProcedure visual_effect,
     StrViewProvider close_str_provider
 ) {
     if (close_str_provider) try( draw_ctx_buf_append(ctx, close_str_provider()));
     if (visual_effect) try( visual_effect(ctx));
+    return Ok;
+}
+
+Err _hypertext_close_(
+    DrawCtx ctx[static 1],
+    ImpureDrawProcedure visual_effect,
+    StrViewProvider postfix_provider
+) {
+    if (visual_effect) try( visual_effect(ctx));
+    if (postfix_provider) try( draw_ctx_buf_append(ctx, postfix_provider()));
     return Ok;
 }
 
@@ -107,11 +123,12 @@ draw_tag_img(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
     try( append_to_arlof_lxb_node__(imgs, &node));
 
-    try( _hypertext_open_(ctx, draw_ctx_color_light_green, image_open_str, &img_count));
-    try( _hypertext_sep_(ctx, image_close_str));
+    try( _hypertext_id_open_(
+            ctx, draw_ctx_color_light_green, image_open_str, &img_count, image_close_str));
+
     try( brose_ctx_append_img_alt_(node, ctx));
     try (draw_list(node->first_child, node->last_child, ctx));
-    try( _hypertext_close_(ctx, draw_ctx_reset_color, NULL));
+    try( _hypertext_id_close_(ctx, draw_ctx_reset_color, NULL));
     return Ok;
 }
 
@@ -120,14 +137,14 @@ draw_tag_form(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     ArlOf(LxbNodePtr)* forms = htmldoc_forms(draw_ctx_htmldoc(ctx));
     if (!arlfn(LxbNodePtr,append)(forms, &node)) return "error: lip set";
     size_t form_id = len__(forms)-1;
-    try( _hypertext_open_(ctx, draw_ctx_color_purple, form_open_str, &form_id));
-    try( _hypertext_sep_(ctx, form_sep_str));
+    try( _hypertext_id_open_(ctx, draw_ctx_color_purple, form_open_str, &form_id, form_sep_str));
+
     try( draw_ctx_reset_color(ctx));
 
     try (draw_list_block(node->first_child, node->last_child, ctx));
 
     try( draw_ctx_buf_append_color_(ctx, esc_code_purple));
-    try( _hypertext_close_(ctx, draw_ctx_reset_color, form_close_str));
+    try( _hypertext_id_close_(ctx, draw_ctx_reset_color, form_close_str));
     return Ok;
 }
 
@@ -150,12 +167,13 @@ draw_tag_button(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     if (!arlfn(LxbNodePtr,append)(inputs, &node)) return "error: lip set";
     size_t input_id =len__(inputs)-1;
 
-    try( _hypertext_open_(ctx, draw_ctx_color_red, button_open_str, &input_id));
-    try( _hypertext_sep_(ctx, elem_id_sep_default));
+    try( _hypertext_id_open_(
+        ctx, draw_ctx_color_red, button_open_str, &input_id, elem_id_sep_default));
+    
 
     try (draw_list(node->first_child, node->last_child, ctx));
 
-    try( _hypertext_close_(ctx, draw_ctx_reset_color, button_close_str));
+    try( _hypertext_id_close_(ctx, draw_ctx_reset_color, button_close_str));
     return Ok;
 }
 
@@ -177,20 +195,23 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     /* submit */
     if (_input_is_submit_type_(s, slen)) {
 
-        try( _hypertext_open_(ctx, draw_ctx_color_red, input_text_open_str, &input_id));
         lexbor_find_attr_value(node, "value", &s, &slen);
         if (slen)  {
-            try( _hypertext_sep_(ctx, input_submit_sep_str));
+            try( _hypertext_id_open_(
+                ctx, draw_ctx_color_red, input_text_open_str, &input_id, input_submit_sep_str));
+
             try( draw_ctx_buf_append_mem(ctx, (char*)s, slen));
-        }
-        try( _hypertext_close_(ctx, draw_ctx_reset_color, input_submit_close_str));
+        } else try( _hypertext_id_open_(
+                ctx, draw_ctx_color_red, input_text_open_str, &input_id, NULL));
+        try( _hypertext_id_close_(ctx, draw_ctx_reset_color, input_submit_close_str));
         return Ok;
 
     } 
 
     /* other */
-    try( _hypertext_open_(ctx, draw_ctx_color_red, input_text_open_str, &input_id));
-    try( _hypertext_sep_(ctx, input_text_close_str));
+    try( _hypertext_id_open_(
+        ctx, draw_ctx_color_red, input_text_open_str, &input_id, input_text_close_str));
+
     if (_input_is_text_type_(s, slen)) {
         lexbor_find_attr_value(node, "value", &s, &slen);
         if (slen) {
@@ -203,7 +224,7 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     } else {
         try( draw_ctx_buf_append_lit__(ctx, "[input not supported yet]"));
     }
-    try( _hypertext_close_(ctx, draw_ctx_reset_color, NULL));
+    try( _hypertext_id_close_(ctx, draw_ctx_reset_color, NULL));
     return Ok;
 }
 
@@ -277,7 +298,7 @@ draw_tag_h(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     _strview_trim_right_count_newlines_(&content);
 
     Err err;
-    if ((err=_hypertext_open_(ctx, draw_ctx_color_bold, h_tag_open_str, NULL))) {
+    if ((err=_hypertext_open_(ctx, draw_ctx_push_bold, h_tag_open_str))) {
         buffn(char, clean)(&buf);
         return err;
     }
@@ -299,30 +320,28 @@ draw_tag_code(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
 static Err
 draw_tag_b(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
-    try( draw_ctx_buf_append_lit__(ctx, " "));
-    try( draw_ctx_buf_append_color_(ctx, esc_code_bold));
+    try(_hypertext_open_(ctx, draw_ctx_push_bold, space_str));
     try (draw_list(node->first_child, node->last_child, ctx));
-    try( draw_ctx_reset_color(ctx));
-    try( draw_ctx_buf_append_lit__(ctx, " "));
+    try( _hypertext_close_(ctx, draw_ctx_reset_color, space_str));
     return Ok;
 }
 
 static Err draw_tag_em(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
-    try( draw_ctx_buf_append_lit__(ctx, " "));
-    try( draw_ctx_buf_append_color_(ctx, esc_code_underline));
+    try(_hypertext_open_(ctx, draw_ctx_push_underline, space_str));
     try (draw_list(node->first_child, node->last_child, ctx));
-    try( draw_ctx_reset_color(ctx));
-    try( draw_ctx_buf_append_lit__(ctx, " "));
+    try( _hypertext_close_(ctx, draw_ctx_reset_color, space_str));
     return Ok;
 }
 
 static Err
 draw_tag_i(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
-    try( draw_ctx_buf_append_lit__(ctx, " "));
-    try( draw_ctx_buf_append_color_(ctx, esc_code_italic));
+    try(_hypertext_open_(ctx, draw_ctx_push_italic, space_str));
+    //try( draw_ctx_buf_append_lit__(ctx, " "));
+    //try( draw_ctx_buf_append_color_(ctx, esc_code_italic));
     try (draw_list(node->first_child, node->last_child, ctx));
-    try( draw_ctx_reset_color(ctx));
-    try( draw_ctx_buf_append_lit__(ctx, " "));
+    //try( draw_ctx_reset_color(ctx));
+    //try( draw_ctx_buf_append_lit__(ctx, " "));
+    try( _hypertext_close_(ctx, draw_ctx_reset_color, space_str));
     return Ok;
 }
 

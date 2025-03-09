@@ -48,4 +48,5 @@ static inline StrView elem_id_sep_default(void) { return strview_from_lit__(ELEM
 static inline StrView h_tag_open_str(void) { return strview_from_lit__("\n# "); }
 
 static inline StrView newline_str(void) { return strview_from_lit__("\n"); }
+static inline StrView space_str(void) { return strview_from_lit__(" "); }
 #endif

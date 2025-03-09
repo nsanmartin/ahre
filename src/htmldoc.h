@@ -200,4 +200,5 @@ static inline Err htmldoc_tags_str_reduce_size_t(const char* tags, size_t ts[sta
 }
 
 Err htmldoc_draw(HtmlDoc htmldoc[static 1], SessionConf sconf[static 1]);
+
 #endif

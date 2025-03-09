@@ -181,9 +181,15 @@ static inline Err draw_ctx_buf_append_color_(DrawCtx ctx[static 1], EscCode code
     return Ok;
 }
  
-static inline Err draw_ctx_color_bold(DrawCtx ctx[static 1]) {
-    return draw_ctx_buf_append_color_(ctx, esc_code_bold);
-}
+#define _push_esc_code__ draw_ctx_buf_append_color_
+static inline
+Err draw_ctx_push_italic(DrawCtx ctx[static 1]) { return _push_esc_code__(ctx, esc_code_italic); }
+
+static inline
+Err draw_ctx_push_bold(DrawCtx ctx[static 1]) { return _push_esc_code__(ctx, esc_code_bold); }
+
+static inline
+Err draw_ctx_push_underline(DrawCtx ctx[static 1]){return _push_esc_code__(ctx, esc_code_underline);}
 
 static inline Err draw_ctx_color_blue(DrawCtx ctx[static 1]) {
     return draw_ctx_buf_append_color_(ctx, esc_code_blue);

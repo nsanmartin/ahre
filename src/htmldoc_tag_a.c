@@ -5,17 +5,19 @@
 #include "src/htmldoc.h"
 #include "src/wrapper-lexbor.h"
 
-Err _hypertext_open_(
+
+Err _hypertext_id_open_(
     DrawCtx ctx[static 1],
     ImpureDrawProcedure visual_effect,
     StrViewProvider open_str_provider,
-    const size_t* id_num
+    const size_t* id_num_ptr,
+    StrViewProvider sep_str_provider
 );
 
-Err _hypertext_sep_(DrawCtx ctx[static 1], StrViewProvider sep_str_provider);
-
-Err _hypertext_close_(
-    DrawCtx ctx[static 1], ImpureDrawProcedure visual_effect, StrViewProvider close_str_provider
+Err _hypertext_id_close_(
+    DrawCtx ctx[static 1],
+    ImpureDrawProcedure visual_effect,
+    StrViewProvider close_str_provider
 );
 
 static bool _node_has_href(lxb_dom_node_t* node) {
@@ -59,8 +61,8 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
             return err;
         }
 
-        if ((err=_hypertext_open_(ctx, draw_ctx_color_blue, anchor_open_str, &anchor_num))
-          ||(err=_hypertext_sep_(ctx, anchor_sep_str))
+        if ((err=_hypertext_id_open_(
+                ctx, draw_ctx_color_blue, anchor_open_str, &anchor_num,anchor_sep_str ))
         ) {
             buffn(char, clean)(&buf);
             return err;
@@ -69,7 +71,7 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         if (content.len) try( draw_ctx_buf_append_mem(ctx, (char*)content.items, content.len));
         buffn(char, clean)(&buf);
 
-        try( _hypertext_close_(ctx, draw_ctx_reset_color, anchor_close_str));
+        try( _hypertext_id_close_(ctx, draw_ctx_reset_color, anchor_close_str));
         if (right_newlines) try( draw_ctx_buf_append_lit__(ctx, "\n"));
 
 
