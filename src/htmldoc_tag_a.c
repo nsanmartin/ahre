@@ -57,7 +57,7 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
             return err;
         }
 
-        if (content.len) try( draw_ctx_buf_append(ctx, (char*)content.s, content.len));
+        if (content.len) try( draw_ctx_buf_append(ctx, (char*)content.items, content.len));
         buffn(char, clean)(&buf);
 
         try( draw_ctx_reset_color(ctx));

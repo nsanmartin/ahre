@@ -46,8 +46,8 @@ inline const char* cstr_next_space(const char* l) {
 }
 
 inline void str_trim_space(StrView* l) {
-    l->s = cstr_skip_space(l->s);
-    l->len = cstr_next_space(l->s) - l->s;
+    l->items = cstr_skip_space(items__(l));
+    l->len = cstr_next_space(items__(l)) - items__(l);
 }
 
 
@@ -134,11 +134,11 @@ const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen) {
 }
 
 StrView str_split_line(StrView text[static 1]) {
-    StrView line = strview_from_mem(text->s, text->len);
-    const char* nl = memchr(line.s, '\n', line.len);
+    StrView line = *text;
+    const char* nl = memchr(line.items, '\n', line.len);
     if (nl) {
-        line.len = nl - line.s;
-        text->s = nl + 1;
+        line.len = nl - line.items;
+        text->items = nl + 1;
         text->len -= (line.len + 1);
     } else  {
         *text = (StrView){0};

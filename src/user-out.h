@@ -1,6 +1,8 @@
 #ifndef AHRE_USER_OUT_H__
 #define AHRE_USER_OUT_H__
 
+#include <errno.h>
+
 #include "src/utils.h"
 
 typedef Err (*WriteUserOutputCallback)(const char* mem, size_t len, void* ctx);
@@ -17,11 +19,11 @@ typedef struct {
 #define uiw_lit__(Cb, Lit) Cb(Lit,sizeof(Lit)-1,NULL)
 
 static inline Err uiw_strview(WriteUserOutputCallback wcb, StrView s[static 1]) {
-    return wcb(s->s, s->len,NULL);
+    return wcb(items__(s), len__(s),NULL);
 }
 
 static inline Err uiw_str(WriteUserOutputCallback wcb, Str2 s[static 1]) {
-    return wcb(s->items, s->len,NULL);
+    return wcb(items__(s), len__(s), NULL);
 }
 
 static inline Err uiw_mem(WriteUserOutputCallback wcb, const char* mem, size_t len) {

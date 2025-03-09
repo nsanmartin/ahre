@@ -1,3 +1,5 @@
+#include <errno.h>
+
 #include "src/textbuf.h"
 #include "src/generic.h"
 
@@ -59,8 +61,8 @@ static Err _insert_line_splitting_(StrView line[static 1], BufOf(char) buf[stati
             if (beg + len + esc_codes_mem < strview_end(line))
                 len += esc_codes_mem;
 
-            if (!_char_is_point_of_break_(line->s[off + len])) {
-                while (len && !_char_is_point_of_break_(line->s[off + len])) --len;
+            if (!_char_is_point_of_break_(line->items[off + len])) {
+                while (len && !_char_is_point_of_break_(line->items[off + len])) --len;
                 if (!len) len = maxlen;
             }
         }
@@ -84,7 +86,7 @@ static Err _insert_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
     BufOf(char)* buf = &(BufOf(char)){0};
     while (textbuf_get_line(tb, n++, &line)) {
         if (line.len && line.len <= maxlen) {
-            try( bufofchar_append(buf, (char*)line.s, line.len));
+            try( bufofchar_append(buf, (char*)line.items, line.len));
         } else {
             try( _insert_line_splitting_(&line, buf, maxlen));
         }
@@ -221,21 +223,21 @@ bool textbuf_get_line(TextBuf tb[static 1], size_t n, StrView out[static 1]) {
     if (n == 1) {
         /* first line: check its end */
         size_t* linelenptr = arlfn(size_t,at)(eols, 0);
-        if (linelenptr) *out = (StrView){.s=textbuf_items(tb), .len=1+*linelenptr};
-        else *out = (StrView){.s=textbuf_items(tb), .len=textbuf_len(tb)};
+        if (linelenptr) *out = (StrView){.items=textbuf_items(tb), .len=1+*linelenptr};
+        else *out = (StrView){.items=textbuf_items(tb), .len=textbuf_len(tb)};
         return true;
     } else if (n <= len__(eols)) {
         size_t* begoffp = arlfn(size_t,at)(eols, n-2);
         if (!begoffp) return false; //"error: expecting len(eols) >= n-1";
         size_t* eoloffp = arlfn(size_t,at)(eols, n-1);
         if (!eoloffp) return false; //"error: expecting len(eols) >= n";
-        *out = (StrView){.s=textbuf_items(tb) + *begoffp + 1, .len=*eoloffp-*begoffp};
+        *out = (StrView){.items=textbuf_items(tb) + *begoffp + 1, .len=*eoloffp-*begoffp};
         return true;
     } else if (n == len__(eols) + 1) {
         size_t* begoffp = arlfn(size_t,back)(eols);
         if (!begoffp) return false; //"error: expecting len(eols) > 0
         size_t eoloff = textbuf_len(tb);
-        *out = (StrView){.s=textbuf_items(tb) + *begoffp + 1, .len=eoloff - *begoffp -1};
+        *out = (StrView){.items=textbuf_items(tb) + *begoffp + 1, .len=eoloff - *begoffp -1};
         return out->len;
     }
     /* n can't be grater than len(eols). If eols == 0 and line_count == 1, 0 will be

@@ -35,7 +35,7 @@ Err cmd_write(const char* fname, Session session[static 1]) {
         if (!fp) {
             return err_fmt("append: could not open file: %s", fname);
         }
-        if (fwrite(textbuf_items(buf), 1, len(buf), fp) != len(buf)) {
+        if (fwrite(textbuf_items(buf), 1, textbuf_len(buf), fp) != textbuf_len(buf)) {
             fclose(fp);
             return err_fmt("append: error writing to file: %s", fname);
         }

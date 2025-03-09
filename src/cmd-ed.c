@@ -53,9 +53,9 @@ StrView parse_pattern(const char* tk) {
     const char* end = strchr(tk, delim);
 
     if (!end) {
-        res = (StrView){.s = tk, .len=strlen(tk)};
+        res = (StrView){.items = tk, .len=strlen(tk)};
     } else {
-        res = (StrView){.s = tk, .len=end-tk};
+        res = (StrView){.items = tk, .len=end-tk};
     }
     return res;
 }
@@ -69,7 +69,7 @@ Err dbg_print_all_lines_nums(TextBuf textbuf[static 1]) {
         try( ui_write_unsigned(wcb, lnum));
         try( uiw_lit__(wcb,"\t`"));
         if (line.len > 1) {
-            try( uiw_mem(wcb,line.s, line.len-1));
+            try( uiw_mem(wcb,line.items, line.len-1));
         } 
         try( uiw_lit__(wcb,"'\n"));
     }
@@ -100,7 +100,7 @@ Err ed_write(const char* rest, TextBuf textbuf[static 1]) {
 
     const char* items = textbuf_items(textbuf);
     const char* beg = items;
-    size_t len = len(textbuf);
+    size_t len = textbuf_len(textbuf);
     while (beg && beg < items + len) {
         const char* end = _mem_find_esc_code_(beg, items + len - beg);
         if (!end) end = items + len;
@@ -120,8 +120,8 @@ Err ed_write(const char* rest, TextBuf textbuf[static 1]) {
 Err ed_global(TextBuf textbuf[static 1],  const char* rest) {
     (void)textbuf;
     StrView pattern = parse_pattern(rest);
-    if (!pattern.s || !pattern.len) { return "Could not read pattern"; }
-    printf("pattern: %s\n", pattern.s);
+    if (!pattern.items || !pattern.len) { return "Could not read pattern"; }
+    printf("pattern: %s\n", pattern.items);
     return Ok;
 }
 

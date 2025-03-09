@@ -2,6 +2,7 @@
 
 #include "src/generic.h"
 #include "src/mem.h"
+#include "src/session.h"
 #include "src/url-client.h"
 
 

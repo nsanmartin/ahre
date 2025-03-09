@@ -23,9 +23,9 @@ Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[static 1]);
 
 size_t _strview_trim_left_count_newlines_(StrView s[static 1]) {
     size_t newlines = 0;
-    while(s->len && isspace(*(s->s))) {
-        newlines += *(s->s) == '\n';
-        ++s->s;
+    while(s->len && isspace(*(items__(s)))) {
+        newlines += *(items__(s)) == '\n';
+        ++s->items;
         --s->len;
     }
     return newlines;
@@ -33,8 +33,8 @@ size_t _strview_trim_left_count_newlines_(StrView s[static 1]) {
 
 size_t _strview_trim_right_count_newlines_(StrView s[static 1]) {
     size_t newlines = 0;
-    while(s->len && isspace(s->s[s->len-1])) {
-        newlines += s->s[s->len-1] == '\n';
+    while(s->len && isspace(items__(s)[len__(s)-1])) {
+        newlines += items__(s)[s->len-1] == '\n';
         --s->len;
     }
     return newlines;
@@ -188,7 +188,7 @@ draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         StrView view = strview_from_mem_trim(buf.items, buf.len);
         if (view.len) {
             ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
-            ok_then(err, draw_ctx_buf_append(ctx, (char*)view.s, view.len));
+            ok_then(err, draw_ctx_buf_append(ctx, (char*)view.items, view.len));
             ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
         }
     }
@@ -223,9 +223,9 @@ draw_tag_li(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     if (!err && buf.len) {
         StrView s = strview_from_mem_trim(buf.items, buf.len);
         if (s.len) {
-            if (buf.items < s.s) err = draw_ctx_buf_append_lit__(ctx, "\n");
+            if (buf.items < s.items) err = draw_ctx_buf_append_lit__(ctx, "\n");
             ok_then( err, draw_ctx_buf_append_lit__(ctx, " * "));
-            ok_then( err, draw_ctx_buf_append(ctx, (char*)s.s, s.len));
+            ok_then( err, draw_ctx_buf_append(ctx, (char*)s.items, s.len));
             ok_then( err, draw_ctx_buf_append_lit__(ctx, "\n"));
         }
     }
@@ -255,7 +255,7 @@ draw_tag_h(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         return err;
     }
 
-    if (content.len) try( draw_ctx_buf_append(ctx, (char*)content.s, content.len));
+    if (content.len) try( draw_ctx_buf_append(ctx, (char*)content.items, content.len));
     buffn(char, clean)(&buf);
     try( draw_ctx_reset_color(ctx));
     try( draw_ctx_buf_append_lit__(ctx, "\n"));
@@ -322,7 +322,7 @@ Err draw_mem_skipping_space(const char* data, size_t len, DrawCtx ctx[static 1])
     while(s.len) {
         StrView word = strview_split_word(&s);
         if (!word.len) break;
-        try( draw_ctx_buf_append(ctx, (char*)word.s, word.len));
+        try( draw_ctx_buf_append(ctx, (char*)word.items, word.len));
         strview_trim_space_left(&s);
         if (!s.len) break;
         try( draw_ctx_buf_append(ctx, " ", 1));

@@ -12,7 +12,7 @@ static StrView cstr_next_word_view(const char* s) {
     const char* end = s;
     while (*end && !isspace(*end)) { ++end; }
     if (s == end) { return (StrView){0}; }
-    return (StrView){.s=s, .len=end-s};
+    return (StrView){.items=s, .len=end-s};
 }
 
 
@@ -43,7 +43,7 @@ Err lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* b
     if (lxb_dom_elements_by_tag_name(
             lxb_dom_interface_element(document->body),
             collection,
-            (const lxb_char_t *) tags.s,
+            (const lxb_char_t *) tags.items,
             tags.len 
         ) != LXB_STATUS_OK
     ) { return "failed to get elements by name"; }
@@ -246,9 +246,9 @@ Err lexbor_get_title_text_line(lxb_dom_node_t* title, BufOf(char)* out) {
     lxb_dom_text_t* text = lxb_dom_interface_text(node);
     if (!text) return Ok;
     StrView text_view = strview_from_mem((const char*)text->char_data.data.data, text->char_data.data.length);
-    while (text_view.len && text_view.s) {
+    while (text_view.len && text_view.items) {
         StrView line = str_split_line(&text_view);
-        if (line.len && !buffn(char, append)(out, (char*)line.s, line.len))
+        if (line.len && !buffn(char, append)(out, (char*)line.items, line.len))
             return "error: buf append failure";
     }
     return Ok;
@@ -265,9 +265,9 @@ Err dbg_print_title(lxb_dom_node_t* title) {
     }
     
     StrView text_view = strview_from_mem((const char*)text->char_data.data.data, text->char_data.data.length);
-    while (text_view.len && text_view.s) {
+    while (text_view.len && text_view.items) {
         StrView line = str_split_line(&text_view);
-        if (line.len) fwrite(line.s, 1, line.len, stdout);
+        if (line.len) fwrite(line.items, 1, line.len, stdout);
     }
     fwrite("\n", 1, 1, stdout);
     return Ok;

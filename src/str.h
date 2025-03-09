@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include "src/error.h"
+#include "src/generic.h"
 #include "src/mem.h"
 #include "src/utils.h"
 
@@ -74,39 +75,39 @@ const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen);
 
 /* strview fns */
 typedef struct {
-	const char* s;
+	const char* items;
 	size_t len;
 } StrView;
 
-static inline const char* strview_beg(const StrView s[static 1]) { return s->s; }
-static inline const char* strview_end(const StrView s[static 1]) { return s->s + s->len; }
+static inline const char* strview_beg(const StrView s[static 1]) { return s->items; }
+static inline const char* strview_end(const StrView s[static 1]) { return s->items + s->len; }
 static inline size_t strview_len(const StrView s[static 1]) { return s->len; }
-static inline bool strview_is_empty(const StrView s[static 1]) { return !s->s || s->len == 0; }
+static inline bool strview_is_empty(const StrView s[static 1]) { return !s->items || s->len == 0; }
 inline static StrView strview_from_mem(const char* s, size_t len) {
-    return (StrView){.s=s, .len=len};
+    return (StrView){.items=s, .len=len};
 }
 
 inline static StrView strview_from_strview(StrView s[static 1]) {
-    return (StrView){.s=s->s, .len=s->len};
+    return (StrView){.items=items__(s), .len=len__(s)};
 }
 
 inline static void strview_trim_space_left(StrView s[static 1]) {
-    while(s->len && isspace(*(s->s))) { ++s->s; --s->len; }
+    while(s->len && isspace(*(items__(s)))) { ++s->items; --s->len; }
 }
 
 inline static void strview_trim_space_in_place(StrView s[static 1]) {
-    while(s->len && isspace(*(s->s))) { ++s->s; --s->len; }
-    while(s->len > 1 && isspace(s->s[s->len-1])) { --s->len; }
+    while(s->len && isspace(*(s->items))) { ++s->items; --s->len; }
+    while(s->len > 1 && isspace(s->items[s->len-1])) { --s->len; }
 }
 
 inline static StrView strview_split_word(StrView s[static 1]) {
-    StrView word = (StrView){.s=s->s};
-    while(s->len && !isspace(*(s->s))) { ++word.len; ++s->s; --s->len; }
+    StrView word = (StrView){.items=items__(s)};
+    while(s->len && !isspace(*(items__(s)))) { ++word.len; ++s->items; --s->len; }
     return word;
 }
 
 inline static StrView cstr_split_word(const char* s[static 1]) {
-    StrView word = (StrView){.s=*s};
+    StrView word = (StrView){.items=*s};
     while(**s && !isspace(**s)) { ++(*s); ++word.len; }
     while(**s && isspace(**s)) { ++(*s); }
     return word;

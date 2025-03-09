@@ -28,7 +28,7 @@ Err read_line_from_user(Session session[static 1]) {
     char* line = 0x0;
     try( session_uin(session)->read(NULL, &line));
     Err err = process_line(session, line);
-    destroy(line);
+    std_free(line);
     return err;
 }
 

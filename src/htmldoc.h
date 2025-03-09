@@ -26,9 +26,9 @@ _Static_assert(sizeof(size_t) >= 2, "size_t type too small");
 _Static_assert(sizeof(size_t) >= sizeof(HIDE_OL), "size_t type too small");
 
 static inline size_t strview_to_hide_tag(StrView s) { 
-    if (!s.s || !s.len) return 0x0;
-    if (strncmp("ol", s.s, s.len) == 0) return HIDE_OL;
-    if (strncmp("ul", s.s, s.len) == 0) return HIDE_UL;
+    if (!s.items || !s.len) return 0x0;
+    if (strncmp("ol", s.items, s.len) == 0) return HIDE_OL;
+    if (strncmp("ul", s.items, s.len) == 0) return HIDE_UL;
     return 0x0;
 }
 
@@ -191,9 +191,9 @@ static inline Err htmldoc_tags_str_reduce_size_t(const char* tags, size_t ts[sta
     Err err = "no tags to reduce";
     do {
         StrView t = cstr_split_word(&tags);
-        if (!t.s || !t.len) return err;
+        if (!t.items || !t.len) return err;
         size_t hide_tag = strview_to_hide_tag(t);
-        if (!hide_tag) return err_fmt("invalid tag: '%s'", t.s);
+        if (!hide_tag) return err_fmt("invalid tag: '%s'", t.items);
         *ts |= hide_tag;
         err = Ok;
     } while (1);

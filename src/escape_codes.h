@@ -36,7 +36,7 @@ typedef enum {
     esc_code_reset
 } EscCode;
 
-#define _set_ptr_(Ptr, Code) { *Ptr = (StrView){.s=Code, .len=sizeof(Code)-1}; break; }
+#define _set_ptr_(Ptr, Code) { *Ptr = (StrView){.items=Code, .len=sizeof(Code)-1}; break; }
 
 static inline Err esc_code_to_str(EscCode code, StrView out[static 1]) {
     switch(code) {

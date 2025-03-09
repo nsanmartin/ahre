@@ -159,7 +159,7 @@ static inline Err draw_ctx_buf_append_color_esc_code(DrawCtx ctx[static 1], EscC
     if (draw_ctx_color(ctx)) {
         StrView code_str;
         try( esc_code_to_str(code, &code_str));
-        try( draw_ctx_buf_append(ctx, (char*)code_str.s, code_str.len));
+        try( draw_ctx_buf_append(ctx, (char*)code_str.items, code_str.len));
     }
     return Ok;
 }
@@ -170,7 +170,7 @@ static inline Err draw_ctx_buf_append_color_(DrawCtx ctx[static 1], EscCode code
         try( draw_ctx_esc_code_push(ctx, code));
         StrView code_str;
         try( esc_code_to_str(code, &code_str));
-        try( draw_ctx_buf_append(ctx, (char*)code_str.s, code_str.len));
+        try( draw_ctx_buf_append(ctx, (char*)code_str.items, code_str.len));
     }
     return Ok;
 }
@@ -194,7 +194,7 @@ static inline Err draw_ctx_reset_color(DrawCtx ctx[static 1]) {
         if (backp) {
             StrView code_str;
             try( esc_code_to_str(*backp, &code_str));
-            try( draw_ctx_buf_append(ctx, (char*)code_str.s, code_str.len));
+            try( draw_ctx_buf_append(ctx, (char*)code_str.items, code_str.len));
         }
     }
     return Ok;
