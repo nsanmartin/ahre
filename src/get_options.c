@@ -1,5 +1,7 @@
 #include "src/get_options.h"
 #include "src/user-out.h"
+#include "src/user-out-line-mode.h"
+#include "src/user-out-vi-mode.h"
 
 static Err _read_input_opt_(SessionConf sconf[static 1], const char* optopt) {
     if (!optopt || !*optopt) return "invalid input option";
@@ -16,8 +18,11 @@ Err session_conf_from_options(int argc, char* argv[], CliParams cparams[static 1
     try( ui_get_win_size(&nrows, &ncols));
 
     *sconf = (SessionConf) {
-        .uin            = uin_isocline(),
-        .uout           = uout_stdout(),
+        //TODO: slip read_input / read_line
+        //.uin            = uin_isocline(),
+        .uin            = uin_vi_mode(),
+        .uout           = uout_vi_mode(),
+        //.uout           = uout_line_mode(),
         .ncols          = 90 > ncols ? ncols : 90,
         .nrows          = nrows
     };

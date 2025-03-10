@@ -26,7 +26,7 @@ Err mk_submit_url(UrlClient uc[static 1],
 
 Err read_line_from_user(Session session[static 1]) {
     char* line = 0x0;
-    try( session_uin(session)->read(NULL, &line));
+    try( session_uin(session)->read(session, NULL, &line));
     Err err = process_line(session, line);
     std_free(line);
     return err;
@@ -69,7 +69,6 @@ Err cmd_bookmarks(Session session[static 1], const char* url) {
             }
         } else err = "invalid section in bookmark";
     }
-    try(out->flush_std());
     return err;
 }
 

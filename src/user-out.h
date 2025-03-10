@@ -3,16 +3,21 @@
 
 #include <errno.h>
 
+#include "src/textbuf.h"
 #include "src/utils.h"
+
+typedef struct Session Session;
 
 typedef Err (*WriteUserOutputCallback)(const char* mem, size_t len, void* ctx);
 typedef Err (*FlushUserOutputCallback)(void);
+typedef Err (*ShowTextUserOutputCallback)(Session* s);
 
 typedef struct {
-    WriteUserOutputCallback write_msg;
-    FlushUserOutputCallback flush_msg;
-    WriteUserOutputCallback write_std;
-    FlushUserOutputCallback flush_std;
+    WriteUserOutputCallback    write_msg;
+    FlushUserOutputCallback    flush_msg;
+    WriteUserOutputCallback    write_std;
+    FlushUserOutputCallback    flush_std;
+    ShowTextUserOutputCallback show_session;
 } UserOutput;
 
 
@@ -57,12 +62,4 @@ static inline Err ui_flush_stdout(void) {
     return Ok;
 }
 
-static inline UserOutput uout_stdout(void) {
-    return (UserOutput) {
-        .write_msg = ui_write_callback_stdout,
-        .flush_msg = ui_flush_stdout,
-        .write_std = ui_write_callback_stdout,
-        .flush_std = ui_flush_stdout
-    };
-}
 #endif

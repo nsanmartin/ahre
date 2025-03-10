@@ -19,6 +19,7 @@ typedef struct Session {
     SessionConf conf;
 } Session;
 
+
 Err process_line(Session session[static 1], const char* line) ;
 /* getters */
 Err session_current_buf(Session session[static 1], TextBuf* out[static 1]);
@@ -93,11 +94,11 @@ Err dbg_session_summary(Session session[static 1]);
 Err cmd_set(Session session[static 1], const char* line);
 
 static inline Err session_read_user_input(Session s[static 1], char* line[static 1]) {
-    return session_uin(s)->read(NULL, line);
+    return session_uin(s)->read(s, NULL, line);
 }
 
 
-static inline Err session_consume_input(Session s[static 1], char* user_input) {
+static inline Err session_consume_line(Session s[static 1], char* user_input) {
     Err err = process_line(s, user_input);
     std_free(user_input);
     return err;
@@ -112,8 +113,7 @@ static inline Err session_show_error(Session s[static 1], Err err) {
 }
 
 static inline Err session_show_output(Session s[static 1]) {
-    (void)s;
-    return Ok;
+    return session_uout(s)->show_session(s);
 }
 
 #endif

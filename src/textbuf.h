@@ -5,11 +5,13 @@
 
 #include "src/error.h"
 #include "src/ranges.h"
+#include "src/screen.h"
 #include "src/str.h"
 #include "src/utils.h"
 
 typedef struct {
     Range last_range;
+    Screen screen;
 } TextBufCache;
 
 typedef struct {
@@ -26,6 +28,7 @@ static inline BufOf(char)*
 textbuf_buf(TextBuf t[static 1]) { return &t->buf; }
 
 static inline Range* textbuf_last_range(TextBuf t[static 1]) { return &t->cache.last_range; }
+static inline Screen* textbuf_screen(TextBuf tb[static 1]) { return &tb->cache.screen; }
 
 static inline ArlOf(size_t)* textbuf_eols(TextBuf tb[static 1]) { return &tb->eols; }
 
@@ -116,5 +119,12 @@ Err textbuf_append_line_indexes(TextBuf tb[static 1]);
 
 /* line indexes start at 1! */
 bool textbuf_get_line(TextBuf tb[static 1], size_t n, StrView out[static 1]);
+
+static inline Err validate_range_for_buffer(TextBuf textbuf[static 1], Range range[static 1]) {
+    if (!range->beg  || range->beg > range->end) { return  "error: unexpected bad range"; }
+    if (textbuf_line_count(textbuf) < range->end) return "error: unexpected invalid range end";
+    if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
+    return Ok;
+}
 
 #endif

@@ -28,10 +28,10 @@ static int _loop_(Session s[static 1]) {
     Err err;
     init_user_input_history();
     while (!session_quit(s)) {
+        err = session_show_output(s);
         char* line;
-        err = session_read_user_input(s, &line);
-        ok_then(err, session_consume_input(s, line));
-        ok_then(err, session_show_output(s));
+        ok_then(err, session_read_user_input(s, &line));
+        if (line) ok_then(err, session_consume_line(s, line));
         if (err) if (session_show_error(s, err)) exit(EXIT_FAILURE); 
     }
     session_cleanup(s);

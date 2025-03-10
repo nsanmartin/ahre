@@ -12,13 +12,6 @@
 
 #define MsgLastLine EscCodePurple "%{- last line -}%" EscCodeReset
 
-static Err validate_range_for_buffer(TextBuf textbuf[static 1], Range range[static 1]) {
-    if (!range->beg  || range->beg > range->end) { return  "error: unexpected bad range"; }
-    if (textbuf_line_count(textbuf) < range->end) return "error: unexpected invalid range end";
-    if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
-    return Ok;
-}
-
     
 
 
@@ -36,8 +29,6 @@ static inline Err ed_print_n(TextBuf textbuf[static 1], Range range[static 1]) {
     }
 
     if (textbuf_line_count(textbuf) == range->end) try( uiw_lit__(wcb,"\n"));
-
-    try(ui_flush_stdout());
     return Ok;
 }
 
@@ -73,7 +64,6 @@ Err dbg_print_all_lines_nums(TextBuf textbuf[static 1]) {
         } 
         try( uiw_lit__(wcb,"'\n"));
     }
-    try(ui_flush_stdout());
     return Ok;
 }
 
@@ -162,7 +152,6 @@ Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
             try( uiw_strview(wcb,&line));
         } else try( uiw_lit__(wcb, "\n"));
     }
-    try(ui_flush_stdout());
     return Ok;
 }
 
