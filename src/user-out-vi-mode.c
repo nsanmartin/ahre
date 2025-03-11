@@ -10,7 +10,7 @@ Err ui_show_session_vi_mode(Session* s) {
 
     size_t nrows, ncols;
     try( ui_get_win_size(&nrows, &ncols));
-    *session_nrows(s) = nrows;
+    *session_nrows(s) = nrows - 2;
     *session_ncols(s) = ncols;
 
     if (nrows <= 3) return "too few rows";
@@ -18,7 +18,7 @@ Err ui_show_session_vi_mode(Session* s) {
     try( session_current_buf(s, &tb));
     size_t line = *screen_line(textbuf_screen(tb));
     if (!line) *screen_line(textbuf_screen(tb)) = line = 1;
-    Range r = (Range){ .beg=line, .end=line + nrows };
+    Range r = (Range){ .beg=line, .end=line + *session_nrows(s) };
 
     try( _vi_print_(tb, &r, session_conf_uout(session_conf(s))));
     return Ok;
@@ -30,9 +30,14 @@ Err _vi_print_(TextBuf textbuf[static 1], Range range[static 1], UserOutput out[
     StrView line;
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
-        if (line.len) {
-            try( uiw_strview(out->write_std,&line));
-        } else try( uiw_lit__(out->write_std, "\n"));
+        //TODO: use after debug
+        //if (line.len) {
+        //    try( uiw_strview(out->write_std,&line));
+        //} else try( uiw_lit__(out->write_std, "\n"));
+        try( ui_write_unsigned(out->write_std, linum));
+        try( uiw_lit__(out->write_std,"\t"));
+        if (line.len) try( uiw_strview(out->write_std, &line));
+        else try( uiw_lit__(out->write_std, "\n"));
     }
     return Ok;
 }

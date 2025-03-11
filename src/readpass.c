@@ -19,7 +19,7 @@ Err readpass_term(ArlOf(char) arl[static 1], UserOutput out[static 1]) {
         int cint = fgetc(stdin);
         if (cint == EOF) return "error: EOF reading password";
         if (cint == KeyEnter) { break; }
-        if (cint == Ctrl_c) { arlfn(char, clean)(arl); break; }
+        if (cint == KeyCtrl_C) { arlfn(char, clean)(arl); break; }
 
         char c = (char)cint;
         if (!isprint(c)) continue;

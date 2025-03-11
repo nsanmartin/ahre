@@ -15,28 +15,6 @@
 
 #include "src/error.h"
 
-enum KEY_ACTION{
-	KEY_NULL = 0,	    /* NULL */
-	CTRL_A = 1,         /* Ctrl+a */
-	CTRL_B = 2,         /* Ctrl-b */
-	CTRL_C = 3,         /* Ctrl-c */
-	CTRL_D = 4,         /* Ctrl-d */
-	CTRL_E = 5,         /* Ctrl-e */
-	CTRL_F = 6,         /* Ctrl-f */
-	CTRL_H = 8,         /* Ctrl-h */
-	TAB = 9,            /* Tab */
-	CTRL_K = 11,        /* Ctrl+k */
-	CTRL_L = 12,        /* Ctrl+l */
-	ENTER = 13,         /* Enter */
-	CTRL_N = 14,        /* Ctrl-n */
-	CTRL_P = 16,        /* Ctrl-p */
-	CTRL_T = 20,        /* Ctrl-t */
-	CTRL_U = 21,        /* Ctrl+u */
-	CTRL_W = 23,        /* Ctrl+w */
-	ESC = 27,           /* Escape */
-	BACKSPACE =  127    /* Backspace */
-};
-
 static inline Err _switch_tty_to_raw_mode_(struct termios prev_termios[static 1]) {
 
     if (!isatty(STDIN_FILENO)) return "error: not a tty";
@@ -54,8 +32,25 @@ static inline Err _switch_tty_to_raw_mode_(struct termios prev_termios[static 1]
 }
 
 typedef enum { 
-    Ctrl_c   = 3,
-    KeyEnter = 13
+	KeyNull      = 0,
+	KeyCtrl_A    = 1,
+	KeyCtrl_B    = 2,
+    KeyCtrl_C    = 3,
+	KeyCtrl_D    = 4,
+	KeyCtrl_E    = 5,
+	KeyCtrl_F    = 6,
+	KeyCtrl_H    = 8,
+	KeyTab       = 9,
+	KeyCtrl_K    = 11,
+	KeyCtrl_L    = 12,
+    KeyEnter     = 13,
+	KeyCtrl_N    = 14,
+	KeyCtrl_P    = 16,
+	KeyCtrl_T    = 20,
+	KeyCtrl_U    = 21,
+	KeyCtrl_W    = 23,
+	KeyEsc       = 27,
+	KeyBackspace = 127
 } KeyStroke;
 
 typedef struct Session Session;
@@ -92,7 +87,7 @@ static inline Err ui_fgets_readline(Session* s, const char* prompt, char* out[st
     *out = NULL;
 
     while (1) {
-        *out = realloc(*out, len);
+        *out = std_realloc(*out, len);
         if (!*out) return "error: realloc failure";
         char* line = fgets(*out + readlen, len - readlen, stdin);
         if (!line) {
