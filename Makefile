@@ -44,7 +44,7 @@ test_range: utests/test_range.c \
 	build/session.o build/textbuf.o build/url-client.o build/htmldoc.o build/htmldoc_tag_a.o \
 	build/str.o build/wrapper-lexbor.o build/wrapper-lexbor-curl.o build/error.o build/utils.o \
 	build/tab_node.o build/cmd-ed.o build/readpass.o build/isocline.o build/user-interface.o \
-	build/user-cmd.o build/debug.o
+	build/user-cmd.o build/debug.o build/user-out-line-mode.o
 	$(CC) $(CFLAGS) $(SANITIZE_FLAGS) -I. -I$(INCLUDE) -Iutests -o build/$@ $^ \
 		-lcurl -llexbor
 
@@ -62,7 +62,7 @@ test_ed_write: utests/test_ed_write.c \
 	build/wrapper-lexbor-curl.o build/wrapper-lexbor.o \
 	build/textbuf.o build/session.o build/htmldoc.o build/htmldoc_tag_a.o \
 	build/tab_node.o  build/readpass.o build/isocline.o build/user-interface.o \
-	build/user-cmd.o build/debug.o
+	build/user-cmd.o build/debug.o build/user-out-line-mode.o
 	$(CC) $(CFLAGS) $(SANITIZE_FLAGS) -I. -I$(INCLUDE) -Iutests -o build/$@ $^ \
 		-lcurl -llexbor
 

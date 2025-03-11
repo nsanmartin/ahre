@@ -16,18 +16,8 @@ static StrView cstr_next_word_view(const char* s) {
 }
 
 
-lxb_inline lxb_status_t
-serializer_callback(const lxb_char_t *data, size_t len, void *session) {
-    (void)session;
-    return len == fwrite(data, 1, len, stdout) ? LXB_STATUS_OK : LXB_STATUS_ERROR;
-}
 
 
-lxb_inline lxb_status_t serialize(lxb_dom_node_t *node) {
-    return lxb_html_serialize_pretty_tree_cb(
-        node, LXB_HTML_SERIALIZE_OPT_UNDEF, 0, serializer_callback, NULL
-    );
-}
 
 /* external linkage */
 
@@ -121,9 +111,6 @@ Err lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* b
 //}
 
 
-void print_html(lxb_html_document_t* document) {
-        serialize(lxb_dom_interface_node(document));
-}
 
 
 Err

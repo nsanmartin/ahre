@@ -8,6 +8,7 @@
 #include "src/user-out.h"
 #include "src/utils.h"
 
+
 typedef struct Session Session;
 
 typedef Err (*UserLineCallback)(Session* session, const char*);
@@ -20,7 +21,8 @@ typedef struct Session {
 } Session;
 
 
-Err process_line(Session session[static 1], const char* line) ;
+Err process_line(Session session[static 1], const char* line);
+
 /* getters */
 Err session_current_buf(Session session[static 1], TextBuf* out[static 1]);
 Err session_current_doc(Session session[static 1], HtmlDoc* out[static 1]);
@@ -37,6 +39,7 @@ static inline void
 session_monochrome_set(Session s[static 1], bool value) {
     session_conf_monochrome_set(session_conf(s), value);
 }
+static inline UserInterface* session_ui(Session s[static 1]) { return session_conf_ui(session_conf(s)); }
 static inline UserInput* session_uin(Session s[static 1]) { return session_conf_uin(session_conf(s)); }
 static inline UserOutput* session_uout(Session s[static 1]) { return session_conf_uout(session_conf(s)); }
 static inline size_t*
@@ -113,7 +116,9 @@ static inline Err session_show_error(Session s[static 1], Err err) {
 }
 
 static inline Err session_show_output(Session s[static 1]) {
-    return session_uout(s)->show_session(s);
+    Err err = session_uout(s)->show_session(s);
+    if (err) if (session_show_error(s, err)) exit(EXIT_FAILURE); 
+    return Ok;
 }
 
 #endif

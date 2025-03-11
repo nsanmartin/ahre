@@ -10,6 +10,8 @@
 #include "src/user-input.h"
 #include "src/user-out.h"
 #include "src/user-interface.h"
+#include "src/session.h"
+
 
 
 static Err _open_many_urls_(Session session[static 1], ArlOf(const_char_ptr) urls[static 1]) {
@@ -29,7 +31,7 @@ static int _loop_(Session s[static 1]) {
     init_user_input_history();
     while (!session_quit(s)) {
         err = session_show_output(s);
-        char* line;
+        char* line = NULL;
         ok_then(err, session_read_user_input(s, &line));
         if (line) ok_then(err, session_consume_line(s, line));
         if (err) if (session_show_error(s, err)) exit(EXIT_FAILURE); 

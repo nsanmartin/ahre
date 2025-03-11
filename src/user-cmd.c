@@ -1,3 +1,4 @@
+#include "src/session.h"
 #include "src/utils.h"
 #include "src/user-interface.h"
 
@@ -82,12 +83,13 @@ Err cmd_set_session_monochrome(Session session[static 1], const char* line) {
 Err cmd_set_session_input(Session session[static 1], const char* line) {
     line = cstr_skip_space(line);
 
-    UserInput uin;
+    UserInterface ui;
     const char* rest;
-    if ((rest = csubstr_match(line, "fgets", 1)) && !*rest) uin = uin_fgets();
-    else if ((rest = csubstr_match(line, "isocline", 1)) && !*rest) uin = uin_isocline();
+    if ((rest = csubstr_match(line, "fgets", 1)) && !*rest) ui = ui_fgets();
+    else if ((rest = csubstr_match(line, "isocline", 1)) && !*rest) ui = ui_isocline();
+    else if ((rest = csubstr_match(line, "vi", 1)) && !*rest) ui = ui_vi_mode();
     else return "input option should be 'getline' or 'isocline'";
-    *session_uin(session) = uin;
+    *session_ui(session) = ui;
     return Ok;
 
 }

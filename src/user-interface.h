@@ -3,20 +3,38 @@
 
 #include <stdbool.h>
 
-#include "src/ranges.h"
-#include "src/session.h"
-#include "src/utils.h"
-#include "src/cmd-ed.h"
+#include "src/user-input.h"
+#include "src/user-out.h"
+#include "src/user-out-line-mode.h"
+#include "src/user-out-vi-mode.h"
 
-Err read_line_from_user(Session session[static 1]);
-Err process_line(Session session[static 1], const char* line);
+typedef struct {
+    UserInput uin;
+    UserOutput uout;
+} UserInterface ;
 
-
-void print_html(lxb_html_document_t* document);
-Err lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf);
-
-
-Err cmd_open_url(Session session[static 1], const char* url);
 
 Err ui_get_win_size(size_t nrows[static 1], size_t ncols[static 1]) ;
+
+static inline UserInterface ui_fgets(void) {
+    return (UserInterface) {
+        .uin=uinput_fgets(),
+        .uout=uout_line_mode()
+    };
+}
+
+static inline UserInterface ui_isocline(void) {
+    return (UserInterface) {
+        .uin=uinput_isocline(),
+        .uout=uout_line_mode()
+    };
+}
+
+static inline UserInterface ui_vi_mode(void) {
+    return (UserInterface) {
+        .uin=uinput_vi_mode(),
+        .uout=uout_vi_mode()
+    };
+}
+
 #endif

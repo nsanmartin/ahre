@@ -4,6 +4,27 @@
 #include "src/session.h"
 #include "src/screen.h"
 
+
+Err ui_show_session_vi_mode(Session* s) {
+    if (!s) return "error: unexpected null session, this should really not happen";
+
+    size_t nrows, ncols;
+    try( ui_get_win_size(&nrows, &ncols));
+    *session_nrows(s) = nrows;
+    *session_ncols(s) = ncols;
+
+    if (nrows <= 3) return "too few rows";
+    TextBuf* tb;
+    try( session_current_buf(s, &tb));
+    size_t line = *screen_line(textbuf_screen(tb));
+    if (!line) *screen_line(textbuf_screen(tb)) = line = 1;
+    Range r = (Range){ .beg=line, .end=line + nrows };
+
+    try( _vi_print_(tb, &r, session_conf_uout(session_conf(s))));
+    return Ok;
+}
+
+
 Err _vi_print_(TextBuf textbuf[static 1], Range range[static 1], UserOutput out[static 1]) {
     try(validate_range_for_buffer(textbuf, range));
     StrView line;

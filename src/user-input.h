@@ -107,18 +107,19 @@ static inline Err ui_fgets_readline(Session* s, const char* prompt, char* out[st
 
 #define add_to_user_input_history(X) 
 
-static inline UserInput uin_isocline(void) {
+static inline UserInput uinput_isocline(void) {
     return (UserInput){.init=init_user_input_history, .read=ui_isocline_readline};
 }
 
-static inline UserInput uin_fgets(void) {
+static inline UserInput uinput_fgets(void) {
     return (UserInput){.init=err_skip, .read=ui_fgets_readline};
 }
 
 Err ui_vi_mode_read_input(Session* s, const char* prompt, char* out[static 1]);
 
-static inline UserInput uin_vi_mode(void) {
+static inline UserInput uinput_vi_mode(void) {
     return (UserInput){.init=err_skip, .read=ui_vi_mode_read_input};
 }
+
 #endif
 

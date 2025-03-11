@@ -3,7 +3,6 @@
 
 #include <errno.h>
 
-#include "src/textbuf.h"
 #include "src/utils.h"
 
 typedef struct Session Session;

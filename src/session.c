@@ -10,8 +10,9 @@ Err session_current_doc(Session session[static 1], HtmlDoc* out[static 1]) {
     try( tablist_current_doc(f, &d));
     *out = d;
     return Ok;
-
 }
+
+
 
 Err session_current_buf(Session session[static 1], TextBuf* out[static 1]) {
     HtmlDoc* d;

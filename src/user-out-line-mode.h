@@ -1,10 +1,12 @@
 #ifndef AHRE_USER_OUT_LINE_MODE_H__
 #define AHRE_USER_OUT_LINE_MODE_H__
 
-static Err ui_show_session_line_mode(Session* s) {
-    if (!s) return "error: unexpected null session, this should really not happen";
-    return session_uout(s)->flush_std();
-}
+#include "src/error.h"
+#include "src/user-out.h"
+
+typedef struct Session Session;
+
+Err ui_show_session_line_mode(Session* s);
 
 static inline UserOutput uout_line_mode(void) {
     return (UserOutput) {
