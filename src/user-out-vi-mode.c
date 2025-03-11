@@ -18,7 +18,9 @@ Err ui_show_session_vi_mode(Session* s) {
     try( session_current_buf(s, &tb));
     size_t line = *screen_line(textbuf_screen(tb));
     if (!line) *screen_line(textbuf_screen(tb)) = line = 1;
-    Range r = (Range){ .beg=line, .end=line + *session_nrows(s) };
+    size_t end = line + *session_nrows(s);
+    end = (end > textbuf_line_count(tb)) ? textbuf_line_count(tb) : end;
+    Range r = (Range){ .beg=line, .end=end };
 
     try( _vi_print_(tb, &r, session_conf_uout(session_conf(s))));
     return Ok;
@@ -30,6 +32,7 @@ Err _vi_print_(TextBuf textbuf[static 1], Range range[static 1], UserOutput out[
     StrView line;
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
+        if (!line.items || !*line.items) continue; //TODO: fix get-line
         //TODO: use after debug
         //if (line.len) {
         //    try( uiw_strview(out->write_std,&line));

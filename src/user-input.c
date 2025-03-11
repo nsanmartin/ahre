@@ -14,19 +14,41 @@ bool _is_cmd_char_(char c) {
         ;
 }
 
-Err
-_ui_vi_read_vi_mode_keys_(Session s[static 1], char cmd[static 1], char* line[static 1]) {
-    (void)s;
-    (void)line;
+Err _ui_keystroke_ctrl_f_(Session s[static 1]) {
+    TextBuf* tb;
+    try( session_current_buf(s, &tb));
+    *screen_line(textbuf_screen(tb)) += *session_nrows(s);
+    if (*screen_line(textbuf_screen(tb)) > textbuf_line_count(tb))
+        *screen_line(textbuf_screen(tb)) = textbuf_line_count(tb) - 1;
+    return Ok;
+}
+
+Err _ui_keystroke_ctrl_b_(Session s[static 1]) {
+    TextBuf* tb;
+    try( session_current_buf(s, &tb));
+    if (*screen_line(textbuf_screen(tb)) <= *session_nrows(s))
+        *screen_line(textbuf_screen(tb)) = 1;
+    else *screen_line(textbuf_screen(tb)) -= *session_nrows(s);
+    return Ok;
+}
+
+Err _ui_vi_read_vi_mode_keys_(Session s[static 1], char cmd[static 1]) {
     while (!*cmd) {
         int cint = fgetc(stdin);
-        if (cint == EOF) return "error: EOF reading input";
-        if (cint == KeyEnter) { continue; }
-        if (cint == KeyCtrl_C) { continue; }
+        switch(cint) {
+            case EOF: return "error: EOF reading input";
+            case KeyEnter: 
+            case KeyCtrl_C: continue;
+            case KeyCtrl_F:
+            case KeySpace: _ui_keystroke_ctrl_f_(s); *cmd = KeyCtrl_F; break; 
+            case KeyCtrl_B: _ui_keystroke_ctrl_b_(s); *cmd = KeyCtrl_B; break; 
 
-        char c = (char)cint;
-        if (!isprint(c)) continue;
-        if (_is_cmd_char_(c)) { *cmd = c; }
+            default:
+
+            char c = (char)cint;
+            if (!isprint(c)) continue;
+            if (_is_cmd_char_(c)) { *cmd = c; }
+        }
     }
     return Ok;
 }
@@ -67,9 +89,9 @@ Err ui_vi_mode_read_input(Session* s, const char* prompt, char* out[static 1]) {
 
     char cmd = 0x0;
     while (!cmd) {
-        err = _ui_vi_read_vi_mode_keys_(s, &cmd, out);
+        err = _ui_vi_read_vi_mode_keys_(s, &cmd);
     }
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &prev_termios) == -1) return "error: tcsetattr failure";
-    ok_then(err,_raw_readline_(cmd, out));
+    if (_is_cmd_char_(cmd)) ok_then(err,_raw_readline_(cmd, out));
     return err;
 }

@@ -50,6 +50,7 @@ typedef enum {
 	KeyCtrl_U    = 21,
 	KeyCtrl_W    = 23,
 	KeyEsc       = 27,
+	KeySpace     = 32,
 	KeyBackspace = 127
 } KeyStroke;
 
