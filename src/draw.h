@@ -18,12 +18,14 @@ typedef struct {
     BufOf(char) buf;
     ArlOf(EscCode) esc_code_stack;
     unsigned flags;
+    WriteUserOutputCallback logfn;
 } DrawCtx;
 
 typedef Err (*ImpureDrawProcedure)(DrawCtx ctx[static 1]);
 
 static inline HtmlDoc* draw_ctx_htmldoc(DrawCtx ctx[static 1]) { return ctx->htmldoc; }
 
+static inline WriteUserOutputCallback draw_ctx_logfn(DrawCtx ctx[static 1]) { return ctx->logfn; }
 
 static inline bool draw_ctx_hide_tags(DrawCtx ctx[static 1], size_t tags) {
     return *htmldoc_hide_tags(draw_ctx_htmldoc(ctx)) & tags;
@@ -110,7 +112,7 @@ static inline void draw_ctx_buf_reset(DrawCtx ctx[static 1]) {
 static inline Err
 draw_ctx_init(DrawCtx ctx[static 1], HtmlDoc htmldoc[static 1], SessionConf sconf[static 1]) {
     unsigned flags = (session_conf_monochrome(sconf)? DRAW_CTX_FLAG_MONOCHROME: 0);
-    *ctx = (DrawCtx) {.htmldoc=htmldoc, .flags=flags};
+    *ctx = (DrawCtx) {.htmldoc=htmldoc, .flags=flags, .logfn=session_conf_uout(sconf)->write_msg};
     return Ok;
 }
 

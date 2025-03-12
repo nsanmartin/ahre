@@ -11,7 +11,8 @@ Err ui_show_session_vi_mode(Session* s);
 
 static inline UserOutput uout_vi_mode(void) {
     return (UserOutput) {
-        .write_msg    = ui_write_callback_stdout,
+        //.write_msg    = ui_write_callback_stdout,
+        .write_msg    = ignore_output,
         .flush_msg    = ui_flush_stdout,
         .write_std    = ui_write_callback_stdout,
         .flush_std    = ui_flush_stdout,

@@ -200,7 +200,7 @@ static Err _make_submit_post_curlu_rec(
 ) {
     if (!node) return Ok;
     if (node->local_name == LXB_TAG_FORM) {
-       log_warn__("%s", "ignoring form nested inside another form"); 
+       log_warn__( ui_write_callback_stdout, NULL, "%s", "ignoring form nested inside another form"); //TODO: use a configurable log fn
        return Ok;
     }
     if (node->local_name == LXB_TAG_INPUT && !_lexbor_attr_has_value(node, "type", "submit"))

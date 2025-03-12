@@ -15,8 +15,9 @@ Err draw_bookmark_rec(lxb_dom_node_t* node) {
                 //return draw_list(node->first_child, node->last_child, NULL);
                 puts("g"); return Ok;
             default: {
-                if (node->type >= LXB_DOM_NODE_TYPE_LAST_ENTRY)
-                    log_warn__("lexbor node type greater than last entry: %lx\n", node->type);
+                 //TODO: log this or do anythong else?
+                //if (node->type >= LXB_DOM_NODE_TYPE_LAST_ENTRY)
+                //    log_warn__("lexbor node type greater than last entry: %lx\n", node->type);
                 //else log_warn__("Ignored Node Type: %s\n", _dbg_node_types_[node->type]);
                 return Ok;
             }

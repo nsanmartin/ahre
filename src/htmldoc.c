@@ -357,7 +357,15 @@ static Err
 draw_tag_title(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     HtmlDoc* d = draw_ctx_htmldoc(ctx);
     *htmldoc_title(d) = node;
-    try( dbg_print_title(node));
+    Str2 title = (Str2){0};
+    try( lexbor_get_title_text_line(node, &title));
+    if (!title.len)  {
+        try( log_info__(draw_ctx_logfn(ctx), NULL, "%s", "<%> no title <%>"));
+        return Ok;
+    }
+    if (!buffn(char,append)(&title, "\0", 1)) return "error: bufn append failure";
+    try( log_info__(draw_ctx_logfn(ctx), NULL, "%s", title.items));
+    buffn(char,clean)(&title); 
     return Ok;
 }
 
@@ -616,16 +624,32 @@ Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         case LXB_TAG_OL: { return draw_tag_ul(node, ctx); }
         case LXB_TAG_P: { return draw_tag_p(node, ctx); }
         case LXB_TAG_PRE: { return draw_tag_pre(node, ctx); }
-        case LXB_TAG_SCRIPT: { log_todo__("%s", "[todo] implement script tag (skipping)"); return Ok; } 
-        case LXB_TAG_STYLE: { log_todo__("%s\n", "[todo?] skiping style"); return Ok; } 
+        case LXB_TAG_SCRIPT: {
+            log_todo__( draw_ctx_logfn(ctx), NULL, "%s", "script tag not implemented (skipping)");
+            return Ok;
+        } 
+        case LXB_TAG_STYLE: {
+            log_todo__( draw_ctx_logfn(ctx), NULL, "%s\n", "skiping style (not implemented)");
+            return Ok;
+        } 
         case LXB_TAG_TITLE: { return draw_tag_title(node, ctx); } 
         case LXB_TAG_TR: { return draw_tag_tr(node, ctx); }
         case LXB_TAG_TT: { return draw_tag_code(node, ctx); }
         case LXB_TAG_UL: { return draw_tag_ul(node, ctx); }
         default: {
             if (node->local_name >= LXB_TAG__LAST_ENTRY)
-                log_warn__("node local name (TAG) greater than last entry: %lx\n", node->local_name);
-            else log_todo__("TAG 'NOT' IMPLEMENTED: %s", _dbg_tags_[node->local_name]);
+                log_warn__(
+                    draw_ctx_logfn(ctx),
+                    NULL,
+                    "node local name (TAG) greater than last entry: %lx\n",
+                    node->local_name
+                );
+            else log_todo__(
+                draw_ctx_logfn(ctx),
+                NULL,
+                "TAG 'NOT' IMPLEMENTED: %s",
+                _dbg_tags_[node->local_name]
+            );
             return draw_list(node->first_child, node->last_child, ctx);
         }
     }
@@ -647,7 +671,11 @@ Err draw_text(lxb_dom_node_t* node,  DrawCtx ctx[static 1]) {
         try( draw_mem_skipping_space(data, len, ctx));
     } 
     if (node->first_child || node->last_child)
-        log_warn__("%s\n", "LXB_DOM_NODE_TYPE_TEXT with actual childs");
+        log_warn__(
+            draw_ctx_logfn(ctx),
+            NULL,
+            "%s\n", "LXB_DOM_NODE_TYPE_TEXT with actual childs"
+        );
     return Ok;
 }
 
@@ -663,8 +691,18 @@ Err draw_rec(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
                 return draw_list(node->first_child, node->last_child, ctx);
             default: {
                 if (node->type >= LXB_DOM_NODE_TYPE_LAST_ENTRY)
-                    log_warn__("lexbor node type greater than last entry: %lx\n", node->type);
-                else log_warn__("Ignored Node Type: %s\n", _dbg_node_types_[node->type]);
+                    log_warn__(
+                        draw_ctx_logfn(ctx),
+                        NULL,
+                        "lexbor node type greater than last entry: %lx\n",
+                        node->type
+                    );
+                else log_warn__(
+                    draw_ctx_logfn(ctx),
+                    NULL,
+                    "Ignored Node Type: %s\n",
+                    _dbg_node_types_[node->type]
+                );
                 return Ok;
             }
         }

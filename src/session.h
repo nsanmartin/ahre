@@ -40,7 +40,7 @@ session_monochrome_set(Session s[static 1], bool value) {
     session_conf_monochrome_set(session_conf(s), value);
 }
 static inline UserInterface* session_ui(Session s[static 1]) { return session_conf_ui(session_conf(s)); }
-static inline UserInput* session_uin(Session s[static 1]) { return session_conf_uin(session_conf(s)); }
+static inline UserInput* session_uinput(Session s[static 1]) { return session_conf_uinput(session_conf(s)); }
 static inline UserOutput* session_uout(Session s[static 1]) { return session_conf_uout(session_conf(s)); }
 static inline size_t*
 session_nrows(Session s[static 1]) { return session_conf_nrows(session_conf(s)); }
@@ -97,7 +97,7 @@ Err dbg_session_summary(Session session[static 1]);
 Err cmd_set(Session session[static 1], const char* line);
 
 static inline Err session_read_user_input(Session s[static 1], char* line[static 1]) {
-    return session_uin(s)->read(s, NULL, line);
+    return session_uinput(s)->read(s, NULL, line);
 }
 
 

@@ -61,4 +61,12 @@ static inline Err ui_flush_stdout(void) {
     return Ok;
 }
 
+static inline Err ignore_output(const char* mem, size_t len, void* ctx) {
+    (void)mem;
+    (void)len;
+    (void)ctx;
+    //puts("ignoring output :)");
+    return Ok;
+}
+
 #endif

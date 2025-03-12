@@ -16,11 +16,15 @@ static Err _dbg_print_form_info_rec_(lxb_dom_node_t* node, int indent) {
 
         if (!value || valuelen == 0)
             log_debug__(
+                ui_write_callback_stdout,
+                NULL,
                 "%*c" "%p->%p\t" "%.*s" "\t\\0\n",
                 indent, ' ', (void*)node->parent, (void*)node ,namelen, name
             );
         else
             log_debug__(
+                ui_write_callback_stdout,
+                NULL,
                 "%*c" "%p->%p\t" "%.*s" "\t" "%.*s\n",
                 indent, ' ', (void*)node->parent, (void*)node ,namelen, name, valuelen, value
             );

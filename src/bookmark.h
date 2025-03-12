@@ -165,17 +165,6 @@ _get_bookmarks_doc_(UrlClient url_client[static 1], Str2* bmfile, HtmlDoc out[st
     return Ok;
 }
 
-static inline Err bookmark_mk_title(HtmlDoc d[static 1], char* url, Str2 title[static 1]) {
-    Err err = Ok;
-    lxb_dom_node_t* title_node;
-    try( lexbor_get_title_node(htmldoc_lxbdoc(d), &title_node));
-    if (title_node) err = lexbor_get_title_text_line(title_node, title);
-    else if (!*url) err = "no title nor url";
-    else err = str2_append(title, url, strlen(url));
-
-    return err;
-}
-
 static inline Err _bm_to_source_rec_(lxb_dom_node_t* node, Str2 out[static 1]) ;
 Err dbg_print_all_lines_nums(TextBuf textbuf[static 1]) ;
 
@@ -278,9 +267,10 @@ static inline Err _bm_to_source_rec_(lxb_dom_node_t* node, Str2 out[static 1]) {
             case LXB_DOM_NODE_TYPE_TEXT: return _bm_to_source_append_text_(node, out);
             case LXB_DOM_NODE_TYPE_COMMENT: return Ok;
             default: {
-                if (node->type >= LXB_DOM_NODE_TYPE_LAST_ENTRY)
-                    log_warn__("lexbor node type greater than last entry: %lx\n", node->type);
-                else log_warn__("%s\n", "Ignored Node Type in Bookmar file");
+                 //TODO: log this or do anythong else?
+                //if (node->type >= LXB_DOM_NODE_TYPE_LAST_ENTRY)
+                //    log_warn__("lexbor node type greater than last entry: %lx\n", node->type);
+                //else log_warn__("%s\n", "Ignored Node Type in Bookmar file");
                 return Ok;
             }
         }
@@ -347,7 +337,7 @@ bookmark_add_to_section(HtmlDoc d[static 1], const char* line, UrlClient url_cli
     if ((err = bookmark_sections_body(&bm, &body))) goto free_curl_url;
 
     Str2* title = &(Str2){0};
-    if ((err = bookmark_mk_title(d, url, title))) goto free_curl_url;
+    if ((err = lxb_mk_title_or_url(d, url, title))) goto free_curl_url;
 
     lxb_dom_element_t* bm_entry;
     if ((err = bookmark_mk_entry(bm.lxbdoc, url, title, &bm_entry))) goto clean_title;

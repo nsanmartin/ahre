@@ -17,24 +17,30 @@ bool _is_cmd_char_(char c) {
 Err _ui_keystroke_ctrl_f_(Session s[static 1]) {
     TextBuf* tb;
     try( session_current_buf(s, &tb));
-    *screen_line(textbuf_screen(tb)) += *session_nrows(s);
-    if (*screen_line(textbuf_screen(tb)) > textbuf_line_count(tb))
-        *screen_line(textbuf_screen(tb)) = textbuf_line_count(tb) - 1;
+    size_t line = textbuf_current_line(tb) + *session_nrows(s);
+    if (line > textbuf_line_count(tb)) line = textbuf_line_count(tb);
+
+    size_t off;
+    try(textbuf_get_offset_of_line(tb, line, &off));
+    *textbuf_current_offset(tb) = off;
     return Ok;
 }
 
 Err _ui_keystroke_ctrl_b_(Session s[static 1]) {
     TextBuf* tb;
     try( session_current_buf(s, &tb));
-    if (*screen_line(textbuf_screen(tb)) <= *session_nrows(s))
-        *screen_line(textbuf_screen(tb)) = 1;
-    else *screen_line(textbuf_screen(tb)) -= *session_nrows(s);
+    size_t line = textbuf_current_line(tb);
+    line = (line >  *session_nrows(s)) ? line - *session_nrows(s) : 1;
+    size_t off;
+    try(textbuf_get_offset_of_line(tb, line, &off));
+    *textbuf_current_offset(tb) = off;
     return Ok;
 }
 
 Err _ui_vi_read_vi_mode_keys_(Session s[static 1], char cmd[static 1]) {
     while (!*cmd) {
         int cint = fgetc(stdin);
+        char c;
         switch(cint) {
             case EOF: return "error: EOF reading input";
             case KeyEnter: 
@@ -45,7 +51,7 @@ Err _ui_vi_read_vi_mode_keys_(Session s[static 1], char cmd[static 1]) {
 
             default:
 
-            char c = (char)cint;
+            c = (char)cint;
             if (!isprint(c)) continue;
             if (_is_cmd_char_(c)) { *cmd = c; }
         }

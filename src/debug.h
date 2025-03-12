@@ -3,6 +3,8 @@
 
 #include "src/session.h"
 
+#define MAX_LOG_MSG_LEN__ 4056
+
 static inline bool is_debug_build(void) {
 #ifndef DEBUG 
     return true;
@@ -46,21 +48,32 @@ static const char* _log_lvl_str_[] = {
     [LOG_LVL_TODO]  = "[todo] " 
 };
 
-static inline void log_lvl__(LogLvl level, const char* format, ...) {
-    if (_log_lvl_ < level) return;
-    printf("%s", _log_lvl_str_[level]); 
+static inline Err
+log_lvl__(WriteUserOutputCallback w, void* ctx, LogLvl level, const char* format, ...) {
+    if (_log_lvl_ < level) return Ok;
+    try (w(_log_lvl_str_[level], strlen(_log_lvl_str_[level]), ctx));
+    char log_buf[MAX_LOG_MSG_LEN__] = {0};
+
     va_list args;
     va_start (args, format);
-    vprintf (format, args);
+    int written = vsnprintf (log_buf, MAX_LOG_MSG_LEN__, format, args);
     va_end (args);
-    puts("");
+
+    if (written >= MAX_LOG_MSG_LEN__) {
+        char* msg = ":( log message too long\n";
+        try (w(msg, strlen(msg), ctx));
+    } else {
+        try (w(log_buf, written, ctx));
+        try (w("\n", 1, ctx));
+    }
+    return Ok;
 }
 
 
-#define log_warn__(Fmt, ...) log_lvl__(LOG_LVL_WARN, Fmt, __VA_ARGS__)
-#define log_info__(Fmt, ...) log_lvl__(LOG_LVL_INFO, Fmt, __VA_ARGS__)
-#define log_debug__(Fmt, ...) log_lvl__(LOG_LVL_DEBUG, Fmt, __VA_ARGS__)
-#define log_todo__(Fmt, ...) log_lvl__(LOG_LVL_TODO, Fmt, __VA_ARGS__)
+#define log_warn__(Wcb, Ctx, Fmt, ...) log_lvl__(Wcb, Ctx, LOG_LVL_WARN, Fmt, __VA_ARGS__)
+#define log_info__(Wcb, Ctx, Fmt, ...) log_lvl__(Wcb, Ctx, LOG_LVL_INFO, Fmt, __VA_ARGS__)
+#define log_debug__(Wcb, Ctx, Fmt, ...) log_lvl__(Wcb, Ctx, LOG_LVL_DEBUG, Fmt, __VA_ARGS__)
+#define log_todo__(Wcb, Ctx, Fmt, ...) log_lvl__(Wcb, Ctx, LOG_LVL_TODO, Fmt, __VA_ARGS__)
 
 Err dbg_print_form(Session s[static 1], const char* line);
 #endif
