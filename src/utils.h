@@ -62,9 +62,6 @@ static inline int buf_append_hexp(void* p, BufOf(char)*buf) {
     return 0;
 }
 
-//static inline void log_info(const char* msg) { puts(msg); }
-//static inline void log_error(const char* msg) { perror(msg); }
-
 
 Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[static 1]);
 

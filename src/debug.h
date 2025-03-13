@@ -23,7 +23,12 @@ typedef enum {
     LOG_LVL_TODO
 } LogLvl;
 
+#ifdef DEBUG
 static LogLvl _log_lvl_ = LOG_LVL_TODO;
+#else
+static LogLvl _log_lvl_ = LOG_LVL_WARN;
+#endif
+
 #define try_debug_build_only() do{ if (is_debug_build()) return "not a debug build"; }while(0);
 
 static inline void dbg_log(const char* s) { printf("DEBUG %s\n", s); }
@@ -49,31 +54,48 @@ static const char* _log_lvl_str_[] = {
 };
 
 static inline Err
-log_lvl__(WriteUserOutputCallback w, void* ctx, LogLvl level, const char* format, ...) {
-    if (_log_lvl_ < level) return Ok;
-    try (w(_log_lvl_str_[level], strlen(_log_lvl_str_[level]), ctx));
+_log_format__(WriteFnWCtx wc, const char* format, va_list args) {
+    if (!wc.write) return "error: expectinf write fn";
+
     char log_buf[MAX_LOG_MSG_LEN__] = {0};
 
-    va_list args;
-    va_start (args, format);
     int written = vsnprintf (log_buf, MAX_LOG_MSG_LEN__, format, args);
-    va_end (args);
 
     if (written >= MAX_LOG_MSG_LEN__) {
         char* msg = ":( log message too long\n";
-        try (w(msg, strlen(msg), ctx));
+        try (wc.write(msg, strlen(msg), wc.ctx));
     } else {
-        try (w(log_buf, written, ctx));
-        try (w("\n", 1, ctx));
+        try (wc.write(log_buf, written, wc.ctx));
     }
     return Ok;
 }
 
 
-#define log_warn__(Wcb, Ctx, Fmt, ...) log_lvl__(Wcb, Ctx, LOG_LVL_WARN, Fmt, __VA_ARGS__)
-#define log_info__(Wcb, Ctx, Fmt, ...) log_lvl__(Wcb, Ctx, LOG_LVL_INFO, Fmt, __VA_ARGS__)
-#define log_debug__(Wcb, Ctx, Fmt, ...) log_lvl__(Wcb, Ctx, LOG_LVL_DEBUG, Fmt, __VA_ARGS__)
-#define log_todo__(Wcb, Ctx, Fmt, ...) log_lvl__(Wcb, Ctx, LOG_LVL_TODO, Fmt, __VA_ARGS__)
+
+static inline Err log_lvl__(WriteFnWCtx wc, LogLvl level, const char* format, ...) {
+    if (!wc.write || _log_lvl_ < level) return Ok;
+    try (wc.write(_log_lvl_str_[level], strlen(_log_lvl_str_[level]), wc.ctx));
+
+    va_list args;
+    va_start (args, format);
+    try( _log_format__(wc, format, args));
+    va_end (args);
+    return Ok;
+}
+
+static inline Err log_msg__(WriteFnWCtx wc, const char* format, ...) {
+    if (!wc.write) return Ok;
+    va_list args;
+    va_start (args, format);
+    try( _log_format__(wc, format, args));
+    va_end (args);
+    return Ok;
+}
+
+#define log_warn__(Wcb, Fmt, ...) log_lvl__(Wcb, LOG_LVL_WARN, Fmt, __VA_ARGS__)
+#define log_info__(Wcb, Fmt, ...) log_lvl__(Wcb, LOG_LVL_INFO, Fmt, __VA_ARGS__)
+#define log_debug__(Wcb, Fmt, ...) log_lvl__(Wcb, LOG_LVL_DEBUG, Fmt, __VA_ARGS__)
+#define log_todo__(Wcb, Fmt, ...) log_lvl__(Wcb, LOG_LVL_TODO, Fmt, __VA_ARGS__)
 
 Err dbg_print_form(Session s[static 1], const char* line);
 #endif

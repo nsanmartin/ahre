@@ -360,11 +360,11 @@ draw_tag_title(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     Str2 title = (Str2){0};
     try( lexbor_get_title_text_line(node, &title));
     if (!title.len)  {
-        try( log_info__(draw_ctx_logfn(ctx), NULL, "%s", "<%> no title <%>"));
+        try( log_msg__(draw_ctx_logfn(ctx), "%s\n", "<%> no title <%>"));
         return Ok;
     }
-    if (!buffn(char,append)(&title, "\0", 1)) return "error: bufn append failure";
-    try( log_info__(draw_ctx_logfn(ctx), NULL, "%s", title.items));
+    if (!buffn(char,append)(&title, "\n\0", 2)) return "error: bufn append failure";
+    try( log_msg__(draw_ctx_logfn(ctx), "%s", title.items));
     buffn(char,clean)(&title); 
     return Ok;
 }
@@ -625,11 +625,11 @@ Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         case LXB_TAG_P: { return draw_tag_p(node, ctx); }
         case LXB_TAG_PRE: { return draw_tag_pre(node, ctx); }
         case LXB_TAG_SCRIPT: {
-            log_todo__( draw_ctx_logfn(ctx), NULL, "%s", "script tag not implemented (skipping)");
+            log_todo__( draw_ctx_logfn(ctx), "%s", "script tag not implemented (skipping)");
             return Ok;
         } 
         case LXB_TAG_STYLE: {
-            log_todo__( draw_ctx_logfn(ctx), NULL, "%s\n", "skiping style (not implemented)");
+            log_todo__( draw_ctx_logfn(ctx), "%s\n", "skiping style (not implemented)");
             return Ok;
         } 
         case LXB_TAG_TITLE: { return draw_tag_title(node, ctx); } 
@@ -640,13 +640,11 @@ Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
             if (node->local_name >= LXB_TAG__LAST_ENTRY)
                 log_warn__(
                     draw_ctx_logfn(ctx),
-                    NULL,
                     "node local name (TAG) greater than last entry: %lx\n",
                     node->local_name
                 );
             else log_todo__(
                 draw_ctx_logfn(ctx),
-                NULL,
                 "TAG 'NOT' IMPLEMENTED: %s",
                 _dbg_tags_[node->local_name]
             );
@@ -673,8 +671,8 @@ Err draw_text(lxb_dom_node_t* node,  DrawCtx ctx[static 1]) {
     if (node->first_child || node->last_child)
         log_warn__(
             draw_ctx_logfn(ctx),
-            NULL,
-            "%s\n", "LXB_DOM_NODE_TYPE_TEXT with actual childs"
+            "%s\n",
+            "LXB_DOM_NODE_TYPE_TEXT with actual childs"
         );
     return Ok;
 }
@@ -693,13 +691,11 @@ Err draw_rec(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
                 if (node->type >= LXB_DOM_NODE_TYPE_LAST_ENTRY)
                     log_warn__(
                         draw_ctx_logfn(ctx),
-                        NULL,
                         "lexbor node type greater than last entry: %lx\n",
                         node->type
                     );
                 else log_warn__(
                     draw_ctx_logfn(ctx),
-                    NULL,
                     "Ignored Node Type: %s\n",
                     _dbg_node_types_[node->type]
                 );
@@ -770,7 +766,7 @@ Err htmldoc_init_fetch_draw(
     SessionConf sconf[static 1]
 ) {
     try(htmldoc_init(d, url));
-    Err err = htmldoc_fetch(d, url_client);
+    Err err = htmldoc_fetch(d, url_client, get_log_fn_from_session_conf_and_htmldoc(sconf, d));
     ok_then(err, htmldoc_draw(d, sconf));
     if (err) {
         htmldoc_cleanup(d);
@@ -787,7 +783,7 @@ Err htmldoc_init_fetch_draw_from_curlu(
     SessionConf sconf[static 1]
 ) {
     try(htmldoc_init_from_curlu(d, cu, method));
-    Err err = htmldoc_fetch(d, url_client); 
+    Err err = htmldoc_fetch(d, url_client, get_log_fn_from_session_conf_and_htmldoc(sconf,d)); 
     ok_then(err, htmldoc_draw(d, sconf));
     if (err) {
         d->url = (Url){0}; /* on failure do not free cu owned by caller */

@@ -157,7 +157,7 @@ static inline Err
 _get_bookmarks_doc_(UrlClient url_client[static 1], Str2* bmfile, HtmlDoc out[static 1]) {
     try( get_bookmark_file(bmfile));
     try(htmldoc_init(out, bmfile->items));
-    Err err = htmldoc_fetch(out, url_client);
+    Err err = htmldoc_fetch(out, url_client, output_dev_null__);
     if (err) {
         htmldoc_cleanup(out);
         return err;

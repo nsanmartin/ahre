@@ -113,8 +113,9 @@ static inline void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
 
 
 /* external */
-Err
-curl_lexbor_fetch_document(UrlClient url_client[static 1], HtmlDoc htmldoc[static 1]);
+Err curl_lexbor_fetch_document(
+    UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], WriteFnWCtx wcb
+);
 
 /**/
 
@@ -127,8 +128,11 @@ HtmlDoc* htmldoc_create(const char* url);
 static inline bool file_exists(const char* path) { return access(path, F_OK) == 0; }
 Err lexbor_read_doc_from_file(HtmlDoc htmldoc[static 1]) ;
 
-static inline Err htmldoc_fetch(HtmlDoc htmldoc[static 1], UrlClient url_client[static 1]) {
-        return curl_lexbor_fetch_document(url_client, htmldoc);
+static inline Err
+htmldoc_fetch(
+    HtmlDoc htmldoc[static 1], UrlClient url_client[static 1], WriteFnWCtx wfnc
+) {
+        return curl_lexbor_fetch_document(url_client, htmldoc, wfnc);
 }
 
 

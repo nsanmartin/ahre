@@ -9,13 +9,13 @@
 
 /* internal linkage */
 
-void _print_fetch_info_(CURL* handle) {
+void _print_fetch_info_(WriteFnWCtx wc, CURL* handle) {
     curl_off_t nbytes;
     CURLcode curl_code = curl_easy_getinfo(handle, CURLINFO_SIZE_DOWNLOAD_T, &nbytes);
     if (curl_code!=CURLE_OK) 
-        printf("warn: %s", curl_easy_strerror(curl_code));
+        log_warn__(wc, "%s", curl_easy_strerror(curl_code));
      else 
-        printf("%"CURL_FORMAT_CURL_OFF_T"\n", nbytes);
+        log_msg__(wc, "%"CURL_FORMAT_CURL_OFF_T"\n", nbytes);
 }
 
 Err _lexbor_parse_chunk_begin_(HtmlDoc htmldoc[static 1]) {
@@ -96,8 +96,9 @@ _set_htmldoc_url_with_effective_url_(UrlClient url_client[static 1], HtmlDoc htm
     return curlu_set_url(url_cu(htmldoc_url(htmldoc)), effective_url);
 }
 
-Err
-curl_lexbor_fetch_document(UrlClient url_client[static 1], HtmlDoc htmldoc[static 1]) {
+Err curl_lexbor_fetch_document(
+    UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], WriteFnWCtx wfnc
+) {
     try( _curl_set_write_fn_and_data_(url_client, htmldoc));//TODO: move?
     try( _lexbor_parse_chunk_begin_(htmldoc));
     try( _curl_set_http_method_(url_client, htmldoc));
@@ -110,7 +111,7 @@ curl_lexbor_fetch_document(UrlClient url_client[static 1], HtmlDoc htmldoc[stati
 
     try( _lexbor_parse_chunk_end_(htmldoc));
     try(_set_htmldoc_url_with_effective_url_(url_client, htmldoc));
-    _print_fetch_info_(url_client->curl);
+    _print_fetch_info_(wfnc, url_client->curl);
     return Ok;
 }
 
@@ -200,7 +201,7 @@ static Err _make_submit_post_curlu_rec(
 ) {
     if (!node) return Ok;
     if (node->local_name == LXB_TAG_FORM) {
-       log_warn__( ui_write_callback_stdout, NULL, "%s", "ignoring form nested inside another form"); //TODO: use a configurable log fn
+       log_warn__( output_stdout__, NULL, "%s", "ignoring form nested inside another form"); //TODO: use a configurable log fn
        return Ok;
     }
     if (node->local_name == LXB_TAG_INPUT && !_lexbor_attr_has_value(node, "type", "submit"))

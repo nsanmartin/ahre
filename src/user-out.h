@@ -11,6 +11,8 @@ typedef Err (*WriteUserOutputCallback)(const char* mem, size_t len, void* ctx);
 typedef Err (*FlushUserOutputCallback)(void);
 typedef Err (*ShowTextUserOutputCallback)(Session* s);
 
+typedef struct { WriteUserOutputCallback write; void* ctx; } WriteFnWCtx;
+
 typedef struct {
     WriteUserOutputCallback    write_msg;
     FlushUserOutputCallback    flush_msg;
@@ -68,5 +70,8 @@ static inline Err ignore_output(const char* mem, size_t len, void* ctx) {
     //puts("ignoring output :)");
     return Ok;
 }
+
+#define output_dev_null__ (WriteFnWCtx){.write=ignore_output}
+#define output_stdout__ (WriteFnWCtx){.write=ui_write_callback_stdout}
 
 #endif

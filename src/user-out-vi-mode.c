@@ -47,18 +47,18 @@ Err _vi_print_(TextBuf textbuf[static 1], Range range[static 1], UserOutput out[
     return Ok;
 }
 
-static inline Err ui_vi_write_callback_stdout(const char* mem, size_t len, void* ctx) {
-    (void)mem;
-    (void)len;
-    (void)ctx;
-    return Ok;
-    //if (ctx) return "error: ctx not expected in write callback";
-    //return len - fwrite(mem, sizeof(const char), len, stdout) ? "error: fwrite failure": Ok;
-}
-
-
-static inline Err ui_vi_flush_stdout(void) {
-    //if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
-    return Ok;
-}
+///static inline Err ui_vi_write_callback_stdout(const char* mem, size_t len, void* ctx) {
+///    (void)mem;
+///    (void)len;
+///    (void)ctx;
+///    return Ok;
+///    //if (ctx) return "error: ctx not expected in write callback";
+///    //return len - fwrite(mem, sizeof(const char), len, stdout) ? "error: fwrite failure": Ok;
+///}
+///
+///
+///static inline Err ui_vi_flush_stdout(void) {
+///    //if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
+///    return Ok;
+///}
 
