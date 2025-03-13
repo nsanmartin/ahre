@@ -28,7 +28,7 @@ static inline Err uiw_strview(WriteUserOutputCallback wcb, StrView s[static 1]) 
     return wcb(items__(s), len__(s),NULL);
 }
 
-static inline Err uiw_str(WriteUserOutputCallback wcb, Str2 s[static 1]) {
+static inline Err uiw_str(WriteUserOutputCallback wcb, Str s[static 1]) {
     return wcb(items__(s), len__(s), NULL);
 }
 

@@ -205,13 +205,13 @@ static inline Err htmldoc_tags_str_reduce_size_t(const char* tags, size_t ts[sta
 
 Err htmldoc_draw(HtmlDoc htmldoc[static 1], SessionConf sconf[static 1]);
 
-static inline Err lxb_mk_title_or_url(HtmlDoc d[static 1], char* url, Str2 title[static 1]) {
+static inline Err lxb_mk_title_or_url(HtmlDoc d[static 1], char* url, Str title[static 1]) {
     Err err = Ok;
     lxb_dom_node_t* title_node;
     try( lexbor_get_title_node(htmldoc_lxbdoc(d), &title_node));
     if (title_node) err = lexbor_get_title_text_line(title_node, title);
     else if (!*url) err = "no title nor url";
-    else err = str2_append(title, url, strlen(url));
+    else err = str_append(title, url, strlen(url));
 
     return err;
 }

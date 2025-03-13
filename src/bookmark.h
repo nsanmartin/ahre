@@ -154,7 +154,7 @@ bookmark_mk_entry(
 }
 
 static inline Err
-_get_bookmarks_doc_(UrlClient url_client[static 1], Str2* bmfile, HtmlDoc out[static 1]) {
+_get_bookmarks_doc_(UrlClient url_client[static 1], Str* bmfile, HtmlDoc out[static 1]) {
     try( get_bookmark_file(bmfile));
     try(htmldoc_init(out, bmfile->items));
     Err err = htmldoc_fetch(out, url_client, output_dev_null__);
@@ -165,10 +165,10 @@ _get_bookmarks_doc_(UrlClient url_client[static 1], Str2* bmfile, HtmlDoc out[st
     return Ok;
 }
 
-static inline Err _bm_to_source_rec_(lxb_dom_node_t* node, Str2 out[static 1]) ;
+static inline Err _bm_to_source_rec_(lxb_dom_node_t* node, Str out[static 1]) ;
 Err dbg_print_all_lines_nums(TextBuf textbuf[static 1]) ;
 
-static inline Err _bm_to_source_rec_childs_(lxb_dom_node_t* node, Str2 out[static 1]) {
+static inline Err _bm_to_source_rec_childs_(lxb_dom_node_t* node, Str out[static 1]) {
     for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
         try( _bm_to_source_rec_(it, out));
         if (it == node->last_child) break;
@@ -177,7 +177,7 @@ static inline Err _bm_to_source_rec_childs_(lxb_dom_node_t* node, Str2 out[stati
 }
 
 
-static inline Err _bm_to_source_rec_childs_no_text_(lxb_dom_node_t* node, Str2 out[static 1]) {
+static inline Err _bm_to_source_rec_childs_no_text_(lxb_dom_node_t* node, Str out[static 1]) {
     for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
         if (it->type == LXB_DOM_NODE_TYPE_TEXT) continue; 
         try( _bm_to_source_rec_(it, out));
@@ -187,61 +187,61 @@ static inline Err _bm_to_source_rec_childs_no_text_(lxb_dom_node_t* node, Str2 o
 }
 
 
-static inline Err _bm_to_source_rec_tag_a_(lxb_dom_node_t* node, Str2 out[static 1]) {
-    try( str2_append(out, "<a", 2));
+static inline Err _bm_to_source_rec_tag_a_(lxb_dom_node_t* node, Str out[static 1]) {
+    try( str_append(out, "<a", 2));
     lxb_dom_attr_t* attr;
     attr = lxb_dom_element_first_attribute(lxb_dom_interface_element(node));
     while (attr) {
         size_t namelen;
         const lxb_char_t* name = lxb_dom_attr_qualified_name(attr, &namelen);
         if (namelen)  {
-            try( str2_append(out, " ", 1));
-            try( str2_append(out, (char*)name, namelen));
+            try( str_append(out, " ", 1));
+            try( str_append(out, (char*)name, namelen));
         }
         size_t valuelen;
         const lxb_char_t* value = lxb_dom_attr_value(attr, &valuelen);
         if (valuelen)  {
-            try( str2_append(out, "=", 1));
-            try( str2_append(out, (char*)value, valuelen));
+            try( str_append(out, "=", 1));
+            try( str_append(out, (char*)value, valuelen));
         }
         attr = lxb_dom_element_next_attribute(attr);
     }
-    try( str2_append(out, ">", 1));
+    try( str_append(out, ">", 1));
     try( _bm_to_source_rec_childs_(node, out));
-    try( str2_append(out, "</a>", 4));
+    try( str_append(out, "</a>", 4));
     return Ok;
 }
 
-static inline Err _bm_to_source_rec_tag_ul_(lxb_dom_node_t* node, Str2 out[static 1]) {
-    try( str2_append(out, "<ul>\n", 5));
+static inline Err _bm_to_source_rec_tag_ul_(lxb_dom_node_t* node, Str out[static 1]) {
+    try( str_append(out, "<ul>\n", 5));
     try( _bm_to_source_rec_childs_no_text_(node, out));
     char* end = "<!--End of section (do not delete this comment)-->\n</ul>\n";
-    try( str2_append(out, end, strlen(end)));
+    try( str_append(out, end, strlen(end)));
     return Ok;
 }
 
-static inline Err _bm_to_source_rec_tag_li_(lxb_dom_node_t* node, Str2 out[static 1]) {
-    try( str2_append(out, "<li>", 4));
+static inline Err _bm_to_source_rec_tag_li_(lxb_dom_node_t* node, Str out[static 1]) {
+    try( str_append(out, "<li>", 4));
     try( _bm_to_source_rec_childs_no_text_(node, out));
-    try( str2_append(out, "\n", 1));
+    try( str_append(out, "\n", 1));
     return Ok;
 }
 
-static inline Err _bm_to_source_rec_tag_h1_(lxb_dom_node_t* node, Str2 out[static 1]) {
-    try( str2_append(out, "<h1>", 4));
+static inline Err _bm_to_source_rec_tag_h1_(lxb_dom_node_t* node, Str out[static 1]) {
+    try( str_append(out, "<h1>", 4));
     try( _bm_to_source_rec_childs_(node, out));
-    try( str2_append(out, "</h1>\n", 6));
+    try( str_append(out, "</h1>\n", 6));
     return Ok;
 }
 
-static inline Err _bm_to_source_rec_tag_h2_(lxb_dom_node_t* node, Str2 out[static 1]) {
-    try( str2_append(out, "<h2>", 4));
+static inline Err _bm_to_source_rec_tag_h2_(lxb_dom_node_t* node, Str out[static 1]) {
+    try( str_append(out, "<h2>", 4));
     try( _bm_to_source_rec_childs_(node, out));
-    try( str2_append(out, "</h2>\n", 6));
+    try( str_append(out, "</h2>\n", 6));
     return Ok;
 }
 
-static inline Err _bm_to_source_rec_tag_(lxb_dom_node_t* node, Str2 out[static 1]) {
+static inline Err _bm_to_source_rec_tag_(lxb_dom_node_t* node, Str out[static 1]) {
     switch(node->local_name) {
         case LXB_TAG_A: return _bm_to_source_rec_tag_a_(node, out);
         case LXB_TAG_H1: return _bm_to_source_rec_tag_h1_(node, out);
@@ -253,14 +253,14 @@ static inline Err _bm_to_source_rec_tag_(lxb_dom_node_t* node, Str2 out[static 1
     return Ok;
 }
 
-static inline Err _bm_to_source_append_text_(lxb_dom_node_t* node, Str2 out[static 1]) {
+static inline Err _bm_to_source_append_text_(lxb_dom_node_t* node, Str out[static 1]) {
     const char* data;
     size_t len;
     try( lexbor_node_get_text(node, &data, &len));
-    return str2_append(out, (char*)data, len);
+    return str_append(out, (char*)data, len);
 }
 
-static inline Err _bm_to_source_rec_(lxb_dom_node_t* node, Str2 out[static 1]) {
+static inline Err _bm_to_source_rec_(lxb_dom_node_t* node, Str out[static 1]) {
     if (node) {
         switch(node->type) {
             case LXB_DOM_NODE_TYPE_ELEMENT: return _bm_to_source_rec_tag_(node, out);
@@ -278,39 +278,39 @@ static inline Err _bm_to_source_rec_(lxb_dom_node_t* node, Str2 out[static 1]) {
     return Ok;
 }
 
-static inline Err bookmark_to_source(HtmlDoc bm[static 1], Str2 out[static 1]) {
+static inline Err bookmark_to_source(HtmlDoc bm[static 1], Str out[static 1]) {
     lxb_dom_node_t* body;
     try( bookmark_sections_body(bm, &body));
 
     char* bm_header = "<html><head><title>Bookmarks</title></head>\n<body>\n";
-    Err err = str2_append(out, bm_header, strlen(bm_header));
+    Err err = str_append(out, bm_header, strlen(bm_header));
     if (err) {
-        str2_clean(out);
+        str_clean(out);
         return err;
     }
     try( _bm_to_source_rec_childs_no_text_(body, out));
     if (!err) {
         char* bm_header = "</body>\n</html>\n";
-        err = str2_append(out, bm_header, strlen(bm_header));
+        err = str_append(out, bm_header, strlen(bm_header));
     }
     return err;
 }
 
 static inline Err
-bookmarks_save_to_disc(HtmlDoc bm[static 1], Str2 bmfile[static 1]) {
-    Str2 source = (Str2){0};
+bookmarks_save_to_disc(HtmlDoc bm[static 1], Str bmfile[static 1]) {
+    Str source = (Str){0};
     try( bookmark_to_source(bm, &source));
 
     FILE* fp = fopen(bmfile->items, "w");
     if (!fp) {
-        str2_clean(&source);
+        str_clean(&source);
         return err_fmt("error saving bm file '%s': %s", bmfile->items, strerror(errno));
     }
     Err err = Ok;
     size_t written = fwrite(source.items, 1, source.len, fp);
     if (written != source.len) err = "error: could not write to bookmarks file";
     fclose(fp);
-    str2_clean(&source);
+    str_clean(&source);
     return err;
 }
 
@@ -327,7 +327,7 @@ bookmark_add_to_section(HtmlDoc d[static 1], const char* line, UrlClient url_cli
     Err err = Ok; 
     
     HtmlDoc bm;
-    Str2 bmfile = (Str2){0};
+    Str bmfile = (Str){0};
     try(_get_bookmarks_doc_(url_client, &bmfile, &bm));
 
     char* url;
@@ -336,7 +336,7 @@ bookmark_add_to_section(HtmlDoc d[static 1], const char* line, UrlClient url_cli
     lxb_dom_node_t* body;
     if ((err = bookmark_sections_body(&bm, &body))) goto free_curl_url;
 
-    Str2* title = &(Str2){0};
+    Str* title = &(Str){0};
     if ((err = lxb_mk_title_or_url(d, url, title))) goto free_curl_url;
 
     lxb_dom_element_t* bm_entry;
@@ -356,11 +356,11 @@ bookmark_add_to_section(HtmlDoc d[static 1], const char* line, UrlClient url_cli
     ok_then(err, bookmarks_save_to_disc(&bm, &bmfile));
 
 clean_title:
-    str2_clean(title);
+    str_clean(title);
 free_curl_url:
     curl_free(url);
 clean_bmfile_and_bmdoc:
-    str2_clean(&bmfile);
+    str_clean(&bmfile);
     htmldoc_cleanup(&bm);
     return err;
 }

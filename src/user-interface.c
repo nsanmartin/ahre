@@ -80,10 +80,10 @@ Err cmd_cookies(Session session[static 1], const char* url) {
 Err cmd_open_url(Session session[static 1], const char* url) {
     url = cstr_trim_space((char*)url);
     if (*url == '\\') {
-        Str2 u = (Str2){0};
+        Str u = (Str){0};
         try (get_url_alias(cstr_skip_space(url + 1), &u));
         Err err = session_open_url(session, u.items, session->url_client);
-        str2_clean(&u);
+        str_clean(&u);
         return err;
     }
 

@@ -121,14 +121,14 @@ inline static StrView strview_from_mem_trim(const char* s, size_t len) {
     return rv;
 }
 
-#define Str2 BufOf(char)
-#define str2_clean buffn(char,clean)
-#define str2_append(Str2Ptr, Items, NItems) \
-    (buffn(char,append)(Str2Ptr, Items, NItems) ? Ok : "error: str2_append failure")
+#define Str BufOf(char)
+#define str_clean buffn(char,clean)
+#define str_append(StrPtr, Items, NItems) \
+    (buffn(char,append)(StrPtr, Items, NItems) ? Ok : "error: str_append failure")
 
 #define strview_from_lit__(LitStr) strview_from_mem(LitStr, sizeof(LitStr)-1)
-static inline StrView strview_from_str__(Str2 s) {return strview_from_mem(s.items, s.len); }
-static inline StrView strview_from_strptr__(Str2 s[static 1]) {return strview_from_mem(s->items, s->len); }
+static inline StrView strview_from_str__(Str s) {return strview_from_mem(s.items, s.len); }
+static inline StrView strview_from_strptr__(Str s[static 1]) {return strview_from_mem(s->items, s->len); }
 #define strview_from_strptr__(S) strview_from_mem((S)->items, (S)->len)
 #define strview__(...) GET_MACRO__(NULL,__VA_ARGS__,strview_from_mem,strview_from_lit__,skip__)(__VA_ARGS__)
 

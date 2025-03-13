@@ -357,7 +357,7 @@ static Err
 draw_tag_title(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     HtmlDoc* d = draw_ctx_htmldoc(ctx);
     *htmldoc_title(d) = node;
-    Str2 title = (Str2){0};
+    Str title = (Str){0};
     try( lexbor_get_title_text_line(node, &title));
     if (!title.len)  {
         try( log_msg__(draw_ctx_logfn(ctx), "%s\n", "<%> no title <%>"));
