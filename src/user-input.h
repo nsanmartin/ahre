@@ -51,7 +51,7 @@ typedef enum {
 	KeyCtrl_W    = 23,
 	KeyEsc       = 27,
 	KeySpace     = 32,
-	KeyBackspace = 127
+	KeyBackSpace = 127
 } KeyStroke;
 
 typedef struct Session Session;

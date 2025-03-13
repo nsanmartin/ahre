@@ -47,6 +47,7 @@ Err _ui_vi_read_vi_mode_keys_(Session s[static 1], char cmd[static 1]) {
             case KeyCtrl_C: continue;
             case KeyCtrl_F:
             case KeySpace: _ui_keystroke_ctrl_f_(s); *cmd = KeyCtrl_F; break; 
+            case KeyBackSpace:
             case KeyCtrl_B: _ui_keystroke_ctrl_b_(s); *cmd = KeyCtrl_B; break; 
 
             default:
