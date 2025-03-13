@@ -2,7 +2,6 @@
 #include "src/cmd-ed.h"
 #include "src/user-out.h"
 #include "src/session.h"
-#include "src/screen.h"
 
 
 Err ui_show_session_vi_mode(Session* s) {
