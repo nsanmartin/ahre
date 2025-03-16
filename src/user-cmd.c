@@ -53,12 +53,11 @@ Err cmd_set_session_winsz(Session session[static 1]) {
     *session_nrows(session) = nrows;
     *session_ncols(session) = ncols;
     
-    WriteUserOutputCallback w = session_uout(session)->write_msg;
-    try( uiw_lit__(w, "win: nrows = ")); 
-    try( ui_write_unsigned(w, nrows));
-    try( uiw_lit__(w, ", ncols = "));
-    try( ui_write_unsigned(w, ncols));
-    try( uiw_lit__(w, "\n"));
+    try( session_write_msg_lit__(session, "win: nrows = ")); 
+    try( session_write_unsigned_std(session, nrows));
+    try( session_write_msg_lit__(session, ", ncols = "));
+    try( session_write_unsigned_msg(session, ncols));
+    try( session_write_msg_lit__(session, "\n"));
 
     return Ok;
 }

@@ -42,15 +42,15 @@ line_num_to_right_offset(size_t lnum, TextBuf textbuf[static 1], size_t out[stat
     return -1;
 }
 
+//TODO: pass session to this fn
 static inline Err ed_print_last_range(TextBuf textbuf[static 1], UserOutput out[static 1]) {
     Range r = *textbuf_last_range(textbuf);
-
-    try( uiw_lit__(out->write_msg, "last range: ("));
-    try( ui_write_unsigned(out->write_msg, r.beg));
-    try( uiw_lit__(out->write_msg, ", "));
-    try( ui_write_unsigned(out->write_msg, r.end));
-    try( uiw_lit__(out->write_msg, ")\n"));
-    try( out->flush_msg(NULL));
+    Session* s = NULL;
+    try( session_write_msg_lit__(s, "last range: ("));
+    try( ui_write_unsigned(out->write_msg, r.beg, s));
+    try( session_write_msg_lit__(s, ", "));
+    try( ui_write_unsigned(out->write_msg, r.end, s));
+    try( session_write_msg_lit__(s, ")\n"));
     return Ok;
 }
 
@@ -60,9 +60,9 @@ static inline Err ed_print_all(TextBuf textbuf[static 1]) {
     return NULL;
 }
 
-Err ed_eval(TextBuf textbuf[static 1], const char* line);
+Err ed_eval(Session s[static 1], TextBuf textbuf[static 1], const char* line);
 Err ed_write(const char* rest, TextBuf textbuf[static 1]);
-Err dbg_print_all_lines_nums(TextBuf textbuf[static 1]);
+Err dbg_print_all_lines_nums(Session s[static 1], TextBuf textbuf[static 1]);
 
 static inline Err ed_edit(TextBuf textbuf[static 1], const char* rest) { return textbuf_read_from_file(textbuf, rest); }
 Err shorcut_zf(Session session[static 1], const char* rest);

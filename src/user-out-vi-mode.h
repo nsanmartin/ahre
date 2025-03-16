@@ -5,7 +5,7 @@
 #include "src/ranges.h"
 #include "src/user-out.h"
 
-Err _vi_print_(TextBuf textbuf[static 1], Range range[static 1], UserOutput out[static 1]);
+Err _vi_print_(TextBuf textbuf[static 1], Range range[static 1], Session* s);
 Err ui_show_session_vi_mode(Session* s);
 
 

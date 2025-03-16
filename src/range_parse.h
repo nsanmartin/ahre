@@ -45,7 +45,6 @@ inline static Err range_both_set_curr(Range r[static 1], RangeParseCtx ctx[stati
     r->end = r->beg;
     return Ok;
 }
-Err textbuf_eval_cmd(TextBuf textbuf[static 1], const char* line, Range range[static 1]);
 
 static inline RangeParseCtx
 range_parse_ctx_from_textbuf(TextBuf tb[static 1]) {

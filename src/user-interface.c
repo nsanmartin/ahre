@@ -44,14 +44,13 @@ Err cmd_bookmarks(Session session[static 1], const char* url) {
     lxb_dom_node_t* body;
     try(bookmark_sections_body(htmldoc, &body));
     Err err = Ok;
-    UserOutput* out = session_uout(session);
     if (!*url) {
         err = bookmark_sections(body, &list);
         if (!err) {
             BufOf(char)* it = arlfn(BufOf(char), begin)(&list);
             for (; it != arlfn(BufOf(char), end)(&list); ++it) {
-                try( uiw_str(out->write_std,it));
-                try( uiw_lit__(out->write_std,"\n"));
+                try( session_write_std(session, items__(it), len__(it)));
+                try( session_write_std_lit__(session, "\n"));
             }
         }
         arlfn(BufOf(char),clean)(&list);
@@ -64,8 +63,8 @@ Err cmd_bookmarks(Session session[static 1], const char* url) {
             size_t len;
             try( lexbor_node_get_text(section->first_child, &data, &len));
             if (len) {
-                try(uiw_mem(out->write_std, data, len));
-                try(uiw_lit__(out->write_std,"\n"));
+                try(session_write_std(session, (char*)data, len));
+                try(session_write_std_lit__(session, "\n"));
             }
         } else err = "invalid section in bookmark";
     }
@@ -121,7 +120,7 @@ Err cmd_input_print(Session session[static 1], size_t ix) {
     BufOf(char)* buf = &(BufOf(char)){0};
     Err err = lexbor_node_to_str(node, buf);
 
-    ok_then(err,  uiw_str(session_uout(session)->write_msg, buf));
+    ok_then(err,  session_write_msg(session, items__(buf), len__(buf)));
     buffn(char, clean)(buf);
     return err;
 }
@@ -217,7 +216,7 @@ Err cmd_image_print(Session session[static 1], size_t ix) {
     try( _get_image_by_ix(session, ix, &node));
     BufOf(char)* buf = &(BufOf(char)){0};
     Err err = lexbor_node_to_str(node, buf);
-    ok_then(err, uiw_str(session_uout(session)->write_msg,buf));
+    ok_then(err, session_write_msg(session, items__(buf), len__(buf)));
     buffn(char, clean)(buf);
     return err;
 }
@@ -262,7 +261,7 @@ Err cmd_anchor_print(Session session[static 1], size_t linknum) {
     BufOf(char)* buf = &(BufOf(char)){0};
     try( lexbor_node_to_str(*a, buf));
 
-    Err err = uiw_str(session_uout(session)->write_msg,buf);
+    Err err = session_write_msg(session, items__(buf), len__(buf));
     buffn(char, clean)(buf);
     return err;
 }
@@ -333,7 +332,7 @@ Err doc_eval(HtmlDoc d[static 1], const char* line, Session session[static 1]) {
     line = cstr_skip_space(line);
     switch (*line) {
         case '?': return htmldoc_print_info(d);
-        case '>': return htmldoc_gt(d, session_uout(session));
+        case 'A': return htmldoc_A(session, d);
         case '+': return bookmark_add_doc(d, cstr_skip_space(line + 1), session_url_client(session));
         default: return doc_eval_word(d, line);
     }
@@ -382,8 +381,8 @@ Err process_line(Session session[static 1], const char* line) {
 
     TextBuf* tb;
     try( session_current_buf(session, &tb));
-    if (*line == ':') return ed_eval(tb, line + 1);
-    if (*line == '<') return ed_eval(htmldoc_sourcebuf(htmldoc), line + 1);
+    if (*line == ':') return ed_eval(session, tb, line + 1);
+    if (*line == '<') return ed_eval(session, htmldoc_sourcebuf(htmldoc), line + 1);
     if (*line == '&') return dbg_print_form(session, line + 1);//TODO: form is &Form or something else
     if (*line == ANCHOR_OPEN_STR[0]) return cmd_anchor_eval(session, line + 1);
     if (*line == INPUT_OPEN_STR[0]) return cmd_input_eval(session, line + 1);

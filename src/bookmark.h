@@ -166,7 +166,6 @@ _get_bookmarks_doc_(UrlClient url_client[static 1], Str* bmfile, HtmlDoc out[sta
 }
 
 static inline Err _bm_to_source_rec_(lxb_dom_node_t* node, Str out[static 1]) ;
-Err dbg_print_all_lines_nums(TextBuf textbuf[static 1]) ;
 
 static inline Err _bm_to_source_rec_childs_(lxb_dom_node_t* node, Str out[static 1]) {
     for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {

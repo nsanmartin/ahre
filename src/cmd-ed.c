@@ -16,16 +16,16 @@
 
 
 //TODO: reset color during number printing (and re-establish it after).
-static inline Err ed_print_n(TextBuf textbuf[static 1], Range range[static 1]) {
+static inline Err ed_print_n(Session s[static 1], TextBuf textbuf[static 1], Range range[static 1]) {
     try(validate_range_for_buffer(textbuf, range));
     StrView line;
     WriteUserOutputCallback wcb = ui_write_callback_stdout; //TODO: parameterize
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
-        try( ui_write_unsigned(wcb, linum));
-        try( uiw_lit__(wcb,"\t"));
-        if (line.len) try( uiw_strview(wcb,&line));
-        else try( uiw_lit__(wcb,"\n"));
+        try( session_write_unsigned_std(s, linum));
+        try( session_write_std_lit__(s,"\t"));
+        if (line.len) try( session_write_std(s, (char*)line.items, line.len));
+        else try( session_write_std_lit__(s,"\n"));
     }
 
     if (textbuf_line_count(textbuf) == range->end) try( uiw_lit__(wcb,"\n"));
@@ -52,17 +52,16 @@ StrView parse_pattern(const char* tk) {
 }
 
 
-Err dbg_print_all_lines_nums(TextBuf textbuf[static 1]) {
+Err dbg_print_all_lines_nums(Session s[static 1], TextBuf textbuf[static 1]) {
     size_t lnum = 1;
     StrView line;
-    WriteUserOutputCallback wcb = ui_write_callback_stdout; //TODO: parameterize
     for (;textbuf_get_line(textbuf, lnum, &line); ++lnum) {
-        try( ui_write_unsigned(wcb, lnum));
-        try( uiw_lit__(wcb,"\t`"));
+        try( session_write_unsigned_std(s, lnum));
+        try( session_write_std_lit__(s,"\t`"));
         if (line.len > 1) {
-            try( uiw_mem(wcb,line.items, line.len-1));
+            try( session_write_std(s, (char*)line.items, line.len-1));
         } 
-        try( uiw_lit__(wcb,"'\n"));
+        try( session_write_std_lit__(s,"'\n"));
     }
     return Ok;
 }
@@ -142,38 +141,37 @@ Err ed_go(HtmlDoc htmldoc[static 1],  const char* rest, Range range[static 1]) {
 }
 
 
-Err ed_print(TextBuf textbuf[static 1], Range range[static 1]) {
+Err ed_print(Session s[static 1], TextBuf textbuf[static 1], Range range[static 1]) {
     try(validate_range_for_buffer(textbuf, range));
     StrView line;
-    WriteUserOutputCallback wcb = ui_write_callback_stdout; //TODO PARAMTERIZE
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
         if (line.len) {
-            try( uiw_strview(wcb,&line));
-        } else try( uiw_lit__(wcb, "\n"));
+            try( session_write_std(s, (char*)line.items, line.len));
+        } else try( session_write_std_lit__(s, "\n"));
     }
     return Ok;
 }
 
 
-Err textbuf_eval_cmd(TextBuf textbuf[static 1], const char* line, Range range[static 1]) {
+Err textbuf_eval_cmd(Session s[static 1], TextBuf textbuf[static 1], const char* line, Range range[static 1]) {
     line = cstr_skip_space(line);
 
     *textbuf_last_range(textbuf) = *range;
 
     const char* rest = 0x0;
 
-    if (!*line) { return ed_print(textbuf, range); } /* default :NUM */
+    if (!*line) { return ed_print(s, textbuf, range); } /* default :NUM */
     if ((rest = csubstr_match(line, "a", 1)) && !*rest) { return ed_print_all(textbuf); } //TODO: depre: use :%
-    if ((rest = csubstr_match(line, "l", 1)) && !*rest) { return dbg_print_all_lines_nums(textbuf); } //TODO: deprecate
+    if ((rest = csubstr_match(line, "l", 1)) && !*rest) { return dbg_print_all_lines_nums(s, textbuf); } //TODO: deprecate
     if ((rest = csubstr_match(line, "g", 1)) && *rest) { return ed_global(textbuf, rest); }
-    if ((rest = csubstr_match(line, "n", 1)) && !*rest) { return ed_print_n(textbuf, range); }
-    if ((rest = csubstr_match(line, "print", 1)) && !*rest) { return ed_print(textbuf, range); }
+    if ((rest = csubstr_match(line, "n", 1)) && !*rest) { return ed_print_n(s, textbuf, range); }
+    if ((rest = csubstr_match(line, "print", 1)) && !*rest) { return ed_print(s, textbuf, range); }
     if ((rest = csubstr_match(line, "write", 1))) { return ed_write(rest, textbuf); }
     return "unknown command";
 }
 
-Err ed_eval(TextBuf textbuf[static 1], const char* line) {
+Err ed_eval(Session s[static 1], TextBuf textbuf[static 1], const char* line) {
     if (!line) { return Ok; }
     Range range = {0};
     RangeParseCtx ctx = range_parse_ctx_from_textbuf(textbuf);
@@ -190,7 +188,7 @@ Err ed_eval(TextBuf textbuf[static 1], const char* line) {
     if (range.end == 0) return "error: unexpected range with end == 0";
     if (range.end > textbuf_line_count(textbuf)) return "error: range end too large";
     try( textbuf_get_offset_of_line(textbuf, range.end,textbuf_current_offset(textbuf)));
-    return textbuf_eval_cmd(textbuf, line, &range);
+    return textbuf_eval_cmd(s, textbuf, line, &range);
 }
 
 Err shorcut_zb(Session session[static 1], const char* rest) {
@@ -217,7 +215,7 @@ Err shorcut_zb(Session session[static 1], const char* rest) {
         .beg=beg,
         .end=textbuf_current_line(tb)
     };
-    try( textbuf_eval_cmd(tb, cmd, &r));
+    try( textbuf_eval_cmd(session, tb, cmd, &r));
     try( textbuf_get_offset_of_line(tb, r.beg,textbuf_current_offset(tb)));
 
     return Ok;
@@ -244,7 +242,7 @@ Err shorcut_zf(Session session[static 1], const char* rest) {
     Range r = (Range){ .beg=range_beg, .end=range_beg + *session_nrows(session) - 2 };
     if (r.end < r.beg) r.end = r.beg;
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
-    try( textbuf_eval_cmd(tb,cmd, &r));
+    try( textbuf_eval_cmd(session, tb,cmd, &r));
     if (textbuf_current_line(tb) == r.end)
         puts(MsgLastLine);
     try( textbuf_get_offset_of_line(tb, r.end,textbuf_current_offset(tb)));
@@ -274,7 +272,7 @@ Err shorcut_zz(Session session[static 1], const char* rest) {
     };
     if (r.end < r.beg) r.end = r.beg;
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
-    return textbuf_eval_cmd(tb, cmd, &r);
+    return textbuf_eval_cmd(session, tb, cmd, &r);
 }
 
 Err shorcut_gg(Session session[static 1], const char* rest) {
@@ -298,7 +296,7 @@ Err shorcut_gg(Session session[static 1], const char* rest) {
     };
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
     if (r.end < r.beg) r.end = r.beg;
-    try( textbuf_eval_cmd(tb,cmd, &r));
+    try( textbuf_eval_cmd(session, tb,cmd, &r));
     if (textbuf_current_line(tb) == r.end)
         puts(MsgLastLine);
     try( textbuf_get_offset_of_line(tb, r.end,textbuf_current_offset(tb)));

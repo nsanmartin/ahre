@@ -842,3 +842,22 @@ Err htmldoc_draw(HtmlDoc htmldoc[static 1], SessionConf sconf[static 1]) {
 }
 
 
+Err htmldoc_A(Session* s, HtmlDoc d[static 1]) {
+    if (!s) return "error: no session";
+    BufOf(char)* buf = &(BufOf(char)){0};
+    buffn(char,append)(buf, "<li><a href=\"", sizeof( "<li><a href=\"")-1);
+    char* url_buf;
+    Err err = url_cstr(htmldoc_url(d), &url_buf);
+    if (err) {
+        buffn(char,clean)(buf);
+        return err;
+    }
+    buffn(char,append)(buf, url_buf, strlen(url_buf));
+    curl_free(url_buf);
+    buffn(char,append)(buf, "\">", 2);
+    try( lexbor_get_title_text_line(*htmldoc_title(d), buf));
+    buffn(char,append)(buf, "</a>", 4);
+    try( session_write_msg(s, items__(buf), len__(buf)));
+    buffn(char,clean)(buf);
+    return Ok;
+}

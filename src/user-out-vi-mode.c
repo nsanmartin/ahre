@@ -21,12 +21,12 @@ Err ui_show_session_vi_mode(Session* s) {
     end = (end > textbuf_line_count(tb)) ? textbuf_line_count(tb) : end;
     Range r = (Range){ .beg=line, .end=end };
 
-    try( _vi_print_(tb, &r, session_conf_uout(session_conf(s))));
+    try( _vi_print_(tb, &r, s));
     return Ok;
 }
 
 
-Err _vi_print_(TextBuf textbuf[static 1], Range range[static 1], UserOutput out[static 1]) {
+Err _vi_print_(TextBuf textbuf[static 1], Range range[static 1], Session* s) {
     try(validate_range_for_buffer(textbuf, range));
     StrView line;
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
@@ -34,13 +34,14 @@ Err _vi_print_(TextBuf textbuf[static 1], Range range[static 1], UserOutput out[
         if (!line.items || !*line.items) continue; //TODO: fix get-line
 
         if (true) {
-            if (line.len) { try( uiw_strview(out->write_std,&line)); }
-            else try( uiw_lit__(out->write_std, "\n"));
+            if (line.len) { try( session_write_std(s, (char*)line.items, line.len)); }
+            else try( session_write_std_lit__(s, "\n"));
         } else {
-            try( ui_write_unsigned(out->write_std, linum));
-            try( uiw_lit__(out->write_std,"\t"));
-            if (line.len) try( uiw_strview(out->write_std, &line));
-            else try( uiw_lit__(out->write_std, "\n"));
+            WriteUserOutputCallback w = session_conf_uout(session_conf(s))->write_std;
+            try( ui_write_unsigned(w, linum, s));
+            try( session_write_std_lit__(s,"\t"));
+            if (line.len) { try( session_write_std(s, (char*)line.items, line.len)); }
+            else try( session_write_std_lit__(s, "\n"));
         }
     }
     return Ok;

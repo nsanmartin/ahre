@@ -109,8 +109,30 @@ static inline Err session_consume_line(Session s[static 1], char* user_input) {
     return err;
 }
 
+static inline Err session_write_msg(Session s[static 1], char* msg, size_t len) {
+    UserOutput* uo = session_uout(s);
+    return uo->write_msg(msg, len, s);
+}
+
+static inline Err session_write_std(Session s[static 1], char* msg, size_t len) {
+    UserOutput* uo = session_uout(s);
+    return uo->write_std(msg, len, s);
+}
+
+#define session_write_msg_lit__(Ses, LitStr) session_write_msg(Ses, LitStr, lit_len__(LitStr))
+#define session_write_std_lit__(Ses, LitStr) session_write_std(Ses, LitStr, lit_len__(LitStr))
+
+static inline Err session_write_unsigned_std(Session s[static 1], uintmax_t ui) {
+    return ui_write_unsigned(session_conf_uout(session_conf(s))->write_std, ui, s);
+}
+
+static inline Err session_write_unsigned_msg(Session s[static 1], uintmax_t ui) {
+    return ui_write_unsigned(session_conf_uout(session_conf(s))->write_msg, ui, s);
+}
+
+
 static inline Err session_show_error(Session s[static 1], Err err) {
-    err = uilw_mem(session_uout(s)->write_msg, err, strlen(err));
+    err = session_write_msg(s, (char*)err, strlen(err));
     if (err) { /* what else could I do */
         fprintf(stderr, "a real error: %s\n", err);
     }
@@ -123,8 +145,4 @@ static inline Err session_show_output(Session s[static 1]) {
     return Ok;
 }
 
-static inline Err session_write_msg(Session s[static 1], char* msg, size_t len) {
-    UserOutput* uo = session_uout(s);
-    return uo->write_msg(msg, len, s);
-}
 #endif
