@@ -27,9 +27,10 @@ Err readpass_term(ArlOf(char) arl[static 1], UserOutput out[static 1]) {
             err = "error: arl append failure";
             break;
         }
-        try( uiw_lit__(out->write_msg,"*")); 
+        //try( uiw_lit__(out->write_msg,"*")); 
+        try( uiw_lit__(out->write_std,"*")); 
     }
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &prev_termios) == -1) return "error: tcsetattr failure";
-    try( uiw_lit__(out->write_msg, "\n"));
+    try( uiw_lit__(out->write_std, "\n"));
     return err;
 }

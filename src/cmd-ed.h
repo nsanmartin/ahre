@@ -50,7 +50,7 @@ static inline Err ed_print_last_range(TextBuf textbuf[static 1], UserOutput out[
     try( uiw_lit__(out->write_msg, ", "));
     try( ui_write_unsigned(out->write_msg, r.end));
     try( uiw_lit__(out->write_msg, ")\n"));
-    try( out->flush_msg());
+    try( out->flush_msg(NULL));
     return Ok;
 }
 

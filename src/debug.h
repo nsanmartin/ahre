@@ -54,7 +54,7 @@ static const char* _log_lvl_str_[] = {
 };
 
 static inline Err
-_log_format__(WriteFnWCtx wc, const char* format, va_list args) {
+_log_format__(SessionWriteFn wc, const char* format, va_list args) {
     if (!wc.write) return "error: expectinf write fn";
 
     char log_buf[MAX_LOG_MSG_LEN__] = {0};
@@ -72,7 +72,7 @@ _log_format__(WriteFnWCtx wc, const char* format, va_list args) {
 
 
 
-static inline Err log_lvl__(WriteFnWCtx wc, LogLvl level, const char* format, ...) {
+static inline Err log_lvl__(SessionWriteFn wc, LogLvl level, const char* format, ...) {
     if (!wc.write || _log_lvl_ < level) return Ok;
     try (wc.write(_log_lvl_str_[level], strlen(_log_lvl_str_[level]), wc.ctx));
 
@@ -83,7 +83,7 @@ static inline Err log_lvl__(WriteFnWCtx wc, LogLvl level, const char* format, ..
     return Ok;
 }
 
-static inline Err log_msg__(WriteFnWCtx wc, const char* format, ...) {
+static inline Err log_msg__(SessionWriteFn wc, const char* format, ...) {
     if (!wc.write) return Ok;
     va_list args;
     va_start (args, format);

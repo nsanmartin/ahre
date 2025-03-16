@@ -18,6 +18,8 @@ typedef struct Session {
     UrlClient* url_client;
     TabList tablist;
     SessionConf conf;
+    /* accidental data */
+    Str msg; //TODO: add one msg buffer per htmldoc
 } Session;
 
 
@@ -121,4 +123,8 @@ static inline Err session_show_output(Session s[static 1]) {
     return Ok;
 }
 
+static inline Err session_write_msg(Session s[static 1], char* msg, size_t len) {
+    UserOutput* uo = session_uout(s);
+    return uo->write_msg(msg, len, s);
+}
 #endif

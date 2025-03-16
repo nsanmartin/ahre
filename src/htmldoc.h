@@ -114,7 +114,7 @@ static inline void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
 
 /* external */
 Err curl_lexbor_fetch_document(
-    UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], WriteFnWCtx wcb
+    UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], SessionWriteFn wcb
 );
 
 /**/
@@ -129,7 +129,7 @@ Err lexbor_read_doc_from_file(HtmlDoc htmldoc[static 1]) ;
 
 static inline Err
 htmldoc_fetch(
-    HtmlDoc htmldoc[static 1], UrlClient url_client[static 1], WriteFnWCtx wfnc
+    HtmlDoc htmldoc[static 1], UrlClient url_client[static 1], SessionWriteFn wfnc
 ) {
         return curl_lexbor_fetch_document(url_client, htmldoc, wfnc);
 }
@@ -174,7 +174,7 @@ static inline Err htmldoc_gt(HtmlDoc d[static 1], UserOutput out[static 1]) {
     try( lexbor_get_title_text_line(*htmldoc_title(d), buf));
     buffn(char,append)(buf, "</a>", 4);
     try( uiw_str(out->write_msg, buf));
-    out->flush_msg();
+    out->flush_msg(NULL);
     buffn(char,clean)(buf);
 
     return Ok;

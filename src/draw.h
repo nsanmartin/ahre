@@ -7,10 +7,10 @@
 #include "src/generic.h"
 #include "src/session-conf.h"
 
-static inline WriteFnWCtx
+static inline SessionWriteFn
 get_log_fn_from_session_conf_and_htmldoc(SessionConf sc[static 1], HtmlDoc d[static 1]) {
     (void)d;
-    return (WriteFnWCtx) {.write=session_conf_uout(sc)->write_msg, .ctx=NULL};
+    return (SessionWriteFn) {.write=session_conf_uout(sc)->write_msg, .ctx=NULL};
 }
 
 #define T EscCode
@@ -24,14 +24,14 @@ typedef struct {
     BufOf(char) buf;
     ArlOf(EscCode) esc_code_stack;
     unsigned flags;
-    WriteFnWCtx logfn;
+    SessionWriteFn logfn;
 } DrawCtx;
 
 typedef Err (*ImpureDrawProcedure)(DrawCtx ctx[static 1]);
 
 static inline HtmlDoc* draw_ctx_htmldoc(DrawCtx ctx[static 1]) { return ctx->htmldoc; }
 
-static inline WriteFnWCtx draw_ctx_logfn(DrawCtx ctx[static 1]) { return ctx->logfn; }
+static inline SessionWriteFn draw_ctx_logfn(DrawCtx ctx[static 1]) { return ctx->logfn; }
 
 static inline bool draw_ctx_hide_tags(DrawCtx ctx[static 1], size_t tags) {
     return *htmldoc_hide_tags(draw_ctx_htmldoc(ctx)) & tags;

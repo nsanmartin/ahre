@@ -9,7 +9,7 @@
 
 /* internal linkage */
 
-void _print_fetch_info_(WriteFnWCtx wc, CURL* handle) {
+void _print_fetch_info_(SessionWriteFn wc, CURL* handle) {
     curl_off_t nbytes;
     CURLcode curl_code = curl_easy_getinfo(handle, CURLINFO_SIZE_DOWNLOAD_T, &nbytes);
     if (curl_code!=CURLE_OK) 
@@ -97,7 +97,7 @@ _set_htmldoc_url_with_effective_url_(UrlClient url_client[static 1], HtmlDoc htm
 }
 
 Err curl_lexbor_fetch_document(
-    UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], WriteFnWCtx wfnc
+    UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], SessionWriteFn wfnc
 ) {
     try( _curl_set_write_fn_and_data_(url_client, htmldoc));//TODO: move?
     try( _lexbor_parse_chunk_begin_(htmldoc));

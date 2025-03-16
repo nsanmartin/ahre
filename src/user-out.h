@@ -7,11 +7,11 @@
 
 typedef struct Session Session;
 
-typedef Err (*WriteUserOutputCallback)(const char* mem, size_t len, void* ctx);
-typedef Err (*FlushUserOutputCallback)(void);
+typedef Err (*WriteUserOutputCallback)(const char* mem, size_t len, Session* ctx);
+typedef Err (*FlushUserOutputCallback)(Session* s);
 typedef Err (*ShowTextUserOutputCallback)(Session* s);
 
-typedef struct { WriteUserOutputCallback write; void* ctx; } WriteFnWCtx;
+typedef struct { WriteUserOutputCallback write; Session* ctx; } SessionWriteFn;
 
 typedef struct {
     WriteUserOutputCallback    write_msg;
@@ -52,26 +52,27 @@ static inline Err ui_write_unsigned(WriteUserOutputCallback wcb, uintmax_t ui) {
 }
 
 
-static inline Err ui_write_callback_stdout(const char* mem, size_t len, void* ctx) {
-    if (ctx) return "error: ctx not expected in write callback";
+static inline Err ui_write_callback_stdout(const char* mem, size_t len, Session* s) {
+    if (s) return "error: session param not expected in write callback to stdout";
     return len - fwrite(mem, sizeof(const char), len, stdout) ? "error: fwrite failure": Ok;
 }
 
 
-static inline Err ui_flush_stdout(void) {
+static inline Err ui_flush_stdout(Session* s) {
+    (void)s;
     if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
     return Ok;
 }
 
-static inline Err ignore_output(const char* mem, size_t len, void* ctx) {
+static inline Err ignore_output(const char* mem, size_t len, Session* s) {
     (void)mem;
     (void)len;
-    (void)ctx;
+    (void)s;
     //puts("ignoring output :)");
     return Ok;
 }
 
-#define output_dev_null__ (WriteFnWCtx){.write=ignore_output}
-#define output_stdout__ (WriteFnWCtx){.write=ui_write_callback_stdout}
+#define output_dev_null__ (SessionWriteFn){.write=ignore_output}
+#define output_stdout__ (SessionWriteFn){.write=ui_write_callback_stdout}
 
 #endif
