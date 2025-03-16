@@ -6,7 +6,10 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <limits.h>
+
+inline static bool file_exists(const char* filename) { return !access(filename, F_OK); }
 
 #define skip__(X)
 #define GET_MACRO__(_1,_2,_3,NAME,...) NAME
@@ -119,6 +122,7 @@ static inline Err bufofchar_append(BufOf(char) buf[static 1], char* s, size_t le
     bufofchar_append(Buffer, LitStr, sizeof(LitStr)-1)
 
 Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) ;
+
 
 /* * */
 #endif

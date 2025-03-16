@@ -5,6 +5,7 @@
 #include <limits.h>
 #include <curl/curl.h>
 
+#include "src/utils.h"
 #include "src/config.h"
 #include "src/error.h"
 
@@ -20,10 +21,6 @@ static inline Err url_cstr(Url u[static 1], char* out[static 1]) {
     if (code == CURLUE_OK)
         return Ok;
     return err_fmt("error getting url from CURLU: %s", curl_url_strerror(code));
-}
-
-static bool _file_exists_(const char* filename) {
-    return !access(filename, F_OK);
 }
 
 static Err _prepend_file_schema_(const char* path, BufOf(char) buf[static 1]) {
@@ -49,18 +46,19 @@ static inline void url_cleanup(Url u[static 1]) { curl_url_cleanup(u->cu); }
 
 static inline Err get_url_alias(const char* cstr, BufOf(char)* out) {
     if (cstr_starts_with("bookmarks", cstr)) {
-        return get_bookmark_file(out);
+        return get_bookmark_filename_if_it_exists(out);
     }
     return err_fmt("not a url alias: %s", cstr);
 }
 
 /* ctor */
 static inline Err url_init(Url u[static 1],  const char* cstr) {
+    if (!*(cstr=cstr_skip_space(cstr))) return "error: expecting an url";
     Err err;
     *u = (Url){.cu=curl_url()};
     if (!u->cu) return "error initializing CURLU";
     BufOf(char)* url_buf = &(BufOf(char)){0};
-    if (_file_exists_(cstr)) {
+    if (file_exists(cstr)) {
         if((err=_prepend_file_schema_(cstr, url_buf))) {
             url_cleanup(u);
             return err;
@@ -74,13 +72,9 @@ static inline Err url_init(Url u[static 1],  const char* cstr) {
         case CURLUE_OK:
             res = Ok;
             break;
-        case CURLUE_BAD_HANDLE: case CURLUE_OUT_OF_MEMORY:
-            res = err_fmt("error setting CURLU: %s", curl_url_strerror(code));
-            url_cleanup(u);
-            break;
         default:
-            printf("(TODO: do something)warn: curl_url_set returned code: %s\n", curl_url_strerror(code));
-            res = Ok;
+            res = err_fmt("error setting url '%s', CURLU: %s", cstr, curl_url_strerror(code));
+            url_cleanup(u);
             break;
     }
     buffn(char, clean)(url_buf);
@@ -97,17 +91,16 @@ static inline Err url_init_from_curlu(Url u[static 1],  CURLU* cu) {
     u->cu = cu;
     return Ok;
 }
+
 //TODO make url_int call this one
 static inline Err curlu_set_url(CURLU* u,  const char* cstr) {
+    if (!*cstr) return "error: no url";
     CURLUcode code = curl_url_set(u, CURLUPART_URL, cstr, CURLU_DEFAULT_SCHEME);
     switch (code) {
         case CURLUE_OK:
             return Ok;
-        case CURLUE_BAD_HANDLE: case CURLUE_OUT_OF_MEMORY:
-            return err_fmt("error setting CURLU: %s", curl_url_strerror(code));
         default:
-            printf("warn: curl_url_set returned code: %s\n", curl_url_strerror(code));
-            return Ok;
+            return err_fmt("error setting CURLU with '%s': %s", cstr, curl_url_strerror(code));
     }
 }
 

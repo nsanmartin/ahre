@@ -125,7 +125,6 @@ Err htmldoc_cache_buffer_summary(DocCache c[static 1], BufOf(char) buf[static 1]
 HtmlDoc* htmldoc_create(const char* url);
 
 
-static inline bool file_exists(const char* path) { return access(path, F_OK) == 0; }
 Err lexbor_read_doc_from_file(HtmlDoc htmldoc[static 1]) ;
 
 static inline Err
