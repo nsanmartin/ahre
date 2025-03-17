@@ -6,6 +6,13 @@
 
 Err ui_show_session_vi_mode(Session* s) {
     if (!s) return "error: unexpected null session, this should really not happen";
+    if (session_is_empty(s)) {
+        session_uout(s)->write_std("Session is empty", lit_len__("Session is empty"), s);
+        session_uout(s)->flush_std(s);
+        return Ok;
+    }
+
+    session_uout(s)->flush_msg(s);
 
     size_t nrows, ncols;
     try( ui_get_win_size(&nrows, &ncols));
@@ -37,8 +44,7 @@ Err _vi_print_(TextBuf textbuf[static 1], Range range[static 1], Session* s) {
             if (line.len) { try( session_write_std(s, (char*)line.items, line.len)); }
             else try( session_write_std_lit__(s, "\n"));
         } else {
-            WriteUserOutputCallback w = session_conf_uout(session_conf(s))->write_std;
-            try( ui_write_unsigned(w, linum, s));
+            try( session_write_unsigned_std(s, linum));
             try( session_write_std_lit__(s,"\t"));
             if (line.len) { try( session_write_std(s, (char*)line.items, line.len)); }
             else try( session_write_std_lit__(s, "\n"));
@@ -47,18 +53,33 @@ Err _vi_print_(TextBuf textbuf[static 1], Range range[static 1], Session* s) {
     return Ok;
 }
 
-///static inline Err ui_vi_write_callback_stdout(const char* mem, size_t len, void* ctx) {
-///    (void)mem;
-///    (void)len;
-///    (void)ctx;
-///    return Ok;
-///    //if (ctx) return "error: ctx not expected in write callback";
-///    //return len - fwrite(mem, sizeof(const char), len, stdout) ? "error: fwrite failure": Ok;
-///}
-///
-///
-///static inline Err ui_vi_flush_stdout(void) {
-///    //if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
-///    return Ok;
-///}
+Err _vi_write_msg_(const char* mem, size_t len, Session* s) {
+    if (!s) return "error: no session";
+    Str* buf = session_msg(s);
+    return str_append(buf, (char*)mem, len);
+}
 
+#define CONTINUE_MSG_ "{% type any key to continue %}"
+Err _vi_flush_msg_(Session* s) {
+    if (!s) return "error: no session";
+    Str* msg = session_msg(s);
+    if (!len__(msg)) return Ok;
+    if (len__(msg) != fwrite(items__(msg), 1, len__(msg), stdout)) return "error: fwrite failure";
+    if (len__(msg) != fwrite(CONTINUE_MSG_, 1, lit_len__(CONTINUE_MSG_), stdout))
+        return "error: fwrite failure";
+    if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
+    getchar();
+    str_reset(msg);
+    return Ok;
+}
+
+Err _vi_show_err_(Session* s, char* err, size_t len) {
+    (void)s;
+    if (err) {
+        if (len != fwrite(err, 1, len, stderr))
+            return "error: fprintf failure while attempting to show an error :/";
+    }
+    fflush(stderr);
+    getchar();
+    return Ok;
+}

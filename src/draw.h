@@ -6,12 +6,7 @@
 #include "src/utils.h"
 #include "src/generic.h"
 #include "src/session-conf.h"
-
-static inline SessionWriteFn
-get_log_fn_from_session_conf_and_htmldoc(SessionConf sc[static 1], HtmlDoc d[static 1]) {
-    (void)d;
-    return (SessionWriteFn) {.write=session_conf_uout(sc)->write_msg, .ctx=NULL};
-}
+#include "src/session.h"
 
 #define T EscCode
 #include <arl.h>
@@ -117,12 +112,12 @@ static inline void draw_ctx_buf_reset(DrawCtx ctx[static 1]) {
 }
 
 static inline Err
-draw_ctx_init(DrawCtx ctx[static 1], HtmlDoc htmldoc[static 1], SessionConf sconf[static 1]) {
-    unsigned flags = (session_conf_monochrome(sconf)? DRAW_CTX_FLAG_MONOCHROME: 0);
+draw_ctx_init(DrawCtx ctx[static 1], HtmlDoc htmldoc[static 1], Session s[static 1]) {
+    unsigned flags = (session_monochrome(s)? DRAW_CTX_FLAG_MONOCHROME: 0);
     *ctx = (DrawCtx) {
         .htmldoc=htmldoc,
         .flags=flags,
-        .logfn=get_log_fn_from_session_conf_and_htmldoc(sconf, htmldoc)
+        .logfn=session_doc_log_fn(s, htmldoc)
     };
     return Ok;
 }

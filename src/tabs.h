@@ -69,37 +69,7 @@ tablist_append_move_tree(TabList f[static 1], TabNode t[static 1]) {
     return Ok;
 }
 
-static inline Err
-tablist_append_tree_from_url(
-    TabList f[static 1],
-    const char* url,
-    UrlClient url_client[static 1],
-    SessionConf sconf[static 1]
-) {
-    TabNode tn = (TabNode){0};
-    try( tab_node_init(&tn, 0x0, url, url_client, sconf));
-    Err err = tablist_append_move_tree(f, &tn);
-    if (err) {
-        tab_node_cleanup(&tn);
-        return err;
-    }
-    if (!f->tabs.len) return "error: expecting tabs in the tab list after appending a tab";
-    f->current_tab = f->tabs.len - 1;
-    return Ok;
-}
 
-
-/* ctor */
-
-static inline Err
-tablist_init(
-    TabList f[static 1],
-    const char* url,
-    UrlClient url_client[static 1],
-    SessionConf sconf[static 1]
-) {
-    return tablist_append_tree_from_url(f, url, url_client, sconf);
-}
 
 /* dtor */
 static inline void tablist_cleanup(TabList f[static 1]) {

@@ -26,14 +26,21 @@ static Err _open_many_urls_(Session session[static 1], ArlOf(const_char_ptr) url
     return Ok;
 }
 
+static inline Err _show_tab_if_any_(Session s[static 1]) {
+    TextBuf* tb;
+    Err err = session_current_buf(s, &tb);
+    if (!err) return session_show_output(s);
+    return Ok; /*ignoring this error, we may check better */
+}
+
 static int _loop_(Session s[static 1]) {
-    Err err;
     init_user_input_history();
-    while (!session_quit(s)) {
-        err = session_show_output(s);
+    while (1) {
+        Err err = session_show_output(s);
         char* line = NULL;
         ok_then(err, session_read_user_input(s, &line));
         if (line) ok_then(err, session_consume_line(s, line));
+        if (session_quit(s)) break;
         if (err) if (session_show_error(s, err)) exit(EXIT_FAILURE); 
     }
     session_cleanup(s);

@@ -19,7 +19,6 @@
 static inline Err ed_print_n(Session s[static 1], TextBuf textbuf[static 1], Range range[static 1]) {
     try(validate_range_for_buffer(textbuf, range));
     StrView line;
-    WriteUserOutputCallback wcb = ui_write_callback_stdout; //TODO: parameterize
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
         try( session_write_unsigned_std(s, linum));
@@ -28,7 +27,7 @@ static inline Err ed_print_n(Session s[static 1], TextBuf textbuf[static 1], Ran
         else try( session_write_std_lit__(s,"\n"));
     }
 
-    if (textbuf_line_count(textbuf) == range->end) try( uiw_lit__(wcb,"\n"));
+    if (textbuf_line_count(textbuf) == range->end) try( session_write_std_lit__(s,"\n"));
     return Ok;
 }
 

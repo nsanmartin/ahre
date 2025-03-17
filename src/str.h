@@ -123,6 +123,7 @@ inline static StrView strview_from_mem_trim(const char* s, size_t len) {
 
 #define Str BufOf(char)
 #define str_clean buffn(char,clean)
+#define str_reset buffn(char,reset)
 #define str_append(StrPtr, Items, NItems) \
     (buffn(char,append)(StrPtr, Items, NItems) ? Ok : "error: str_append failure")
 

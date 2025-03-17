@@ -43,5 +43,7 @@ static inline bool fatal_error(Err e) {
     if ((!validate_size(Value))) \
         return RetVal
 
+#define REAL_ERR_MSG_ "a real error: "
+
 Err err_prepend_char(Err err, char c);
 #endif

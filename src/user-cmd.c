@@ -1,6 +1,7 @@
 #include "src/session.h"
 #include "src/utils.h"
 #include "src/user-interface.h"
+#include "src/ahre__.h"
 
 /* ah cmds */
 
@@ -16,7 +17,7 @@ Err cmd_fetch(Session session[static 1]) {
         new_cu,
         session_url_client(session),
         http_get,
-        session_conf(session)
+        session
     );
     if (err) {
         curl_url_cleanup(new_cu);
@@ -114,3 +115,10 @@ Err cmd_set(Session session[static 1], const char* line) {
     return "not a curl option";
 }
 
+Err cmd_draw(Session session[static 1], const char* rest) {
+    if (*rest) return "draw cmd accept no params";
+    HtmlDoc* htmldoc;
+    try( session_current_doc(session, &htmldoc));
+    htmldoc_reset(htmldoc);
+    return htmldoc_draw(htmldoc, session);
+}

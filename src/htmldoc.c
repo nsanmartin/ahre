@@ -8,6 +8,7 @@
 #include "src/textbuf.h"
 #include "src/utils.h"
 #include "src/wrapper-lexbor.h"
+#include "src/ahre__.h"
 
 Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]);
 Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[static 1]);
@@ -353,8 +354,7 @@ draw_tag_blockquote(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     return Ok;
 }
 
-static Err
-draw_tag_title(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+static Err draw_tag_title(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     HtmlDoc* d = draw_ctx_htmldoc(ctx);
     *htmldoc_title(d) = node;
     Str title = (Str){0};
@@ -364,9 +364,9 @@ draw_tag_title(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         return Ok;
     }
     if (!buffn(char,append)(&title, "\n\0", 2)) return "error: bufn append failure";
-    try( log_msg__(draw_ctx_logfn(ctx), "%s", title.items));
+    Err err = log_msg__(draw_ctx_logfn(ctx), "%s", title.items);
     buffn(char,clean)(&title); 
-    return Ok;
+    return err;
 }
 
 Err draw_mem_skipping_space(const char* data, size_t len, DrawCtx ctx[static 1]) {
@@ -763,11 +763,11 @@ Err htmldoc_init_fetch_draw(
     HtmlDoc d[static 1],
     const char* url,
     UrlClient url_client[static 1],
-    SessionConf sconf[static 1]
+    Session s[static 1]
 ) {
     try(htmldoc_init(d, url));
-    Err err = htmldoc_fetch(d, url_client, get_log_fn_from_session_conf_and_htmldoc(sconf, d));
-    ok_then(err, htmldoc_draw(d, sconf));
+    Err err = htmldoc_fetch(d, url_client, session_doc_log_fn(s, d));
+    ok_then(err, htmldoc_draw(d, s));
     if (err) {
         htmldoc_cleanup(d);
         return err;
@@ -780,11 +780,11 @@ Err htmldoc_init_fetch_draw_from_curlu(
     CURLU* cu,
     UrlClient url_client[static 1],
     HttpMethod method,
-    SessionConf sconf[static 1]
+    Session s[static 1]
 ) {
     try(htmldoc_init_from_curlu(d, cu, method));
-    Err err = htmldoc_fetch(d, url_client, get_log_fn_from_session_conf_and_htmldoc(sconf,d)); 
-    ok_then(err, htmldoc_draw(d, sconf));
+    Err err = htmldoc_fetch(d, url_client, session_doc_log_fn(s,d)); 
+    ok_then(err, htmldoc_draw(d, s));
     if (err) {
         d->url = (Url){0}; /* on failure do not free cu owned by caller */
         htmldoc_cleanup(d);
@@ -824,10 +824,11 @@ inline void htmldoc_destroy(HtmlDoc* htmldoc) {
 }
 
 //TODO: pass the max cols and color from session conf
-Err htmldoc_draw(HtmlDoc htmldoc[static 1], SessionConf sconf[static 1]) {
+Err htmldoc_draw(HtmlDoc htmldoc[static 1], Session s[static 1]) {
+    //session_conf(session));
     lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(htmldoc);
     DrawCtx ctx;
-    try(draw_ctx_init(&ctx, htmldoc, sconf));
+    try(draw_ctx_init(&ctx, htmldoc, s));
     Err err = draw_rec(lxb_dom_interface_node(lxbdoc), &ctx);
     try( draw_ctx_buf_commit(&ctx));
     draw_ctx_cleanup(&ctx);
@@ -836,7 +837,7 @@ Err htmldoc_draw(HtmlDoc htmldoc[static 1], SessionConf sconf[static 1]) {
     //we always call all .
     if (textbuf_len(htmldoc_textbuf(htmldoc))) {
         try( textbuf_append_null(htmldoc_textbuf(htmldoc)));
-        try( textbuf_fit_lines(htmldoc_textbuf(htmldoc), *session_conf_ncols(sconf)));
+        try( textbuf_fit_lines(htmldoc_textbuf(htmldoc), *session_conf_ncols(session_conf(s))));
     }
     return Ok;
 }

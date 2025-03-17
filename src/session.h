@@ -29,6 +29,8 @@ Err process_line(Session session[static 1], const char* line);
 Err session_current_buf(Session session[static 1], TextBuf* out[static 1]);
 Err session_current_doc(Session session[static 1], HtmlDoc* out[static 1]);
 
+static inline Str* session_msg(Session s[static 1]) { return &s->msg; }
+
 static inline UrlClient* session_url_client(Session session[static 1]) {
     return session->url_client;
 }
@@ -52,6 +54,14 @@ session_ncols(Session s[static 1]) { return session_conf_ncols(session_conf(s));
 static inline TabList*
 session_tablist(Session s[static 1]) { return &s->tablist; }
 
+static inline bool session_is_empty(Session s[static 1]) { return !session_tablist(s)->tabs.len; }
+static inline SessionWriteFn
+session_doc_log_fn(Session s[static 1], HtmlDoc d[static 1]) {
+    (void)d;
+    return (SessionWriteFn) {.write=session_uout(s)->write_msg, .ctx=s};
+}
+
+
 /* ctor */
 Err session_init(Session s[static 1], SessionConf sconf[static 1]);
 
@@ -59,35 +69,50 @@ Err session_init(Session s[static 1], SessionConf sconf[static 1]);
 static inline void session_cleanup(Session s[static 1]) {
     url_client_destroy(s->url_client);
     tablist_cleanup(session_tablist(s));
+    str_clean(session_msg(s));
 }
 
 void session_destroy(Session* session);
 
 /**/
 
+Err tablist_append_tree_from_url(
+    TabList f[static 1],
+    const char* url,
+    UrlClient url_client[static 1],
+    Session s[static 1]
+) ;
 static inline Err
 session_open_url(Session s[static 1], const char* url, UrlClient url_client[static 1]) {
-    return tablist_append_tree_from_url(
-        session_tablist(s), url, url_client, session_conf(s)
-    );
+    return tablist_append_tree_from_url(session_tablist(s), url, url_client, s);
 }
 
+Err tab_node_tree_append_ahref(
+    TabNode t[static 1],
+    size_t linknum,
+    UrlClient url_client[static 1],
+    Session s[static 1]
+);
 static inline Err session_follow_ahref(Session s[static 1], size_t linknum) {
     TabNode* current_tab;
     try( tablist_current_tab(session_tablist(s), &current_tab));
     if(current_tab)
-        return tab_node_tree_append_ahref(current_tab , linknum, s->url_client, session_conf(s));
+        return tab_node_tree_append_ahref(current_tab , linknum, s->url_client, s);
     
     return "error: where is the href if current tree is empty?";
 }
 
+Err tab_node_tree_append_submit(
+    TabNode t[static 1],
+    size_t ix,
+    UrlClient url_client[static 1],
+    Session s[static 1]
+);
 static inline Err session_press_submit(Session s[static 1], size_t ix) {
     TabNode* current_tab;
     try( tablist_current_tab(session_tablist(s), &current_tab));
     if(current_tab)
-        return tab_node_tree_append_submit(
-            current_tab , ix, session_url_client(s), session_conf(s)
-        );
+        return tab_node_tree_append_submit(current_tab , ix, session_url_client(s), s);
 
     
     return "error: where is the input if current tree is empty?";
@@ -132,17 +157,24 @@ static inline Err session_write_unsigned_msg(Session s[static 1], uintmax_t ui) 
 
 
 static inline Err session_show_error(Session s[static 1], Err err) {
-    err = session_write_msg(s, (char*)err, strlen(err));
-    if (err) { /* what else could I do */
-        fprintf(stderr, "a real error: %s\n", err);
-    }
-    return err;
+    size_t len = strlen(err);
+    return session_uout(s)->show_err(s, (char*)err, len);
 }
 
 static inline Err session_show_output(Session s[static 1]) {
-    Err err = session_uout(s)->show_session(s);
-    if (err) if (session_show_error(s, err)) exit(EXIT_FAILURE); 
-    return Ok;
+    return session_uout(s)->show_session(s);
 }
 
+
+/* tablist ctor */
+
+static inline Err
+tablist_init(
+    TabList f[static 1],
+    const char* url,
+    UrlClient url_client[static 1],
+    Session s[static 1]
+) {
+    return tablist_append_tree_from_url(f, url, url_client, s);
+}
 #endif

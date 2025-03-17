@@ -137,7 +137,7 @@ Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) 
     UserOutput* out = session_uout(session);
     Err err = Ok;
     if (!*line) {
-        try( uiw_lit__(out->write_std, "> "));
+        try( out->write_std("> ", 1, session));
         ArlOf(char) masked = (ArlOf(char)){0};
         err = readpass_term(&masked, out);
         ok_then(err, lexbor_set_attr_value(node, masked.items, masked.len));

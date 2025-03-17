@@ -28,9 +28,9 @@ Err readpass_term(ArlOf(char) arl[static 1], UserOutput out[static 1]) {
             break;
         }
         //try( uiw_lit__(out->write_msg,"*")); 
-        try( uiw_lit__(out->write_std,"*")); 
+        try( out->write_std("*", 1, NULL)); //TODO: pass the session?
     }
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &prev_termios) == -1) return "error: tcsetattr failure";
-    try( uiw_lit__(out->write_std, "\n"));
+    try( out->write_std("\n", 1, NULL));//TODO: pass the session?
     return err;
 }

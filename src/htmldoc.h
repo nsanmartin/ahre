@@ -143,20 +143,6 @@ htmldoc_fetch(
     (draw_ctx_color(Context) ? serialize_lit_str(EscSeq, CallBack, Context) : Ok)
 
 /* htmldoc_tag_a.c */
-Err htmldoc_init_fetch_draw(
-    HtmlDoc d[static 1],
-    const char* url,
-    UrlClient url_client[static 1],
-    SessionConf sconf[static 1]
-);
-
-Err htmldoc_init_fetch_draw_from_curlu(
-    HtmlDoc d[static 1],
-    CURLU* cu,
-    UrlClient url_client[static 1],
-    HttpMethod method,
-    SessionConf sconf[static 1]
-);
 
 Err htmldoc_A(Session* s, HtmlDoc d[static 1]) ;
 
@@ -182,7 +168,6 @@ static inline Err htmldoc_tags_str_reduce_size_t(const char* tags, size_t ts[sta
     } while (1);
 }
 
-Err htmldoc_draw(HtmlDoc htmldoc[static 1], SessionConf sconf[static 1]);
 
 static inline Err lxb_mk_title_or_url(HtmlDoc d[static 1], char* url, Str title[static 1]) {
     Err err = Ok;

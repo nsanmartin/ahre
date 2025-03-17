@@ -7,16 +7,19 @@
 
 Err _vi_print_(TextBuf textbuf[static 1], Range range[static 1], Session* s);
 Err ui_show_session_vi_mode(Session* s);
-
+Err _vi_write_msg_(const char* mem, size_t len, Session* s);
+Err _vi_flush_msg_(Session* s);
+Err _vi_show_err_(Session* s, char* err, size_t len);
 
 static inline UserOutput uout_vi_mode(void) {
     return (UserOutput) {
         //.write_msg    = ui_write_callback_stdout,
-        .write_msg    = ignore_output,
-        .flush_msg    = ui_flush_stdout,
+        .write_msg    = _vi_write_msg_,
+        .flush_msg    = _vi_flush_msg_,
         .write_std    = ui_write_callback_stdout,
         .flush_std    = ui_flush_stdout,
-        .show_session = ui_show_session_vi_mode
+        .show_session = ui_show_session_vi_mode,
+        .show_err     = _vi_show_err_
     };
 }
 
