@@ -43,13 +43,12 @@ line_num_to_right_offset(size_t lnum, TextBuf textbuf[static 1], size_t out[stat
 }
 
 //TODO: pass session to this fn
-static inline Err ed_print_last_range(TextBuf textbuf[static 1], UserOutput out[static 1]) {
+static inline Err ed_print_last_range(Session s[static 1], TextBuf textbuf[static 1]) {
     Range r = *textbuf_last_range(textbuf);
-    Session* s = NULL;
     try( session_write_msg_lit__(s, "last range: ("));
-    try( ui_write_unsigned(out->write_msg, r.beg, s));
+    try( session_write_unsigned_msg(s, r.beg));
     try( session_write_msg_lit__(s, ", "));
-    try( ui_write_unsigned(out->write_msg, r.end, s));
+    try( session_write_unsigned_msg(s, r.end));
     try( session_write_msg_lit__(s, ")\n"));
     return Ok;
 }

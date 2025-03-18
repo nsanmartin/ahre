@@ -1,7 +1,7 @@
 #include "src/user-out-line-mode.h"
 #include "src/session.h"
 
-Err ui_show_session_line_mode(Session* s) {
+Err _line_show_session_(Session* s) {
     if (!s) return "error: unexpected null session, this should really not happen";
     if (session_is_empty(s)) return Ok;
     return session_uout(s)->flush_std(NULL);

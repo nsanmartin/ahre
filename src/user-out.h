@@ -9,22 +9,19 @@ typedef struct Session Session;
 
 typedef Err (*WriteUserOutputCallback)(const char* mem, size_t len, Session* ctx);
 typedef Err (*FlushUserOutputCallback)(Session* s);
-typedef Err (*ShowTextUserOutputCallback)(Session* s);
+typedef Err (*ShowSessionUserOutputCallback)(Session* s);
 typedef Err (*ShowErrUserOutputCallback)(Session* s, char* err, size_t len);
 
 typedef struct { WriteUserOutputCallback write; Session* ctx; } SessionWriteFn;
 
 typedef struct {
-    WriteUserOutputCallback    write_msg;
-    FlushUserOutputCallback    flush_msg;
-    WriteUserOutputCallback    write_std;
-    FlushUserOutputCallback    flush_std;
-    ShowTextUserOutputCallback show_session;
-    ShowErrUserOutputCallback  show_err;
+    WriteUserOutputCallback       write_msg;
+    FlushUserOutputCallback       flush_msg;
+    WriteUserOutputCallback       write_std;
+    FlushUserOutputCallback       flush_std;
+    ShowSessionUserOutputCallback show_session;
+    ShowErrUserOutputCallback     show_err;
 } UserOutput;
-
-
-// #define uiw_lit__(Cb, Lit) Cb(Lit,sizeof(Lit)-1,NULL)
 
 
 static inline Err ui_write_unsigned(WriteUserOutputCallback wcb, uintmax_t ui, Session* s) {
@@ -60,6 +57,5 @@ static inline Err ignore_output(const char* mem, size_t len, Session* s) {
 
 #define output_dev_null__ (SessionWriteFn){.write=ignore_output}
 #define output_stdout__ (SessionWriteFn){.write=ui_write_callback_stdout}
-
 
 #endif

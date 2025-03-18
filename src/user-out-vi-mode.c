@@ -3,7 +3,27 @@
 #include "src/user-out.h"
 #include "src/session.h"
 
-void _update_if_smaller_(size_t value[static 1], size_t new_value) {
+static Err _vi_print_range_std_(TextBuf textbuf[static 1], Range range[static 1], Session* s) {
+    try(validate_range_for_buffer(textbuf, range));
+    StrView line;
+    for (size_t linum = range->beg; linum <= range->end; ++linum) {
+        if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
+        if (!line.items || !*line.items) continue; //TODO: fix get-line
+
+        if (true) {
+            if (line.len) { try( session_write_std(s, (char*)line.items, line.len)); }
+            else try( session_write_std_lit__(s, "\n"));
+        } else {
+            try( session_write_unsigned_std(s, linum));
+            try( session_write_std_lit__(s,"\t"));
+            if (line.len) { try( session_write_std(s, (char*)line.items, line.len)); }
+            else try( session_write_std_lit__(s, "\n"));
+        }
+    }
+    return Ok;
+}
+
+static void _update_if_smaller_(size_t value[static 1], size_t new_value) {
     if (*value > new_value) *value = new_value;
 }
 
@@ -31,30 +51,10 @@ Err _vi_show_session_(Session* s) {
     end = (end > textbuf_line_count(tb)) ? textbuf_line_count(tb) : end;
     Range r = (Range){ .beg=line, .end=end };
 
-    try( _vi_print_(tb, &r, s));
+    try( _vi_print_range_std_(tb, &r, s));
     return Ok;
 }
 
-
-Err _vi_print_(TextBuf textbuf[static 1], Range range[static 1], Session* s) {
-    try(validate_range_for_buffer(textbuf, range));
-    StrView line;
-    for (size_t linum = range->beg; linum <= range->end; ++linum) {
-        if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
-        if (!line.items || !*line.items) continue; //TODO: fix get-line
-
-        if (true) {
-            if (line.len) { try( session_write_std(s, (char*)line.items, line.len)); }
-            else try( session_write_std_lit__(s, "\n"));
-        } else {
-            try( session_write_unsigned_std(s, linum));
-            try( session_write_std_lit__(s,"\t"));
-            if (line.len) { try( session_write_std(s, (char*)line.items, line.len)); }
-            else try( session_write_std_lit__(s, "\n"));
-        }
-    }
-    return Ok;
-}
 
 Err _vi_write_msg_(const char* mem, size_t len, Session* s) {
     if (!s) return "error: no session";

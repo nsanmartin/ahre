@@ -6,7 +6,7 @@
 
 typedef struct Session Session;
 
-Err ui_show_session_line_mode(Session* s);
+Err _line_show_session_(Session* s);
 Err _line_show_err_(Session* s, char* err, size_t len);
 
 static inline UserOutput uout_line_mode(void) {
@@ -15,7 +15,7 @@ static inline UserOutput uout_line_mode(void) {
         .flush_msg    = ui_flush_stdout,
         .write_std    = ui_write_callback_stdout,
         .flush_std    = ui_flush_stdout,
-        .show_session = ui_show_session_line_mode,
+        .show_session = _line_show_session_,
         .show_err     = _line_show_err_
     };
 }
