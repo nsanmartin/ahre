@@ -3,8 +3,11 @@
 #include "src/user-out.h"
 #include "src/session.h"
 
+void _update_if_smaller_(size_t value[static 1], size_t new_value) {
+    if (*value > new_value) *value = new_value;
+}
 
-Err ui_show_session_vi_mode(Session* s) {
+Err _vi_show_session_(Session* s) {
     if (!s) return "error: unexpected null session, this should really not happen";
     if (session_is_empty(s)) {
         session_uout(s)->write_std("Session is empty", lit_len__("Session is empty"), s);
@@ -16,8 +19,8 @@ Err ui_show_session_vi_mode(Session* s) {
 
     size_t nrows, ncols;
     try( ui_get_win_size(&nrows, &ncols));
-    *session_nrows(s) = nrows - 2;
-    *session_ncols(s) = ncols;
+    _update_if_smaller_(session_nrows(s), nrows - 2);
+    _update_if_smaller_(session_ncols(s), ncols);
 
     if (nrows <= 3) return "too few rows";
     TextBuf* tb;
