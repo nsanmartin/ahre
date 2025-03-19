@@ -34,4 +34,5 @@ static inline size_t* session_conf_ncols(SessionConf sc[static 1]) { return &sc-
 static inline UserInterface* session_conf_ui(SessionConf sc[static 1]) { return &sc->ui; }
 static inline UserInput* session_conf_uinput(SessionConf sc[static 1]) { return &sc->ui.uin; }
 static inline UserOutput* session_conf_uout(SessionConf sc[static 1]) { return &sc->ui.uout; }
+
 #endif

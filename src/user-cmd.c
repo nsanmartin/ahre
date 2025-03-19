@@ -89,7 +89,7 @@ Err cmd_set_session_input(Session session[static 1], const char* line) {
     else if ((rest = csubstr_match(line, "isocline", 1)) && !*rest) ui = ui_isocline();
     else if ((rest = csubstr_match(line, "vi", 1)) && !*rest) ui = ui_vi_mode();
     else return "input option should be 'getline' or 'isocline'";
-    *session_ui(session) = ui;
+    ui_switch(session_ui(session), &ui);
     return Ok;
 
 }

@@ -1,7 +1,8 @@
-#include "src/user-out-vi-mode.h"
 #include "src/cmd-ed.h"
-#include "src/user-out.h"
+#include "src/ranges.h"
 #include "src/session.h"
+#include "src/textbuf.h"
+
 
 static Err _vi_print_range_std_(TextBuf textbuf[static 1], Range range[static 1], Session* s) {
     try(validate_range_for_buffer(textbuf, range));
@@ -30,7 +31,7 @@ static void _update_if_smaller_(size_t value[static 1], size_t new_value) {
 Err _vi_show_session_(Session* s) {
     if (!s) return "error: unexpected null session, this should really not happen";
     if (session_is_empty(s)) {
-        session_uout(s)->write_std("Session is empty", lit_len__("Session is empty"), s);
+        try( session_write_std(s, "Session is empty", lit_len__("Session is empty")));
         session_uout(s)->flush_std(s);
         return Ok;
     }
@@ -52,24 +53,46 @@ Err _vi_show_session_(Session* s) {
     Range r = (Range){ .beg=line, .end=end };
 
     try( _vi_print_range_std_(tb, &r, s));
+    session_uout(s)->flush_std(s);
+    return Ok;
+}
+
+Err _vi_write_std_(const char* mem, size_t len, Session* s) {
+    if (!s) return "error: no session";
+    HtmlDoc* doc;
+    try( session_current_doc(s, &doc));
+    Str* screen = htmldoc_screen(doc);
+    return str_append(screen, (char*)mem, len);
+}
+
+Err _vi_flush_std_(Session* s) {
+    if (!s) return "error: no session";
+    HtmlDoc* doc;
+    try( session_current_doc(s, &doc));
+    Str* screen = htmldoc_screen(doc);
+    if (!len__(screen)) return Ok;
+    if (len__(screen) != fwrite(items__(screen), 1, len__(screen), stdout))
+        return "error: fwrite failure";
+    if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
+    str_reset(screen);
     return Ok;
 }
 
 
 Err _vi_write_msg_(const char* mem, size_t len, Session* s) {
     if (!s) return "error: no session";
-    Str* buf = session_msg(s);
-    return str_append(buf, (char*)mem, len);
+    return str_append(session_msg(s), (char*)mem, len);
 }
 
-#define CONTINUE_MSG_ "{% type any key to continue %}"
+#define MSG_PREFIX_ "{msg}:\n"
+#define CONTINUE_MSG_ "{% type enter to continue %}"
 Err _vi_flush_msg_(Session* s) {
     if (!s) return "error: no session";
     Str* msg = session_msg(s);
     if (!len__(msg)) return Ok;
-    if (len__(msg) != fwrite(items__(msg), 1, len__(msg), stdout)) return "error: fwrite failure";
-    if (len__(msg) != fwrite(CONTINUE_MSG_, 1, lit_len__(CONTINUE_MSG_), stdout))
-        return "error: fwrite failure";
+    try( mem_fwrite_lit__(MSG_PREFIX_, stdout));
+    try( mem_fwrite(items__(msg), len__(msg), stdout));
+    try( mem_fwrite_lit__(CONTINUE_MSG_, stdout));
     if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
     getchar();
     str_reset(msg);
@@ -79,10 +102,14 @@ Err _vi_flush_msg_(Session* s) {
 Err _vi_show_err_(Session* s, char* err, size_t len) {
     (void)s;
     if (err) {
-        if (len != fwrite(err, 1, len, stderr))
+        //if (len != fwrite(err, 1, len, stderr))
+        if (mem_fwrite(err, len, stderr)
+        || mem_fwrite_lit__(" {type enter}", stderr))
             return "error: fprintf failure while attempting to show an error :/";
+
     }
     fflush(stderr);
     getchar();
     return Ok;
 }
+

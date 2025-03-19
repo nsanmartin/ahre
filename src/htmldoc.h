@@ -39,6 +39,7 @@ typedef lxb_dom_node_t* LxbNodePtr;
 typedef struct {
     TextBuf sourcebuf;
     TextBuf textbuf;
+    Str screen;
     ArlOf(LxbNodePtr) anchors;
     ArlOf(LxbNodePtr) imgs;
     ArlOf(LxbNodePtr) inputs;
@@ -66,6 +67,9 @@ htmldoc_sourcebuf(HtmlDoc d[static 1]) { return &d->cache.sourcebuf; }
 
 static inline TextBuf*
 htmldoc_textbuf(HtmlDoc d[static 1]) { return &d->cache.textbuf; }
+
+static inline Str*
+htmldoc_screen(HtmlDoc d[static 1]) { return &d->cache.screen; }
 
 static inline ArlOf(LxbNodePtr)*
 htmldoc_anchors(HtmlDoc d[static 1]) { return &d->cache.anchors; }
@@ -104,6 +108,7 @@ void htmldoc_destroy(HtmlDoc* htmldoc) ;
 static inline void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
     textbuf_cleanup(htmldoc_textbuf(htmldoc));
     textbuf_cleanup(htmldoc_sourcebuf(htmldoc));
+    str_clean(htmldoc_screen(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_anchors(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_imgs(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));

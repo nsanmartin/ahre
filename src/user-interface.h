@@ -8,14 +8,13 @@
 #include "src/user-out-line-mode.h"
 #include "src/user-out-vi-mode.h"
 
+
 typedef struct {
     UserInput uin;
     UserOutput uout;
 } UserInterface ;
 
-
-Err ui_get_win_size(size_t nrows[static 1], size_t ncols[static 1]) ;
-
+/* ctr / factories */
 static inline UserInterface ui_fgets(void) {
     return (UserInterface) {
         .uin=uinput_fgets(),
@@ -37,4 +36,11 @@ static inline UserInterface ui_vi_mode(void) {
     };
 }
 
+/* * */
+
+static inline void ui_switch(UserInterface old_ui[static 1], UserInterface new_ui[static 1]) {
+    *old_ui = *new_ui;
+}
+
+Err ui_get_win_size(size_t nrows[static 1], size_t ncols[static 1]) ;
 #endif

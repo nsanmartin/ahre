@@ -20,25 +20,6 @@
 #include "src/mem.h"
 #include "src/utils.h"
 
-//typedef struct {
-//	const char* s;
-//	size_t len;
-//} Str;
-
-///* getters */
-//size_t str_len(const Str s[static 1]);
-//static inline const char* str_beg(const Str s[static 1]) { return s->s; }
-//bool str_is_empty(const Str s[static 1]);
-//static inline const char* str_end(const Str s[static 1]) { return s->s + s->len; }
-//
-///* ctor */
-//int str_init(Str s[static 1], const char* cs);
-//
-///**/
-//void str_trim_space(Str* l);
-//char* str_ndup_cstr(const Str* url, size_t n);
-//char* url_cpy(const char* url) ;
-//
 
 /* mem fns */
 size_t mem_count_ocurrencies(char* data, size_t len, char c);
@@ -57,6 +38,13 @@ mem_skip_space_inplace(const char* data[static 1], size_t len[static 1]) {
         ;
     return *len != 0;
 }
+
+static inline Err mem_fwrite(const char* mem, size_t len, FILE* stream) {
+    if (len != fwrite(mem, 1, len, stream)) return "error: mem_fwrite failure";
+    return Ok;
+}
+
+#define mem_fwrite_lit__(Lit, Stream) mem_fwrite(Lit,lit_len__(Lit), Stream)
 
 /* cstr fns */
 const char* cstr_skip_space(const char* s);
