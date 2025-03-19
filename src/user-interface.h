@@ -8,31 +8,39 @@
 #include "src/user-out-line-mode.h"
 #include "src/user-out-vi-mode.h"
 
+typedef struct Session Session;
+typedef Err (*ProcessLineFn)(Session*,const char*);
 
 typedef struct {
-    UserInput uin;
-    UserOutput uout;
+    UserInput     uin;
+    ProcessLineFn process_line;
+    UserOutput    uout;
 } UserInterface ;
+
+Err process_line_line_mode(Session* s, const char* line);
 
 /* ctr / factories */
 static inline UserInterface ui_fgets(void) {
     return (UserInterface) {
-        .uin=uinput_fgets(),
-        .uout=uout_line_mode()
+        .uin            = uinput_fgets(),
+        .process_line   = process_line_line_mode,
+        .uout           = uout_line_mode()
     };
 }
 
 static inline UserInterface ui_isocline(void) {
     return (UserInterface) {
-        .uin=uinput_isocline(),
-        .uout=uout_line_mode()
+        .uin            = uinput_isocline(),
+        .process_line   = process_line_line_mode,
+        .uout           = uout_line_mode()
     };
 }
 
 static inline UserInterface ui_vi_mode(void) {
     return (UserInterface) {
-        .uin=uinput_vi_mode(),
-        .uout=uout_vi_mode()
+        .uin            = uinput_vi_mode(),
+        .process_line   = process_line_line_mode, //todo change me :)
+        .uout           = uout_vi_mode()
     };
 }
 

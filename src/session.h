@@ -129,7 +129,7 @@ static inline Err session_read_user_input(Session s[static 1], char* line[static
 
 
 static inline Err session_consume_line(Session s[static 1], char* user_input) {
-    Err err = process_line(s, user_input);
+    Err err = session_ui(s)->process_line(s, user_input);
     std_free(user_input);
     return err;
 }

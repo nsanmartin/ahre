@@ -8,6 +8,7 @@
 #include "src/htmldoc.h"
 #include "src/error.h"
 
+Err cmd_bookmarks(Session session[static 1], const char* url);
 
 static inline Err
 bookmark_sections_body(HtmlDoc bookmark[static 1], lxb_dom_node_t* out[static 1]) {

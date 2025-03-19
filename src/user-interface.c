@@ -36,41 +36,6 @@ bool substr_match_all(const char* s, size_t len, const char* cmd) {
     return (s=csubstr_match(s, cmd, len)) && !*cstr_skip_space(s);
 }
 
-
-Err cmd_bookmarks(Session session[static 1], const char* url) {
-    HtmlDoc* htmldoc;
-    try( session_current_doc(session, &htmldoc));
-    ArlOf(BufOf(char)) list = (ArlOf(BufOf(char))){0};
-    lxb_dom_node_t* body;
-    try(bookmark_sections_body(htmldoc, &body));
-    Err err = Ok;
-    if (!*url) {
-        err = bookmark_sections(body, &list);
-        if (!err) {
-            BufOf(char)* it = arlfn(BufOf(char), begin)(&list);
-            for (; it != arlfn(BufOf(char), end)(&list); ++it) {
-                try( session_write_std(session, items__(it), len__(it)));
-                try( session_write_std_lit__(session, "\n"));
-            }
-        }
-        arlfn(BufOf(char),clean)(&list);
-    } else {
-        lxb_dom_node_t* section;
-        try( bookmark_section_get(body, url, &section));
-
-        if (section) {
-            const char* data;
-            size_t len;
-            try( lexbor_node_get_text(section->first_child, &data, &len));
-            if (len) {
-                try(session_write_std(session, (char*)data, len));
-                try(session_write_std_lit__(session, "\n"));
-            }
-        } else err = "invalid section in bookmark";
-    }
-    return err;
-}
-
 Err cmd_cookies(Session session[static 1], const char* url) {
     (void)url;
     return url_client_print_cookies(session_url_client(session));
@@ -391,6 +356,16 @@ Err process_line(Session session[static 1], const char* line) {
     return cmd_eval(session, line);
 }
 
+Err process_line_line_mode(Session* s, const char* line) {
+    if (!s) return "error: no session :./";
+    try( process_line(s, line));
+    return cmd_draw(s, "");//TODO: do not rewrite the title
+}
+
+Err process_line_vi_mode(Session* s, const char* line) {
+    if (!s) return "error: no session :./";
+    return process_line(s, line);
+}
 
 #include <sys/ioctl.h>
 

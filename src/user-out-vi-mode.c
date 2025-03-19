@@ -102,7 +102,6 @@ Err _vi_flush_msg_(Session* s) {
 Err _vi_show_err_(Session* s, char* err, size_t len) {
     (void)s;
     if (err) {
-        //if (len != fwrite(err, 1, len, stderr))
         if (mem_fwrite(err, len, stderr)
         || mem_fwrite_lit__(" {type enter}", stderr))
             return "error: fprintf failure while attempting to show an error :/";

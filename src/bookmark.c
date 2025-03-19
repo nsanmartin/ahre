@@ -26,3 +26,36 @@ Err draw_bookmark_rec(lxb_dom_node_t* node) {
     return Ok;
 }
 
+Err cmd_bookmarks(Session session[static 1], const char* url) {
+    HtmlDoc* htmldoc;
+    try( session_current_doc(session, &htmldoc));
+    ArlOf(BufOf(char)) list = (ArlOf(BufOf(char))){0};
+    lxb_dom_node_t* body;
+    try(bookmark_sections_body(htmldoc, &body));
+    Err err = Ok;
+    if (!*url) {
+        err = bookmark_sections(body, &list);
+        if (!err) {
+            BufOf(char)* it = arlfn(BufOf(char), begin)(&list);
+            for (; it != arlfn(BufOf(char), end)(&list); ++it) {
+                try( session_write_std(session, items__(it), len__(it)));
+                try( session_write_std_lit__(session, "\n"));
+            }
+        }
+        arlfn(BufOf(char),clean)(&list);
+    } else {
+        lxb_dom_node_t* section;
+        try( bookmark_section_get(body, url, &section));
+
+        if (section) {
+            const char* data;
+            size_t len;
+            try( lexbor_node_get_text(section->first_child, &data, &len));
+            if (len) {
+                try(session_write_std(session, (char*)data, len));
+                try(session_write_std_lit__(session, "\n"));
+            }
+        } else err = "invalid section in bookmark";
+    }
+    return err;
+}
