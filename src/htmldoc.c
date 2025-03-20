@@ -211,7 +211,7 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
     /* other */
     try( _hypertext_id_open_(
-        ctx, draw_ctx_color_red, input_text_open_str, &input_id, input_text_close_str));
+        ctx, draw_ctx_color_red, input_text_open_str, &input_id, NULL));
 
     if (_input_is_text_type_(s, slen)) {
         lexbor_find_attr_value(node, "value", &s, &slen);
@@ -225,7 +225,7 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     } else {
         try( draw_ctx_buf_append_lit__(ctx, "[input not supported yet]"));
     }
-    try( _hypertext_id_close_(ctx, draw_ctx_reset_color, NULL));
+    try( _hypertext_id_close_(ctx, draw_ctx_reset_color, input_text_close_str));
     return Ok;
 }
 

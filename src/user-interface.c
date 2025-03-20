@@ -109,7 +109,9 @@ Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) 
         arlfn(char, clean)(&masked);
     } else {
         if (*line == ' ' || *line == '=') ++line;
-        err = lexbor_set_attr_value(node, line, strlen(line));
+        size_t len = strlen(line);
+        if (len && line[len-1] == '\n') --len;
+        err = lexbor_set_attr_value(node, line, len);
     }
     ok_then(err, cmd_draw(session, ""));
     return err;
