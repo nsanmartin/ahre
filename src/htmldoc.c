@@ -766,7 +766,7 @@ Err htmldoc_init_fetch_draw(
     Session s[static 1]
 ) {
     try(htmldoc_init(d, url));
-    Err err = htmldoc_fetch(d, url_client, session_doc_log_fn(s, d));
+    Err err = htmldoc_fetch(d, url_client, session_doc_msg_fn(s, d));
     ok_then(err, htmldoc_draw(d, s));
     if (err) {
         htmldoc_cleanup(d);
@@ -783,7 +783,7 @@ Err htmldoc_init_fetch_draw_from_curlu(
     Session s[static 1]
 ) {
     try(htmldoc_init_from_curlu(d, cu, method));
-    Err err = htmldoc_fetch(d, url_client, session_doc_log_fn(s,d)); 
+    Err err = htmldoc_fetch(d, url_client, session_doc_msg_fn(s,d)); 
     ok_then(err, htmldoc_draw(d, s));
     if (err) {
         d->url = (Url){0}; /* on failure do not free cu owned by caller */

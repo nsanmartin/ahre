@@ -117,7 +117,7 @@ draw_ctx_init(DrawCtx ctx[static 1], HtmlDoc htmldoc[static 1], Session s[static
     *ctx = (DrawCtx) {
         .htmldoc=htmldoc,
         .flags=flags,
-        .logfn=session_doc_log_fn(s, htmldoc)
+        .logfn=session_doc_msg_fn(s, htmldoc)
     };
     return Ok;
 }

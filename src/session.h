@@ -56,7 +56,7 @@ session_tablist(Session s[static 1]) { return &s->tablist; }
 
 static inline bool session_is_empty(Session s[static 1]) { return !session_tablist(s)->tabs.len; }
 static inline SessionWriteFn
-session_doc_log_fn(Session s[static 1], HtmlDoc d[static 1]) {
+session_doc_msg_fn(Session s[static 1], HtmlDoc d[static 1]) {
     (void)d;
     return (SessionWriteFn) {.write=session_uout(s)->write_msg, .ctx=s};
 }
