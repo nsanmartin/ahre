@@ -124,49 +124,16 @@ Err tab_node_tree_append_url(TabNode t[static 1], const char* url) {
     return Ok;
 }
 
-static inline 
-Err dbg_tab_node_print(
-    TabNode n[static 1], size_t ix, ArlOf(size_t) stack[static 1], TabNode* current_node
-) {
-    if (!arlfn(size_t, append)(stack, &ix)) {
-        arlfn(size_t, clean)(stack);
-        return "error: arl append failure";
-    }
-    HtmlDoc* d = &n->doc;
-    LxbNodePtr title = *htmldoc_title(d);
 
-    for(size_t* it = arlfn(size_t, begin)(stack); it != arlfn(size_t, end)(stack); ++it) {
-        if (it == arlfn(size_t, begin)(stack)) {
-            if (n == current_node) printf("[+] %ld.", *it);
-            else if (tab_node_is_current_in_tab(n)) printf("[ ] %ld.", *it);
-            else printf("    %ld.", *it);
-        } else printf("%ld.", *it);
-    }
-    printf("%s", " ");
-    if (title) try( dbg_print_title(title));
-    else {
-        char* buf;
-        Err e = url_cstr(htmldoc_url(d), &buf);
-        if (e) printf("error: %s\n", e);
-        else {
-            printf("%s\n", buf);
-            curl_free(buf);
-        }
-    }
 
-    TabNode* it = arlfn(TabNode, begin)(n->childs);
-    const TabNode* beg = it;
-    const TabNode* end = arlfn(TabNode, end)(n->childs);
-    for (; it != end; ++it) {
-        size_t subix = it-beg;
-        try( dbg_tab_node_print(it, subix, stack, current_node));
-    }
-    if (!stack->len) {
-        arlfn(size_t, clean)(stack);
-        return "error: arl pop failure";
-    } else --stack->len;
-    return Ok;
-}
+Err session_tab_node_print(
+    Session* s,
+    TabNode n[static 1],
+    size_t ix,
+    ArlOf(size_t) stack[static 1],
+    TabNode* current_node
+);
+
 
 static inline Err
 tab_node_get_child_index_of(TabNode n[static 1], TabNode child[static 1], size_t out[static 1]) {

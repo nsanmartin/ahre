@@ -76,23 +76,7 @@ static inline void tablist_cleanup(TabList f[static 1]) {
     arl_of_tab_node_clean(&f->tabs);
 }
 
-static inline Err tablist_print_info(TabList f[static 1]) {
-    ArlOf(size_t)* stack = &(ArlOf(size_t)){0};
-
-    TabNode* current_node;
-    try( tablist_current_node(f, &current_node));
-    printf("(%ld tab%s)\n", f->tabs.len, f->tabs.len > 1 ? "s": "");
-    TabNode* it = arlfn(TabNode, begin)(&f->tabs);
-    const TabNode* beg = it;
-    const TabNode* end = arlfn(TabNode, end)(&f->tabs);
-    
-    for (; it != end; ++it) {
-        size_t ix = it-beg;
-        try( dbg_tab_node_print(it, ix, stack, current_node));
-    }
-    arlfn(size_t, clean)(stack);
-    return Ok;
-}
+Err tablist_print_info(Session* s, TabList f[static 1]);
 
 static inline Err tablist_back(TabList tl[static 1]) {
     TabNode* cn;

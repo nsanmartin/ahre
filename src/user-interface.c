@@ -281,7 +281,7 @@ Err tabs_eval(Session session[static 1], const char* line) {
 
     line = cstr_skip_space(line);
     switch (*line) {
-        case '?': return tablist_print_info(f);
+        case '?': return tablist_print_info(session, f);
         case '-': return tablist_back(f);
         default: return tablist_move_to_node(f, line);
     }

@@ -172,3 +172,67 @@ TabNode* arl_of_tab_node_append(ArlOf(TabNode)* list, TabNode tn[static 1]) {
     if (mem_location && mem_location != list->items) { _fix_childs_parents_(list); }
     return res;
 }
+
+Err session_tab_node_print(
+    Session* s,
+    TabNode n[static 1],
+    size_t ix,
+    ArlOf(size_t) stack[static 1],
+    TabNode* current_node
+) {
+    if (!arlfn(size_t, append)(stack, &ix)) return "error: arl append failure";
+    HtmlDoc* d = &n->doc;
+    LxbNodePtr title = *htmldoc_title(d);
+
+    for(size_t* it = arlfn(size_t, begin)(stack); it != arlfn(size_t, end)(stack); ++it) {
+        if (it == arlfn(size_t, begin)(stack)) {
+            if (n == current_node) {
+                try( session_write_msg_lit__(s, "[+] "));
+                try( session_write_unsigned_msg(s, *it));
+                try( session_write_msg_lit__(s, "."));
+            } else if (tab_node_is_current_in_tab(n)) {
+                try( session_write_msg_lit__(s, "[ ] "));
+                try( session_write_unsigned_msg(s, *it));
+                try( session_write_msg_lit__(s, "."));
+            } else {
+                try( session_write_msg_lit__(s, "    "));
+                try( session_write_unsigned_msg(s, *it));
+                try( session_write_msg_lit__(s, "."));
+            } } else { 
+                try( session_write_unsigned_msg(s, *it));
+                try( session_write_msg_lit__(s, "."));
+            }
+    }
+    try( session_write_msg_lit__(s, " "));
+    if (title) {
+            Str title_text = (Str){0};
+            Err e = lexbor_get_title_text_line(title, &title_text);
+            ok_then(e, session_write_msg(s, title_text.items, title_text.len));
+            ok_then(e, session_write_msg_lit__(s, "\n"));
+            str_clean(&title_text);
+    } else {
+        char* buf;
+        Err e = url_cstr(htmldoc_url(d), &buf);
+        if (e) {
+            try( session_write_msg_lit__(s, "error: "));
+            try( session_write_msg(s, (char*)e, strlen(e)));
+            try( session_write_msg_lit__(s, "\n"));
+        } else {
+            Err e = session_write_msg(s, buf, strlen(buf));
+            ok_then(e, session_write_msg_lit__(s, "\n"));
+            curl_free(buf);
+            if (e) return e;
+        }
+    }
+
+    TabNode* it = arlfn(TabNode, begin)(n->childs);
+    const TabNode* beg = it;
+    const TabNode* end = arlfn(TabNode, end)(n->childs);
+    for (; it != end; ++it) {
+        size_t subix = it-beg;
+        try( session_tab_node_print(s, it, subix, stack, current_node));
+    }
+    if (!stack->len) return "error: arl pop failure";
+    else --stack->len;
+    return Ok;
+}

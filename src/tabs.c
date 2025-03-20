@@ -28,3 +28,30 @@ Err tablist_append_tree_from_url(
 }
 
 
+Err tablist_print_info(Session* s, TabList f[static 1]) {
+    (void)s;
+    ArlOf(size_t)* stack = &(ArlOf(size_t)){0};
+
+    TabNode* current_node;
+    Err err = Ok;
+    ok_then(err, tablist_current_node(f, &current_node));
+    ok_then(err, session_write_msg_lit__(s, "("));
+    ok_then(err, session_write_unsigned_msg(s, f->tabs.len));
+    ok_then(err, session_write_msg_lit__(s, " tab"));
+    if(f->tabs.len) ok_then(err, session_write_msg_lit__(s, "s"));
+    ok_then(err, session_write_msg_lit__(s, ")\n"));
+
+    if (!err) {
+        TabNode* it = arlfn(TabNode, begin)(&f->tabs);
+        const TabNode* beg = it;
+        const TabNode* end = arlfn(TabNode, end)(&f->tabs);
+        
+        for (; it != end; ++it) {
+            size_t ix = it-beg;
+            if ((err=session_tab_node_print(s, it, ix, stack, current_node))) break;
+        }
+    }
+    arlfn(size_t, clean)(stack);
+    ok_then(err, session_write_msg_lit__(s, "\n"));
+    return Ok;
+}
