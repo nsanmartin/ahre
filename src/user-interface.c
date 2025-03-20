@@ -298,7 +298,7 @@ Err doc_eval_word(HtmlDoc d[static 1], const char* line) {
 Err doc_eval(HtmlDoc d[static 1], const char* line, Session session[static 1]) {
     line = cstr_skip_space(line);
     switch (*line) {
-        case '?': return htmldoc_print_info(d);
+        case '?': return htmldoc_print_info(session, d);
         case 'A': return htmldoc_A(session, d);
         case '+': return bookmark_add_doc(d, cstr_skip_space(line + 1), session_url_client(session));
         default: return doc_eval_word(d, line);

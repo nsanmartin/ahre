@@ -150,15 +150,7 @@ htmldoc_fetch(
 /* htmldoc_tag_a.c */
 
 Err htmldoc_A(Session* s, HtmlDoc d[static 1]) ;
-
-static inline Err htmldoc_print_info(HtmlDoc d[static 1]) {
-    try( dbg_print_title(*htmldoc_title(d)));
-    char* buf;
-    try(url_cstr(htmldoc_url(d), &buf));
-    printf("%s\n", buf);
-    curl_free(buf);
-    return Ok;
-}
+Err htmldoc_print_info(Session* s, HtmlDoc d[static 1]) ;
 
 
 static inline Err htmldoc_tags_str_reduce_size_t(const char* tags, size_t ts[static 1]) {

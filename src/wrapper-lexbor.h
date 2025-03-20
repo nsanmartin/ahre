@@ -139,4 +139,5 @@ lexbor_get_title_node(lxb_html_document_t* lxbdoc, lxb_dom_node_t* title[static 
     return Ok;
 }
 
+Err lexbor_get_title_text(lxb_dom_node_t* title, Str out[static 1]);
 #endif

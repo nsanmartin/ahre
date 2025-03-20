@@ -9,6 +9,7 @@
 #include "src/utils.h"
 #include "src/wrapper-lexbor.h"
 #include "src/ahre__.h"
+#include "src/session.h"
 
 Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]);
 Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[static 1]);
@@ -862,3 +863,23 @@ Err htmldoc_A(Session* s, HtmlDoc d[static 1]) {
     buffn(char,clean)(buf);
     return Ok;
 }
+
+Err htmldoc_print_info(Session* s, HtmlDoc d[static 1]) {
+    LxbNodePtr* title = htmldoc_title(d);
+    if (!title) return "no title in doc";
+    Str buf = (Str){0};
+    try (lexbor_get_title_text(*title, &buf));
+    Err err = session_write_msg(s, buf.items, buf.len);
+    str_clean(&buf);
+    ok_then(err, session_write_msg_lit__(s, "\n"));
+    
+    char* url = NULL;
+    ok_then(err, url_cstr(htmldoc_url(d), &url));
+    if (url) {
+        ok_then(err, session_write_msg(s, url, strlen(url)));
+        curl_free(url);
+        ok_then(err, session_write_msg_lit__(s, "\n"));
+    }
+    return err;
+}
+

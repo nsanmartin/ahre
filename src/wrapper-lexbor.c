@@ -227,6 +227,17 @@ bool _lexbor_attr_has_value(
     return value && valuelen && lexbor_str_eq(expected_value, value, valuelen);
 }
 
+Err lexbor_get_title_text(lxb_dom_node_t* title, Str out[static 1]) {
+    if (!title) return Ok;
+    lxb_dom_node_t* node = title->first_child; 
+    lxb_dom_text_t* text = lxb_dom_interface_text(node);
+    if (!text) return Ok;
+    StrView view = strview_from_mem((const char*)text->char_data.data.data, text->char_data.data.length);
+    if (view.len && str_append(out, (char*)view.items, view.len))
+            return "error: buf append failure";
+    return Ok;
+}
+
 Err lexbor_get_title_text_line(lxb_dom_node_t* title, BufOf(char)* out) {
     if (!title) return Ok;
     lxb_dom_node_t* node = title->first_child; 

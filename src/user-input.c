@@ -6,6 +6,7 @@
 
 bool _is_cmd_char_(char c) {
     return c == ':'
+        || c == '.'
         || c == '|'
         || c == '['
         || c == '{'
