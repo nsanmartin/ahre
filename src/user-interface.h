@@ -13,6 +13,7 @@ typedef Err (*ProcessLineFn)(Session*,const char*);
 
 typedef struct {
     UserInput     uin;
+    //TODO: is this needed?
     ProcessLineFn process_line;
     UserOutput    uout;
 } UserInterface ;
@@ -39,7 +40,7 @@ static inline UserInterface ui_isocline(void) {
 static inline UserInterface ui_vi_mode(void) {
     return (UserInterface) {
         .uin            = uinput_vi_mode(),
-        .process_line   = process_line_line_mode, //todo change me :)
+        .process_line   = process_line_line_mode,
         .uout           = uout_vi_mode()
     };
 }

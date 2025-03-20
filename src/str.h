@@ -44,7 +44,7 @@ static inline Err mem_fwrite(const char* mem, size_t len, FILE* stream) {
     return Ok;
 }
 
-#define mem_fwrite_lit__(Lit, Stream) mem_fwrite(Lit,lit_len__(Lit), Stream)
+#define lit_write__(Lit, Stream) mem_fwrite(Lit,lit_len__(Lit), Stream)
 
 /* cstr fns */
 const char* cstr_skip_space(const char* s);
@@ -114,6 +114,7 @@ inline static StrView strview_from_mem_trim(const char* s, size_t len) {
 #define str_reset buffn(char,reset)
 #define str_append(StrPtr, Items, NItems) \
     (buffn(char,append)(StrPtr, Items, NItems) ? Ok : "error: str_append failure")
+#define str_append_lit__(StrPtr, Lit) str_append(StrPtr, Lit, lit_len__(Lit))
 
 #define strview_from_lit__(LitStr) strview_from_mem(LitStr, sizeof(LitStr)-1)
 static inline StrView strview_from_str__(Str s) {return strview_from_mem(s.items, s.len); }

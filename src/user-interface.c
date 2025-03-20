@@ -111,7 +111,7 @@ Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) 
         if (*line == ' ' || *line == '=') ++line;
         err = lexbor_set_attr_value(node, line, strlen(line));
     }
-
+    ok_then(err, cmd_draw(session, ""));
     return err;
 }
 
@@ -358,13 +358,13 @@ Err process_line(Session session[static 1], const char* line) {
 
 Err process_line_line_mode(Session* s, const char* line) {
     if (!s) return "error: no session :./";
-    try( process_line(s, line));
-    return cmd_draw(s, "");//TODO: do not rewrite the title
+    return process_line(s, line);
 }
 
 Err process_line_vi_mode(Session* s, const char* line) {
     if (!s) return "error: no session :./";
-    return process_line(s, line);
+    try( process_line(s, line));
+    return cmd_draw(s, "");//TODO: do not rewrite the title
 }
 
 #include <sys/ioctl.h>

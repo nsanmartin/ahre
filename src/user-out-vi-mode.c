@@ -2,6 +2,7 @@
 #include "src/ranges.h"
 #include "src/session.h"
 #include "src/textbuf.h"
+#include "src/escape_codes.h"
 
 
 static Err _vi_print_range_std_(TextBuf textbuf[static 1], Range range[static 1], Session* s) {
@@ -28,10 +29,13 @@ static void _update_if_smaller_(size_t value[static 1], size_t new_value) {
     if (*value > new_value) *value = new_value;
 }
 
+#define EMPTY_SESSION_MSG_ "Session is empty\n"
 Err _vi_show_session_(Session* s) {
     if (!s) return "error: unexpected null session, this should really not happen";
+    try( lit_write__(EscCodeClsScr, stdout));
     if (session_is_empty(s)) {
-        try( session_write_std(s, "Session is empty", lit_len__("Session is empty")));
+        Str* msg = session_msg(s);
+        try( str_append_lit__(msg, EMPTY_SESSION_MSG_));
         session_uout(s)->flush_std(s);
         return Ok;
     }
@@ -67,14 +71,21 @@ Err _vi_write_std_(const char* mem, size_t len, Session* s) {
 
 Err _vi_flush_std_(Session* s) {
     if (!s) return "error: no session";
-    HtmlDoc* doc;
-    try( session_current_doc(s, &doc));
-    Str* screen = htmldoc_screen(doc);
-    if (!len__(screen)) return Ok;
-    if (len__(screen) != fwrite(items__(screen), 1, len__(screen), stdout))
-        return "error: fwrite failure";
-    if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
-    str_reset(screen);
+    Str* msg = session_msg(s);
+    if (len__(msg)) {
+        try( mem_fwrite(items__(msg), len__(msg), stdout));
+        if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
+        str_reset(msg);
+    }
+    if (!session_is_empty(s)) {
+        HtmlDoc* doc;
+        try( session_current_doc(s, &doc));
+        Str* screen = htmldoc_screen(doc);
+        if (!len__(screen)) return Ok;
+        try( mem_fwrite(items__(screen), len__(screen), stdout));
+        if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
+        str_reset(screen);
+    }
     return Ok;
 }
 
@@ -90,9 +101,9 @@ Err _vi_flush_msg_(Session* s) {
     if (!s) return "error: no session";
     Str* msg = session_msg(s);
     if (!len__(msg)) return Ok;
-    try( mem_fwrite_lit__(MSG_PREFIX_, stdout));
+    try( lit_write__(MSG_PREFIX_, stdout));
     try( mem_fwrite(items__(msg), len__(msg), stdout));
-    try( mem_fwrite_lit__(CONTINUE_MSG_, stdout));
+    try( lit_write__(CONTINUE_MSG_, stdout));
     if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
     getchar();
     str_reset(msg);
@@ -103,7 +114,7 @@ Err _vi_show_err_(Session* s, char* err, size_t len) {
     (void)s;
     if (err) {
         if (mem_fwrite(err, len, stderr)
-        || mem_fwrite_lit__(" {type enter}", stderr))
+        || lit_write__(" {type enter}", stderr))
             return "error: fprintf failure while attempting to show an error :/";
 
     }
