@@ -321,6 +321,7 @@ Err doc_eval(HtmlDoc d[static 1], const char* line, Session session[static 1]) {
 Err process_line(Session session[static 1], const char* line) {
     if (!line) { session_quit_set(session); return "no input received, exiting"; }
     line = cstr_skip_space(line);
+    if (*line == '\\') line = cstr_skip_space(line + 1);
     if (!*line) { return Ok; }
     const char* rest = NULL;
     /* these commands does not require current valid document */

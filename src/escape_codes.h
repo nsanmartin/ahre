@@ -19,6 +19,11 @@
 #define EscCodeUnderline "\033[4m"
 
 #define EscCodeClsScr "\033[1;1H\033[2J" 
+#define EscCodeEraseLine "\033[2K" 
+#define EscCodeBackward1 "\033[D" 
+#define EscCodeSaveCursor "\033[s" 
+#define EscCodeUnsaveCursos "\033[u"
+#define EscCodeDown1 "\033[B" 
 
 typedef enum {
     esc_code_blue,

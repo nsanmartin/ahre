@@ -1,6 +1,7 @@
 #include "session.h"
 #include "user-input.h"
 #include "utils.h"
+#include "escape_codes.h"
 
 typedef enum {
     keycmd_null                = 0x0,
@@ -87,26 +88,45 @@ Err _ui_vi_read_vi_mode_keys_(Session s[static 1], KeyCmd cmd[static 1]) {
 static inline Err _raw_readline_(char first, char* out[static 1]) {
     const size_t DEFAULT_FGETS_SIZE = 256;
     size_t len = DEFAULT_FGETS_SIZE;
-    size_t readlen = 0;
     *out = std_malloc(len);
     if (!*out) return "error: realloc failure";
-    if (first != '\\') {
-        *out[0] = first;
-        ++readlen;
-    } 
+    *out[0] = first;
+    size_t readlen = 1;
 
+    fwrite(EscCodeSaveCursor, 1, lit_len__(EscCodeSaveCursor), stdout);
     putchar(first);
     while (1) {
-        char* line = fgets(*out + readlen, len - readlen, stdin);
-        if (!line) {
-            if (feof(stdin)) { clearerr(stdin); *out[0] = '\0'; return Ok; }
-            return err_fmt("error: fgets failure: %s", strerror(errno));
+        int c = fgetc(stdin);
+        switch (c) {
+            case KeyBackSpace: {
+               if (readlen > 1) {
+                   --readlen; 
+                   fwrite(EscCodeEraseLine, 1, lit_len__(EscCodeEraseLine), stdout);
+                   fwrite(EscCodeUnsaveCursos, 1, lit_len__(EscCodeUnsaveCursos), stdout);
+                   fwrite(*out, 1, readlen, stdout);
+                   continue;
+               } else { (*out)[0] = '\0'; return Ok; }
+            }
+            case KeyCtrl_C: (*out)[0] = '\0'; return Ok;
+            case KeyCtrl_D: readlen = 0; exit(0);
+            default: {
+                if (c != KeyEnter && !isprint(c)) continue;
+                else if (readlen + 1 >= len) {
+                   len += DEFAULT_FGETS_SIZE;
+                   *out = std_realloc(*out, len);
+                   if (!*out) return "error: realloc failure";
+                } else if (c == KeyEnter) {
+                   (*out)[readlen++] = '\n';
+                   (*out)[readlen++] = '\0';
+                   //fwrite(EscCodeDown1, 1, lit_len__(EscCodeDown1), stdout);
+                   return Ok;
+                } else {
+                   (*out)[readlen++] = c;
+                   putchar(c);
+                   continue;
+                }
+            }
         }
-        if (strchr(line, '\n')) return Ok;
-        readlen = len - 1;
-        len += DEFAULT_FGETS_SIZE;
-        *out = std_realloc(*out, len);
-        if (!*out) return "error: realloc failure";
     }
 }
 
@@ -119,10 +139,9 @@ Err ui_vi_mode_read_input(Session* s, const char* prompt, char* out[static 1]) {
     try( _switch_tty_to_raw_mode_(&prev_termios));
 
     KeyCmd cmd = keycmd_null;
-    while (!cmd) {
-        err = _ui_vi_read_vi_mode_keys_(s, &cmd);
-    }
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &prev_termios) == -1) return "error: tcsetattr failure";
+    while (!cmd) { err = _ui_vi_read_vi_mode_keys_(s, &cmd); }
     if (_is_cmd_char_(cmd)) ok_then(err,_raw_readline_(cmd, out));
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &prev_termios) == -1) return "error: tcsetattr failure";
+    if (*out) puts("");
     return err;
 }
