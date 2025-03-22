@@ -1,6 +1,6 @@
-#include "src/generic.h"
-#include "src/session.h"
-#include "src/user-interface.h"
+#include "generic.h"
+#include "session.h"
+#include "user-interface.h"
 
 
 

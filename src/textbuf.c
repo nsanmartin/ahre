@@ -1,7 +1,7 @@
 #include <errno.h>
 
-#include "src/textbuf.h"
-#include "src/generic.h"
+#include "textbuf.h"
+#include "generic.h"
 
 /*
  * TextBuf lines indexes are 1-based so be careful 

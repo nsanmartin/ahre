@@ -7,17 +7,17 @@
 
 #include <lexbor/html/html.h>
 
-#include "src/constants.h"
-#include "src/textbuf.h"
-#include "src/error.h"
-#include "src/mem.h"
-#include "src/url-client.h"
-#include "src/utils.h"
-#include "src/wrapper-lexbor.h"
-#include "src/wrapper-lexbor-curl.h"
-#include "src/doc-elem.h"
-#include "src/url.h"
-#include "src/session-conf.h"
+#include "constants.h"
+#include "textbuf.h"
+#include "error.h"
+#include "mem.h"
+#include "url-client.h"
+#include "utils.h"
+#include "wrapper-lexbor.h"
+#include "wrapper-lexbor-curl.h"
+#include "doc-elem.h"
+#include "url.h"
+#include "session-conf.h"
 
 #define HIDE_OL 0x1u
 #define HIDE_UL 0x2u

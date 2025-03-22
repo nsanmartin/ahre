@@ -1,8 +1,8 @@
 #include <stdio.h>
 
 #include <utests.h>
-#include <src/textbuf.c>
-#include <src/error.c>
+#include "../src/textbuf.c"
+#include "../src/error.c"
 
 
 

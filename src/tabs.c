@@ -1,6 +1,6 @@
-#include "src/tabs.h"
-#include "src/tab_node.h"
-#include "src/session.h"
+#include "tabs.h"
+#include "tab_node.h"
+#include "session.h"
 
 Err tab_node_init(
     TabNode n[static 1],

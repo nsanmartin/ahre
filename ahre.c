@@ -26,12 +26,6 @@ static Err _open_many_urls_(Session session[static 1], ArlOf(const_char_ptr) url
     return Ok;
 }
 
-static inline Err _show_tab_if_any_(Session s[static 1]) {
-    TextBuf* tb;
-    Err err = session_current_buf(s, &tb);
-    if (!err) return session_show_output(s);
-    return Ok; /*ignoring this error, we may check better */
-}
 
 static int _loop_(Session s[static 1]) {
     init_user_input_history();

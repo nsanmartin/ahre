@@ -1,9 +1,9 @@
 #include <assert.h>
 
-#include "src/draw.h"
-#include "src/constants.h"
-#include "src/htmldoc.h"
-#include "src/wrapper-lexbor.h"
+#include "draw.h"
+#include "constants.h"
+#include "htmldoc.h"
+#include "wrapper-lexbor.h"
 
 
 Err _hypertext_id_open_(

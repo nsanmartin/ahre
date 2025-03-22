@@ -3,10 +3,10 @@
 
 #include <stdbool.h>
 
-#include "src/user-input.h"
-#include "src/user-out.h"
-#include "src/user-out-line-mode.h"
-#include "src/user-out-vi-mode.h"
+#include "user-input.h"
+#include "user-out.h"
+#include "user-out-line-mode.h"
+#include "user-out-vi-mode.h"
 
 typedef struct Session Session;
 typedef Err (*ProcessLineFn)(Session*,const char*);

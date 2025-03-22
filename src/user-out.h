@@ -3,9 +3,9 @@
 
 #include <errno.h>
 
-#include "src/utils.h"
-#include "src/user-out-vi-mode.h"
-#include "src/user-out-line-mode.h"
+#include "utils.h"
+#include "user-out-vi-mode.h"
+#include "user-out-line-mode.h"
 
 typedef struct Session Session;
 

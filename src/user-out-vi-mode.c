@@ -1,8 +1,8 @@
-#include "src/cmd-ed.h"
-#include "src/ranges.h"
-#include "src/session.h"
-#include "src/textbuf.h"
-#include "src/escape_codes.h"
+#include "cmd-ed.h"
+#include "ranges.h"
+#include "session.h"
+#include "textbuf.h"
+#include "escape_codes.h"
 
 
 static Err _vi_print_range_std_(TextBuf textbuf[static 1], Range range[static 1], Session* s) {

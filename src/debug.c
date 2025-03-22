@@ -1,4 +1,4 @@
-#include "src/debug.h"
+#include "debug.h"
 
 
 static Err _dbg_print_form_info_rec_(lxb_dom_node_t* node, int indent) {

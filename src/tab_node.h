@@ -1,9 +1,9 @@
 #ifndef AHRE_TAB_NODE_H__
 #define AHRE_TAB_NODE_H__
 
-#include "src/htmldoc.h"
-#include "src/wrapper-lexbor.h"
-#include "src/wrapper-lexbor-curl.h"
+#include "htmldoc.h"
+#include "wrapper-lexbor.h"
+#include "wrapper-lexbor-curl.h"
 
 struct ArlOf(TabNode);
 typedef struct ArlOf(TabNode) ArlOf(TabNode);

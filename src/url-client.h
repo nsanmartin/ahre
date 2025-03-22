@@ -3,7 +3,7 @@
 
 #include <curl/curl.h>
 
-#include "src/utils.h"
+#include "utils.h"
 
 typedef struct UrlClient {
     CURL* curl;

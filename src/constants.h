@@ -1,7 +1,7 @@
 #ifndef __CONSTANTS_AHRE_H__
 #define __CONSTANTS_AHRE_H__
 
-#include "src/str.h"
+#include "str.h"
 
 #define ANCHOR_OPEN_STR  "["
 #define ANCHOR_SEP_STR  "]["

@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "src/error.h"
-#include "src/utils.h"
+#include "error.h"
+#include "utils.h"
 
 //static constexpr size_t MAX_MSG_LEN = 512;
 #define MAX_MSG_LEN 1024u

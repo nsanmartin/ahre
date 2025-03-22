@@ -1,12 +1,12 @@
 #ifndef AHRE_DRAW_H__
 #define AHRE_DRAW_H__
 
-#include "src/escape_codes.h"
-#include "src/htmldoc.h"
-#include "src/utils.h"
-#include "src/generic.h"
-#include "src/session-conf.h"
-#include "src/session.h"
+#include "escape_codes.h"
+#include "htmldoc.h"
+#include "utils.h"
+#include "generic.h"
+#include "session-conf.h"
+#include "session.h"
 
 #define T EscCode
 #include <arl.h>

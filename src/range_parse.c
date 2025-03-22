@@ -3,10 +3,10 @@
 #include <limits.h>
 #include <stdint.h>
 
-#include "src/utils.h"
-#include "src/textbuf.h"
-#include "src/range_parse.h"
-#include "src/re.h"
+#include "utils.h"
+#include "textbuf.h"
+#include "range_parse.h"
+#include "re.h"
 
 /*
  * + . current line,

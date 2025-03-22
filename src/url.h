@@ -5,9 +5,9 @@
 #include <limits.h>
 #include <curl/curl.h>
 
-#include "src/utils.h"
-#include "src/config.h"
-#include "src/error.h"
+#include "utils.h"
+#include "config.h"
+#include "error.h"
 
 typedef struct {
     CURLU* cu;

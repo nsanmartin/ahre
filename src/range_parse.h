@@ -1,8 +1,8 @@
 #ifndef AHED_RANGE_PARSE_H__
 #define AHED_RANGE_PARSE_H__
 
-#include "src/ranges.h"
-#include "src/textbuf.h"
+#include "ranges.h"
+#include "textbuf.h"
 
 typedef const char* ParseRv;
 

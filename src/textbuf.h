@@ -3,10 +3,10 @@
 
 #include <stdbool.h>
 
-#include "src/error.h"
-#include "src/ranges.h"
-#include "src/str.h"
-#include "src/utils.h"
+#include "error.h"
+#include "ranges.h"
+#include "str.h"
+#include "utils.h"
 
 typedef struct {
     Range last_range;

@@ -1,8 +1,20 @@
-#include "src/session.h"
-#include "src/user-input.h"
-#include "src/utils.h"
+#include "session.h"
+#include "user-input.h"
+#include "utils.h"
 
-//typedef enum { _keep_reading_, _read_line_ } ReadKeyViModeState;
+typedef enum {
+    keycmd_null                = 0x0,
+    keycmd_left_parenthesis    = '(',
+    keycmd_dot                 = '.',
+    keycmd_colon               = ':',
+    keycmd_lt                  = '<',
+    keycmd_left_square_bracket = '[',
+    keycmd_left_curly_bracket  = '{',
+    keycmd_pipe                =  '|',
+    keycmd_inverted_bar        = '\\',
+    keycmd_scroll_up,
+    keycmd_scroll_down
+} KeyCmd;
 
 bool _is_cmd_char_(char c) {
     return c == ':'
@@ -14,6 +26,13 @@ bool _is_cmd_char_(char c) {
         || c == '<'
         || c == '\\'
         ;
+}
+
+Err _ui_keystroke_ctrl_gg_(Session s[static 1]) {
+    TextBuf* tb;
+    try( session_current_buf(s, &tb));
+    *textbuf_current_offset(tb) = 0;
+    return Ok;
 }
 
 Err _ui_keystroke_ctrl_f_(Session s[static 1]) {
@@ -39,24 +58,27 @@ Err _ui_keystroke_ctrl_b_(Session s[static 1]) {
     return Ok;
 }
 
-Err _ui_vi_read_vi_mode_keys_(Session s[static 1], char cmd[static 1]) {
+
+Err _ui_vi_read_vi_mode_keys_(Session s[static 1], KeyCmd cmd[static 1]) {
     while (!*cmd) {
-        int cint = fgetc(stdin);
-        char c;
-        switch(cint) {
+        int c = fgetc(stdin);
+        switch(c) {
             case EOF: return "error: EOF reading input";
             case KeyEnter: 
             case KeyCtrl_C: continue;
             case KeyCtrl_F:
-            case KeySpace: _ui_keystroke_ctrl_f_(s); *cmd = KeyCtrl_F; break; 
+            case KeySpace: _ui_keystroke_ctrl_f_(s); *cmd = keycmd_scroll_up; break; 
             case KeyBackSpace:
-            case KeyCtrl_B: _ui_keystroke_ctrl_b_(s); *cmd = KeyCtrl_B; break; 
-
-            default:
-
-            c = (char)cint;
-            if (!isprint(c)) continue;
-            if (_is_cmd_char_(c)) { *cmd = c; }
+            case KeyCtrl_B: _ui_keystroke_ctrl_b_(s); *cmd = keycmd_scroll_down; break; 
+            case ':':
+            case '.':
+            case '|':
+            case '[':
+            case '{':
+            case '(':
+            case '<':
+            case '\\': *cmd = (KeyCmd)c; break;
+            default: continue;
         }
     }
     return Ok;
@@ -96,7 +118,7 @@ Err ui_vi_mode_read_input(Session* s, const char* prompt, char* out[static 1]) {
     struct termios prev_termios;
     try( _switch_tty_to_raw_mode_(&prev_termios));
 
-    char cmd = 0x0;
+    KeyCmd cmd = keycmd_null;
     while (!cmd) {
         err = _ui_vi_read_vi_mode_keys_(s, &cmd);
     }

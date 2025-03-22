@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "src/error.h"
+#include "error.h"
 #ifndef NO_REGEX
 #include <regex.h>
 

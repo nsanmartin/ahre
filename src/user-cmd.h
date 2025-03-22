@@ -1,10 +1,10 @@
 #ifndef __AHRE_USER_CMD_H__
 #define __AHRE_USER_CMD_H__
 
-#include "src/ranges.h"
-#include "src/user-interface.h"
-#include "src/cmd-ed.h"
-#include "src/wrapper-lexbor.h"
+#include "ranges.h"
+#include "user-interface.h"
+#include "cmd-ed.h"
+#include "wrapper-lexbor.h"
 
 Err cmd_write(char* fname, Session session[static 1]);
 

@@ -1,6 +1,6 @@
-#include "src/utils.h"
-#include "src/htmldoc.h"
-#include "src/wrapper-lexbor.h"
+#include "utils.h"
+#include "htmldoc.h"
+#include "wrapper-lexbor.h"
 
 //lxb_inline lxb_status_t append_to_buf_callback(const lxb_char_t *data, size_t len, void *bufptr) ;
 

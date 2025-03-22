@@ -1,7 +1,7 @@
-#include "src/error.h"
-#include "src/generic.h"
-#include "src/mem.h"
-#include "src/str.h"
+#include "error.h"
+#include "generic.h"
+#include "mem.h"
+#include "str.h"
 
 
 size_t mem_count_ocurrencies(char* data, size_t len, char c) {

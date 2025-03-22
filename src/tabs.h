@@ -1,6 +1,6 @@
 #ifndef AHRE_TABS_H__
 #define AHRE_TABS_H__
-#include "src/tab_node.h"
+#include "tab_node.h"
 
 ///#define T TabNode
 ///// #define TClean tab_node_cleanup

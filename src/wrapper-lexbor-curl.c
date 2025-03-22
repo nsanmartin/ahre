@@ -1,11 +1,11 @@
-#include "src/error.h"
-#include "src/generic.h"
-#include "src/htmldoc.h"
-#include "src/url-client.h"
-#include "src/wrapper-lexbor-curl.h"
-#include "src/wrapper-lexbor.h"
+#include "error.h"
+#include "generic.h"
+#include "htmldoc.h"
+#include "url-client.h"
+#include "wrapper-lexbor-curl.h"
+#include "wrapper-lexbor.h"
 
-#include "src/debug.h"
+#include "debug.h"
 
 /* internal linkage */
 

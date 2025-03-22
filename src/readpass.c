@@ -4,10 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "src/error.h"
-#include "src/utils.h"
-#include "src/user-out.h"
-#include "src/user-input.h"
+#include "error.h"
+#include "utils.h"
+#include "user-out.h"
+#include "user-input.h"
 
 
 Err readpass_term(ArlOf(char) arl[static 1], UserOutput out[static 1]) {

@@ -1,6 +1,6 @@
-#include "src/tab_node.h"
-#include "src/session.h"
-#include "src/ahre__.h"
+#include "tab_node.h"
+#include "session.h"
+#include "ahre__.h"
 
 
 Err htmldoc_init_fetch_draw(

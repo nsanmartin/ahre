@@ -1,5 +1,5 @@
-#include "src/user-out-line-mode.h"
-#include "src/session.h"
+#include "user-out-line-mode.h"
+#include "session.h"
 
 Err _line_show_session_(Session* s) {
     if (!s) return "error: unexpected null session, this should really not happen";

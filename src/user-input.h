@@ -13,7 +13,7 @@
 
 #include "isocline.h"
 
-#include "src/error.h"
+#include "error.h"
 
 static inline Err _switch_tty_to_raw_mode_(struct termios prev_termios[static 1]) {
 

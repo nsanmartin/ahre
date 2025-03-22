@@ -1,14 +1,14 @@
 #include <string.h>
 
-#include "src/cmd-ed.h"
-#include "src/constants.h"
-#include "src/escape_codes.h"
-#include "src/range_parse.h"
-#include "src/re.h"
-#include "src/str.h"
-#include "src/session.h"
-#include "src/textbuf.h"
-#include "src/user-out.h"
+#include "cmd-ed.h"
+#include "constants.h"
+#include "escape_codes.h"
+#include "range_parse.h"
+#include "re.h"
+#include "str.h"
+#include "session.h"
+#include "textbuf.h"
+#include "user-out.h"
 
 #define MsgLastLine EscCodePurple "%{- last line -}%" EscCodeReset
 

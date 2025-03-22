@@ -2,8 +2,8 @@
 
 #include <utests.h>
 
-#include <src/range_parse.c>
-#include <src/re.c>
+#include "../src/range_parse.c"
+#include "../src/re.c"
 
 
 //const char* parse_range_impl(char* tk, size_t current_line, size_t len, Range* range);

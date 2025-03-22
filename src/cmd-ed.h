@@ -1,11 +1,11 @@
 #ifndef __AHRE_CMD_ED_H__
 #define __AHRE_CMD_ED_H__
 
-#include "src/generic.h"
-#include "src/ranges.h"
-#include "src/session.h"
-#include "src/textbuf.h"
-#include "src/user-out.h"
+#include "generic.h"
+#include "ranges.h"
+#include "session.h"
+#include "textbuf.h"
+#include "user-out.h"
 
 Err ed_global(TextBuf textbuf[static 1],  const char* rest);
 

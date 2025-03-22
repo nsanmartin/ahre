@@ -1,7 +1,7 @@
 #ifndef AHRE_CONFIG_H__
 #define AHRE_CONFIG_H__
 
-#include "src/utils.h"
+#include "utils.h"
 
 static inline Err get_config_dir(BufOf(char)* out) {
     char* homedir = getenv("HOME");

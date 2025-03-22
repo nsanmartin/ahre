@@ -15,10 +15,10 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "src/error.h"
-#include "src/generic.h"
-#include "src/mem.h"
-#include "src/utils.h"
+#include "error.h"
+#include "generic.h"
+#include "mem.h"
+#include "utils.h"
 
 
 /* mem fns */

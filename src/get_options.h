@@ -1,10 +1,10 @@
 #ifndef AHRE_GET_OPTIONS_H__
 #define AHRE_GET_OPTIONS_H__
 
-#include "src/error.h"
-#include "src/session-conf.h"
-#include "src/user-interface.h"
-#include "src/utils.h"
+#include "error.h"
+#include "session-conf.h"
+#include "user-interface.h"
+#include "utils.h"
 
 typedef struct {
     bool version;

@@ -4,7 +4,7 @@
 #include <strings.h>
 #include <lexbor/html/html.h>
 
-#include "src/textbuf.h"
+#include "textbuf.h"
 
 #define BT lxb_char_t
 #include <buf.h>

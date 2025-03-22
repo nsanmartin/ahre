@@ -1,5 +1,5 @@
 #include <errno.h>
-#include "src/utils.h"
+#include "utils.h"
 
 const char _base36digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 

@@ -3,10 +3,10 @@
 
 #include <errno.h>
 
-#include "src/debug.h"
-#include "src/utils.h"
-#include "src/htmldoc.h"
-#include "src/error.h"
+#include "debug.h"
+#include "utils.h"
+#include "htmldoc.h"
+#include "error.h"
 
 Err cmd_bookmarks(Session session[static 1], const char* url);
 

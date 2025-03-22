@@ -1,8 +1,8 @@
 #ifndef AHRE_SESSION_CONF_H__
 #define AHRE_SESSION_CONF_H__
 
-#include "src/utils.h"
-#include "src/user-interface.h"
+#include "utils.h"
+#include "user-interface.h"
 
 
 #define SESSION_CONF_FLAG_QUIT       0x1u

@@ -36,7 +36,7 @@ size_t mock_fwrite_called_with(const void* ptr, size_t size, size_t nmemb, FILE 
 #define fopen  mock_fopen
 #define fwrite mock_fwrite_called_with
 #define fclose mock_fclose
-#include <src/cmd-ed.c>
+#include "../src/cmd-ed.c"
 
 int test_0(void) {
     const char* s1 = "a string with no escape codes";

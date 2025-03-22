@@ -1,7 +1,7 @@
 #ifndef AHRE_USER_OUT_LINE_MODE_H__
 #define AHRE_USER_OUT_LINE_MODE_H__
 
-#include "src/error.h"
+#include "error.h"
 
 typedef struct Session Session;
 

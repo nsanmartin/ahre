@@ -1,7 +1,7 @@
 #ifndef __AHRE_DEBUG_H__
 #define __AHRE_DEBUG_H__
 
-#include "src/session.h"
+#include "session.h"
 
 #define MAX_LOG_MSG_LEN__ 4056
 

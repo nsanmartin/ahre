@@ -2,7 +2,7 @@
 
 #include <utests.h>
 
-#include <src/error.c>
+#include "../src/error.c"
 
 
 int test_0(void) {

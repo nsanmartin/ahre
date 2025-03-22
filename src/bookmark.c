@@ -1,6 +1,6 @@
-#include "src/draw.h" 
-#include "src/debug.h"
-#include "src/bookmark.h"
+#include "draw.h" 
+#include "debug.h"
+#include "bookmark.h"
 
 
 Err draw_bookmark_rec(lxb_dom_node_t* node) {

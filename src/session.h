@@ -1,12 +1,12 @@
 #ifndef AHRE_SESSION_H__
 #define AHRE_SESSION_H__
 
-#include "src/session-conf.h"
-#include "src/htmldoc.h"
-#include "src/tabs.h"
-#include "src/user-input.h"
-#include "src/user-out.h"
-#include "src/utils.h"
+#include "session-conf.h"
+#include "htmldoc.h"
+#include "tabs.h"
+#include "user-input.h"
+#include "user-out.h"
+#include "utils.h"
 
 
 typedef struct Session Session;

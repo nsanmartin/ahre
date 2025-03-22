@@ -1,8 +1,8 @@
 #ifndef AHRE_ESCAPE_CODES_H_
 #define AHRE_ESCAPE_CODES_H_
 
-#include "src/error.h"
-#include "src/str.h"
+#include "error.h"
+#include "str.h"
 
 #define EscCodeRed   "\033[91m"
 #define EscCodeLightGreen  "\033[92m"

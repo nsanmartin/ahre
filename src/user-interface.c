@@ -2,20 +2,20 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "src/bookmark.h"
-#include "src/cmd-ed.h"
-#include "src/constants.h"
-#include "src/debug.h"
-#include "src/mem.h"
-#include "src/ranges.h"
-#include "src/url.h"
-#include "src/user-cmd.h"
-#include "src/user-input.h"
-#include "src/user-out.h"
-#include "src/user-interface.h"
-#include "src/utils.h"
-#include "src/readpass.h"
-#include "src/wrapper-lexbor-curl.h"
+#include "bookmark.h"
+#include "cmd-ed.h"
+#include "constants.h"
+#include "debug.h"
+#include "mem.h"
+#include "ranges.h"
+#include "url.h"
+#include "user-cmd.h"
+#include "user-input.h"
+#include "user-out.h"
+#include "user-interface.h"
+#include "utils.h"
+#include "readpass.h"
+#include "wrapper-lexbor-curl.h"
 
 //TODO: move this to wrapper-lexbor-curl.h
 Err mk_submit_url(UrlClient uc[static 1],

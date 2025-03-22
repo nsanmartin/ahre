@@ -1,9 +1,9 @@
 #include <string.h>
 
-#include "src/generic.h"
-#include "src/mem.h"
-#include "src/session.h"
-#include "src/url-client.h"
+#include "generic.h"
+#include "mem.h"
+#include "session.h"
+#include "url-client.h"
 
 
 //TODO: use init

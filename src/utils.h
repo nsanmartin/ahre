@@ -44,8 +44,8 @@ static inline int buf_of_char_cmp(const void* xp, const void* yp) {
 #define TCmp buf_of_char_cmp
 #include <arl.h>
 
-#include "src/str.h"
-#include "src/error.h"
+#include "str.h"
+#include "error.h"
 
 
 #define buf_append_lit(LitStr, Buf_) do{\

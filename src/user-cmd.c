@@ -1,7 +1,7 @@
-#include "src/session.h"
-#include "src/utils.h"
-#include "src/user-interface.h"
-#include "src/ahre__.h"
+#include "session.h"
+#include "utils.h"
+#include "user-interface.h"
+#include "ahre__.h"
 
 /* ah cmds */
 
