@@ -84,7 +84,7 @@ parse_range_addr(const char* tk, RangeParseCtx ctx[static 1], size_t out[static 
         ++tk;
         size_t offset;
         try_parse_range((rest = parse_offset_search_regex(tk, ctx->tb, &offset)));
-        Err err = textbuf_get_line_of(ctx->tb, textbuf_items(ctx->tb) + offset, out);
+        Err err = textbuf_get_line_of_offset(ctx->tb, offset, out);
         if (err) return to_range_parse_err("error: invalid offset obtained");
         ctx->new_offset = offset;
         return rest;
