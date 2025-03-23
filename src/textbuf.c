@@ -217,7 +217,7 @@ bool textbuf_get_line(TextBuf tb[static 1], size_t n, StrView out[static 1]) {
         if (!begoffp) return false; //"error: expecting len(eols) > 0
         size_t eoloff = textbuf_len(tb);
         *out = (StrView){.items=textbuf_items(tb) + *begoffp + 1, .len=eoloff - *begoffp -1};
-        return out->len;
+        return true;
     }
     /* n can't be grater than len(eols). If eols == 0 and line_count == 1, 0 will be
      * the first line, there no be line == 1 (second) etc.

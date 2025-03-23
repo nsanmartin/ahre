@@ -10,7 +10,7 @@ static Err _vi_print_range_std_(TextBuf textbuf[static 1], Range range[static 1]
     StrView line;
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
-        if (!line.items || !*line.items) continue; //TODO: fix get-line
+        if (!line.len || !line.items || !*line.items) continue;
 
         if (true) {
             if (line.len) { try( session_write_std(s, (char*)line.items, line.len)); }

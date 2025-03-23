@@ -20,6 +20,7 @@ static Err _open_many_urls_(Session session[static 1], ArlOf(const_char_ptr) url
         ; ++u
     ) {
         Err err = session_open_url(session, *u, session->url_client);
+        //TODO msg no puts
         if (err) puts(err);
     }
     arlfn(const_char_ptr,clean)(urls);
