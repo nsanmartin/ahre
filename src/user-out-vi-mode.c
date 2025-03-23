@@ -5,6 +5,28 @@
 #include "escape_codes.h"
 
 
+static Err _vi_write_std_to_screen_( Session* s, const char* mem, size_t len) {
+    if (!s) return "error: no session";
+    HtmlDoc* doc;
+    try( session_current_doc(s, &doc));
+    Str* screen = htmldoc_screen(doc);
+    return str_append(screen, (char*)mem, len);
+}
+
+#define _vi_write_std_to_screen_lit__(Ses, Lit) _vi_write_std_to_screen_(Ses, Lit, lit_len__(Lit))
+
+static inline Err _vi_write_unsigned_std_screen_(Session s[static 1], uintmax_t ui) {
+    return ui_write_unsigned(session_conf_uout(session_conf(s))->write_std, ui, s);
+}
+
+Err _vi_write_std_(const char* mem, size_t len, Session* s) {
+    if (!s) return "error: no session";
+    (void)mem;
+    (void)len;
+    return Ok;
+}
+
+
 static Err _vi_print_range_std_(TextBuf textbuf[static 1], Range range[static 1], Session* s) {
     try(validate_range_for_buffer(textbuf, range));
     StrView line;
@@ -13,13 +35,13 @@ static Err _vi_print_range_std_(TextBuf textbuf[static 1], Range range[static 1]
         if (!line.len || !line.items || !*line.items) continue;
 
         if (true) {
-            if (line.len) { try( session_write_std(s, (char*)line.items, line.len)); }
-            else try( session_write_std_lit__(s, "\n"));
+            if (line.len) { try( _vi_write_std_to_screen_(s, (char*)line.items, line.len)); }
+            else try( _vi_write_std_to_screen_lit__(s, "\n"));
         } else {
-            try( session_write_unsigned_std(s, linum));
-            try( session_write_std_lit__(s,"\t"));
-            if (line.len) { try( session_write_std(s, (char*)line.items, line.len)); }
-            else try( session_write_std_lit__(s, "\n"));
+            try( _vi_write_unsigned_std_screen_(s, linum));
+            try( _vi_write_std_to_screen_lit__(s,"\t"));
+            if (line.len) { try( _vi_write_std_to_screen_(s, (char*)line.items, line.len)); }
+            else try( _vi_write_std_to_screen_lit__(s, "\n"));
         }
     }
     return Ok;
@@ -66,14 +88,6 @@ Err _vi_show_session_(Session* s) {
     try( _vi_print_range_std_(tb, &r, s));
     session_uout(s)->flush_std(s);
     return Ok;
-}
-
-Err _vi_write_std_(const char* mem, size_t len, Session* s) {
-    if (!s) return "error: no session";
-    HtmlDoc* doc;
-    try( session_current_doc(s, &doc));
-    Str* screen = htmldoc_screen(doc);
-    return str_append(screen, (char*)mem, len);
 }
 
 Err _vi_flush_std_(Session* s) {
