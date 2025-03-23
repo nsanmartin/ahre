@@ -13,18 +13,18 @@
 [ ] add command line option to read commands on startup
 [ ] implement ranges for doc's cache's elements. Vg: [1,4' means show anchors 1 to 4
 [ ] use libchafa for images
-[~] implement search in textbuf with /
 [ ] [isocline] set autocomplete with ahre commands 
-[?] bug: image number incalid: check base
-[ ] run test in github ci workflow (currently it does not find liblexbos.so.2)
+[?] bug: image number invalid: check base
 [ ] implement other curlopt setter in user interface
 [ ] [libcurl] store cookies in file and make it configurable.
 [~] [HTML] browse ul/li
 [~] add cmd to show a and submit urls
 [ ] implement hashi arl reset
-[ ] #define BufOf(char) Str etc and move many Str to StrView
 [ ] separate more htmldoc init from draw
-[ ] on regex search set offset after the word and not beg of line
+[ ] implement vi_process_line method that does not print (vi mode only prints on show)
+
+# WILL NOT DO
+[X] run test in github ci workflow (currently it does not find liblexbos.so.2): moving away from github
 
 # DONE
 [*] Accept files apart from urls
@@ -59,3 +59,114 @@
 [*] set text width (do not break words, make it configurable)
 [*] make google respond to user ahre's agent
 [*] allow switch between source buf and textbuf (via current buf, doc etc).
+[*] implement search in textbuf with /
+[*] #define BufOf(char) Str etc and move many Str to StrView
+
+# DONE
+[*] Accept files apart from urls
+[*] count lines when appending to buf
+[*] use array of line pointers in aebuf
+[*] implement browse fn similar to lexbor/examples/lexbor/html/html2sexpr.c
+[*] use no prefix for ahre cmds and ':' for ed cmds
+[*] implement try as `do{Err AHRE_ERR_=(Expr); if(AHRE_ERR_) return AHRE_ERR_;}while(0)`
+[*] implement editable attributes such as input value
+[*] define and add license (GNU, Apache, MIT, ...?)
+[*] Make go cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)
+[*] remove escape sequences when writing to a file
+[*] Make ahre cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)
+[*] store LxbNodePtr for img elements
+[*] bug: when goint to a google link, it is google.com?url=/the/expected/url
+[*] set user agent
+[*] set text width (basic functionality)
+[*] implement cookies
+['] fix url construction on submit (it could be absolute or not)
+['] fix url construction on a href (it could be absolute or not)
+[*] add zf/zb shorcuts (smilar to :,+Np/:-N,p with N configurable -and p)
+['] [HTML] implement pre tag
+[*] Allow reusable buffer for files
+[*] add cmd save_source
+[*] implement htmldoc array to allow some history preservation
+[*] Decide how to allow color/one color (cli option, different, commands, config file?)
+[*] implement post method for forms
+[*] display form elements with <>
+[*] fix last char in some files saved by write ed cmd
+[*] html button support (example in sr.ht register)
+[*] e cmd is broken. Delete it of fix it (it appends keeping previous data in buf).
+[*] set text width (do not break words, make it configurable)
+[*] make google respond to user ahre's agent
+[*] allow switch between source buf and textbuf (via current buf, doc etc).
+[*] implement search in textbuf with /
+[*] #define BufOf(char) Str etc and move many Str to StrView
+
+# DONE
+[*] Accept files apart from urls
+[*] count lines when appending to buf
+[*] use array of line pointers in aebuf
+[*] implement browse fn similar to lexbor/examples/lexbor/html/html2sexpr.c
+[*] use no prefix for ahre cmds and ':' for ed cmds
+[*] implement try as `do{Err AHRE_ERR_=(Expr); if(AHRE_ERR_) return AHRE_ERR_;}while(0)`
+[*] implement editable attributes such as input value
+[*] define and add license (GNU, Apache, MIT, ...?)
+[*] Make go cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)
+[*] remove escape sequences when writing to a file
+[*] Make ahre cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)
+[*] store LxbNodePtr for img elements
+[*] bug: when goint to a google link, it is google.com?url=/the/expected/url
+[*] set user agent
+[*] set text width (basic functionality)
+[*] implement cookies
+['] fix url construction on submit (it could be absolute or not)
+['] fix url construction on a href (it could be absolute or not)
+[*] add zf/zb shorcuts (smilar to :,+Np/:-N,p with N configurable -and p)
+['] [HTML] implement pre tag
+[*] Allow reusable buffer for files
+[*] add cmd save_source
+[*] implement htmldoc array to allow some history preservation
+[*] Decide how to allow color/one color (cli option, different, commands, config file?)
+[*] implement post method for forms
+[*] display form elements with <>
+[*] fix last char in some files saved by write ed cmd
+[*] html button support (example in sr.ht register)
+[*] e cmd is broken. Delete it of fix it (it appends keeping previous data in buf).
+[*] set text width (do not break words, make it configurable)
+[*] make google respond to user ahre's agent
+[*] allow switch between source buf and textbuf (via current buf, doc etc).
+[*] implement search in textbuf with /
+[*] #define BufOf(char) Str etc and move many Str to StrView
+
+# DONE
+[*] Accept files apart from urls
+[*] count lines when appending to buf
+[*] use array of line pointers in aebuf
+[*] implement browse fn similar to lexbor/examples/lexbor/html/html2sexpr.c
+[*] use no prefix for ahre cmds and ':' for ed cmds
+[*] implement try as `do{Err AHRE_ERR_=(Expr); if(AHRE_ERR_) return AHRE_ERR_;}while(0)`
+[*] implement editable attributes such as input value
+[*] define and add license (GNU, Apache, MIT, ...?)
+[*] Make go cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)
+[*] remove escape sequences when writing to a file
+[*] Make ahre cmd do 'nothing' when something goes wrong (eg curl cannot fetch etc)
+[*] store LxbNodePtr for img elements
+[*] bug: when goint to a google link, it is google.com?url=/the/expected/url
+[*] set user agent
+[*] set text width (basic functionality)
+[*] implement cookies
+['] fix url construction on submit (it could be absolute or not)
+['] fix url construction on a href (it could be absolute or not)
+[*] add zf/zb shorcuts (smilar to :,+Np/:-N,p with N configurable -and p)
+['] [HTML] implement pre tag
+[*] Allow reusable buffer for files
+[*] add cmd save_source
+[*] implement htmldoc array to allow some history preservation
+[*] Decide how to allow color/one color (cli option, different, commands, config file?)
+[*] implement post method for forms
+[*] display form elements with <>
+[*] fix last char in some files saved by write ed cmd
+[*] html button support (example in sr.ht register)
+[*] e cmd is broken. Delete it of fix it (it appends keeping previous data in buf).
+[*] set text width (do not break words, make it configurable)
+[*] make google respond to user ahre's agent
+[*] allow switch between source buf and textbuf (via current buf, doc etc).
+[*] implement search in textbuf with /
+[*] #define BufOf(char) Str etc and move many Str to StrView
+[*] on regex search set offset after the word and not beg of line
