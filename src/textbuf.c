@@ -8,8 +8,6 @@
  */
 
 /*  internal linkage */
-#define READ_FROM_FILE_BUFFER_LEN 4096u
-/* _Thread_local */ static char read_from_file_buffer[READ_FROM_FILE_BUFFER_LEN + 1] = {0};
 
 static size_t _compute_required_newlines_in_line_(size_t linelen, size_t maxlen) {
         return (linelen / maxlen) + (bool) (linelen % maxlen != 0);
@@ -130,25 +128,6 @@ Err textbuf_append_part(TextBuf textbuf[static 1], char* data, size_t len) {
         ;
 }
 
-
-Err textbuf_read_from_file(TextBuf textbuf[static 1], const char* filename) {
-    FILE* fp = fopen(filename, "r");
-    if  (!fp) { return strerror(errno); }
-
-    Err err = NULL;
-
-    size_t bytes_read = 0;
-    while ((bytes_read = fread(read_from_file_buffer, 1, READ_FROM_FILE_BUFFER_LEN, fp))) {
-        if ((err = textbuf_append_part(textbuf, read_from_file_buffer, bytes_read))) {
-            return err;
-        }
-    }
-    //TODO: free me?
-    if (ferror(fp)) { fclose(fp); return strerror(errno); }
-    fclose(fp);
-    try( textbuf_append_null(textbuf));
-    return textbuf_fit_lines(textbuf, 90);
-}
 
 Err textbuf_get_line_of_offset(TextBuf tb[static 1], size_t off, size_t* out) {
     size_t tb_len = textbuf_len(tb);

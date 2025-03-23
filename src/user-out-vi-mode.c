@@ -30,17 +30,28 @@ static void _update_if_smaller_(size_t value[static 1], size_t new_value) {
 }
 
 #define EMPTY_SESSION_MSG_ "Session is empty\n"
+#define EMPTY_BUFFER_MSG_ "Buffer is empty\n"
 Err _vi_show_session_(Session* s) {
     if (!s) return "error: unexpected null session, this should really not happen";
     try( lit_write__(EscCodeClsScr, stdout));
     if (session_is_empty(s)) {
-        Str* msg = session_msg(s);
-        try( str_append_lit__(msg, EMPTY_SESSION_MSG_));
+        try( str_append_lit__(session_msg(s), EMPTY_SESSION_MSG_));
+        session_uout(s)->flush_std(s);
+        return Ok;
+    }
+
+
+    TextBuf* tb;
+    try( session_current_buf(s, &tb));
+    if (textbuf_is_empty(tb)) {
+        try( str_append_lit__(session_msg(s), EMPTY_BUFFER_MSG_));
         session_uout(s)->flush_std(s);
         return Ok;
     }
 
     session_uout(s)->flush_msg(s);
+    size_t line = textbuf_current_line(tb);
+    if (!line) return "error: expecting line number, not found";
 
     size_t nrows, ncols;
     try( ui_get_win_size(&nrows, &ncols));
@@ -48,10 +59,6 @@ Err _vi_show_session_(Session* s) {
     _update_if_smaller_(session_ncols(s), ncols);
 
     if (nrows <= 3) return "too few rows";
-    TextBuf* tb;
-    try( session_current_buf(s, &tb));
-    size_t line = textbuf_current_line(tb);
-    if (!line) return "error: expecting line number, not found";
     size_t end = line + *session_nrows(s);
     end = (end > textbuf_line_count(tb)) ? textbuf_line_count(tb) : end;
     Range r = (Range){ .beg=line, .end=end };
@@ -112,13 +119,14 @@ Err _vi_flush_msg_(Session* s) {
 
 Err _vi_show_err_(Session* s, char* err, size_t len) {
     (void)s;
+    FILE* stream = stdout;
     if (err) {
-        if (mem_fwrite(err, len, stderr)
-        || lit_write__(" {type enter}", stderr))
+        if (mem_fwrite(err, len, stream)
+        || lit_write__(" {type enter}", stream))
             return "error: fprintf failure while attempting to show an error :/";
 
     }
-    fflush(stderr);
+    fflush(stream);
     getchar();
     return Ok;
 }

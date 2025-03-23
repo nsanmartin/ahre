@@ -102,7 +102,6 @@ static inline bool textbuf_is_empty(TextBuf ab[static 1]) {
 static inline Err textbuf_append_null(TextBuf textbuf[static 1]) {
     return textbuf_append_part(textbuf, (char[]){0}, 1);
 }
-Err textbuf_read_from_file(TextBuf textbuf[static 1], const char* filename) ;
 Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) ;
 
 static inline char* textbuf_current_line_offset(TextBuf tb[static 1]) {

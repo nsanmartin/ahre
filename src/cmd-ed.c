@@ -179,9 +179,6 @@ Err ed_eval(Session s[static 1], TextBuf textbuf[static 1], const char* line) {
         return range_parse_failure_to_err(line);
     } else *textbuf_last_range(textbuf) = range;
 
-    const char* rest = 0x0;
-    if ((rest = csubstr_match(line, "e", 1)) && *rest) 
-        return ed_edit(textbuf, cstr_trim_space((char*)rest));
     if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
 
     if (range.end == 0) return "error: unexpected range with end == 0";
