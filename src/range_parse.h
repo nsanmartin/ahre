@@ -9,6 +9,7 @@ typedef const char* ParseRv;
 typedef struct {
     size_t current_line;
     size_t nlines;
+    size_t new_offset;
     TextBuf* tb;
 } RangeParseCtx;
 
@@ -51,6 +52,7 @@ range_parse_ctx_from_textbuf(TextBuf tb[static 1]) {
     RangeParseCtx res = (RangeParseCtx){
         .current_line = textbuf_current_line(tb),
         .nlines       = textbuf_line_count(tb),
+        .new_offset   = textbuf_len(tb), /* this means new offset is not set */
         .tb           = tb
     };
     return res;

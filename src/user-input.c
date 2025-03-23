@@ -116,9 +116,7 @@ static inline Err _raw_readline_(char first, char* out[static 1]) {
                    *out = std_realloc(*out, len);
                    if (!*out) return "error: realloc failure";
                 } else if (c == KeyEnter) {
-                   (*out)[readlen++] = '\n';
                    (*out)[readlen++] = '\0';
-                   //fwrite(EscCodeDown1, 1, lit_len__(EscCodeDown1), stdout);
                    return Ok;
                 } else {
                    (*out)[readlen++] = c;

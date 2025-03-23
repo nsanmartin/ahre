@@ -66,7 +66,7 @@ Err regex_maybe_find_next(const char* pattern, const char* string, size_t* off[1
         return err_fmt("error executing regex, status: %d\n", status);
     }
 
-    **off = pmatch[0].rm_so;
+    **off = pmatch[0].rm_eo;
 
     regfree(&regex);
 

@@ -51,9 +51,10 @@ parse_range_addr_num(const char* tk, uintmax_t num, uintmax_t maximum, size_t* o
 _Static_assert(sizeof(size_t) <= sizeof(uintmax_t), "range parser requires this precondition");
 
 static ParseRv
-parse_linenum_search_regex(ParseRv tk, TextBuf tb[static 1], size_t out[static 1]) {
-    const char* buf = textbuf_items(tb) + *textbuf_current_offset(tb);
-    if (!buf) { return to_range_parse_err("error: invalid current line"); }
+parse_offset_search_regex(ParseRv tk, TextBuf tb[static 1], size_t out[static 1]) {
+    size_t current_offset = *textbuf_current_offset(tb);
+    const char* buf = textbuf_items(tb) + current_offset;
+    if (!buf) { return to_range_parse_err("error: invalid current offset"); }
     char* end = strchr(tk, '/');
     const char* res = end ? end + 1 : tk + strlen(tk);
     if (end) *end = '\0';
@@ -63,12 +64,12 @@ parse_linenum_search_regex(ParseRv tk, TextBuf tb[static 1], size_t out[static 1
     if (end) *end = '/';
     if (err) return err_prepend_char(err, '\x01');
 
-    if (pmatch)  {
-        try ((err = textbuf_get_line_of(tb, buf + match, out)));
-    } else return to_range_parse_err("pattern not found"); 
+    if (!pmatch) return to_range_parse_err("pattern not found"); 
+    *out =  current_offset + match;
 
     return res;
 }
+
 
 static ParseRv
 parse_range_addr(const char* tk, RangeParseCtx ctx[static 1], size_t out[static 1]) {
@@ -81,7 +82,13 @@ parse_range_addr(const char* tk, RangeParseCtx ctx[static 1], size_t out[static 
     if (!*tk) { return tk; }
     if (*tk == '/') {
         ++tk;
-        return parse_linenum_search_regex(tk, ctx->tb, out);
+        size_t offset;
+        try_parse_range((rest = parse_offset_search_regex(tk, ctx->tb, &offset)));
+        Err err = textbuf_get_line_of(ctx->tb, textbuf_items(ctx->tb) + offset, out);
+        if (err) return to_range_parse_err("error: invalid offset obtained");
+        ctx->new_offset = offset;
+        return rest;
+
     } else if (*tk == '.' || *tk == '+' || *tk == '-')  {
         if (*tk == '.') { ++tk; }
         try_parse_range((rest = parse_range_addr_num(tk, curr, max, out)));
@@ -170,7 +177,7 @@ parse_range_impl(const char* tk, RangeParseCtx ctx[static 1], Range range[static
 
 ParseRv
 parse_range(const char* tk, Range range[static 1], RangeParseCtx ctx[static 1]) {
-    ParseRv parse_str =  parse_range_impl(tk, ctx, range);
+    ParseRv parse_str = parse_range_impl(tk, ctx, range);
     if (range_parse_failure(parse_str)) return parse_str;
     if (tk == parse_str /* no_parse */) {
         range_both_set_curr(range, ctx);

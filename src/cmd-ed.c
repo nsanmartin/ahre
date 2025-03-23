@@ -183,7 +183,10 @@ Err ed_eval(Session s[static 1], TextBuf textbuf[static 1], const char* line) {
 
     if (range.end == 0) return "error: unexpected range with end == 0";
     if (range.end > textbuf_line_count(textbuf)) return "error: range end too large";
-    try( textbuf_get_offset_of_line(textbuf, range.end,textbuf_current_offset(textbuf)));
+    if (ctx.new_offset >= textbuf_len(textbuf))
+        try( textbuf_get_offset_of_line(textbuf, range.end,textbuf_current_offset(textbuf)));
+    else
+        *textbuf_current_offset(textbuf) = ctx.new_offset;
     return textbuf_eval_cmd(s, textbuf, line, &range);
 }
 
