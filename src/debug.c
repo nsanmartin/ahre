@@ -65,3 +65,83 @@ Err dbg_print_form(Session s[static 1], const char* line) {
     return _dbg_print_form_info_(*formp);
 }
 
+/*
+ * Traversal
+ */
+char* _dbg_get_node_type_name_(size_t node_type);
+char* _dbg_get_tag_name_(size_t local_name);
+Err dbg_traversal_rec(lxb_dom_node_t* node, Session ctx[static 1]);
+
+Err dbg_traversal_text(lxb_dom_node_t* node,  Session ctx[static 1]) {
+    const char* data;
+    size_t len;
+    try( lexbor_node_get_text(node, &data, &len));
+
+    //if (draw_ctx_pre(ctx)) { return Ok; } else
+    if (mem_skip_space_inplace(&data, &len)) {
+        //.try( draw_mem_skipping_space(data, len, ctx));
+        session_write_msg_lit__(ctx, "{TEXT BEG}<<<\n");
+        session_write_msg(ctx, (char*)data, len);
+        session_write_msg_lit__(ctx, "\n>>>{TEXT END}\n");
+    } else {
+        session_write_msg_lit__(ctx, "{TEXT} (whitespace)\n");
+    }
+    return Ok;
+}
+
+static inline Err dbg_traversal_list(lxb_dom_node_t* it, lxb_dom_node_t* last, Session ctx[static 1]) {
+    for(; it ; it = it->next) {
+        try( dbg_traversal_rec(it, ctx));
+        if (it == last) break;
+    }
+    return Ok;
+}
+
+
+Err dbg_traversal_rec_tag(lxb_dom_node_t* node, Session ctx[static 1]) {
+    char* name = _dbg_get_tag_name_(node->local_name);
+    session_write_msg(ctx, name, strlen(name));
+    session_write_msg_lit__(ctx, "\n");
+    return dbg_traversal_list(node->first_child, node->last_child, ctx);
+}
+
+Err dbg_traversal_rec(lxb_dom_node_t* node, Session ctx[static 1]) {
+    if (node) {
+        switch(node->type) {
+            case LXB_DOM_NODE_TYPE_ELEMENT: return dbg_traversal_rec_tag(node, ctx);
+            case LXB_DOM_NODE_TYPE_TEXT: return dbg_traversal_text(node, ctx);
+            case LXB_DOM_NODE_TYPE_DOCUMENT: 
+            case LXB_DOM_NODE_TYPE_DOCUMENT_TYPE: 
+            case LXB_DOM_NODE_TYPE_COMMENT:
+                return dbg_traversal_list(node->first_child, node->last_child, ctx);
+            default: {
+                if (node->type >= LXB_DOM_NODE_TYPE_LAST_ENTRY) {
+                    session_write_msg_lit__(ctx, "lexbor node type greater than last entry");
+                    session_write_msg_lit__(ctx, "\n");
+                }
+                else {
+                    char* name = _dbg_get_node_type_name_(node->type);
+                    session_write_msg_lit__(ctx, "Ignored Node Type");
+                    session_write_msg(ctx, name, strlen(name));
+                    session_write_msg_lit__(ctx, "\n");
+                }
+                return Ok;
+            }
+        }
+    }
+    return Ok;
+}
+
+Err dbg_traversal(Session ctx[static 1], HtmlDoc d[static 1], const char* fname) {
+    fname = cstr_skip_space(fname);
+
+    lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(d);
+    str_reset(session_msg(ctx));
+    try( dbg_traversal_rec(lxb_dom_interface_node(lxbdoc), ctx));
+    FILE* fp = fopen(fname, "w");
+    if (!fp) return err_fmt("%s: could not open file: %s", __func__, fname); 
+    fwrite(items__(session_msg(ctx)), 1, len__(session_msg(ctx)), fp);
+    fclose(fp);
+    return Ok;
+}
+/* Traversal */

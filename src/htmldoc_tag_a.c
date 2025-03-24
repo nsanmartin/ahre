@@ -35,6 +35,12 @@ bool draw_ctx_buf_ends_two_newlines(BufOf(char)* lstr) {
 size_t _strview_trim_left_count_newlines_(StrView s[static 1]);
 size_t _strview_trim_right_count_newlines_(StrView s[static 1]);
 
+static bool _prev_is_separable_(lxb_dom_node_t n[static 1]) {
+    return n->prev  && 
+        n->prev->local_name != LXB_TAG_LI
+        ;
+}
+
 Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     /* https://html.spec.whatwg.org/multipage/links.html#attr-hyperlink-href
      * The href attribute on a and area elements is not required; when those
@@ -56,7 +62,8 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         bool left_newlines = _strview_trim_left_count_newlines_(&content);
         bool right_newlines = _strview_trim_right_count_newlines_(&content);
         Err err = Ok;
-        if (left_newlines) err = draw_ctx_buf_append_lit__(ctx, "\n");
+        if (_prev_is_separable_(node)) err = draw_ctx_buf_append_lit__(ctx, " ");
+        else if (left_newlines) err = draw_ctx_buf_append_lit__(ctx, "\n");
         ok_then(err, _hypertext_id_open_(
                 ctx, draw_ctx_color_blue, anchor_open_str, &anchor_num,anchor_sep_str ));
 

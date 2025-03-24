@@ -295,12 +295,14 @@ Err doc_eval_word(HtmlDoc d[static 1], const char* line) {
     return "unknown doc command";
 }
 
+Err dbg_traversal(Session ctx[static 1], HtmlDoc d[static 1], const char* f) ;
 Err doc_eval(HtmlDoc d[static 1], const char* line, Session session[static 1]) {
     line = cstr_skip_space(line);
     switch (*line) {
         case '?': return htmldoc_print_info(session, d);
         case 'A': return htmldoc_A(session, d);
         case '+': return bookmark_add_doc(d, cstr_skip_space(line + 1), session_url_client(session));
+        case '%': return dbg_traversal(session, d, line + 1);
         default: return doc_eval_word(d, line);
     }
 }

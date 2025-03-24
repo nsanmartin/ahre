@@ -20,6 +20,6 @@ clean-tags:
 clean-cscope:
 	find . -type f -name "cscope.*" -delete
 
-clean:
+clean: clean-cscope clean-tags
 	find build -type f -delete
 
