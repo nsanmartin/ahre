@@ -240,9 +240,9 @@ draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     if (!err) {
         StrView view = strview_from_mem_trim(buf.items, buf.len);
         if (view.len) {
-            ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
+            if (len__(draw_ctx_buf(ctx))) ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
             ok_then(err, draw_ctx_buf_append_mem(ctx, (char*)view.items, view.len));
-            ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
+            ///ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
         }
     }
     buffn(char, clean)(&buf);
@@ -279,7 +279,7 @@ draw_tag_li(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
             if (buf.items < s.items) err = draw_ctx_buf_append_lit__(ctx, "\n");
             ok_then( err, draw_ctx_buf_append_lit__(ctx, " * "));
             ok_then( err, draw_ctx_buf_append_mem(ctx, (char*)s.items, s.len));
-            ok_then( err, draw_ctx_buf_append_lit__(ctx, "\n"));
+            if (s.items[s.len-1] != '\n') ok_then( err, draw_ctx_buf_append_lit__(ctx, "\n"));
         }
     }
 
@@ -322,6 +322,7 @@ draw_tag_code(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
 static Err
 draw_tag_b(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    if (node->prev && draw_ctx_buf_last_isgraph(ctx)) try( draw_ctx_buf_append_lit__(ctx, " "));
     try(_hypertext_open_(ctx, draw_ctx_push_bold, space_str));
     try (draw_list(node->first_child, node->last_child, ctx));
     try( _hypertext_close_(ctx, draw_ctx_reset_color, space_str));
@@ -329,6 +330,7 @@ draw_tag_b(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 }
 
 static Err draw_tag_em(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    if (node->prev && draw_ctx_buf_last_isgraph(ctx)) try( draw_ctx_buf_append_lit__(ctx, " "));
     try(_hypertext_open_(ctx, draw_ctx_push_underline, space_str));
     try (draw_list(node->first_child, node->last_child, ctx));
     try( _hypertext_close_(ctx, draw_ctx_reset_color, space_str));
@@ -370,10 +372,12 @@ static Err draw_tag_title(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     return err;
 }
 
-Err draw_mem_skipping_space(const char* data, size_t len, DrawCtx ctx[static 1]) {
+Err draw_mem_skipping_space(
+    const char* data, size_t len, DrawCtx ctx[static 1], lxb_dom_node_t* prev
+) {
     StrView s = strview_from_mem(data, len);
     /* if it starts with a punctiayion mark we undo the space added in draw space */
-    if (s.len && ispunct(s.items[0]) && draw_ctx_buf(ctx)->len) draw_ctx_buf(ctx)->len--;
+    if (prev && !ispunct(s.items[0])) try( draw_ctx_buf_append_lit__(ctx, " "));
     while(s.len) {
         StrView word = strview_split_word(&s);
         if (!word.len) break;
@@ -681,8 +685,7 @@ Err draw_text(lxb_dom_node_t* node,  DrawCtx ctx[static 1]) {
         try( draw_ctx_buf_append_mem(ctx, (char*)data, len));
     } else if (mem_skip_space_inplace(&data, &len)) {
         /* If it's not the first then separate with previous with space */
-        if (node->prev) try( draw_ctx_buf_append_lit__(ctx, " "));
-        try( draw_mem_skipping_space(data, len, ctx));
+        try( draw_mem_skipping_space(data, len, ctx, node->prev));
     } 
 
     if (node->first_child || node->last_child)

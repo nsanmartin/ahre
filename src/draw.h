@@ -95,6 +95,11 @@ draw_ctx_buf_commit(DrawCtx ctx[static 1]) {
     return Ok;
 }
 
+static inline bool draw_ctx_buf_last_isgraph(DrawCtx ctx[static 1]) {
+    Str* buf = draw_ctx_buf(ctx);
+    return len__(buf) && items__(buf)[len__(buf) - 1];
+}
+
 static inline Err draw_ctx_buf_append_mem(DrawCtx ctx[static 1], char* s, size_t len) { 
     return buffn(char, append)(draw_ctx_buf(ctx), s, len)
         ? Ok
