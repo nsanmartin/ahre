@@ -372,7 +372,8 @@ static Err draw_tag_title(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
 Err draw_mem_skipping_space(const char* data, size_t len, DrawCtx ctx[static 1]) {
     StrView s = strview_from_mem(data, len);
-
+    /* if it starts with a punctiayion mark we undo the space added in draw space */
+    if (s.len && ispunct(s.items[0]) && draw_ctx_buf(ctx)->len) draw_ctx_buf(ctx)->len--;
     while(s.len) {
         StrView word = strview_split_word(&s);
         if (!word.len) break;
@@ -667,8 +668,13 @@ Err draw_text(lxb_dom_node_t* node,  DrawCtx ctx[static 1]) {
         //https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
         try( draw_ctx_buf_append_mem(ctx, (char*)data, len));
     } else if (mem_skip_space_inplace(&data, &len)) {
+        /* If it's not the first then separate with previous with space */
+        if (node->prev) try( draw_ctx_buf_append_lit__(ctx, " "));
         try( draw_mem_skipping_space(data, len, ctx));
     } 
+    /* If there is another node (such as an anchor) separate with a space */
+    if (node->next) try( draw_ctx_buf_append_lit__(ctx, " "));
+
     if (node->first_child || node->last_child)
         log_warn__(
             draw_ctx_logfn(ctx),

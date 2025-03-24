@@ -4,7 +4,7 @@
 #include "str.h"
 
 #define ANCHOR_OPEN_STR  "["
-#define ANCHOR_SEP_STR  "]["
+#define ANCHOR_SEP_STR  "."
 #define ANCHOR_CLOSE_STR  "]"
 
 #define INPUT_OPEN_STR  "{"
