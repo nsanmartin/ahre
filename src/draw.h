@@ -18,7 +18,7 @@
 typedef struct { 
     HtmlDoc* htmldoc;
     BufOf(char) buf;
-    ArlOf(ModsAt) mods;
+    TextBufMods mods;
     ArlOf(EscCode) esc_code_stack;
     unsigned flags;
     SessionWriteFn logfn;
@@ -53,25 +53,19 @@ static inline void draw_ctx_pre_set(DrawCtx ctx[static 1], bool value) {
 
 static inline BufOf(char)* draw_ctx_buf(DrawCtx ctx[static 1]) { return &ctx->buf; }
 
-static inline ArlOf(ModsAt)* draw_ctx_mods(DrawCtx ctx[static 1]) { return &ctx->mods; }
+static inline TextBufMods* draw_ctx_mods(DrawCtx ctx[static 1]) { return &ctx->mods; }
 
-
-//static inline BufOf(char) draw_ctx_buf_get_reset(DrawCtx ctx[static 1]) {
-//    BufOf(char) tmp = *draw_ctx_buf(ctx);
-//    ctx->buf = (BufOf(char)){0};
-//    return tmp;
-//}
 
 static inline void draw_ctx_swap_buf_mods(
     DrawCtx ctx[static 1],
     BufOf(char) buf[static 1],
-    ArlOf(ModsAt) mods[static 1]
+    TextBufMods mods[static 1]
 ) {
     BufOf(char) tmpbuf = *buf;
     *buf = *draw_ctx_buf(ctx);
     ctx->buf = tmpbuf;
 
-    ArlOf(ModsAt) tmpmods = *mods;
+    TextBufMods tmpmods = *mods;
     *mods = *draw_ctx_mods(ctx);
     ctx->mods = tmpmods;
 }
@@ -106,7 +100,7 @@ draw_ctx_buf_commit(DrawCtx ctx[static 1]) {
     }
 
     *textbuf_mods(draw_ctx_textbuf(ctx)) = *draw_ctx_mods(ctx);
-    *draw_ctx_mods(ctx) = (ArlOf(ModsAt)){0};
+    *draw_ctx_mods(ctx) = (TextBufMods){0};
     return Ok;
 }
 
@@ -116,9 +110,10 @@ static inline bool draw_ctx_buf_last_isgraph(DrawCtx ctx[static 1]) {
 }
 
 static inline Err draw_ctx_buf_append_mem_mods(
-    DrawCtx ctx[static 1], char* s, size_t len, ArlOf(ModsAt)* mods
+    DrawCtx ctx[static 1], char* s, size_t len, TextBufMods* mods
 ) { 
     if (mods) {
+        /* Move not copy */
         size_t buflen = len__(draw_ctx_buf(ctx));
         for (ModsAt* it = arlfn(ModsAt, begin)(mods)
             ; it != arlfn(ModsAt, end)(mods)
@@ -126,7 +121,8 @@ static inline Err draw_ctx_buf_append_mem_mods(
             it->offset += buflen;
             if (!arlfn(ModsAt,append)(draw_ctx_mods(ctx), it)) return "error: arl failure";
         }
-        *mods = (ArlOf(ModsAt)){0};
+        *mods = (TextBufMods){0};
+        //arlfn(ModsAt,clean)(mods);
     }
     return buffn(char, append)(draw_ctx_buf(ctx), s, len)
         ? Ok
@@ -179,7 +175,7 @@ static inline Err
 draw_list_block( lxb_dom_node_t* it, lxb_dom_node_t* last, DrawCtx ctx[static 1]) {
     Err err;
     BufOf(char) buf = (BufOf(char)){0};
-    ArlOf(ModsAt) mods = (ArlOf(ModsAt)){0};
+    TextBufMods mods = (TextBufMods){0};
     draw_ctx_swap_buf_mods(ctx, &buf, &mods);
 
     err = draw_list(it, last, ctx);

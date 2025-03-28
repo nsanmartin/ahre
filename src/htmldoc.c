@@ -234,7 +234,7 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 static Err
 draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     BufOf(char) buf = (BufOf(char)){0};
-    ArlOf(ModsAt) mods = (ArlOf(ModsAt)){0};
+    TextBufMods mods = (TextBufMods){0};
     draw_ctx_swap_buf_mods(ctx, &buf, &mods);
 
     Err err = draw_list(node->first_child, node->last_child, ctx);
@@ -281,7 +281,7 @@ draw_tag_ul(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 static Err
 draw_tag_li(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     BufOf(char) buf = (BufOf(char)){0};
-    ArlOf(ModsAt) mods = (ArlOf(ModsAt)){0};
+    TextBufMods mods = (TextBufMods){0};
     draw_ctx_swap_buf_mods(ctx, &buf, &mods);
 
     Err err = draw_list(node->first_child, node->last_child, ctx);
@@ -308,7 +308,7 @@ draw_tag_li(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 static Err
 draw_tag_h(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     BufOf(char) buf = (BufOf(char)){0};
-    ArlOf(ModsAt) mods = (ArlOf(ModsAt)){0};
+    TextBufMods mods = (TextBufMods){0};
     draw_ctx_swap_buf_mods(ctx, &buf, &mods);
 
     try( draw_list_block(node->first_child, node->last_child, ctx));

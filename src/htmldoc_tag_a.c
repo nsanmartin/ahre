@@ -55,7 +55,7 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
             return "error: lip set";
 
         BufOf(char) buf = (BufOf(char)){0};
-        ArlOf(ModsAt) mods = (ArlOf(ModsAt)){0};
+        TextBufMods mods = (TextBufMods){0};
         draw_ctx_swap_buf_mods(ctx, &buf, &mods);
 
         try( draw_list(node->first_child, node->last_child, ctx));
