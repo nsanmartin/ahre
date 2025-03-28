@@ -7,16 +7,71 @@
 #include "ranges.h"
 #include "str.h"
 #include "utils.h"
+#include "escape_codes.h"
+
+
 
 typedef struct {
     Range last_range;
 } TextBufCache;
+
+typedef enum {
+    text_mod_blue,
+    text_mod_green,
+    text_mod_red,
+    text_mod_yellow,
+    text_mod_purple,
+    text_mod_light_green,
+    text_mod_bold,
+    text_mod_italic,
+    text_mod_underline,
+    text_mod_reset,
+    text_mod_last_entry
+} TextMod;
+
+#define T TextMod
+#include <arl.h>
+typedef struct { size_t offset; ArlOf(TextMod) mods; } ModsAt;
+
+#define T ModsAt
+static inline void mods_at_clean(ModsAt* ma) { arlfn(TextMod,clean)(&ma->mods); }
+//static inline int mods_at_copy(ModsAt* dest, const ModsAt* src, size_t n) {
+//    //memmove(dest, src, n); return 0;
+//    *dest = (ModsAt){.offset=src->offset};
+//
+//}
+#define TClean mods_at_clean
+#include <arl.h>
+
+static inline ModsAt*
+mods_at_find_greater_or_eq(ArlOf(ModsAt)* mods, ModsAt it[static 1], size_t offset) {
+    //TODO: use binsearch
+    for (; it != arlfn(ModsAt,end)(mods) ; ++it) {
+        if (offset >= it->offset) return it;
+    }
+    return NULL;
+}
+
+static inline Err mod_append(ArlOf(ModsAt)* mods, size_t offset, TextMod m) {
+    ModsAt* back = arlfn(ModsAt, back)(mods);
+    if (back && back->offset == offset) {
+        if (!arlfn(TextMod, append)(&back->mods, &m)) return "error: arl failure";
+    } else {
+        ModsAt* mat = arlfn(ModsAt, append)(mods, &(ModsAt){.offset=offset});
+        if (!mat) return "error: arl failure";
+        if (!arlfn(TextMod, append)(&mat->mods, &m)) return "error: arl failure";
+    }
+    return Ok;
+}
+
+static inline TextMod esc_code_to_text_mod(EscCode code) { return (TextMod)code; }
 
 typedef struct {
     BufOf(char) buf;
     size_t current_offset;
     ArlOf(size_t) eols;
     TextBufCache cache;
+    ArlOf(ModsAt) mods;
 } TextBuf;
 
 
@@ -24,6 +79,7 @@ typedef struct {
 static inline size_t* textbuf_current_offset(TextBuf tb[static 1]) { return &tb->current_offset; }
 static inline BufOf(char)*
 textbuf_buf(TextBuf t[static 1]) { return &t->buf; }
+static inline ArlOf(ModsAt)* textbuf_mods(TextBuf tb[static 1]) { return &tb->mods; }
 
 static inline Range* textbuf_last_range(TextBuf t[static 1]) { return &t->cache.last_range; }
 static inline ArlOf(size_t)* textbuf_eols(TextBuf tb[static 1]) { return &tb->eols; }
@@ -40,11 +96,10 @@ Err textbuf_append_part(TextBuf ab[static 1], char* data, size_t len);
 static inline size_t textbuf_len(TextBuf textbuf[static 1]) { return textbuf->buf.len; }
 static inline char* textbuf_items(TextBuf textbuf[static 1]) { return textbuf->buf.items; }
 
-char* textbuf_line_offset(TextBuf ab[static 1], size_t line);
+//char* textbuf_line_offset(TextBuf ab[static 1], size_t line);
 
 
 Err textbuf_get_line_of_offset(TextBuf tb[static 1], size_t off, size_t* out);
-
 
 /*todo return err*/
 static inline size_t textbuf_current_line(TextBuf tb[static 1]) {
@@ -104,9 +159,9 @@ static inline Err textbuf_append_null(TextBuf textbuf[static 1]) {
 }
 Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) ;
 
-static inline char* textbuf_current_line_offset(TextBuf tb[static 1]) {
-    return textbuf_line_offset(tb, textbuf_current_line(tb));
-}
+//static inline char* textbuf_current_line_offset(TextBuf tb[static 1]) {
+//    return textbuf_line_offset(tb, textbuf_current_line(tb));
+//}
 Err textbuf_append_part(TextBuf textbuf[static 1], char* data, size_t len);
 Err textbuf_fit_lines(TextBuf tb[static 1], size_t maxlen);
 
@@ -122,4 +177,5 @@ static inline Err validate_range_for_buffer(TextBuf textbuf[static 1], Range ran
     return Ok;
 }
 
+Err textbuf_line_offset(TextBuf tb[static 1], size_t line, size_t out[static 1]);
 #endif

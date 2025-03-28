@@ -54,26 +54,31 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         if (!arlfn(LxbNodePtr,append)(anchors, &node)) 
             return "error: lip set";
 
-        Str buf = draw_ctx_buf_get_reset(ctx);
+        BufOf(char) buf = (BufOf(char)){0};
+        ArlOf(ModsAt) mods = (ArlOf(ModsAt)){0};
+        draw_ctx_swap_buf_mods(ctx, &buf, &mods);
+
         try( draw_list(node->first_child, node->last_child, ctx));
-        draw_ctx_swap_buf(ctx, &buf);
+
+        draw_ctx_swap_buf_mods(ctx, &buf, &mods);
 
         StrView content = strview_from_mem(buf.items, buf.len);
-        bool left_newlines = _strview_trim_left_count_newlines_(&content);
-        bool right_newlines = _strview_trim_right_count_newlines_(&content);
+        //^TODO: bool left_newlines = _strview_trim_left_count_newlines_(&content);
+        //^TODO: bool right_newlines = _strview_trim_right_count_newlines_(&content);
         Err err = Ok;
         if (_prev_is_separable_(node)) err = draw_ctx_buf_append_lit__(ctx, " ");
-        else if (left_newlines) err = draw_ctx_buf_append_lit__(ctx, "\n");
+        else if (false /*TODO^ left_newlines*/) err = draw_ctx_buf_append_lit__(ctx, "\n");
         ok_then(err, _hypertext_id_open_(
                 ctx, draw_ctx_color_blue, anchor_open_str, &anchor_num,anchor_sep_str ));
 
         if (content.len)
-            ok_then(err, draw_ctx_buf_append_mem(ctx, (char*)content.items, content.len));
+            ok_then(err, draw_ctx_buf_append_mem_mods(ctx, (char*)content.items, content.len, &mods));
         
         str_clean(&buf);
+        arlfn(ModsAt, clean)(&mods);
 
         ok_then(err, _hypertext_id_close_(ctx, draw_ctx_reset_color, anchor_close_str));
-        if (right_newlines) ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
+        if (false /*^TODO: right_newlines*/) ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
         try(err);
 
     } else try( draw_list(node->first_child, node->last_child, ctx));//TODO: do this?

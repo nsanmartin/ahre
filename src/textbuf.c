@@ -100,6 +100,7 @@ static Err _insert_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
 void textbuf_cleanup(TextBuf b[static 1]) {
     buffn(char, clean)(&b->buf);
     arlfn(size_t, clean)(&b->eols);
+    arlfn(ModsAt, clean)(textbuf_mods(b));
     *b = (TextBuf){0};
 }
 
@@ -107,6 +108,7 @@ void textbuf_reset(TextBuf b[static 1]) {
     buffn(char, reset)(&b->buf);
     //TODO: use reset once avalable
     arlfn(size_t, clean)(&b->eols);
+    arlfn(ModsAt, clean)(textbuf_mods(b));
     b->current_offset = 0;
 }
 
@@ -161,17 +163,27 @@ Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) {
     return  Ok;
 }
 
-char* textbuf_line_offset(TextBuf tb[static 1], size_t line) {
-    if (line == 0) { return NULL; }
-    char* beg = textbuf_items(tb);
-    if (line == 1) { return beg; }
+Err textbuf_line_offset(TextBuf tb[static 1], size_t line, size_t out[static 1]) {
+    if (line == 0) { return "error: invalis linenum (0)"; }
+    if (line == 1) { *out = 0; return Ok; }
     ArlOf(size_t)* eols = textbuf_eols(tb);
     size_t* it = arlfn(size_t, at)(eols, line-2);
-    if (it) 
-        return beg + *it;
-
-    return NULL;
+    if (!it) return "error: invalid linenum";
+    *out = *it;
+    return Ok;
 }
+
+//char* textbuf_line_offset(TextBuf tb[static 1], size_t line) {
+//    if (line == 0) { return NULL; }
+//    char* beg = textbuf_items(tb);
+//    if (line == 1) { return beg; }
+//    ArlOf(size_t)* eols = textbuf_eols(tb);
+//    size_t* it = arlfn(size_t, at)(eols, line-2);
+//    if (it) 
+//        return beg + *it;
+//
+//    return NULL;
+//}
 
 Err textbuf_fit_lines(TextBuf tb[static 1], size_t maxlen) {
     return _insert_missing_newlines_(tb, maxlen);
@@ -189,7 +201,6 @@ Err textbuf_append_line_indexes(TextBuf tb[static 1]) {
         if(NULL == arlfn(size_t, append)(&tb->eols, &index)) { return "arlfn failed to append"; }
         ++it;
     }
-
     return Ok;
 }
 

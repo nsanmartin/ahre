@@ -14,9 +14,11 @@
 #define DRAW_CTX_FLAG_MONOCHROME 0x1u
 #define DRAW_CTX_FLAG_PRE   0x2u
 
+
 typedef struct { 
     HtmlDoc* htmldoc;
     BufOf(char) buf;
+    ArlOf(ModsAt) mods;
     ArlOf(EscCode) esc_code_stack;
     unsigned flags;
     SessionWriteFn logfn;
@@ -51,17 +53,27 @@ static inline void draw_ctx_pre_set(DrawCtx ctx[static 1], bool value) {
 
 static inline BufOf(char)* draw_ctx_buf(DrawCtx ctx[static 1]) { return &ctx->buf; }
 
+static inline ArlOf(ModsAt)* draw_ctx_mods(DrawCtx ctx[static 1]) { return &ctx->mods; }
 
-static inline BufOf(char) draw_ctx_buf_get_reset(DrawCtx ctx[static 1]) {
-    BufOf(char) tmp = *draw_ctx_buf(ctx);
-    ctx->buf = (BufOf(char)){0};
-    return tmp;
-}
 
-static inline void draw_ctx_swap_buf(DrawCtx ctx[static 1], BufOf(char) buf[static 1]) {
-    BufOf(char) tmp = *buf;
+//static inline BufOf(char) draw_ctx_buf_get_reset(DrawCtx ctx[static 1]) {
+//    BufOf(char) tmp = *draw_ctx_buf(ctx);
+//    ctx->buf = (BufOf(char)){0};
+//    return tmp;
+//}
+
+static inline void draw_ctx_swap_buf_mods(
+    DrawCtx ctx[static 1],
+    BufOf(char) buf[static 1],
+    ArlOf(ModsAt) mods[static 1]
+) {
+    BufOf(char) tmpbuf = *buf;
     *buf = *draw_ctx_buf(ctx);
-    ctx->buf = tmp;
+    ctx->buf = tmpbuf;
+
+    ArlOf(ModsAt) tmpmods = *mods;
+    *mods = *draw_ctx_mods(ctx);
+    ctx->mods = tmpmods;
 }
 
         
@@ -92,6 +104,9 @@ draw_ctx_buf_commit(DrawCtx ctx[static 1]) {
             return "error: could not append empty line to TextBuffer";
         buffn(char, reset)(buf);
     }
+
+    *textbuf_mods(draw_ctx_textbuf(ctx)) = *draw_ctx_mods(ctx);
+    *draw_ctx_mods(ctx) = (ArlOf(ModsAt)){0};
     return Ok;
 }
 
@@ -100,17 +115,29 @@ static inline bool draw_ctx_buf_last_isgraph(DrawCtx ctx[static 1]) {
     return len__(buf) && items__(buf)[len__(buf) - 1];
 }
 
-static inline Err draw_ctx_buf_append_mem(DrawCtx ctx[static 1], char* s, size_t len) { 
+static inline Err draw_ctx_buf_append_mem_mods(
+    DrawCtx ctx[static 1], char* s, size_t len, ArlOf(ModsAt)* mods
+) { 
+    if (mods) {
+        size_t buflen = len__(draw_ctx_buf(ctx));
+        for (ModsAt* it = arlfn(ModsAt, begin)(mods)
+            ; it != arlfn(ModsAt, end)(mods)
+            ; ++it ) {
+            it->offset += buflen;
+            if (!arlfn(ModsAt,append)(draw_ctx_mods(ctx), it)) return "error: arl failure";
+        }
+        *mods = (ArlOf(ModsAt)){0};
+    }
     return buffn(char, append)(draw_ctx_buf(ctx), s, len)
         ? Ok
         : "error: failed to append to bufof (draw ctx buf)";
 }
 
-static inline Err draw_ctx_buf_append(DrawCtx ctx[static 1], StrView s) { 
-    return draw_ctx_buf_append_mem(ctx, (char*)s.items, s.len);
+static inline Err draw_ctx_buf_append(DrawCtx ctx[static 1], StrView s) {
+    return draw_ctx_buf_append_mem_mods(ctx, (char*)s.items, s.len, NULL);
 }
 
-#define draw_ctx_buf_append_lit__(Ctx, Str) draw_ctx_buf_append_mem(Ctx, Str, sizeof(Str)-1)
+#define draw_ctx_buf_append_lit__(Ctx, Str) draw_ctx_buf_append_mem_mods(Ctx, Str, sizeof(Str)-1, NULL)
 
 static inline void draw_ctx_buf_reset(DrawCtx ctx[static 1]) {
     buffn(char, reset)(draw_ctx_buf(ctx));
@@ -151,45 +178,43 @@ draw_list( lxb_dom_node_t* it, lxb_dom_node_t* last, DrawCtx ctx[static 1]) {
 static inline Err
 draw_list_block( lxb_dom_node_t* it, lxb_dom_node_t* last, DrawCtx ctx[static 1]) {
     Err err;
-    BufOf(char) buf = draw_ctx_buf_get_reset(ctx);
+    BufOf(char) buf = (BufOf(char)){0};
+    ArlOf(ModsAt) mods = (ArlOf(ModsAt)){0};
+    draw_ctx_swap_buf_mods(ctx, &buf, &mods);
 
     err = draw_list(it, last, ctx);
 
-    draw_ctx_swap_buf(ctx, &buf);
+    draw_ctx_swap_buf_mods(ctx, &buf, &mods);
+
     if (err) {
         buffn(char, clean)(&buf);
         return err;
     }
     if (buf.len) {
+        //TODO-:ok_then
         if (   (err=draw_ctx_buf_append_lit__(ctx, "\n"))
-            || (err=draw_ctx_buf_append_mem(ctx, (char*)buf.items, buf.len))
+            || (err=draw_ctx_buf_append_mem_mods(ctx, (char*)buf.items, buf.len, &mods))
             || (err=draw_ctx_buf_append_lit__(ctx, "\n"))
         ) {
             buffn(char, clean)(&buf);
+            arlfn(ModsAt, clean)(&mods);
             return err;
         }
 
     }
     buffn(char, clean)(&buf);
+    arlfn(ModsAt, clean)(&mods);
     return Ok;
 }
-
-static inline Err draw_ctx_buf_append_color_esc_code(DrawCtx ctx[static 1], EscCode code) {
-    if (draw_ctx_color(ctx)) {
-        StrView code_str;
-        try( esc_code_to_str(code, &code_str));
-        try( draw_ctx_buf_append_mem(ctx, (char*)code_str.items, code_str.len));
-    }
-    return Ok;
-}
- 
 
 static inline Err draw_ctx_buf_append_color_(DrawCtx ctx[static 1], EscCode code) {
     if (draw_ctx_color(ctx)) {
         try( draw_ctx_esc_code_push(ctx, code));
-        StrView code_str;
-        try( esc_code_to_str(code, &code_str));
-        try( draw_ctx_buf_append_mem(ctx, (char*)code_str.items, code_str.len));
+        //StrView code_str;
+        //try( esc_code_to_str(code, &code_str));
+        //try( draw_ctx_buf_append_mem(ctx, (char*)code_str.items, code_str.len));
+
+        try( mod_append(draw_ctx_mods(ctx), len__(draw_ctx_buf(ctx)), esc_code_to_text_mod(code)));
     }
     return Ok;
 }
@@ -232,14 +257,16 @@ static inline Err draw_ctx_buf_append_ui_base36_(DrawCtx ctx[static 1], uintmax_
 
 static inline Err draw_ctx_reset_color(DrawCtx ctx[static 1]) {
     if (draw_ctx_color(ctx)) {
-        try( draw_ctx_buf_append_lit__(ctx, EscCodeReset));
+        try( mod_append(draw_ctx_mods(ctx), len__(draw_ctx_buf(ctx)), esc_code_to_text_mod(esc_code_reset)));
+        //try( draw_ctx_buf_append_lit__(ctx, EscCodeReset));
         ArlOf(EscCode)* stack = draw_ctx_esc_code_stack(ctx);
         try( draw_ctx_esc_code_pop(ctx));
         EscCode* backp =  arlfn(EscCode, back)(stack);
         if (backp) {
-            StrView code_str;
-            try( esc_code_to_str(*backp, &code_str));
-            try( draw_ctx_buf_append_mem(ctx, (char*)code_str.items, code_str.len));
+            //StrView code_str;
+            //try( esc_code_to_str(*backp, &code_str));
+            //try( draw_ctx_buf_append_mem(ctx, (char*)code_str.items, code_str.len));
+            try( mod_append(draw_ctx_mods(ctx), len__(draw_ctx_buf(ctx)), esc_code_to_text_mod(*backp)));
         }
     }
     return Ok;

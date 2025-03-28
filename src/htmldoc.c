@@ -112,7 +112,7 @@ brose_ctx_append_img_alt_(lxb_dom_node_t* img, DrawCtx ctx[static 1]) {
     lexbor_find_attr_value(img, "alt", &alt, &alt_len);
 
     if (alt && alt_len) {
-        try( draw_ctx_buf_append_mem(ctx, (char*)alt, alt_len));
+        try( draw_ctx_buf_append(ctx, strview__((char*)alt, alt_len)));
     }
     return Ok;
 }
@@ -202,7 +202,7 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
             try( _hypertext_id_open_(
                 ctx, draw_ctx_color_red, input_text_open_str, &input_id, input_submit_sep_str));
 
-            try( draw_ctx_buf_append_mem(ctx, (char*)s, slen));
+            try( draw_ctx_buf_append(ctx, strview__((char*)s, slen)));
         } else try( _hypertext_id_open_(
                 ctx, draw_ctx_color_red, input_text_open_str, &input_id, NULL));
         try( _hypertext_id_close_(ctx, draw_ctx_reset_color, input_submit_close_str));
@@ -218,7 +218,7 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         lexbor_find_attr_value(node, "value", &s, &slen);
         if (slen) {
             try( draw_ctx_buf_append_lit__(ctx, "="));
-            try( draw_ctx_buf_append_mem(ctx, (char*)s, slen));
+            try( draw_ctx_buf_append(ctx, strview__((char*)s, slen)));
         }
     } else if (lexbor_str_eq("password", s, slen)) {
         lexbor_find_attr_value(node, "value", &s, &slen);
@@ -233,19 +233,30 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
 static Err
 draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
-    BufOf(char) buf = draw_ctx_buf_get_reset(ctx);
+    BufOf(char) buf = (BufOf(char)){0};
+    ArlOf(ModsAt) mods = (ArlOf(ModsAt)){0};
+    draw_ctx_swap_buf_mods(ctx, &buf, &mods);
+
     Err err = draw_list(node->first_child, node->last_child, ctx);
-    draw_ctx_swap_buf(ctx, &buf);
+
+    draw_ctx_swap_buf_mods(ctx, &buf, &mods);
 
     if (!err) {
-        StrView view = strview_from_mem_trim(buf.items, buf.len);
-        if (view.len) {
+        //TODO^: trim and rebase offset
+        if (buf.len) {
             if (len__(draw_ctx_buf(ctx))) ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
-            ok_then(err, draw_ctx_buf_append_mem(ctx, (char*)view.items, view.len));
-            ///ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
+            ok_then(err, draw_ctx_buf_append_mem_mods(ctx, (char*)buf.items, buf.len, &mods));
         }
+        
+        //StrView view = strview_from_mem_trim(buf.items, buf.len);
+        //if (view.len) {
+        //    if (len__(draw_ctx_buf(ctx))) ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
+        //    ok_then(err, draw_ctx_buf_append_mem(ctx, (char*)view.items, view.len));
+        //    ///ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
+        //}
     }
     buffn(char, clean)(&buf);
+    arlfn(ModsAt, clean)(&mods);
     return Ok;
 }
 
@@ -269,35 +280,44 @@ draw_tag_ul(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
 static Err
 draw_tag_li(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
-    BufOf(char) buf = draw_ctx_buf_get_reset(ctx);
+    BufOf(char) buf = (BufOf(char)){0};
+    ArlOf(ModsAt) mods = (ArlOf(ModsAt)){0};
+    draw_ctx_swap_buf_mods(ctx, &buf, &mods);
+
     Err err = draw_list(node->first_child, node->last_child, ctx);
-    draw_ctx_swap_buf(ctx, &buf);
+
+    draw_ctx_swap_buf_mods(ctx, &buf, &mods);
 
     if (!err && buf.len) {
-        StrView s = strview_from_mem_trim(buf.items, buf.len);
-        if (s.len) {
-            if (buf.items < s.items) err = draw_ctx_buf_append_lit__(ctx, "\n");
+        //TODO^: trim&rebase offset
+        //StrView s = strview_from_mem_trim(buf.items, buf.len);
+        if (buf.len) {
+            ///?if (buf.items < s.items) err = draw_ctx_buf_append_lit__(ctx, "\n");
             ok_then( err, draw_ctx_buf_append_lit__(ctx, " * "));
-            ok_then( err, draw_ctx_buf_append_mem(ctx, (char*)s.items, s.len));
-            if (s.items[s.len-1] != '\n') ok_then( err, draw_ctx_buf_append_lit__(ctx, "\n"));
+            ok_then( err, draw_ctx_buf_append_mem_mods(ctx, (char*)buf.items, buf.len, &mods));
+            if (buf.items[buf.len-1] != '\n') ok_then( err, draw_ctx_buf_append_lit__(ctx, "\n"));
         }
     }
 
     buffn(char, clean)(&buf);
+    arlfn(ModsAt, clean)(&mods);
     return Ok;
 }
 
 
 static Err
 draw_tag_h(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    BufOf(char) buf = (BufOf(char)){0};
+    ArlOf(ModsAt) mods = (ArlOf(ModsAt)){0};
+    draw_ctx_swap_buf_mods(ctx, &buf, &mods);
 
-    BufOf(char) buf = draw_ctx_buf_get_reset(ctx);
     try( draw_list_block(node->first_child, node->last_child, ctx));
-    draw_ctx_swap_buf(ctx, &buf);
+
+    draw_ctx_swap_buf_mods(ctx, &buf, &mods);
 
     StrView content = strview_from_mem(buf.items, buf.len);
-    _strview_trim_left_count_newlines_(&content);
-    _strview_trim_right_count_newlines_(&content);
+    //^TODO_strview_trim_left_count_newlines_(&content);
+    //^_strview_trim_right_count_newlines_(&content);
 
     Err err;
     if ((err=_hypertext_open_(ctx, draw_ctx_push_bold, h_tag_open_str))) {
@@ -305,8 +325,9 @@ draw_tag_h(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         return err;
     }
 
-    if (content.len) try( draw_ctx_buf_append_mem(ctx, (char*)content.items, content.len));
+    if (content.len) try( draw_ctx_buf_append_mem_mods(ctx, (char*)content.items, content.len, &mods));
     buffn(char, clean)(&buf);
+    arlfn(ModsAt, clean)(&mods);
     try( _hypertext_close_(ctx, draw_ctx_reset_color, newline_str));
 
     return Ok;
@@ -381,10 +402,10 @@ Err draw_mem_skipping_space(
     while(s.len) {
         StrView word = strview_split_word(&s);
         if (!word.len) break;
-        try( draw_ctx_buf_append_mem(ctx, (char*)word.items, word.len));
+        try( draw_ctx_buf_append(ctx, word));
         strview_trim_space_left(&s);
         if (!s.len) break;
-        try( draw_ctx_buf_append_mem(ctx, " ", 1));
+        try( draw_ctx_buf_append_lit__(ctx, " "));
     }
     return Ok;
 }
@@ -682,7 +703,7 @@ Err draw_text(lxb_dom_node_t* node,  DrawCtx ctx[static 1]) {
         //are included immediately following the opening <pre> tag, the
         //first newline character is stripped. 
         //https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
-        try( draw_ctx_buf_append_mem(ctx, (char*)data, len));
+        try( draw_ctx_buf_append(ctx, strview__((char*)data, len)));
     } else if (mem_skip_space_inplace(&data, &len)) {
         /* If it's not the first then separate with previous with space */
         try( draw_mem_skipping_space(data, len, ctx, node->prev));
