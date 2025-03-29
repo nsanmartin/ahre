@@ -59,6 +59,7 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         TextBufMods mods = (TextBufMods){0};
         draw_ctx_swap_buf_mods(ctx, &buf, &mods);
 
+        if (draw_ctx_color(ctx)) try( draw_ctx_esc_code_push(ctx, esc_code_blue));
         try( draw_list(node->first_child, node->last_child, ctx));
 
         draw_ctx_swap_buf_mods(ctx, &buf, &mods);
@@ -71,7 +72,7 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         if (_prev_is_separable_(node)) err = draw_ctx_buf_append_lit__(ctx, " ");
         else if (left_newlines) err = draw_ctx_buf_append_lit__(ctx, "\n");
         ok_then(err, _hypertext_id_open_(
-                ctx, draw_ctx_color_blue, anchor_open_str, &anchor_num,anchor_sep_str ));
+                ctx, draw_ctx_textmod_blue, anchor_open_str, &anchor_num,anchor_sep_str ));
 
         if (content.len)
             ok_then(err, draw_ctx_buf_append_mem_mods(ctx, (char*)content.items, content.len, &mods));

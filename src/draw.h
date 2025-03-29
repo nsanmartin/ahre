@@ -197,28 +197,37 @@ draw_list_block( lxb_dom_node_t* it, lxb_dom_node_t* last, DrawCtx ctx[static 1]
     return Ok;
 }
 
+static inline Err draw_ctx_textmod(DrawCtx ctx[static 1], EscCode code) {
+    if (draw_ctx_color(ctx)) 
+        return textmod_append(
+            draw_ctx_mods(ctx), len__(draw_ctx_buf(ctx)), esc_code_to_text_mod(code));
+    return Ok;
+}
+ 
 static inline Err draw_ctx_buf_append_color_(DrawCtx ctx[static 1], EscCode code) {
     if (draw_ctx_color(ctx)) {
         try( draw_ctx_esc_code_push(ctx, code));
-
-        try( textmod_append(draw_ctx_mods(ctx), len__(draw_ctx_buf(ctx)), esc_code_to_text_mod(code)));
+        try( textmod_append(
+                draw_ctx_mods(ctx), len__(draw_ctx_buf(ctx)), esc_code_to_text_mod(code)));
     }
     return Ok;
 }
  
 #define _push_esc_code__ draw_ctx_buf_append_color_
-static inline
-Err draw_ctx_push_italic(DrawCtx ctx[static 1]) { return _push_esc_code__(ctx, esc_code_italic); }
+static inline Err
+draw_ctx_push_italic(DrawCtx ctx[static 1]) { return _push_esc_code__(ctx, esc_code_italic); }
 
-static inline
-Err draw_ctx_push_bold(DrawCtx ctx[static 1]) { return _push_esc_code__(ctx, esc_code_bold); }
+static inline Err
+draw_ctx_push_bold(DrawCtx ctx[static 1]) { return _push_esc_code__(ctx, esc_code_bold); }
 
-static inline
-Err draw_ctx_push_underline(DrawCtx ctx[static 1]){return _push_esc_code__(ctx, esc_code_underline);}
+static inline Err
+draw_ctx_push_underline(DrawCtx ctx[static 1]){ return _push_esc_code__(ctx, esc_code_underline); }
 
-static inline Err draw_ctx_color_blue(DrawCtx ctx[static 1]) {
-    return draw_ctx_buf_append_color_(ctx, esc_code_blue);
-}
+static inline Err
+draw_ctx_push_blue(DrawCtx ctx[static 1]) { return _push_esc_code__(ctx, esc_code_blue); }
+
+static inline Err
+draw_ctx_textmod_blue(DrawCtx ctx[static 1]) { return draw_ctx_textmod(ctx, esc_code_blue); }
 
 static inline Err draw_ctx_color_red(DrawCtx ctx[static 1]) {
     return draw_ctx_buf_append_color_(ctx, esc_code_red);
