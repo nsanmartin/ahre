@@ -29,7 +29,7 @@ Err _vi_write_std_(const char* mem, size_t len, Session* s) {
 static size_t
 _next_text_end_(TextBufMods mods[static 1], ModsAt it[static 1], size_t off, size_t line_end) {
     return (it < arlfn(ModsAt,end)(mods)
-               && off < it->offset
+               && off <= it->offset
                && it->offset < line_end)
         ? it->offset
         : line_end;
