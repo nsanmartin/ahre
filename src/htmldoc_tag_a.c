@@ -32,8 +32,7 @@ bool draw_ctx_buf_ends_two_newlines(BufOf(char)* lstr) {
     return buffn(char, end)(lstr)[-1] == '\n' && buffn(char, end)(lstr)[-2] == '\n';
 }
 
-Err _strview_trim_left_count_newlines_(StrView s[static 1], TextBufMods mods[static 1], size_t* out);
-//size_t _strview_trim_left_count_newlines_(StrView s[static 1]);
+Err _strview_trim_left_count_newlines_(StrView s[static 1], size_t* out);
 size_t _strview_trim_right_count_newlines_(StrView s[static 1]);
 
 static bool _prev_is_separable_(lxb_dom_node_t n[static 1]) {
@@ -66,8 +65,10 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
         StrView content = strview_from_mem(buf.items, buf.len);
         size_t left_newlines;
-        try( _strview_trim_left_count_newlines_(&content, &mods, &left_newlines));
+        try( _strview_trim_left_count_newlines_(&content, &left_newlines));
         bool right_newlines = _strview_trim_right_count_newlines_(&content);
+        textmod_trim_left(&mods, left_newlines);
+
         Err err = Ok;
         if (_prev_is_separable_(node)) err = draw_ctx_buf_append_lit__(ctx, " ");
         else if (left_newlines) err = draw_ctx_buf_append_lit__(ctx, "\n");
