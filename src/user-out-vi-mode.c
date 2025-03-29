@@ -35,55 +35,41 @@ static Err _vi_print_range_std_mod_(TextBuf textbuf[static 1], Range range[stati
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
         if (!line.len || !line.items || !*line.items) continue;
 
-        size_t line_off_beg;
-        try(textbuf_line_offset(textbuf, linum, &line_off_beg));
+        size_t line_off_beg = line.items - textbuf_items(textbuf);
         size_t line_off_end = line_off_beg + line.len;
 
-        if (!geq_mod || line_off_end < geq_mod->offset) {
+        if (geq_mod >= arlfn(ModsAt,end)(textbuf_mods(textbuf)) || line_off_end < geq_mod->offset) {
             try( _vi_write_std_to_screen_(s, (char*)line.items, line.len));
             continue;
         }
 
         for (size_t off = line_off_beg; off < line_off_end;) {
-            size_t next = (geq_mod && geq_mod->offset < line_off_end) ? geq_mod->offset : line_off_end;
-            if (off < next) try( _vi_write_std_to_screen_(s, textbuf_items(textbuf) + off, next - off));
-            //print mods
-            off = next;
-            ++geq_mod;
-            if (geq_mod == arlfn(ModsAt,end)(textbuf_mods(textbuf))) {
-                geq_mod = NULL;
-                next = line_off_end;
-                if (off < next) try( _vi_write_std_to_screen_(s, textbuf_items(textbuf) + off, next - off));
-                
-            }
-            //geq_mod = geq_mod + 1 < arlfn(ModsAt,end)(textbuf_mods(textbuf)) ? geq_mod + 1 : NULL;
-        }
+            size_t next
+                = (geq_mod < arlfn(ModsAt,end)(textbuf_mods(textbuf))
+                        && geq_mod->offset < line_off_end)
+                ? geq_mod->offset
+                : line_off_end;
 
-        //try( _vi_write_std_to_screen_(s, (char*)line.items, line.len));
-        //else try( _vi_write_std_to_screen_lit__(s, "\n"));
+            if (off < next)
+                try( _vi_write_std_to_screen_(s, textbuf_items(textbuf) + off, next - off));
+
+            off = next;
+            if (geq_mod < arlfn(ModsAt,end)(textbuf_mods(textbuf)) && next == geq_mod->offset) {
+                for (TextMod* tm = arlfn(TextMod,begin)(&geq_mod->mods)
+                    ; tm != arlfn(TextMod,end)(&geq_mod->mods)
+                    ; ++tm
+                ) {
+                    StrView code_str;
+                    try( esc_code_to_str(textmod_to_esc_code(*tm), &code_str));
+                    try( _vi_write_std_to_screen_(s, (char*)code_str.items, code_str.len));
+                }
+            }
+            ++geq_mod;
+        }
     }
     return Ok;
 }
 
-//static Err _vi_print_range_std_mod_(TextBuf textbuf[static 1], Range range[static 1], Session* s) {
-//    try(validate_range_for_buffer(textbuf, range));
-//    StrView line;
-//    for (size_t linum = range->beg; linum <= range->end; ++linum) {
-//        if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
-//        if (!line.len || !line.items || !*line.items) continue;
-//
-//        if (true) {
-//            if (line.len) { try( _vi_write_std_to_screen_(s, (char*)line.items, line.len)); }
-//            else try( _vi_write_std_to_screen_lit__(s, "\n"));
-//        } else {
-//            try( _vi_write_unsigned_std_screen_(s, linum));
-//            try( _vi_write_std_to_screen_lit__(s,"\t"));
-//            if (line.len) { try( _vi_write_std_to_screen_(s, (char*)line.items, line.len)); }
-//            else try( _vi_write_std_to_screen_lit__(s, "\n"));
-//        }
-//    }
-//    return Ok;
-//}
 
 static void _update_if_smaller_(size_t value[static 1], size_t new_value) {
     if (*value > new_value) *value = new_value;

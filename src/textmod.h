@@ -23,11 +23,6 @@ typedef struct { size_t offset; ArlOf(TextMod) mods; } ModsAt;
 
 #define T ModsAt
 static inline void mods_at_clean(ModsAt* ma) { arlfn(TextMod,clean)(&ma->mods); }
-//static inline int mods_at_copy(ModsAt* dest, const ModsAt* src, size_t n) {
-//    //memmove(dest, src, n); return 0;
-//    *dest = (ModsAt){.offset=src->offset};
-//
-//}
 #define TClean mods_at_clean
 #include <arl.h>
 typedef ArlOf(ModsAt) TextBufMods;
@@ -41,7 +36,7 @@ mods_at_find_greater_or_eq(TextBufMods* mods, ModsAt it[static 1], size_t offset
     return NULL;
 }
 
-static inline Err mod_append(TextBufMods* mods, size_t offset, TextMod m) {
+static inline Err textmod_append(TextBufMods* mods, size_t offset, TextMod m) {
     ModsAt* back = arlfn(ModsAt, back)(mods);
     if (back && back->offset == offset) {
         if (!arlfn(TextMod, append)(&back->mods, &m)) return "error: arl failure";
@@ -54,6 +49,26 @@ static inline Err mod_append(TextBufMods* mods, size_t offset, TextMod m) {
 }
 
 static inline TextMod esc_code_to_text_mod(EscCode code) { return (TextMod)code; }
+static inline EscCode textmod_to_esc_code(TextMod tm) { return (EscCode)tm; }
+
+static inline Err
+textmod_concatenate(TextBufMods base[static 1], size_t offset, TextBufMods consumed[static 1]) {
+    for (ModsAt* it = arlfn(ModsAt, begin)(consumed)
+        ; it != arlfn(ModsAt, end)(consumed)
+        ; ++it
+    ) {
+        ModsAt* appended = arlfn(ModsAt,append)(base, &(ModsAt){.offset=it->offset + offset});
+        if (!appended) return "error: arl failure"; //TODO: clean space on error
+
+        for (TextMod* textmodp = arlfn(TextMod,begin)(&it->mods)
+            ; textmodp != arlfn(TextMod,end)(&it->mods)
+            ; ++textmodp
+        ) {
+            if (!arlfn(TextMod,append)(&appended->mods, textmodp))
+                return "error: arl failure"; //TODO clean on error
+        }
+    }
+    return Ok;
+}
 
 #endif
-

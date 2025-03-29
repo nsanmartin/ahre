@@ -163,27 +163,6 @@ Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) {
     return  Ok;
 }
 
-Err textbuf_line_offset(TextBuf tb[static 1], size_t line, size_t out[static 1]) {
-    if (line == 0) { return "error: invalis linenum (0)"; }
-    if (line == 1) { *out = 0; return Ok; }
-    ArlOf(size_t)* eols = textbuf_eols(tb);
-    size_t* it = arlfn(size_t, at)(eols, line-2);
-    if (!it) return "error: invalid linenum";
-    *out = *it;
-    return Ok;
-}
-
-//char* textbuf_line_offset(TextBuf tb[static 1], size_t line) {
-//    if (line == 0) { return NULL; }
-//    char* beg = textbuf_items(tb);
-//    if (line == 1) { return beg; }
-//    ArlOf(size_t)* eols = textbuf_eols(tb);
-//    size_t* it = arlfn(size_t, at)(eols, line-2);
-//    if (it) 
-//        return beg + *it;
-//
-//    return NULL;
-//}
 
 Err textbuf_fit_lines(TextBuf tb[static 1], size_t maxlen) {
     return _insert_missing_newlines_(tb, maxlen);
