@@ -32,7 +32,8 @@ bool draw_ctx_buf_ends_two_newlines(BufOf(char)* lstr) {
     return buffn(char, end)(lstr)[-1] == '\n' && buffn(char, end)(lstr)[-2] == '\n';
 }
 
-size_t _strview_trim_left_count_newlines_(StrView s[static 1]);
+Err _strview_trim_left_count_newlines_(StrView s[static 1], TextBufMods mods[static 1], size_t* out);
+//size_t _strview_trim_left_count_newlines_(StrView s[static 1]);
 size_t _strview_trim_right_count_newlines_(StrView s[static 1]);
 
 static bool _prev_is_separable_(lxb_dom_node_t n[static 1]) {
@@ -63,11 +64,12 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         draw_ctx_swap_buf_mods(ctx, &buf, &mods);
 
         StrView content = strview_from_mem(buf.items, buf.len);
-        //^TODO: bool left_newlines = _strview_trim_left_count_newlines_(&content);
-        //^TODO: bool right_newlines = _strview_trim_right_count_newlines_(&content);
+        size_t left_newlines;
+        try( _strview_trim_left_count_newlines_(&content, &mods, &left_newlines));
+        bool right_newlines = _strview_trim_right_count_newlines_(&content);
         Err err = Ok;
         if (_prev_is_separable_(node)) err = draw_ctx_buf_append_lit__(ctx, " ");
-        else if (false /*TODO^ left_newlines*/) err = draw_ctx_buf_append_lit__(ctx, "\n");
+        else if (left_newlines) err = draw_ctx_buf_append_lit__(ctx, "\n");
         ok_then(err, _hypertext_id_open_(
                 ctx, draw_ctx_color_blue, anchor_open_str, &anchor_num,anchor_sep_str ));
 
@@ -78,7 +80,7 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         arlfn(ModsAt, clean)(&mods);
 
         ok_then(err, _hypertext_id_close_(ctx, draw_ctx_reset_color, anchor_close_str));
-        if (false /*^TODO: right_newlines*/) ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
+        if (right_newlines) ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
         try(err);
 
     } else try( draw_list(node->first_child, node->last_child, ctx));//TODO: do this?

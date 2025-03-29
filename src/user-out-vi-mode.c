@@ -68,7 +68,8 @@ static Err _vi_print_range_std_mod_(TextBuf textbuf[static 1], Range range[stati
         }
     }
 
-    if (!textbuf_get_line(textbuf, range->end, &line)) return "error: invalid linum";
+    if (!session_monochrome(s))
+        try( _vi_write_std_to_screen_lit__(s, EscCodeReset));
     if (line.len && line.items[line.len-1] != '\n') 
         try( _vi_write_std_to_screen_lit__(s, "\n"));
     return Ok;

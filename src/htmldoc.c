@@ -23,14 +23,21 @@ Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[static 1]);
     (arlfn(LxbNodePtr,append)(ArrayList, (NodePtr)) ? Ok : "error: lip set")
 
 
-size_t _strview_trim_left_count_newlines_(StrView s[static 1]) {
+Err _strview_trim_left_count_newlines_(
+    StrView s[static 1], TextBufMods mods[static 1], size_t* out
+) {
     size_t newlines = 0;
     while(s->len && isspace(*(items__(s)))) {
         newlines += *(items__(s)) == '\n';
         ++s->items;
         --s->len;
     }
-    return newlines;
+    foreach__(ModsAt, it, mods) {
+        if (it->offset < newlines) return "error: bad offset :(";
+        it->offset -= newlines;
+    }
+    if (out) *out = newlines;
+    return Ok;
 }
 
 size_t _strview_trim_right_count_newlines_(StrView s[static 1]) {
@@ -305,8 +312,7 @@ draw_tag_li(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 }
 
 
-static Err
-draw_tag_h(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+static Err draw_tag_h(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     BufOf(char) buf = (BufOf(char)){0};
     TextBufMods mods = (TextBufMods){0};
     draw_ctx_swap_buf_mods(ctx, &buf, &mods);
@@ -316,8 +322,8 @@ draw_tag_h(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     draw_ctx_swap_buf_mods(ctx, &buf, &mods);
 
     StrView content = strview_from_mem(buf.items, buf.len);
-    //^TODO_strview_trim_left_count_newlines_(&content);
-    //^_strview_trim_right_count_newlines_(&content);
+    try(_strview_trim_left_count_newlines_(&content, &mods, NULL));
+    _strview_trim_right_count_newlines_(&content);
 
     Err err;
     if ((err=_hypertext_open_(ctx, draw_ctx_push_bold, h_tag_open_str))) {

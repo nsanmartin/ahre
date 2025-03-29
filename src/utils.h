@@ -124,5 +124,8 @@ static inline Err bufofchar_append(BufOf(char) buf[static 1], char* s, size_t le
 Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) ;
 
 
+#define foreach__(T,It,Col) \
+    for (T* It = arlfn(T,begin)(Col) ; It < arlfn(T,begin)(Col) ; ++It)
+
 /* * */
 #endif
