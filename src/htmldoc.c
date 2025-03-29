@@ -877,6 +877,7 @@ Err htmldoc_draw(HtmlDoc htmldoc[static 1], Session s[static 1]) {
     //TODO: join append-null and fit-lines together in a single static method so that
     //we always call all .
     if (textbuf_len(htmldoc_textbuf(htmldoc))) {
+        try( textbuf_append_line_indexes(htmldoc_textbuf(htmldoc)));
         try( textbuf_append_null(htmldoc_textbuf(htmldoc)));
         try( textbuf_fit_lines(htmldoc_textbuf(htmldoc), *session_conf_ncols(session_conf(s))));
     }

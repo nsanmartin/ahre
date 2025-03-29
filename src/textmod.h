@@ -19,11 +19,11 @@ typedef enum {
 
 #define T TextMod
 #include <arl.h>
-typedef struct { size_t offset; ArlOf(TextMod) mods; } ModsAt;
+typedef struct { size_t offset; TextMod tmod; } ModsAt;
 
 #define T ModsAt
-static inline void mods_at_clean(ModsAt* ma) { arlfn(TextMod,clean)(&ma->mods); }
-#define TClean mods_at_clean
+//static inline void mods_at_clean(ModsAt* ma) { arlfn(TextMod,clean)(&ma->mods); }
+//#define TClean mods_at_clean
 #include <arl.h>
 typedef ArlOf(ModsAt) TextBufMods;
 
@@ -37,14 +37,7 @@ mods_at_find_greater_or_eq(TextBufMods* mods, ModsAt it[static 1], size_t offset
 }
 
 static inline Err textmod_append(TextBufMods* mods, size_t offset, TextMod m) {
-    ModsAt* back = arlfn(ModsAt, back)(mods);
-    if (back && back->offset == offset) {
-        if (!arlfn(TextMod, append)(&back->mods, &m)) return "error: arl failure";
-    } else {
-        ModsAt* mat = arlfn(ModsAt, append)(mods, &(ModsAt){.offset=offset});
-        if (!mat) return "error: arl failure";
-        if (!arlfn(TextMod, append)(&mat->mods, &m)) return "error: arl failure";
-    }
+    if (!arlfn(ModsAt, append)(mods, &(ModsAt){.offset=offset,.tmod=m})) return "error: arl failure";
     return Ok;
 }
 
@@ -57,16 +50,10 @@ textmod_concatenate(TextBufMods base[static 1], size_t offset, TextBufMods consu
         ; it != arlfn(ModsAt, end)(consumed)
         ; ++it
     ) {
-        ModsAt* appended = arlfn(ModsAt,append)(base, &(ModsAt){.offset=it->offset + offset});
+        ModsAt displaced = (ModsAt){.offset=it->offset + offset, .tmod=it->tmod};
+        ModsAt* appended = arlfn(ModsAt,append)(base, &displaced);
         if (!appended) return "error: arl failure"; //TODO: clean space on error
 
-        for (TextMod* textmodp = arlfn(TextMod,begin)(&it->mods)
-            ; textmodp != arlfn(TextMod,end)(&it->mods)
-            ; ++textmodp
-        ) {
-            if (!arlfn(TextMod,append)(&appended->mods, textmodp))
-                return "error: arl failure"; //TODO clean on error
-        }
     }
     return Ok;
 }

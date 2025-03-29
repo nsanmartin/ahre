@@ -28,24 +28,44 @@ static size_t _estimate_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
     return res + res / 12;
 }
 
-static size_t _mem_count_escape_codes_(const char* buf, size_t len) {
-    const char* it = buf;
-    size_t count = 0;
-    while (it && it < buf + len) {
-        it = memchr(it, '\033', buf + len - it);
-        if (it) {
-            ++it;
-            ++count;
-        }
-    }
-    return count;
-}
-
 static bool _char_is_point_of_break_(char c) {
     return isspace(c) || c == '\033';
 }
 
-static Err _insert_line_splitting_(StrView line[static 1], BufOf(char) buf[static 1], size_t maxlen) {
+//static Err _insert_line_splitting_with_esc_codes_(StrView line[static 1], BufOf(char) buf[static 1], size_t maxlen) {
+//    size_t off = 0;
+//    size_t len = 0;
+//    for (off = 0; off < strview_len(line); ) {
+//        char* beg = (char*)strview_beg(line) + off;
+//        if (beg + maxlen >= strview_end(line)) {
+//            len = strview_len(line) - off;
+//        } else {
+//            len = maxlen;
+//            size_t esc_codes_len = _mem_count_escape_codes_(beg, len);
+//            size_t esc_codes_mem = esc_codes_len * 4;
+//            if (beg + len + esc_codes_mem < strview_end(line))
+//                len += esc_codes_mem;
+//
+//            if (!_char_is_point_of_break_(line->items[off + len])) {
+//                while (len && !_char_is_point_of_break_(line->items[off + len])) --len;
+//                if (!len) len = maxlen;
+//            }
+//        }
+//        try( bufofchar_append(buf, beg, len)) ;
+//        try( bufofchar_append_lit__(buf, "\n")) ;
+//        off += len;
+//        if (beg + len < strview_end(line) && isspace(beg[len]))
+//            ++off;
+//    }
+//    return Ok;
+//}
+
+static Err _insert_line_splitting_(
+    StrView line[static 1],
+    BufOf(char) buf[static 1],
+    size_t maxlen,
+    ArlOf(size_t) insertions[static 1]
+) {
     size_t off = 0;
     size_t len = 0;
     for (off = 0; off < strview_len(line); ) {
@@ -54,10 +74,6 @@ static Err _insert_line_splitting_(StrView line[static 1], BufOf(char) buf[stati
             len = strview_len(line) - off;
         } else {
             len = maxlen;
-            size_t esc_codes_len = _mem_count_escape_codes_(beg, len);
-            size_t esc_codes_mem = esc_codes_len * 4;
-            if (beg + len + esc_codes_mem < strview_end(line))
-                len += esc_codes_mem;
 
             if (!_char_is_point_of_break_(line->items[off + len])) {
                 while (len && !_char_is_point_of_break_(line->items[off + len])) --len;
@@ -69,12 +85,13 @@ static Err _insert_line_splitting_(StrView line[static 1], BufOf(char) buf[stati
         off += len;
         if (beg + len < strview_end(line) && isspace(beg[len]))
             ++off;
+        else if (!arlfn(size_t,append)(insertions,&len__(buf))) return "error: arl failure";
     }
     return Ok;
 }
 
-static Err _insert_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
-    try( textbuf_append_line_indexes(tb));
+static Err
+_insert_missing_newlines_(TextBuf tb[static 1], size_t maxlen, ArlOf(size_t) insertions[static 1]) {
     size_t missing_newlines = _estimate_missing_newlines_(tb, maxlen);
     if (!missing_newlines) return Ok;
     if (!buffn(char, __ensure_extra_capacity)(textbuf_buf(tb), missing_newlines))
@@ -84,9 +101,10 @@ static Err _insert_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
     BufOf(char)* buf = &(BufOf(char)){0};
     while (textbuf_get_line(tb, n++, &line)) {
         if (line.len && line.len <= maxlen) {
+            /* line includes the '\n' */
             try( bufofchar_append(buf, (char*)line.items, line.len));
         } else {
-            try( _insert_line_splitting_(&line, buf, maxlen));
+            try( _insert_line_splitting_(&line, buf, maxlen, insertions));
         }
     }
     buffn(char,clean)(textbuf_buf(tb));
@@ -164,8 +182,49 @@ Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) {
 }
 
 
+static ModsAt* _skip_mods_at_the_left_(ModsAt it[static 1], ModsAt end[static 1], size_t offset) {
+    for ( ; it < end && it->offset < offset ; ++it)
+        ;
+    return it;
+}
+
+static ModsAt* _move_mods_(ModsAt it[static 1], ModsAt end[static 1], size_t n, size_t max_off) {
+    for ( ;; ++it) {
+        if  (it == end || it->offset >= max_off) break;
+        it->offset += n;
+    }
+    return it;
+}
+
 Err textbuf_fit_lines(TextBuf tb[static 1], size_t maxlen) {
-    return _insert_missing_newlines_(tb, maxlen);
+    ArlOf(size_t) insertions = (ArlOf(size_t)){0};
+    try( _insert_missing_newlines_(tb, maxlen, &insertions));
+    ModsAt* mod = arlfn(ModsAt,begin)(textbuf_mods(tb));
+    ModsAt* mend = arlfn(ModsAt,end)(textbuf_mods(tb));
+    const size_t* ibegin = arlfn(size_t,begin)(&insertions);
+
+    if (insertions.len == 1 && len__(textbuf_mods(tb))) {
+        size_t* it = (size_t*)ibegin;
+        for (mod = mods_at_find_greater_or_eq(textbuf_mods(tb), mod, *it)
+            ; mod < mend
+            ; ++mod)
+        {
+            ++mod->offset;
+        }
+
+    } else if (insertions.len > 1 && len__(textbuf_mods(tb))) {
+        size_t* from = (size_t*)ibegin;
+        size_t* to = from + 1;
+
+        for ( ; to < arlfn(size_t,end)(&insertions) ; ++from, ++to) {
+            mod = _skip_mods_at_the_left_(mod, mend, *from);
+            mod = _move_mods_(mod, mend, (from-ibegin), *to);
+        }
+
+        for ( ; mod < mend ; ++mod) mod->offset += (from-ibegin);
+    }
+    arlfn(size_t, clean)(&insertions);
+    return Ok;
 }
 
 Err textbuf_append_line_indexes(TextBuf tb[static 1]) {

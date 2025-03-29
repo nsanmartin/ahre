@@ -38,37 +38,32 @@ _next_text_end_(TextBufMods mods[static 1], ModsAt it[static 1], size_t off, siz
 static Err _vi_print_range_std_mod_(TextBuf textbuf[static 1], Range range[static 1], Session* s) {
     try(validate_range_for_buffer(textbuf, range));
     StrView line;
-    ModsAt* geq_mod = arlfn(ModsAt,begin)(textbuf_mods(textbuf));
+    ModsAt* it = arlfn(ModsAt,begin)(textbuf_mods(textbuf));
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
         if (!line.len || !line.items || !*line.items) continue;
 
         size_t line_off_beg = line.items - textbuf_items(textbuf);
         size_t line_off_end = line_off_beg + line.len;
-        geq_mod = mods_at_find_greater_or_eq(textbuf_mods(textbuf), geq_mod, line_off_beg);
+        it = mods_at_find_greater_or_eq(textbuf_mods(textbuf), it, line_off_beg);
 
-        if (geq_mod >= arlfn(ModsAt,end)(textbuf_mods(textbuf)) || line_off_end < geq_mod->offset) {
+        if (it >= arlfn(ModsAt,end)(textbuf_mods(textbuf)) || line_off_end < it->offset) {
             try( _vi_write_std_to_screen_(s, (char*)line.items, line.len));
             continue;
         }
 
         for (size_t off = line_off_beg; off < line_off_end;) {
-            size_t next = _next_text_end_(textbuf_mods(textbuf), geq_mod, off, line_off_end);
+            size_t next = _next_text_end_(textbuf_mods(textbuf), it, off, line_off_end);
 
             if (off < next)
                 try( _vi_write_std_to_screen_(s, textbuf_items(textbuf) + off, next - off));
 
             off = next;
-            if (geq_mod < arlfn(ModsAt,end)(textbuf_mods(textbuf)) && next == geq_mod->offset) {
-                for (TextMod* tm = arlfn(TextMod,begin)(&geq_mod->mods)
-                    ; tm != arlfn(TextMod,end)(&geq_mod->mods)
-                    ; ++tm
-                ) {
-                    StrView code_str;
-                    try( esc_code_to_str(textmod_to_esc_code(*tm), &code_str));
-                    try( _vi_write_std_to_screen_(s, (char*)code_str.items, code_str.len));
-                }
-                ++geq_mod;
+            while (it < arlfn(ModsAt,end)(textbuf_mods(textbuf)) && next == it->offset) {
+                StrView code_str;
+                try( esc_code_to_str(textmod_to_esc_code(it->tmod), &code_str));
+                try( _vi_write_std_to_screen_(s, (char*)code_str.items, code_str.len));
+                ++it;
             }
         }
     }
