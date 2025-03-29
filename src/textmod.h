@@ -30,10 +30,10 @@ typedef ArlOf(ModsAt) TextBufMods;
 static inline ModsAt*
 mods_at_find_greater_or_eq(TextBufMods* mods, ModsAt it[static 1], size_t offset) {
     //TODO: use binsearch
-    for (; it != arlfn(ModsAt,end)(mods) ; ++it) {
-        if (offset >= it->offset) return it;
+    for (; it < arlfn(ModsAt,end)(mods) ; ++it) {
+        if (offset <= it->offset) return it;
     }
-    return NULL;
+    return arlfn(ModsAt,end)(mods);
 }
 
 static inline Err textmod_append(TextBufMods* mods, size_t offset, TextMod m) {
