@@ -197,6 +197,7 @@ static ModsAt* _move_mods_(ModsAt it[static 1], ModsAt end[static 1], size_t n, 
 }
 
 Err textbuf_fit_lines(TextBuf tb[static 1], size_t maxlen) {
+    if (textbuf_len(tb)) return Ok;
     ArlOf(size_t) insertions = (ArlOf(size_t)){0};
     try( _insert_missing_newlines_(tb, maxlen, &insertions));
     ModsAt* mod = arlfn(ModsAt,begin)(textbuf_mods(tb));

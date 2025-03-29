@@ -92,15 +92,21 @@ static inline EscCode* draw_ctx_esc_code_stack_backp(DrawCtx ctx[static 1]) {
 static inline Err
 draw_ctx_buf_commit(DrawCtx ctx[static 1]) {
     BufOf(char)* buf = draw_ctx_buf(ctx);
+    TextBuf* tb = draw_ctx_textbuf(ctx);
+
     if (len__(buf)) {
-        BufOf(char)* tb_buf = draw_ctx_textbuf_buf_(ctx);
+        BufOf(char)* tb_buf = textbuf_buf(tb);
         if (!buffn(char, append)(tb_buf, items__(buf), len__(buf)))
             return "error: could not append empty line to TextBuffer";
         buffn(char, reset)(buf);
+
+        *textbuf_mods(draw_ctx_textbuf(ctx)) = *draw_ctx_mods(ctx);
+
+        try( textbuf_append_line_indexes(tb));
+        try( textbuf_append_null(tb));
     }
 
-    *textbuf_mods(draw_ctx_textbuf(ctx)) = *draw_ctx_mods(ctx);
-    *draw_ctx_mods(ctx) = (TextBufMods){0};
+    //*draw_ctx_mods(ctx) = (TextBufMods){0};
     return Ok;
 }
 

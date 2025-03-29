@@ -864,24 +864,16 @@ inline void htmldoc_destroy(HtmlDoc* htmldoc) {
     std_free(htmldoc);
 }
 
-//TODO: pass the max cols and color from session conf
 Err htmldoc_draw(HtmlDoc htmldoc[static 1], Session s[static 1]) {
-    //session_conf(session));
     lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(htmldoc);
     DrawCtx ctx;
-    try(draw_ctx_init(&ctx, htmldoc, s));
-    Err err = draw_rec(lxb_dom_interface_node(lxbdoc), &ctx);
-    try( draw_ctx_buf_commit(&ctx));
+    Err err = draw_ctx_init(&ctx, htmldoc, s);
+    ok_then(err, draw_rec(lxb_dom_interface_node(lxbdoc), &ctx));
+    ok_then(err, draw_ctx_buf_commit(&ctx));
+    ok_then(err, textbuf_fit_lines(htmldoc_textbuf(htmldoc), *session_conf_ncols(session_conf(s))));
+
     draw_ctx_cleanup(&ctx);
-    if (err) return err;
-    //TODO: join append-null and fit-lines together in a single static method so that
-    //we always call all .
-    if (textbuf_len(htmldoc_textbuf(htmldoc))) {
-        try( textbuf_append_line_indexes(htmldoc_textbuf(htmldoc)));
-        try( textbuf_append_null(htmldoc_textbuf(htmldoc)));
-        try( textbuf_fit_lines(htmldoc_textbuf(htmldoc), *session_conf_ncols(session_conf(s))));
-    }
-    return Ok;
+    return err;
 }
 
 
