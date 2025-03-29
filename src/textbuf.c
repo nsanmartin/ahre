@@ -219,10 +219,10 @@ Err textbuf_fit_lines(TextBuf tb[static 1], size_t maxlen) {
 
         for ( ; to < arlfn(size_t,end)(&insertions) ; ++from, ++to) {
             mod = _skip_mods_at_the_left_(mod, mend, *from);
-            mod = _move_mods_(mod, mend, (from-ibegin), *to);
+            mod = _move_mods_(mod, mend, (1 + from - ibegin), *to);
         }
 
-        for ( ; mod < mend ; ++mod) mod->offset += (from-ibegin);
+        for ( ; mod < mend ; ++mod) mod->offset += (1 + from - ibegin);
     }
     arlfn(size_t, clean)(&insertions);
     return Ok;
