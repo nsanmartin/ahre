@@ -187,13 +187,13 @@ draw_list_block( lxb_dom_node_t* it, lxb_dom_node_t* last, DrawCtx ctx[static 1]
             || (err=draw_ctx_buf_append_lit__(ctx, "\n"))
         ) {
             buffn(char, clean)(&buf);
-            arlfn(ModsAt, clean)(&mods);
+            arlfn(ModAt, clean)(&mods);
             return err;
         }
 
     }
     buffn(char, clean)(&buf);
-    arlfn(ModsAt, clean)(&mods);
+    arlfn(ModAt, clean)(&mods);
     return Ok;
 }
 

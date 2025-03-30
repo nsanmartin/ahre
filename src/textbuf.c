@@ -118,7 +118,7 @@ _insert_missing_newlines_(TextBuf tb[static 1], size_t maxlen, ArlOf(size_t) ins
 void textbuf_cleanup(TextBuf b[static 1]) {
     buffn(char, clean)(&b->buf);
     arlfn(size_t, clean)(&b->eols);
-    arlfn(ModsAt, clean)(textbuf_mods(b));
+    arlfn(ModAt, clean)(textbuf_mods(b));
     *b = (TextBuf){0};
 }
 
@@ -126,7 +126,7 @@ void textbuf_reset(TextBuf b[static 1]) {
     buffn(char, reset)(&b->buf);
     //TODO: use reset once avalable
     arlfn(size_t, clean)(&b->eols);
-    arlfn(ModsAt, clean)(textbuf_mods(b));
+    arlfn(ModAt, clean)(textbuf_mods(b));
     b->current_offset = 0;
 }
 
@@ -182,13 +182,13 @@ Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) {
 }
 
 
-static ModsAt* _skip_mods_at_the_left_(ModsAt it[static 1], ModsAt end[static 1], size_t offset) {
+static ModAt* _skip_mods_at_the_left_(ModAt it[static 1], ModAt end[static 1], size_t offset) {
     for ( ; it < end && it->offset < offset ; ++it)
         ;
     return it;
 }
 
-static ModsAt* _move_mods_(ModsAt it[static 1], ModsAt end[static 1], size_t n, size_t max_off) {
+static ModAt* _move_mods_(ModAt it[static 1], ModAt end[static 1], size_t n, size_t max_off) {
     for ( ;; ++it) {
         if  (it == end || it->offset >= max_off) break;
         it->offset += n;
@@ -200,8 +200,8 @@ Err textbuf_fit_lines(TextBuf tb[static 1], size_t maxlen) {
     if (!textbuf_len(tb)) return Ok;
     ArlOf(size_t) insertions = (ArlOf(size_t)){0};
     try( _insert_missing_newlines_(tb, maxlen, &insertions));
-    ModsAt* mod = arlfn(ModsAt,begin)(textbuf_mods(tb));
-    ModsAt* mend = arlfn(ModsAt,end)(textbuf_mods(tb));
+    ModAt* mod = arlfn(ModAt,begin)(textbuf_mods(tb));
+    ModAt* mend = arlfn(ModAt,end)(textbuf_mods(tb));
     const size_t* ibegin = arlfn(size_t,begin)(&insertions);
 
     if (insertions.len == 1 && len__(textbuf_mods(tb))) {

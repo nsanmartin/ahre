@@ -78,7 +78,7 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
             ok_then(err, draw_ctx_buf_append_mem_mods(ctx, (char*)content.items, content.len, &mods));
         
         str_clean(&buf);
-        arlfn(ModsAt, clean)(&mods);
+        arlfn(ModAt, clean)(&mods);
 
         ok_then(err, _hypertext_id_close_(ctx, draw_ctx_reset_color, anchor_close_str));
         if (right_newlines) ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));

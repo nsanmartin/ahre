@@ -179,7 +179,7 @@ static inline Err lxb_mk_title_or_url(HtmlDoc d[static 1], char* url, Str title[
 
 static inline void textmod_trim_left(TextBufMods mods[static 1], size_t n) {
     if (n && len__(mods)) {
-        foreach__(ModsAt,it,mods) {
+        foreach__(ModAt,it,mods) {
             if (it->offset < n) it->offset = 0;
             else it->offset -= n;
         }

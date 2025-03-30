@@ -254,7 +254,7 @@ static Err draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         //}
     }
     buffn(char, clean)(&buf);
-    arlfn(ModsAt, clean)(&mods);
+    arlfn(ModAt, clean)(&mods);
     return Ok;
 }
 
@@ -298,7 +298,7 @@ draw_tag_li(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     }
 
     buffn(char, clean)(&buf);
-    arlfn(ModsAt, clean)(&mods);
+    arlfn(ModAt, clean)(&mods);
     return Ok;
 }
 
@@ -326,7 +326,7 @@ static Err draw_tag_h(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
     if (content.len) try( draw_ctx_buf_append_mem_mods(ctx, (char*)content.items, content.len, &mods));
     buffn(char, clean)(&buf);
-    arlfn(ModsAt, clean)(&mods);
+    arlfn(ModAt, clean)(&mods);
     try( _hypertext_close_(ctx, draw_ctx_reset_color, newline_str));
 
     return Ok;

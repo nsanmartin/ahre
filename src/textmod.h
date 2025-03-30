@@ -19,25 +19,25 @@ typedef enum {
 
 #define T TextMod
 #include <arl.h>
-typedef struct { size_t offset; TextMod tmod; } ModsAt;
+typedef struct { size_t offset; TextMod tmod; } ModAt;
 
-#define T ModsAt
-//static inline void mods_at_clean(ModsAt* ma) { arlfn(TextMod,clean)(&ma->mods); }
+#define T ModAt
+//static inline void mods_at_clean(ModAt* ma) { arlfn(TextMod,clean)(&ma->mods); }
 //#define TClean mods_at_clean
 #include <arl.h>
-typedef ArlOf(ModsAt) TextBufMods;
+typedef ArlOf(ModAt) TextBufMods;
 
-static inline ModsAt*
-mods_at_find_greater_or_eq(TextBufMods* mods, ModsAt it[static 1], size_t offset) {
+static inline ModAt*
+mods_at_find_greater_or_eq(TextBufMods* mods, ModAt it[static 1], size_t offset) {
     //TODO: use binsearch
-    for (; it < arlfn(ModsAt,end)(mods) ; ++it) {
+    for (; it < arlfn(ModAt,end)(mods) ; ++it) {
         if (offset <= it->offset) return it;
     }
-    return arlfn(ModsAt,end)(mods);
+    return arlfn(ModAt,end)(mods);
 }
 
 static inline Err textmod_append(TextBufMods* mods, size_t offset, TextMod m) {
-    if (!arlfn(ModsAt, append)(mods, &(ModsAt){.offset=offset,.tmod=m})) return "error: arl failure";
+    if (!arlfn(ModAt, append)(mods, &(ModAt){.offset=offset,.tmod=m})) return "error: arl failure";
     return Ok;
 }
 
@@ -46,12 +46,12 @@ static inline EscCode textmod_to_esc_code(TextMod tm) { return (EscCode)tm; }
 
 static inline Err
 textmod_concatenate(TextBufMods base[static 1], size_t offset, TextBufMods consumed[static 1]) {
-    for (ModsAt* it = arlfn(ModsAt, begin)(consumed)
-        ; it != arlfn(ModsAt, end)(consumed)
+    for (ModAt* it = arlfn(ModAt, begin)(consumed)
+        ; it != arlfn(ModAt, end)(consumed)
         ; ++it
     ) {
-        ModsAt displaced = (ModsAt){.offset=it->offset + offset, .tmod=it->tmod};
-        ModsAt* appended = arlfn(ModsAt,append)(base, &displaced);
+        ModAt displaced = (ModAt){.offset=it->offset + offset, .tmod=it->tmod};
+        ModAt* appended = arlfn(ModAt,append)(base, &displaced);
         if (!appended) return "error: arl failure"; //TODO: clean space on error
 
     }
