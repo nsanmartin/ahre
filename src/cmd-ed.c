@@ -17,16 +17,17 @@
 //TODO: apply mods to text
 static inline Err ed_print_n(Session s[static 1], TextBuf textbuf[static 1], Range range[static 1]) {
     try(validate_range_for_buffer(textbuf, range));
+    SessionMemWriter w = (SessionMemWriter){.s=s, .write=session_writer_write_std};
     StrView line;
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
         try( session_write_unsigned_std(s, linum));
-        try( session_write_std_lit__(s,"\t"));
-        if (line.len) try( session_write_std(s, (char*)line.items, line.len));
-        else try( session_write_std_lit__(s,"\n"));
+        try( w.write(&w, "\t", 1));
+        if (line.len) try( w.write(&w, (char*)line.items, line.len));
+        else try( w.write(&w, "\n", 1));
     }
 
-    if (textbuf_line_count(textbuf) == range->end) try( session_write_std_lit__(s,"\n"));
+    if (textbuf_line_count(textbuf) == range->end) try( w.write(&w, "\n", 1));
     return Ok;
 }
 
@@ -53,13 +54,14 @@ StrView parse_pattern(const char* tk) {
 Err dbg_print_all_lines_nums(Session s[static 1], TextBuf textbuf[static 1]) {
     size_t lnum = 1;
     StrView line;
+    SessionMemWriter w = (SessionMemWriter){.s=s, .write=session_writer_write_std};
     for (;textbuf_get_line(textbuf, lnum, &line); ++lnum) {
         try( session_write_unsigned_std(s, lnum));
-        try( session_write_std_lit__(s,"\t`"));
+        try( w.write(&w,"\t`", 2));
         if (line.len > 1) {
-            try( session_write_std(s, (char*)line.items, line.len-1));
+            try( w.write(&w, (char*)line.items, line.len-1));
         } 
-        try( session_write_std_lit__(s,"'\n"));
+        try( w.write(&w,"'\n", 2));
     }
     return Ok;
 }

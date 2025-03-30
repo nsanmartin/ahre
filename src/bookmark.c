@@ -32,15 +32,15 @@ Err cmd_bookmarks(Session session[static 1], const char* url) {
     ArlOf(BufOf(char)) list = (ArlOf(BufOf(char))){0};
     lxb_dom_node_t* body;
     try(bookmark_sections_body(htmldoc, &body));
+    SessionMemWriter w = (SessionMemWriter){.s=session, .write=session_writer_write_msg};
     Err err = Ok;
     if (!*url) {
         err = bookmark_sections(body, &list);
         if (!err) {
             BufOf(char)* it = arlfn(BufOf(char), begin)(&list);
             for (; it != arlfn(BufOf(char), end)(&list); ++it) {
-                //TODO: msg?
-                try( session_write_std(session, items__(it), len__(it)));
-                try( session_write_std_lit__(session, "\n"));
+                try( w.write(&w, items__(it), len__(it)));
+                try( w.write(&w, "\n", 1));
             }
         }
         arlfn(BufOf(char),clean)(&list);
@@ -53,8 +53,8 @@ Err cmd_bookmarks(Session session[static 1], const char* url) {
             size_t len;
             try( lexbor_node_get_text(section->first_child, &data, &len));
             if (len) {
-                try(session_write_std(session, (char*)data, len));
-                try(session_write_std_lit__(session, "\n"));
+                try(w.write(&w, (char*)data, len));
+                try(w.write(&w, "\n", 1));
             }
         } else err = "invalid section in bookmark";
     }
