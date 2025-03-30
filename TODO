@@ -24,6 +24,7 @@
 [ ] implement vi_process_line method that does not print (vi mode only prints on show)
 [ ] fix password in vi mode
 [ ] on startupt if failed to ope nurl essage is lost
+[ ] use SessionMemWriter consistently (session_write_* -> session_writer_write_*)
 
 # WILL NOT DO
 [X] run test in github ci workflow (currently it does not find liblexbos.so.2): moving away from github
