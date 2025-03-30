@@ -15,9 +15,9 @@ static Err _vi_write_std_to_screen_( Session* s, const char* mem, size_t len) {
 
 #define _vi_write_std_to_screen_lit__(Ses, Lit) _vi_write_std_to_screen_(Ses, Lit, lit_len__(Lit))
 
-static inline Err _vi_write_unsigned_std_screen_(Session s[static 1], uintmax_t ui) {
-    return ui_write_unsigned(session_conf_uout(session_conf(s))->write_std, ui, s);
-}
+// static inline Err _vi_write_unsigned_std_screen_(Session s[static 1], uintmax_t ui) {
+//     return ui_write_unsigned(session_conf_uout(session_conf(s))->write_std, ui, s);
+// }
 
 Err _vi_write_std_(const char* mem, size_t len, Session* s) {
     if (!s) return "error: no session";
