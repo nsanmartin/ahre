@@ -54,34 +54,27 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         if (!arlfn(LxbNodePtr,append)(anchors, &node)) 
             return "error: lip set";
 
-        BufOf(char) buf = (BufOf(char)){0};
-        TextBufMods mods = (TextBufMods){0};
-        draw_ctx_swap_buf_mods(ctx, &buf, &mods);
+        DrawSubCtx sub = (DrawSubCtx){0};
+        draw_ctx_swap_sub(ctx, &sub);
 
         if (draw_ctx_color(ctx)) try( draw_ctx_esc_code_push(ctx, esc_code_blue));
         try( draw_list(node->first_child, node->last_child, ctx));
 
-        draw_ctx_swap_buf_mods(ctx, &buf, &mods);
+        draw_ctx_swap_sub(ctx, &sub);
 
-        StrView content = strview_from_mem(buf.items, buf.len);
-        size_t left_newlines = _strview_trim_left_count_newlines_(&content);
-        textmod_trim_left(&mods, buf.len-content.len);
-        bool right_newlines = _strview_trim_right_count_newlines_(&content);
+        draw_subctx_trim_left(&sub);
+        draw_subctx_trim_right(&sub);
 
         Err err = Ok;
         if (_prev_is_separable_(node)) err = draw_ctx_buf_append_lit__(ctx, " ");
-        else if (left_newlines) err = draw_ctx_buf_append_lit__(ctx, "\n");
+        else if (sub.left_newlines) err = draw_ctx_buf_append_lit__(ctx, "\n");
         ok_then(err, _hypertext_id_open_(
                 ctx, draw_ctx_textmod_blue, anchor_open_str, &anchor_num,anchor_sep_str ));
 
-        if (content.len)
-            ok_then(err, draw_ctx_buf_append_mem_mods(ctx, (char*)content.items, content.len, &mods));
-        
-        str_clean(&buf);
-        arlfn(ModAt, clean)(&mods);
-
+        if (!err && sub.buf.len) ok_then(err, draw_ctx_append_subctx(ctx, &sub));
+        draw_subctx_clean(&sub);
         ok_then(err, _hypertext_id_close_(ctx, draw_ctx_reset_color, anchor_close_str));
-        if (right_newlines) ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
+        if (sub.right_newlines) ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
         try(err);
 
     } else try( draw_list(node->first_child, node->last_child, ctx));//TODO: do this?

@@ -14,14 +14,57 @@
 #define DRAW_CTX_FLAG_MONOCHROME 0x1u
 #define DRAW_CTX_FLAG_PRE   0x2u
 
+static size_t _strview_trim_left_count_newlines_(StrView s[static 1]) {
+    size_t newlines = 0;
+    while(s->len && isspace(*(items__(s)))) {
+        newlines += *(items__(s)) == '\n';
+        ++s->items;
+        --s->len;
+    }
+    return newlines;
+}
+
+static size_t _strview_trim_right_count_newlines_(StrView s[static 1]) {
+    size_t newlines = 0;
+    while(s->len && isspace(items__(s)[len__(s)-1])) {
+        newlines += items__(s)[s->len-1] == '\n';
+        --s->len;
+    }
+    return newlines;
+}
+
+typedef struct {
+    BufOf(char) buf;
+    size_t left_trim;
+    size_t left_newlines;
+    size_t right_newlines;
+    TextBufMods mods;
+} DrawSubCtx;
+
+static inline void draw_subctx_clean(DrawSubCtx subctx[static 1]) {
+    buffn(char, clean)(&subctx->buf);
+    arlfn(ModAt, clean)(&subctx->mods);
+}
+
+static inline void draw_subctx_trim_left(DrawSubCtx sub[static 1]) {
+    StrView content = strview_from_mem(sub->buf.items, sub->buf.len);
+    sub->left_newlines = _strview_trim_left_count_newlines_(&content);
+    sub->left_trim = sub->buf.len-content.len;
+    textmod_trim_left(&sub->mods, sub->left_trim);
+}
+
+static inline void draw_subctx_trim_right(DrawSubCtx sub[static 1]) {
+    StrView content = strview_from_mem(sub->buf.items, sub->buf.len);
+    sub->right_newlines = _strview_trim_right_count_newlines_(&content);
+    sub->buf.len = content.len;
+}
 
 typedef struct { 
     HtmlDoc* htmldoc;
-    BufOf(char) buf;
-    TextBufMods mods;
     ArlOf(EscCode) esc_code_stack;
     unsigned flags;
     SessionWriteFn logfn;
+    DrawSubCtx sub;
 } DrawCtx;
 
 typedef Err (*ImpureDrawProcedure)(DrawCtx ctx[static 1]);
@@ -51,23 +94,15 @@ static inline void draw_ctx_pre_set(DrawCtx ctx[static 1], bool value) {
     else ctx->flags &= ~DRAW_CTX_FLAG_PRE;
 }
 
-static inline BufOf(char)* draw_ctx_buf(DrawCtx ctx[static 1]) { return &ctx->buf; }
+static inline BufOf(char)* draw_ctx_buf(DrawCtx ctx[static 1]) { return &ctx->sub.buf; }
 
-static inline TextBufMods* draw_ctx_mods(DrawCtx ctx[static 1]) { return &ctx->mods; }
+static inline TextBufMods* draw_ctx_mods(DrawCtx ctx[static 1]) { return &ctx->sub.mods; }
 
 
-static inline void draw_ctx_swap_buf_mods(
-    DrawCtx ctx[static 1],
-    BufOf(char) buf[static 1],
-    TextBufMods mods[static 1]
-) {
-    BufOf(char) tmpbuf = *buf;
-    *buf = *draw_ctx_buf(ctx);
-    ctx->buf = tmpbuf;
-
-    TextBufMods tmpmods = *mods;
-    *mods = *draw_ctx_mods(ctx);
-    ctx->mods = tmpmods;
+static inline void draw_ctx_swap_sub(DrawCtx ctx[static 1], DrawSubCtx subctx[static 1]) {
+    DrawSubCtx tmp = *subctx;
+    *subctx = ctx->sub;
+    ctx->sub = tmp;
 }
 
         
@@ -105,14 +140,25 @@ draw_ctx_buf_commit(DrawCtx ctx[static 1]) {
         try( textbuf_append_line_indexes(tb));
         try( textbuf_append_null(tb));
     }
-
-    //*draw_ctx_mods(ctx) = (TextBufMods){0};
     return Ok;
 }
 
 static inline bool draw_ctx_buf_last_isgraph(DrawCtx ctx[static 1]) {
     Str* buf = draw_ctx_buf(ctx);
     return len__(buf) && items__(buf)[len__(buf) - 1];
+}
+
+static inline Err
+draw_ctx_append_subctx(DrawCtx ctx[static 1], DrawSubCtx sub[static 1]) {
+    if (len__(&sub->mods))
+        try( textmod_concatenate(draw_ctx_mods(ctx), len__(draw_ctx_buf(ctx)), &sub->mods));
+    return buffn(char, append)(
+        draw_ctx_buf(ctx),
+        sub->buf.items + sub->left_trim,
+        sub->buf.len - sub->left_trim
+    )
+    ? Ok
+    : "error: failed to append to buf (draw ctx)";
 }
 
 static inline Err
@@ -127,7 +173,8 @@ static inline Err draw_ctx_buf_append(DrawCtx ctx[static 1], StrView s) {
     return draw_ctx_buf_append_mem_mods(ctx, (char*)s.items, s.len, NULL);
 }
 
-#define draw_ctx_buf_append_lit__(Ctx, Str) draw_ctx_buf_append_mem_mods(Ctx, Str, sizeof(Str)-1, NULL)
+#define draw_ctx_buf_append_lit__(Ctx, Str) \
+    draw_ctx_buf_append_mem_mods(Ctx, Str, sizeof(Str)-1, NULL)
 
 static inline void draw_ctx_buf_reset(DrawCtx ctx[static 1]) {
     buffn(char, reset)(draw_ctx_buf(ctx));
@@ -145,7 +192,7 @@ draw_ctx_init(DrawCtx ctx[static 1], HtmlDoc htmldoc[static 1], Session s[static
 }
 
 static inline void draw_ctx_cleanup(DrawCtx ctx[static 1]) {
-    buffn(char, clean)(&ctx->buf);
+    buffn(char, clean)(&ctx->sub.buf);
     arlfn(EscCode, clean)(draw_ctx_esc_code_stack(ctx));
 }
 
@@ -168,32 +215,20 @@ draw_list( lxb_dom_node_t* it, lxb_dom_node_t* last, DrawCtx ctx[static 1]) {
 static inline Err
 draw_list_block( lxb_dom_node_t* it, lxb_dom_node_t* last, DrawCtx ctx[static 1]) {
     Err err;
-    BufOf(char) buf = (BufOf(char)){0};
-    TextBufMods mods = (TextBufMods){0};
-    draw_ctx_swap_buf_mods(ctx, &buf, &mods);
+    DrawSubCtx sub = (DrawSubCtx){0};
+    draw_ctx_swap_sub(ctx, &sub);
 
     err = draw_list(it, last, ctx);
 
-    draw_ctx_swap_buf_mods(ctx, &buf, &mods);
+    draw_ctx_swap_sub(ctx, &sub);
 
-    if (err) {
-        buffn(char, clean)(&buf);
-        return err;
-    }
-    if (buf.len) {
-        //TODO-:ok_then
-        if (   (err=draw_ctx_buf_append_lit__(ctx, "\n"))
-            || (err=draw_ctx_buf_append_mem_mods(ctx, (char*)buf.items, buf.len, &mods))
-            || (err=draw_ctx_buf_append_lit__(ctx, "\n"))
-        ) {
-            buffn(char, clean)(&buf);
-            arlfn(ModAt, clean)(&mods);
-            return err;
-        }
+    if (!err && sub.buf.len) {
+        ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
+        ok_then(err, draw_ctx_append_subctx(ctx, &sub));
+        ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
 
     }
-    buffn(char, clean)(&buf);
-    arlfn(ModAt, clean)(&mods);
+    draw_subctx_clean(&sub);
     return Ok;
 }
 

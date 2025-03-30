@@ -23,25 +23,6 @@ Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[static 1]);
     (arlfn(LxbNodePtr,append)(ArrayList, (NodePtr)) ? Ok : "error: lip set")
 
 
-size_t _strview_trim_left_count_newlines_(StrView s[static 1]) {
-    size_t newlines = 0;
-    while(s->len && isspace(*(items__(s)))) {
-        newlines += *(items__(s)) == '\n';
-        ++s->items;
-        --s->len;
-    }
-    return newlines;
-}
-
-size_t _strview_trim_right_count_newlines_(StrView s[static 1]) {
-    size_t newlines = 0;
-    while(s->len && isspace(items__(s)[len__(s)-1])) {
-        newlines += items__(s)[s->len-1] == '\n';
-        --s->len;
-    }
-    return newlines;
-}
-
 Err _hypertext_id_open_(
     DrawCtx ctx[static 1],
     ImpureDrawProcedure visual_effect,
@@ -232,19 +213,17 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
 
 static Err draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
-    BufOf(char) buf = (BufOf(char)){0};
-    TextBufMods mods = (TextBufMods){0};
-    draw_ctx_swap_buf_mods(ctx, &buf, &mods);
+    DrawSubCtx sub = (DrawSubCtx){0};
+    draw_ctx_swap_sub(ctx, &sub);
 
     Err err = draw_list(node->first_child, node->last_child, ctx);
 
-    draw_ctx_swap_buf_mods(ctx, &buf, &mods);
+    draw_ctx_swap_sub(ctx, &sub);
 
-    if (!err) {
-        if (buf.len) {
-            if (len__(draw_ctx_buf(ctx))) ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
-            ok_then(err, draw_ctx_buf_append_mem_mods(ctx, (char*)buf.items, buf.len, &mods));
-        }
+    if (sub.buf.len) {
+        if (len__(draw_ctx_buf(ctx))) ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
+        ok_then(err, draw_ctx_append_subctx(ctx, &sub));
+    }
         
         //StrView view = strview_from_mem_trim(buf.items, buf.len);
         //if (view.len) {
@@ -252,9 +231,7 @@ static Err draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         //    ok_then(err, draw_ctx_buf_append_mem(ctx, (char*)view.items, view.len));
         //    ///ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
         //}
-    }
-    buffn(char, clean)(&buf);
-    arlfn(ModAt, clean)(&mods);
+    draw_subctx_clean(&sub);
     return Ok;
 }
 
@@ -278,57 +255,44 @@ draw_tag_ul(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
 static Err
 draw_tag_li(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
-    BufOf(char) buf = (BufOf(char)){0};
-    TextBufMods mods = (TextBufMods){0};
-    draw_ctx_swap_buf_mods(ctx, &buf, &mods);
+    DrawSubCtx sub = (DrawSubCtx){0};
+    draw_ctx_swap_sub(ctx, &sub);
 
     Err err = draw_list(node->first_child, node->last_child, ctx);
 
-    draw_ctx_swap_buf_mods(ctx, &buf, &mods);
+    draw_ctx_swap_sub(ctx, &sub);
 
-    if (!err && buf.len) {
+    if (!err && sub.buf.len) {
         //TODO^: trim&rebase offset
         //StrView s = strview_from_mem_trim(buf.items, buf.len);
-        if (buf.len) {
             ///?if (buf.items < s.items) err = draw_ctx_buf_append_lit__(ctx, "\n");
-            ok_then( err, draw_ctx_buf_append_lit__(ctx, " * "));
-            ok_then( err, draw_ctx_buf_append_mem_mods(ctx, (char*)buf.items, buf.len, &mods));
-            if (buf.items[buf.len-1] != '\n') ok_then( err, draw_ctx_buf_append_lit__(ctx, "\n"));
-        }
+        ok_then(err, draw_ctx_buf_append_lit__(ctx, " * "));
+        ok_then(err, draw_ctx_append_subctx(ctx, &sub));
+        if (!err && sub.buf.items[sub.buf.len-1] != '\n')
+            ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
     }
 
-    buffn(char, clean)(&buf);
-    arlfn(ModAt, clean)(&mods);
+    draw_subctx_clean(&sub);
     return Ok;
 }
 
 
 static Err draw_tag_h(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
-    BufOf(char) buf = (BufOf(char)){0};
-    TextBufMods mods = (TextBufMods){0};
-    draw_ctx_swap_buf_mods(ctx, &buf, &mods);
+    DrawSubCtx sub = (DrawSubCtx){0};
+    draw_ctx_swap_sub(ctx, &sub);
 
     try( draw_list_block(node->first_child, node->last_child, ctx));
 
-    draw_ctx_swap_buf_mods(ctx, &buf, &mods);
+    draw_ctx_swap_sub(ctx, &sub);
 
-    StrView content = strview_from_mem(buf.items, buf.len);
-    _strview_trim_left_count_newlines_(&content);
-    textmod_trim_left(&mods, buf.len-content.len);
-    _strview_trim_right_count_newlines_(&content);
+    draw_subctx_trim_left(&sub);
+    draw_subctx_trim_right(&sub);
 
+    Err err = _hypertext_open_(ctx, draw_ctx_push_bold, h_tag_open_str);
+    if (!err && sub.buf.len) ok_then(err, draw_ctx_append_subctx(ctx, &sub));
+    ok_then(err, _hypertext_close_(ctx, draw_ctx_reset_color, newline_str));
 
-    Err err;
-    if ((err=_hypertext_open_(ctx, draw_ctx_push_bold, h_tag_open_str))) {
-        buffn(char, clean)(&buf);
-        return err;
-    }
-
-    if (content.len) try( draw_ctx_buf_append_mem_mods(ctx, (char*)content.items, content.len, &mods));
-    buffn(char, clean)(&buf);
-    arlfn(ModAt, clean)(&mods);
-    try( _hypertext_close_(ctx, draw_ctx_reset_color, newline_str));
-
+    draw_subctx_clean(&sub);
     return Ok;
 }
 
