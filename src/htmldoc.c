@@ -30,6 +30,7 @@ Err _strview_trim_left_count_newlines_(StrView s[static 1], size_t* out) {
         ++s->items;
         --s->len;
     }
+    if (out) *out = newlines;
     return Ok;
 }
 
