@@ -38,6 +38,7 @@ Err cmd_bookmarks(Session session[static 1], const char* url) {
         if (!err) {
             BufOf(char)* it = arlfn(BufOf(char), begin)(&list);
             for (; it != arlfn(BufOf(char), end)(&list); ++it) {
+                //TODO: msg?
                 try( session_write_std(session, items__(it), len__(it)));
                 try( session_write_std_lit__(session, "\n"));
             }

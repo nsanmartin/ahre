@@ -12,10 +12,9 @@
 
 #define MsgLastLine EscCodePurple "%{- last line -}%" EscCodeReset
 
-    
 
 
-//TODO: reset color during number printing (and re-establish it after).
+//TODO: apply mods to text
 static inline Err ed_print_n(Session s[static 1], TextBuf textbuf[static 1], Range range[static 1]) {
     try(validate_range_for_buffer(textbuf, range));
     StrView line;
@@ -141,15 +140,8 @@ Err ed_go(HtmlDoc htmldoc[static 1],  const char* rest, Range range[static 1]) {
 
 
 Err ed_print(Session s[static 1], TextBuf textbuf[static 1], Range range[static 1]) {
-    try(validate_range_for_buffer(textbuf, range));
-    StrView line;
-    for (size_t linum = range->beg; linum <= range->end; ++linum) {
-        if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
-        if (line.len) {
-            try( session_write_std(s, (char*)line.items, line.len));
-        } else try( session_write_std_lit__(s, "\n"));
-    }
-    return Ok;
+    SessionMemWriter writer = (SessionMemWriter){.s=s, .write=session_writer_write_std};
+    return session_write_range_mod(&writer, textbuf, range);
 }
 
 

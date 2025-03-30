@@ -25,6 +25,7 @@
 [ ] define ModTextBuff for TextBuffer with colors and line fit
 [ ] fix password in vi mode
 [ ] fix color in line mode
+[ ] on startupt if failed to ope nurl essage is lost
 
 # WILL NOT DO
 [X] run test in github ci workflow (currently it does not find liblexbos.so.2): moving away from github

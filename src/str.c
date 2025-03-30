@@ -57,6 +57,7 @@ const char* csubstr_match(const char* s, const char* cmd, size_t len) {
 		if (*s != *cmd) { return 0x0; }
 	}
     if (len) { 
+        //TODO: use msg
         printf("...%s?\n", cmd);
         return 0x0;
     }

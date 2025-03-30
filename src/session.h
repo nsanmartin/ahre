@@ -13,6 +13,11 @@ typedef struct Session Session;
 
 typedef Err (*UserLineCallback)(Session* session, const char*);
 
+typedef struct SessionMemWriter SessionMemWriter;
+typedef struct SessionMemWriter {
+    Session* s;
+    Err (*write)(SessionMemWriter* self, const char*, size_t);
+} SessionMemWriter;
 
 typedef struct Session {
     UrlClient* url_client;
@@ -139,6 +144,12 @@ static inline Err session_write_msg(Session s[static 1], char* msg, size_t len) 
     return uo->write_msg(msg, len, s);
 }
 
+static inline Err
+session_writer_write_std(SessionMemWriter w[static 1], const char* msg, size_t len) {
+    UserOutput* uo = session_uout(w->s);
+    return uo->write_std(msg, len, w->s);
+}
+
 static inline Err session_write_std(Session s[static 1], char* msg, size_t len) {
     UserOutput* uo = session_uout(s);
     return uo->write_std(msg, len, s);
@@ -177,4 +188,8 @@ tablist_init(
 ) {
     return tablist_append_tree_from_url(f, url, url_client, s);
 }
+
+Err session_write_range_mod(
+    SessionMemWriter writer[static 1], TextBuf textbuf[static 1], Range range[static 1]
+);
 #endif

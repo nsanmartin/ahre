@@ -5,10 +5,10 @@
 #include "escape_codes.h"
 
 
-static Err _vi_write_std_to_screen_( Session* s, const char* mem, size_t len) {
-    if (!s) return "error: no session";
+static Err
+_vi_session_write_std_to_screen_(SessionMemWriter w[static 1], const char* mem, size_t len) {
     HtmlDoc* doc;
-    try( session_current_doc(s, &doc));
+    try( session_current_doc(w->s, &doc));
     Str* screen = htmldoc_screen(doc);
     return str_append(screen, (char*)mem, len);
 }
@@ -26,53 +26,10 @@ Err _vi_write_std_(const char* mem, size_t len, Session* s) {
     return Ok;
 }
 
-static size_t
-_next_text_end_(TextBufMods mods[static 1], ModAt it[static 1], size_t off, size_t line_end) {
-    return (it < arlfn(ModAt,end)(mods)
-               && off <= it->offset
-               && it->offset < line_end)
-        ? it->offset
-        : line_end;
-}
 
 static Err _vi_print_range_std_mod_(TextBuf textbuf[static 1], Range range[static 1], Session* s) {
-    try(validate_range_for_buffer(textbuf, range));
-    StrView line;
-    ModAt* it = arlfn(ModAt,begin)(textbuf_mods(textbuf));
-    for (size_t linum = range->beg; linum <= range->end; ++linum) {
-        if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
-        if (!line.len || !line.items || !*line.items) continue;
-
-        size_t line_off_beg = line.items - textbuf_items(textbuf);
-        size_t line_off_end = line_off_beg + line.len;
-        it = mods_at_find_greater_or_eq(textbuf_mods(textbuf), it, line_off_beg);
-
-        if (it >= arlfn(ModAt,end)(textbuf_mods(textbuf)) || line_off_end < it->offset) {
-            try( _vi_write_std_to_screen_(s, (char*)line.items, line.len));
-            continue;
-        }
-
-        for (size_t off = line_off_beg; off < line_off_end;) {
-            size_t next = _next_text_end_(textbuf_mods(textbuf), it, off, line_off_end);
-
-            if (off < next)
-                try( _vi_write_std_to_screen_(s, textbuf_items(textbuf) + off, next - off));
-
-            off = next;
-            while (it < arlfn(ModAt,end)(textbuf_mods(textbuf)) && next == it->offset) {
-                StrView code_str;
-                try( esc_code_to_str(textmod_to_esc_code(it->tmod), &code_str));
-                try( _vi_write_std_to_screen_(s, (char*)code_str.items, code_str.len));
-                ++it;
-            }
-        }
-    }
-
-    if (!session_monochrome(s))
-        try( _vi_write_std_to_screen_lit__(s, EscCodeReset));
-    if (line.len && line.items[line.len-1] != '\n') 
-        try( _vi_write_std_to_screen_lit__(s, "\n"));
-    return Ok;
+    SessionMemWriter writer = (SessionMemWriter){.s=s, .write=_vi_session_write_std_to_screen_};
+    return session_write_range_mod(&writer, textbuf, range);
 }
 
 
