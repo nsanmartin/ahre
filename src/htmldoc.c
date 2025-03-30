@@ -23,15 +23,14 @@ Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[static 1]);
     (arlfn(LxbNodePtr,append)(ArrayList, (NodePtr)) ? Ok : "error: lip set")
 
 
-Err _strview_trim_left_count_newlines_(StrView s[static 1], size_t* out) {
+size_t _strview_trim_left_count_newlines_(StrView s[static 1]) {
     size_t newlines = 0;
     while(s->len && isspace(*(items__(s)))) {
         newlines += *(items__(s)) == '\n';
         ++s->items;
         --s->len;
     }
-    if (out) *out = newlines;
-    return Ok;
+    return newlines;
 }
 
 size_t _strview_trim_right_count_newlines_(StrView s[static 1]) {
@@ -232,8 +231,7 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 }
 
 
-static Err
-draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+static Err draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     BufOf(char) buf = (BufOf(char)){0};
     TextBufMods mods = (TextBufMods){0};
     draw_ctx_swap_buf_mods(ctx, &buf, &mods);
@@ -243,7 +241,6 @@ draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     draw_ctx_swap_buf_mods(ctx, &buf, &mods);
 
     if (!err) {
-        //TODO^: trim and rebase offset
         if (buf.len) {
             if (len__(draw_ctx_buf(ctx))) ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
             ok_then(err, draw_ctx_buf_append_mem_mods(ctx, (char*)buf.items, buf.len, &mods));
@@ -316,10 +313,9 @@ static Err draw_tag_h(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     draw_ctx_swap_buf_mods(ctx, &buf, &mods);
 
     StrView content = strview_from_mem(buf.items, buf.len);
-    size_t lines_trimmed;
-    try(_strview_trim_left_count_newlines_(&content, &lines_trimmed));
+    _strview_trim_left_count_newlines_(&content);
+    textmod_trim_left(&mods, buf.len-content.len);
     _strview_trim_right_count_newlines_(&content);
-    textmod_trim_left(&mods, lines_trimmed);
 
 
     Err err;
