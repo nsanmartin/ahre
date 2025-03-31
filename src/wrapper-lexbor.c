@@ -270,3 +270,4 @@ Err dbg_print_title(lxb_dom_node_t* title) {
     fwrite("\n", 1, 1, stdout);
     return Ok;
 }
+

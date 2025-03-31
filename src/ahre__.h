@@ -1,6 +1,8 @@
 #ifndef AHRE_AHRE___H__
 #define AHRE_AHRE___H__
 
+#include "error.h"
+
 Err htmldoc_init_fetch_draw_from_curlu(
     HtmlDoc d[static 1],
     CURLU* cu,

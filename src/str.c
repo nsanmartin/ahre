@@ -147,3 +147,6 @@ StrView str_split_line(StrView text[static 1]) {
     return line;
 }
 
+bool substr_match_all(const char* s, size_t len, const char* cmd) {
+    return (s=csubstr_match(s, cmd, len)) && !*cstr_skip_space(s);
+}

@@ -95,6 +95,10 @@ htmldoc_url(HtmlDoc d[static 1]) { return &d->url; }
 static inline HttpMethod
 htmldoc_method(HtmlDoc d[static 1]) { return d->method; }
 
+static inline bool htmldoc_is_valid(HtmlDoc htmldoc[static 1]) {
+    ////TODO: remove, not needed since URLU
+    return htmldoc && htmldoc->lxbdoc && htmldoc->lxbdoc->body;
+}
 
 /* ctors */
 Err htmldoc_init(HtmlDoc d[static 1], const char* url);

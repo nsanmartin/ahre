@@ -1,4 +1,3 @@
-#include "cmd-ed.h"
 #include "ranges.h"
 #include "session.h"
 #include "textbuf.h"

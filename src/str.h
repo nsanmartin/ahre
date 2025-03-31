@@ -52,6 +52,7 @@ const char* cstr_next_space(const char* l);
 const char* csubstr_match(const char* s, const char* cmd, size_t len);
 const char* csubword_match(const char* s, const char* cmd, size_t len);
 const char* cstr_trim_space(char* s);
+bool substr_match_all(const char* s, size_t len, const char* cmd);
 
 static inline bool cstr_starts_with(const char* s, const char* t) {
     return s && t && strncmp(s, t, strlen(t)) == 0;

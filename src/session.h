@@ -192,4 +192,5 @@ tablist_init(
 Err session_write_range_mod(
     SessionMemWriter writer[static 1], TextBuf textbuf[static 1], Range range[static 1]
 );
+
 #endif
