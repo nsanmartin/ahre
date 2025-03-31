@@ -98,7 +98,7 @@ Err cmd_tabs(Session session[static 1], const char* line) {
 }
 
 /* htmldoc commands */
-Err doc_eval(HtmlDoc d[static 1], const char* line, Session session[static 1]) {
+Err cmd_doc(HtmlDoc d[static 1], const char* line, Session session[static 1]) {
     line = cstr_skip_space(line);
     switch (*line) {
         case '?': return htmldoc_print_info(session, d);
@@ -247,7 +247,7 @@ static Err shorcut_zz(Session session[static 1], const char* rest) {
     return cmd_textbuf_eval(session, tb, cmd, &r);
 }
 
-Err cmd_doc(Session session[static 1], const char* line) {
+Err cmd_misc(Session session[static 1], const char* line) {
     const char* rest = 0x0;
     line = cstr_skip_space(line);
     //if ((rest = csubstr_match(line, "ahref", 2))) { return cmd_ahre(session, rest); } //TODO: deprecate, impl [%p
@@ -256,7 +256,7 @@ Err cmd_doc(Session session[static 1], const char* line) {
     ///if ((rest = csubstr_match(line, "clear", 3))) { return cmd_clear(session); }
     if ((rest = csubstr_match(line, "fetch", 1))) { return cmd_fetch(session); }
     if ((rest = csubword_match(line, "gg", 2))) { return shorcut_gg(session, rest); }
-    if ((rest = csubstr_match(line, "tag", 2))) { return cmd_tag(rest, session); }
+    if ((rest = csubstr_match(line, "tag", 2))) { return cmd_misc_tag(rest, session); }
     //TODO: define shorcut_z and pass the rest
     if ((rest = csubword_match(line, "zb", 2))) { return shorcut_zb(session, rest); }
     if ((rest = csubword_match(line, "zf", 2))) { return shorcut_zf(session, rest); }
@@ -412,12 +412,12 @@ Err cmd_textbuf_eval(Session s[static 1], TextBuf textbuf[static 1], const char*
 
     const char* rest = 0x0;
 
-    if (!*line) { return ed_print(s, textbuf, range); } /* default :NUM */
-    if ((rest = csubstr_match(line, "a", 1)) && !*rest) { return ed_print_all(textbuf); } //TODO: depre: use :%
+    if (!*line) { return cmd_textbuf_print(s, textbuf, range); } /* default :NUM */
+    if ((rest = csubstr_match(line, "a", 1)) && !*rest) { return cmd_textbuf_print_all(textbuf); } //TODO: depre: use :%
     if ((rest = csubstr_match(line, "l", 1)) && !*rest) { return dbg_print_all_lines_nums(s, textbuf); } //TODO: deprecate
     if ((rest = csubstr_match(line, "g", 1)) && *rest) { return ed_global(textbuf, rest); }
     if ((rest = csubstr_match(line, "n", 1)) && !*rest) { return ed_print_n(s, textbuf, range); }
-    if ((rest = csubstr_match(line, "print", 1)) && !*rest) { return ed_print(s, textbuf, range); }
+    if ((rest = csubstr_match(line, "print", 1)) && !*rest) { return cmd_textbuf_print(s, textbuf, range); }
     if ((rest = csubstr_match(line, "write", 1))) { return ed_write(rest, textbuf); }
     return "unknown command";
 }
@@ -426,7 +426,7 @@ Err cmd_textbuf_eval(Session s[static 1], TextBuf textbuf[static 1], const char*
 /* input commands */
 
 
-Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) {
+Err cmd_input_ix(Session session[static 1], const size_t ix, const char* line) {
     lxb_dom_node_t* node;
     try( _get_input_by_ix(session, ix, &node));
 
@@ -454,17 +454,16 @@ Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) 
     return err;
 }
 
-Err cmd_input_eval(Session session[static 1], const char* line) {
+Err cmd_input(Session session[static 1], const char* line) {
     line = cstr_skip_space(line);
     long long unsigned linknum;
     try( parse_base36_or_throw(&line, &linknum));
     line = cstr_skip_space(line);
-    //if (*line && *cstr_skip_space(line + 1)) return "error unexpected:..."; TODO ^
     switch (*line) {
         case '?': return cmd_input_print(session, linknum);
         case '\0': 
-        case '*': return _cmd_submit_ix(session, linknum);
-        case '=': return _cmd_input_ix(session, linknum, line + 1); 
+        case '*': return cmd_input_submit_ix(session, linknum);
+        case '=': return cmd_input_ix(session, linknum, line + 1); 
         default: return "?";
     }
 }
@@ -523,7 +522,7 @@ Err cmd_anchor_print(Session session[static 1], size_t linknum) {
 }
 
 
-Err cmd_anchor_eval(Session session[static 1], const char* line) {
+Err cmd_anchor(Session session[static 1], const char* line) {
     line = cstr_skip_space(line);
     long long unsigned linknum;
     try( parse_base36_or_throw(&line, &linknum));

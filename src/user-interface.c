@@ -98,7 +98,7 @@ Err process_line(Session session[static 1], const char* line) {
 
     if (!htmldoc_is_valid(htmldoc) ||!session->url_client) return "no document";
 
-    if (*line == '.') return doc_eval(htmldoc, line + 1, session);
+    if (*line == '.') return cmd_doc(htmldoc, line + 1, session);
     //TODO: implement search in textbuf
     if (*line == '/') return "to search in buffer use ':/' (not just '/')";
 
@@ -111,11 +111,11 @@ Err process_line(Session session[static 1], const char* line) {
     if (*line == ':') return cmd_textbuf(session, tb, line + 1);
     if (*line == '<') return cmd_textbuf(session, htmldoc_sourcebuf(htmldoc), line + 1);
     if (*line == '&') return dbg_print_form(session, line + 1);//TODO: form is &Form or something else
-    if (*line == ANCHOR_OPEN_STR[0]) return cmd_anchor_eval(session, line + 1);
-    if (*line == INPUT_OPEN_STR[0]) return cmd_input_eval(session, line + 1);
+    if (*line == ANCHOR_OPEN_STR[0]) return cmd_anchor(session, line + 1);
+    if (*line == INPUT_OPEN_STR[0]) return cmd_input(session, line + 1);
     if (*line == IMAGE_OPEN_STR[0]) return cmd_image_eval(session, line + 1);
 
-    return cmd_doc(session, line);
+    return cmd_misc(session, line);
 }
 
 Err process_line_line_mode(Session* s, const char* line) {
