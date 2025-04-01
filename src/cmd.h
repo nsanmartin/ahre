@@ -17,11 +17,15 @@ static inline Err cmd_cookies(Session session[static 1], const char* url) {
 }
 
 static inline Err cmd_draw(Session session[static 1], const char* rest) {
-    if (*rest) return "draw cmd accept no params";
+    if (*rest) return "error: unexpected param";
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
     htmldoc_reset(htmldoc);
     return htmldoc_draw(htmldoc, session);
+}
+
+static inline Err cmd_slash_msg(Session session[static 1], const char* rest) {
+    (void)session; (void)rest; return "to search in buffer use ':/' (not just '/')";
 }
 
 /*
@@ -34,7 +38,7 @@ Err cmd_tabs(Session session[static 1], const char* line);
  * HtmlDoc commands
  */
 Err dbg_traversal(Session ctx[static 1], HtmlDoc d[static 1], const char* f) ;
-Err cmd_doc(HtmlDoc d[static 1], const char* line, Session session[static 1]);
+Err cmd_doc(Session session[static 1], const char* line);
 
 
 static inline Err cmd_doc_hide(HtmlDoc d[static 1], const char* tags) {
@@ -51,12 +55,6 @@ static inline Err cmd_doc_show(HtmlDoc d[static 1], const char* tags) {
     return err; 
 }
 
-static inline Err doc_eval_word(HtmlDoc d[static 1], const char* line) {
-    const char* rest;
-    if ((rest = csubstr_match(line, "hide", 1))) { return cmd_doc_hide(d, rest); }
-    if ((rest = csubstr_match(line, "show", 1))) { return cmd_doc_show(d, rest); }
-    return "unknown doc command";
-}
 
 /*
  * TextBuf commands
@@ -85,7 +83,20 @@ cmd_textbuf_print(Session s[static 1], TextBuf textbuf[static 1], Range range[st
     SessionMemWriter writer = (SessionMemWriter){.s=s, .write=session_writer_write_std};
     return session_write_range_mod(&writer, textbuf, range);
 }
-Err cmd_textbuf(Session s[static 1], TextBuf textbuf[static 1], const char* line);
+
+Err cmd_textbuf_impl(Session s[static 1], TextBuf textbuf[static 1],  const char* line);
+
+static inline Err cmd_textbuf(Session s[static 1], const char* line) {
+    TextBuf* textbuf;
+    try( session_current_buf(s, &textbuf));
+    return cmd_textbuf_impl(s, textbuf, line);
+}
+
+static inline Err cmd_sourcebuf(Session s[static 1], const char* line) {
+    HtmlDoc* htmldoc;
+    try( session_current_doc(s, &htmldoc));
+    return cmd_textbuf_impl(s, htmldoc_sourcebuf(htmldoc), line);
+}
 
 Err cmd_textbuf_eval(
     Session s[static 1], TextBuf textbuf[static 1], const char* line, Range range[static 1]);
@@ -144,7 +155,7 @@ static inline Err cmd_input_submit_ix(Session session[static 1], size_t ix) {
   Image Commands
 */
 
-Err cmd_image_eval(Session session[static 1], const char* line);
+Err cmd_image(Session session[static 1], const char* line);
 Err _get_image_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outnode[static 1]);
 Err cmd_image_print(Session session[static 1], size_t ix);
 

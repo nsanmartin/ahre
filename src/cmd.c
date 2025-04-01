@@ -98,15 +98,22 @@ Err cmd_tabs(Session session[static 1], const char* line) {
 }
 
 /* htmldoc commands */
-Err cmd_doc(HtmlDoc d[static 1], const char* line, Session session[static 1]) {
+Err cmd_doc(Session session[static 1], const char* line) {
+    HtmlDoc* d;
+    try( session_current_doc(session, &d));
+    if (!htmldoc_is_valid(d) || !session->url_client) return "no document";
     line = cstr_skip_space(line);
     switch (*line) {
         case '?': return htmldoc_print_info(session, d);
         case 'A': return htmldoc_A(session, d);
         case '+': return bookmark_add_doc(d, cstr_skip_space(line + 1), session_url_client(session));
         case '%': return dbg_traversal(session, d, line + 1);
-        default: return doc_eval_word(d, line);
     }
+    const char* rest;
+    if ((rest = csubstr_match(line, "draw", 1))) { return cmd_draw(session, rest); }
+    if ((rest = csubstr_match(line, "hide", 1))) { return cmd_doc_hide(d, rest); }
+    if ((rest = csubstr_match(line, "show", 1))) { return cmd_doc_show(d, rest); }
+    return "unknown doc command";
 }
 
 /*
@@ -384,7 +391,8 @@ Err ed_global(TextBuf textbuf[static 1],  const char* rest) {
     return Ok;
 }
 
-Err cmd_textbuf(Session s[static 1], TextBuf textbuf[static 1], const char* line) {
+
+Err cmd_textbuf_impl(Session s[static 1], TextBuf textbuf[static 1],  const char* line) {
     if (!line) { return Ok; }
     Range range = {0};
     RangeParseCtx ctx = range_parse_ctx_from_textbuf(textbuf);
@@ -470,7 +478,7 @@ Err cmd_input(Session session[static 1], const char* line) {
 
 /* image commands */
 
-Err cmd_image_eval(Session session[static 1], const char* line) {
+Err cmd_image(Session session[static 1], const char* line) {
     line = cstr_skip_space(line);
     long long unsigned linknum;
     try( parse_base36_or_throw(&line, &linknum));
