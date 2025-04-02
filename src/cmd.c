@@ -7,7 +7,6 @@
 
 #define MsgLastLine EscCodePurple "%{- last line -}%" EscCodeReset
 
-
 /* session commands */
 Err cmd_open_url(Session session[static 1], const char* url) {
     url = cstr_trim_space((char*)url);
@@ -83,19 +82,8 @@ Err cmd_set(Session session[static 1], const char* line) {
     return "not a curl option";
 }
 
-
 /* tabs commands */
-Err cmd_tabs(Session session[static 1], const char* line) {
-    TabList* f = session_tablist(session);
 
-    line = cstr_skip_space(line);
-    switch (*line) {
-        case '?': return tablist_print_info(session, f);
-        case '-': return tablist_back(f);
-        default: return tablist_move_to_node(f, line);
-    }
-    return Ok;
-}
 
 /* htmldoc commands */
 Err cmd_doc(Session session[static 1], const char* line) {

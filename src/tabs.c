@@ -28,8 +28,7 @@ Err tablist_append_tree_from_url(
 }
 
 
-Err tablist_print_info(Session* s, TabList f[static 1]) {
-    (void)s;
+Err tablist_info(Session* s, TabList f[static 1]) {
     ArlOf(size_t)* stack = &(ArlOf(size_t)){0};
 
     TabNode* current_node;

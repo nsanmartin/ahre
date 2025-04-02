@@ -41,25 +41,6 @@ typedef struct {
 static Err cmd_echo (Session s[static 1], const char* rest) { (void)s; puts(rest); return Ok; }
 static Err
 cmd_quit (Session s[static 1], const char* rest) { (void)rest; session_quit_set(s); return Ok;}
-
-SessionCmd _session_cmd_[] = 
-    { {.name="bookmarks", .match=1, .fn=cmd_bookmarks, .help=NULL}
-    , {.name="cookies",   .match=1, .fn=cmd_cookies,   .help=NULL}
-    , {.name="echo",      .match=1, .fn=cmd_echo,      .help=NULL}
-    , {.name="go",        .match=1, .fn=cmd_open_url,  .help=NULL}
-    , {.name="quit",      .match=1, .fn=cmd_quit,      .help=NULL, .flags=CMD_NO_PARAMS}
-    , {.name="set",       .match=1, .fn=cmd_set,       .help=NULL }
-    , {.name="|",             .fn=cmd_tabs,       .help=NULL, .flags=CMD_CHAR}
-    , {.name=".",             .fn=cmd_doc,        .help=NULL, .flags=CMD_CHAR}
-    , {.name=":",             .fn=cmd_textbuf,    .help=NULL, .flags=CMD_CHAR}
-    , {.name="<",             .fn=cmd_sourcebuf,  .help=NULL, .flags=CMD_CHAR}
-    , {.name="&",             .fn=dbg_print_form, .help=NULL, .flags=CMD_CHAR}
-    , {.name=ANCHOR_OPEN_STR, .fn=cmd_anchor,     .help=NULL, .flags=CMD_CHAR}
-    , {.name=INPUT_OPEN_STR,  .fn=cmd_input,      .help=NULL, .flags=CMD_CHAR}
-    , {.name=IMAGE_OPEN_STR,  .fn=cmd_image,      .help=NULL, .flags=CMD_CHAR}
-    , {0}
-    };
-
 bool _char_cmd_match_(SessionCmd cmd[static 1], const char* line) {
     return cmd->flags & CMD_CHAR && cmd->name[0] == line[0];
 }
@@ -83,13 +64,48 @@ bool _run_cmd_(Session s[static 1], const char* line, SessionCmd cmdlist[], Err 
     return false;
 }
 
+#define try_run_cmd__(Session, Ln, CmdList, Err) do{\
+    if (_run_cmd_(Session, Ln, CmdList, &Err)) return Err;} while(0)
+
+Err cmd_tabs(Session session[static 1], const char* line) {
+    static SessionCmd _session_cmd_tabs_[] =
+        { {.name="-", .fn=cmd_tabs_back, .help=NULL, .flags=CMD_CHAR}
+        , {.name="?", .fn=cmd_tabs_info, .help=NULL, .flags=CMD_CHAR}
+        , {0}
+    };
+
+    line = cstr_skip_space(line);
+    Err err;
+    try_run_cmd__(session, line, _session_cmd_tabs_, err);
+    return cmd_tabs_goto(session, line);
+}
+
+
 Err process_line(Session session[static 1], const char* line) {
+    static SessionCmd _session_cmd_[] = 
+        { {.name="bookmarks", .match=1, .fn=cmd_bookmarks, .help=NULL}
+        , {.name="cookies",   .match=1, .fn=cmd_cookies,   .help=NULL}
+        , {.name="echo",      .match=1, .fn=cmd_echo,      .help=NULL}
+        , {.name="go",        .match=1, .fn=cmd_open_url,  .help=NULL}
+        , {.name="quit",      .match=1, .fn=cmd_quit,      .help=NULL, .flags=CMD_NO_PARAMS}
+        , {.name="set",       .match=1, .fn=cmd_set,       .help=NULL }
+        , {.name="|",             .fn=cmd_tabs,       .help=NULL, .flags=CMD_CHAR}
+        , {.name=".",             .fn=cmd_doc,        .help=NULL, .flags=CMD_CHAR}
+        , {.name=":",             .fn=cmd_textbuf,    .help=NULL, .flags=CMD_CHAR}
+        , {.name="<",             .fn=cmd_sourcebuf,  .help=NULL, .flags=CMD_CHAR}
+        , {.name="&",             .fn=dbg_print_form, .help=NULL, .flags=CMD_CHAR}
+        , {.name=ANCHOR_OPEN_STR, .fn=cmd_anchor,     .help=NULL, .flags=CMD_CHAR}
+        , {.name=INPUT_OPEN_STR,  .fn=cmd_input,      .help=NULL, .flags=CMD_CHAR}
+        , {.name=IMAGE_OPEN_STR,  .fn=cmd_image,      .help=NULL, .flags=CMD_CHAR}
+        , {0}
+        };
+
     if (!line) { session_quit_set(session); return "no input received, exiting"; }
     line = cstr_skip_space(line);
     if (*line == '\\') line = cstr_skip_space(line + 1);
     if (!*line) { return Ok; }
     Err err = Ok;
-    if (_run_cmd_(session, line, _session_cmd_, &err)) return err;
+    try_run_cmd__(session, line, _session_cmd_, err);
     return cmd_misc(session, line);
 }
 

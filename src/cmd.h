@@ -5,6 +5,8 @@
 #include "session.h"
 #include "ahre__.h"
 
+#define cmd_assert_no_params(Ln) do{ if(*Ln) return "error: expecting no params"; }while(0)
+
 /*
  * Session commands
  */
@@ -33,6 +35,23 @@ static inline Err cmd_slash_msg(Session session[static 1], const char* rest) {
  */
 
 Err cmd_tabs(Session session[static 1], const char* line);
+
+static inline Err cmd_tabs_info(Session s[static 1], const char* line) {
+    cmd_assert_no_params(line);
+    TabList* f = session_tablist(s);
+    return tablist_info(s, f);
+}
+
+static inline Err cmd_tabs_back(Session s[static 1], const char* line) {
+    cmd_assert_no_params(line);
+    TabList* f = session_tablist(s);
+    return tablist_back(f);
+}
+
+static inline Err cmd_tabs_goto(Session s[static 1], const char* line) {
+    TabList* f = session_tablist(s);
+    return tablist_move_to_node(f, line);
+}
 
 /* 
  * HtmlDoc commands
