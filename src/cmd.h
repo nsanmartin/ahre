@@ -205,7 +205,8 @@ static inline Err cmd_sourcebuf_write(Session s[static 1], const char* rest) {
  * Anchor commands
  */
 
-Err cmd_anchor(Session session[static 1], const char* line);
+Err cmd_anchor_print(Session session[static 1], size_t linknum);
+
 
 static inline Err cmd_anchor_asterisk(Session session[static 1], size_t linknum) {
     try( session_follow_ahref(session, linknum));
@@ -216,7 +217,8 @@ static inline Err cmd_anchor_asterisk(Session session[static 1], size_t linknum)
 /*
  * Input commands
  */
-Err cmd_input(Session session[static 1], const char* line);
+Err cmd_input_ix(Session session[static 1], const size_t ix, const char* line);
+
 
 static inline Err
 _get_input_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outnode[static 1]) {

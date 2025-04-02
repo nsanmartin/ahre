@@ -25,6 +25,10 @@ Err read_line_from_user(Session session[static 1]) {
     return err;
 }
 
+#define CMD_NO_PARAMS 0x1
+#define CMD_CHAR 0x2
+#define CMD_EMPTY 0x4
+
 typedef Err (*SessionCmdTextBufFn)
     (Session s[static 1], TextBuf tb[static 1], Range* r, const char* rest);
 typedef struct {
@@ -36,11 +40,7 @@ typedef struct {
     const char* help;
 } SessionCmdTextBuf ;
 
-
 typedef Err (*SessionCmdFn)(Session s[static 1], const char* rest);
-#define CMD_NO_PARAMS 0x1
-#define CMD_CHAR 0x2
-#define CMD_EMPTY 0x4
 typedef struct {
     const char* name;
     size_t len;
@@ -65,15 +65,14 @@ run_cmd__(Session s[static 1], const char* line, SessionCmd cmdlist[], SessionCm
         if (_char_cmd_match_(cmd, line)) {
             return cmd->fn(s, cstr_skip_space(line+1));
         } else if ((rest = csubstr_match(line, cmd->name, cmd->match))) {
-            if (_no_params_match_(cmd, rest)) return  "unexpected param";
+            if (_no_params_match_(cmd, rest)) return  "unexpected cmd param";
             else return cmd->fn(s, rest);
         } else if (_empty_match_(cmd, line)) return cmd->fn(s, line);
     }
     return default_cmd(s, line);
 }
 
-Err
-run_cmd_textbuf__(
+Err run_cmd_textbuf__(
     Session s[static 1],
     const char* line,
     SessionCmdTextBuf cmdlist[],
@@ -87,13 +86,14 @@ run_cmd_textbuf__(
         if (_char_cmd_match_(cmd, line)) {
             return cmd->fn(s, tb, r, cstr_skip_space(line+0));
         } else if ((rest = csubstr_match(line, cmd->name, cmd->match))) {
-            if (_no_params_match_(cmd, rest)) return  "unexpected param";
+            if (_no_params_match_(cmd, rest)) return  "unexpected textbuf cmd param";
             else return cmd->fn(s, tb, r, rest);
         } else if (_empty_match_(cmd, line)) return cmd->fn(s, tb, r, line);
     }
     return default_cmd(s, tb, r, line);
 }
 
+/* commands */
 
 Err cmd_tabs(Session session[static 1], const char* line) {
     static SessionCmd _session_cmd_tabs_[] =
@@ -145,6 +145,45 @@ Err cmd_sourcebuf(Session s[static 1], const char* line) {
     return run_cmd_textbuf__(s, line, _session_cmd_doc_, cmd_textbuf_unknown, textbuf, &range);
 }
 
+Err cmd_anchor(Session session[static 1], const char* line) {
+    line = cstr_skip_space(line);
+    long long unsigned linknum;
+    try( parse_base36_or_throw(&line, &linknum));
+    line = cstr_skip_space(line);
+    switch (*line) {
+        case '\'': return cmd_anchor_print(session, (size_t)linknum); 
+        case '?': return cmd_anchor_print(session, (size_t)linknum); 
+        case '\0': 
+        case '*': return cmd_anchor_asterisk(session, (size_t)linknum);
+        default: return "?";
+    }
+}
+
+Err cmd_input(Session session[static 1], const char* line) {
+    line = cstr_skip_space(line);
+    long long unsigned linknum;
+    try( parse_base36_or_throw(&line, &linknum));
+    line = cstr_skip_space(line);
+    switch (*line) {
+        case '?': return cmd_input_print(session, linknum);
+        case '\0': 
+        case '*': return cmd_input_submit_ix(session, linknum);
+        case '=': return cmd_input_ix(session, linknum, line + 1); 
+        default: return "?";
+    }
+}
+
+Err cmd_image(Session session[static 1], const char* line) {
+    line = cstr_skip_space(line);
+    long long unsigned linknum;
+    try( parse_base36_or_throw(&line, &linknum));
+    line = cstr_skip_space(line);
+    switch (*line) {
+        case '?': return cmd_image_print(session, linknum);
+        default: return "?";
+    }
+    return Ok;
+}
 
 Err process_line(Session session[static 1], const char* line) {
     static SessionCmd _session_cmd_[] = 

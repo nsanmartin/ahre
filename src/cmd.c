@@ -328,33 +328,7 @@ Err cmd_input_ix(Session session[static 1], const size_t ix, const char* line) {
     return err;
 }
 
-Err cmd_input(Session session[static 1], const char* line) {
-    line = cstr_skip_space(line);
-    long long unsigned linknum;
-    try( parse_base36_or_throw(&line, &linknum));
-    line = cstr_skip_space(line);
-    switch (*line) {
-        case '?': return cmd_input_print(session, linknum);
-        case '\0': 
-        case '*': return cmd_input_submit_ix(session, linknum);
-        case '=': return cmd_input_ix(session, linknum, line + 1); 
-        default: return "?";
-    }
-}
-
 /* image commands */
-
-Err cmd_image(Session session[static 1], const char* line) {
-    line = cstr_skip_space(line);
-    long long unsigned linknum;
-    try( parse_base36_or_throw(&line, &linknum));
-    line = cstr_skip_space(line);
-    switch (*line) {
-        case '?': return cmd_image_print(session, linknum);
-        default: return "?";
-    }
-    return Ok;
-}
 
 Err _get_image_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outnode[static 1]) {
     HtmlDoc* htmldoc;
@@ -396,17 +370,3 @@ Err cmd_anchor_print(Session session[static 1], size_t linknum) {
 }
 
 
-Err cmd_anchor(Session session[static 1], const char* line) {
-    line = cstr_skip_space(line);
-    long long unsigned linknum;
-    try( parse_base36_or_throw(&line, &linknum));
-    line = cstr_skip_space(line);
-    //if (*line && *cstr_skip_space(line + 1)) return "error unexpected:..."; TODO: only check when necessary
-    switch (*line) {
-        case '\'': return cmd_anchor_print(session, (size_t)linknum); 
-        case '?': return cmd_anchor_print(session, (size_t)linknum); 
-        case '\0': 
-        case '*': return cmd_anchor_asterisk(session, (size_t)linknum);
-        default: return "?";
-    }
-}
