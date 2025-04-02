@@ -86,23 +86,6 @@ Err cmd_set(Session session[static 1], const char* line) {
 
 
 /* htmldoc commands */
-Err cmd_doc(Session session[static 1], const char* line) {
-    HtmlDoc* d;
-    try( session_current_doc(session, &d));
-    if (!htmldoc_is_valid(d) || !session->url_client) return "no document";
-    line = cstr_skip_space(line);
-    switch (*line) {
-        case '?': return htmldoc_print_info(session, d);
-        case 'A': return htmldoc_A(session, d);
-        case '+': return bookmark_add_doc(d, cstr_skip_space(line + 1), session_url_client(session));
-        case '%': return dbg_traversal(session, d, line + 1);
-    }
-    const char* rest;
-    if ((rest = csubstr_match(line, "draw", 1))) { return cmd_draw(session, rest); }
-    if ((rest = csubstr_match(line, "hide", 1))) { return cmd_doc_hide(d, rest); }
-    if ((rest = csubstr_match(line, "show", 1))) { return cmd_doc_show(d, rest); }
-    return "unknown doc command";
-}
 
 /*
  * These commands require a valid document, the caller should check this condition before
@@ -446,7 +429,7 @@ Err cmd_input_ix(Session session[static 1], const size_t ix, const char* line) {
         if (len && line[len-1] == '\n') --len;
         err = lexbor_set_attr_value(node, line, len);
     }
-    ok_then(err, cmd_draw(session, ""));
+    ok_then(err, cmd_doc_draw(session, ""));
     return err;
 }
 

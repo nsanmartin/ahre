@@ -7,6 +7,10 @@
 
 #define cmd_assert_no_params(Ln) do{ if(*Ln) return "error: expecting no params"; }while(0)
 
+static inline Err cmd_unknown(Session* s, const char* ln) {
+    (void)s; (void)ln; return "unknown doc command";
+}
+
 /*
  * Session commands
  */
@@ -18,7 +22,7 @@ static inline Err cmd_cookies(Session session[static 1], const char* url) {
     return url_client_print_cookies(session_url_client(session));
 }
 
-static inline Err cmd_draw(Session session[static 1], const char* rest) {
+static inline Err cmd_doc_draw(Session session[static 1], const char* rest) {
     if (*rest) return "error: unexpected param";
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
@@ -56,18 +60,42 @@ static inline Err cmd_tabs_goto(Session s[static 1], const char* line) {
 /* 
  * HtmlDoc commands
  */
-Err dbg_traversal(Session ctx[static 1], HtmlDoc d[static 1], const char* f) ;
+Err cmd_doc_dbg_traversal(Session ctx[static 1], const char* f);
 Err cmd_doc(Session session[static 1], const char* line);
 
+static inline Err cmd_doc_info(Session session[static 1], const char* line) {
+    cmd_assert_no_params(line);
+    HtmlDoc* d;
+    try( session_current_doc(session, &d));
+    return htmldoc_print_info(session, d);
+}
 
-static inline Err cmd_doc_hide(HtmlDoc d[static 1], const char* tags) {
+static inline Err cmd_doc_A(Session session[static 1], const char* line) {
+    cmd_assert_no_params(line);
+    HtmlDoc* d;
+    try( session_current_doc(session, &d));
+    return htmldoc_A(session, d);
+}
+
+static inline Err
+cmd_doc_bookmark_add(Session session[static 1], const char* line) {
+    HtmlDoc* d;
+    try( session_current_doc(session, &d));
+    return bookmark_add_to_section(d, line, session_url_client(session));
+}
+
+static inline Err cmd_doc_hide(Session session[static 1], const char* tags) {
+    HtmlDoc* d;
+    try( session_current_doc(session, &d));
     size_t ts = 0;
     Err err = htmldoc_tags_str_reduce_size_t(cstr_trim_space((char*)tags), &ts);
     if (!err) { *htmldoc_hide_tags(d) |= (~ts); }
     return err; 
 }
 
-static inline Err cmd_doc_show(HtmlDoc d[static 1], const char* tags) {
+static inline Err cmd_doc_show(Session session[static 1], const char* tags) {
+    HtmlDoc* d;
+    try( session_current_doc(session, &d));
     size_t ts = 0;
     Err err = htmldoc_tags_str_reduce_size_t(cstr_trim_space((char*)tags), &ts);
     if (!err) { *htmldoc_hide_tags(d) &= (~ts); }

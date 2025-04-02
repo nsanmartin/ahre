@@ -49,23 +49,20 @@ bool _no_params_match_(SessionCmd cmd[static 1], const char* rest) {
     return cmd->flags & CMD_NO_PARAMS && *cstr_skip_space(rest);
 }
 
-bool _run_cmd_(Session s[static 1], const char* line, SessionCmd cmdlist[], Err err[static 1]) {
+Err
+run_cmd__(Session s[static 1], const char* line, SessionCmd cmdlist[], SessionCmdFn default_cmd) {
     const char* rest = NULL;
+    line = cstr_skip_space(line);
     for (SessionCmd* cmd = cmdlist; cmd->name ; ++cmd) {
         if (_char_cmd_match_(cmd, line)) {
-            *err = cmd->fn(s, cstr_skip_space(line+1));
-            return true;
+            return cmd->fn(s, cstr_skip_space(line+1));
         } else if ((rest = csubstr_match(line, cmd->name, cmd->match))) {
-            if (_no_params_match_(cmd, rest)) *err = "unexpected param";
-            else *err = cmd->fn(s, rest);
-            return true;
+            if (_no_params_match_(cmd, rest)) return  "unexpected param";
+            else return cmd->fn(s, rest);
         }
     }
-    return false;
+    return default_cmd(s, rest);
 }
-
-#define try_run_cmd__(Session, Ln, CmdList, Err) do{\
-    if (_run_cmd_(Session, Ln, CmdList, &Err)) return Err;} while(0)
 
 Err cmd_tabs(Session session[static 1], const char* line) {
     static SessionCmd _session_cmd_tabs_[] =
@@ -73,11 +70,22 @@ Err cmd_tabs(Session session[static 1], const char* line) {
         , {.name="?", .fn=cmd_tabs_info, .help=NULL, .flags=CMD_CHAR}
         , {0}
     };
+    return run_cmd__(session, line, _session_cmd_tabs_, cmd_tabs_goto);
+}
 
-    line = cstr_skip_space(line);
-    Err err;
-    try_run_cmd__(session, line, _session_cmd_tabs_, err);
-    return cmd_tabs_goto(session, line);
+
+Err cmd_doc(Session session[static 1], const char* line) {
+    static SessionCmd _session_cmd_doc_[] =
+        { {.name="?", .fn=cmd_doc_info,           .help=NULL, .flags=CMD_CHAR}
+        , {.name="A", .fn=cmd_doc_A,              .help=NULL, .flags=CMD_CHAR}
+        , {.name="+", .fn=cmd_doc_bookmark_add,   .help=NULL, .flags=CMD_CHAR}
+        , {.name="%", .fn=cmd_doc_dbg_traversal,  .help=NULL, .flags=CMD_CHAR}
+        , {.name="draw", .match=1, .fn=cmd_doc_draw, .help=NULL}
+        , {.name="hide", .match=1, .fn=cmd_doc_hide, .help=NULL}
+        , {.name="show", .match=1, .fn=cmd_doc_show, .help=NULL}
+        , {0}
+    };
+    return run_cmd__(session, line, _session_cmd_doc_, cmd_unknown);
 }
 
 
@@ -104,9 +112,7 @@ Err process_line(Session session[static 1], const char* line) {
     line = cstr_skip_space(line);
     if (*line == '\\') line = cstr_skip_space(line + 1);
     if (!*line) { return Ok; }
-    Err err = Ok;
-    try_run_cmd__(session, line, _session_cmd_, err);
-    return cmd_misc(session, line);
+    return run_cmd__(session, line, _session_cmd_, cmd_misc);
 }
 
 Err process_line_line_mode(Session* s, const char* line) {
@@ -117,7 +123,7 @@ Err process_line_line_mode(Session* s, const char* line) {
 Err process_line_vi_mode(Session* s, const char* line) {
     if (!s) return "error: no session :./";
     try( process_line(s, line));
-    return cmd_draw(s, "");//TODO: do not rewrite the title
+    return cmd_doc_draw(s, "");//TODO: do not rewrite the title
 }
 
 #include <sys/ioctl.h>
