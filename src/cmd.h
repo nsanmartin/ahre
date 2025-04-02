@@ -6,10 +6,15 @@
 #include "ahre__.h"
 
 #define cmd_assert_no_params(Ln) do{ if(*Ln) return "error: expecting no params"; }while(0)
+Err cmd_parse_range(Session s[static 1], Range range[static 1],  const char* line[static 1]);
 
 static inline Err cmd_unknown(Session* s, const char* ln) {
     (void)s; (void)ln; return "unknown doc command";
 }
+static inline Err cmd_textbuf_unknown(Session* s, TextBuf tb[static 1], Range* r, const char* ln) {
+    (void)s; (void)tb; (void)r; (void)ln; return "unknown doc command";
+}
+
 
 /*
  * Session commands
@@ -107,46 +112,94 @@ static inline Err cmd_doc_show(Session session[static 1], const char* tags) {
  * TextBuf commands
  */
 
-Err dbg_print_all_lines_nums(Session s[static 1], TextBuf textbuf[static 1]);
-//TODO: pass session to this fn
-static inline Err cmd_textbuf_print_last_range(Session s[static 1], TextBuf textbuf[static 1]) {
-    Range r = *textbuf_last_range(textbuf);
-    try( session_write_msg_lit__(s, "last range: ("));
-    try( session_write_unsigned_msg(s, r.beg));
-    try( session_write_msg_lit__(s, ", "));
-    try( session_write_unsigned_msg(s, r.end));
-    try( session_write_msg_lit__(s, ")\n"));
+Err cmd_textbuf_global(Session s[static 1], TextBuf tb[static 1], Range* r, const char* rest);
+StrView parse_pattern(const char* tk);
+
+static inline Err cmd_sourcebuf_global(Session s[static 1],  const char* rest) {
+    (void)s;
+    StrView pattern = parse_pattern(rest);
+    if (!pattern.items || !pattern.len) { return "Could not read pattern"; }
+    printf("pattern: %s\n", pattern.items);
     return Ok;
 }
 
-static inline Err cmd_textbuf_print_all(TextBuf textbuf[static 1]) {
-    BufOf(char)* buf = &textbuf->buf;
-    fwrite(buf->items, 1, buf->len, stdout);
-    return NULL;
-}
 
-static inline Err
-cmd_textbuf_print(Session s[static 1], TextBuf textbuf[static 1], Range range[static 1]) {
-    SessionMemWriter writer = (SessionMemWriter){.s=s, .write=session_writer_write_std};
-    return session_write_range_mod(&writer, textbuf, range);
-}
+//TODO: pass session to this fn
+//static inline Err cmd_textbuf_print_last_range(Session s[static 1], TextBuf textbuf[static 1]) {
+//    Range r = *textbuf_last_range(textbuf);
+//    try( session_write_msg_lit__(s, "last range: ("));
+//    try( session_write_unsigned_msg(s, r.beg));
+//    try( session_write_msg_lit__(s, ", "));
+//    try( session_write_unsigned_msg(s, r.end));
+//    try( session_write_msg_lit__(s, ")\n"));
+//    return Ok;
+//}
 
-Err cmd_textbuf_impl(Session s[static 1], TextBuf textbuf[static 1],  const char* line);
+//static inline Err cmd_textbuf_print_all(TextBuf textbuf[static 1]) {
+//    BufOf(char)* buf = &textbuf->buf;
+//    fwrite(buf->items, 1, buf->len, stdout);
+//    return NULL;
+//}
 
-static inline Err cmd_textbuf(Session s[static 1], const char* line) {
+typedef Err (*TextBufCmdFn)
+    (Session s[static 1], TextBuf tb[static 1], Range r[static 1], const char* ln);
+
+static inline Err _run_textbuf_cmd_(Session s[static 1], const char* line, TextBufCmdFn fn) {
+    Range range;
+    try( cmd_parse_range(s, &range, &line));
     TextBuf* textbuf;
     try( session_current_buf(s, &textbuf));
-    return cmd_textbuf_impl(s, textbuf, line);
+    return fn(s, textbuf, &range, line);
 }
 
-static inline Err cmd_sourcebuf(Session s[static 1], const char* line) {
-    HtmlDoc* htmldoc;
-    try( session_current_doc(s, &htmldoc));
-    return cmd_textbuf_impl(s, htmldoc_sourcebuf(htmldoc), line);
+static inline Err _run_sourcebuf_cmd_(Session s[static 1], const char* line, TextBufCmdFn fn) {
+    Range range;
+    try( cmd_parse_range(s, &range, &line));
+    TextBuf* textbuf;
+    try( session_current_src(s, &textbuf));
+    return fn(s, textbuf, &range, line);
 }
 
-Err cmd_textbuf_eval(
-    Session s[static 1], TextBuf textbuf[static 1], const char* line, Range range[static 1]);
+
+static inline Err
+cmd_textbuf_print(Session s[static 1], TextBuf tb[static 1], Range* r, const char* ln) {
+    (void)ln;
+    SessionMemWriter writer = (SessionMemWriter){.s=s, .write=session_writer_write_std};
+    return session_write_range_mod(&writer, tb, r);
+}
+
+
+Err cmd_parse_range(Session s[static 1], Range range[static 1],  const char* line[static 1]);
+Err dbg_print_all_lines_nums(
+    Session s[static 1], TextBuf tb[static 1], Range r[static 1], const char* ln);
+
+static inline Err
+cmd_textbuf_dbg_print_all_lines_nums(
+    Session s[static 1], TextBuf tb[static 1], Range* r, const char* inputline
+) {
+    return dbg_print_all_lines_nums(s, tb, r, inputline);
+}
+
+
+Err _textbuf_print_n_(
+    Session s[static 1], TextBuf textbuf[static 1], Range range[static 1], const char* ln);
+
+static inline Err
+cmd_textbuf_print_n(Session s[static 1], TextBuf tb[static 1], Range* r, const char* inputline) {
+    return  _textbuf_print_n_(s, tb, r, inputline);
+}
+
+Err cmd_textbuf_write_impl(
+    Session s[static 1], TextBuf textbuf[static 1], Range r[static 1], const char* rest);
+
+static inline Err
+cmd_textbuf_write(Session s[static 1], TextBuf tb[static 1], Range* r, const char* rest) {
+    return cmd_textbuf_write_impl(s, tb, r, rest);
+}
+
+static inline Err cmd_sourcebuf_write(Session s[static 1], const char* rest) {
+    return _run_sourcebuf_cmd_(s, rest, cmd_textbuf_write_impl);
+}
 
 /*
  * Anchor commands

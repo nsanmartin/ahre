@@ -113,67 +113,8 @@ static Err cmd_fetch(Session session[static 1]) {
     return err;
 }
 
-static Err shorcut_gg(Session session[static 1], const char* rest) {
-    if (*session_nrows(session) <= 3) return "too few rows";
-    const char* cmd = "print";
-    if (*rest == 'n') { cmd = "n"; ++rest; }
-    TextBuf* tb;
-    try( session_current_buf(session, &tb));
-    *textbuf_current_offset(tb) = 0;
-    if(textbuf_current_line(tb) > textbuf_line_count(tb)) return "No lines in buffer";
-    if (*rest) {
-        rest = cstr_skip_space(rest);
-        size_t incr;
-        if (!parse_ull(rest, &incr)) return "invalid line number";
-        *session_nrows(session) = incr;
-    } 
-    if (!*session_nrows(session)) return "invalid n rows";
-    Range r = (Range){
-        .beg=textbuf_current_line(tb),
-        .end=textbuf_current_line(tb) + *session_nrows(session) - 2
-    };
-    if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
-    if (r.end < r.beg) r.end = r.beg;
-    try( cmd_textbuf_eval(session, tb,cmd, &r));
-    if (textbuf_current_line(tb) == r.end)
-        puts(MsgLastLine);
-    try( textbuf_get_offset_of_line(tb, r.end,textbuf_current_offset(tb)));
-    return Ok;
-}
 
-static Err shorcut_zb(Session session[static 1], const char* rest) {
-    if (*session_nrows(session) <= 3) return "too few rows";
-    TextBuf* tb;
-    try( session_current_buf(session, &tb));
-    if(textbuf_current_line(tb) == 1) return "No more lines at the beginning";
-
-    const char* cmd = "print";
-    if (*rest == 'n') { cmd = "n"; ++rest; }
-
-    if (*rest) {
-        rest = cstr_skip_space(rest);
-        size_t incr;
-        if (!parse_ull(rest, &incr)) return "invalid line number";
-        *session_nrows(session) = incr;
-    } 
-    if (!*session_nrows(session)) return "invalid n rows";
-    size_t beg = textbuf_current_line(tb) <= *session_nrows(session) - 1
-        ? 1
-        : textbuf_current_line(tb) - *session_nrows(session) - 1
-        ;
-    Range r = (Range){
-        .beg=beg,
-        .end=textbuf_current_line(tb)
-    };
-    try( cmd_textbuf_eval(session, tb, cmd, &r));
-    try( textbuf_get_offset_of_line(tb, r.beg,textbuf_current_offset(tb)));
-
-    return Ok;
-}
-
-static Err shorcut_zf(Session session[static 1], const char* rest) {
-    const char* cmd = "print";
-    if (*rest == 'n') { cmd = "n"; ++rest; }
+static Err shorcut_z(Session session[static 1], const char* rest) {
     TextBuf* tb;
     try( session_current_buf(session, &tb));
     if(textbuf_current_line(tb) > textbuf_line_count(tb)) return "No more lines in buffer";
@@ -192,109 +133,31 @@ static Err shorcut_zf(Session session[static 1], const char* rest) {
     Range r = (Range){ .beg=range_beg, .end=range_beg + *session_nrows(session) - 2 };
     if (r.end < r.beg) r.end = r.beg;
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
-    try( cmd_textbuf_eval(session, tb,cmd, &r));
+
+
+    SessionMemWriter writer = (SessionMemWriter){.s=session, .write=session_writer_write_std};
+    if (*rest == 'n') try( session_write_range_mod(&writer, tb, &r));
+    else try( session_write_range_mod(&writer, tb, &r));
     if (textbuf_current_line(tb) == r.end)
         puts(MsgLastLine);
     try( textbuf_get_offset_of_line(tb, r.end,textbuf_current_offset(tb)));
     return Ok;
 }
 
-static Err shorcut_zz(Session session[static 1], const char* rest) {
-    if (*session_nrows(session) <= 3) return "too few rows";
-    TextBuf* tb;
-    try( session_current_buf(session, &tb));
-    const char* cmd = "print";
-    if (*rest == 'n') { cmd = "n"; ++rest; }
-    if (*rest) {
-        rest = cstr_skip_space(rest);
-        size_t incr;
-        if (!parse_ull(rest, &incr)) return "invalid line number";
-        *session_nrows(session) = incr;
-    } 
-    if (!*session_nrows(session)) return "invalid n rows";
-    size_t beg = textbuf_current_line(tb) <= (*session_nrows(session)-2) / 2
-        ? 1
-        : textbuf_current_line(tb) - (*session_nrows(session)-2) / 2
-        ;
-
-    Range r = (Range){
-        .beg=beg, .end=beg + *session_nrows(session) - 2
-    };
-    if (r.end < r.beg) r.end = r.beg;
-    if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
-    return cmd_textbuf_eval(session, tb, cmd, &r);
-}
-
 Err cmd_misc(Session session[static 1], const char* line) {
     const char* rest = 0x0;
     line = cstr_skip_space(line);
-    //if ((rest = csubstr_match(line, "ahref", 2))) { return cmd_ahre(session, rest); } //TODO: deprecate, impl [%p
     if ((rest = csubstr_match(line, "attr", 2))) { return "TODO: attr"; }
     if ((rest = csubstr_match(line, "class", 3))) { return "TODO: class"; }
     ///if ((rest = csubstr_match(line, "clear", 3))) { return cmd_clear(session); }
     if ((rest = csubstr_match(line, "fetch", 1))) { return cmd_fetch(session); }
-    if ((rest = csubword_match(line, "gg", 2))) { return shorcut_gg(session, rest); }
     if ((rest = csubstr_match(line, "tag", 2))) { return cmd_misc_tag(rest, session); }
-    //TODO: define shorcut_z and pass the rest
-    if ((rest = csubword_match(line, "zb", 2))) { return shorcut_zb(session, rest); }
-    if ((rest = csubword_match(line, "zf", 2))) { return shorcut_zf(session, rest); }
-    if ((rest = csubword_match(line, "zz", 2))) { return shorcut_zz(session, rest); }
+    if ((rest = csubword_match(line, "z", 1))) { return shorcut_z(session, rest); }
 
     return "unknown cmd";
 }
 
 /* textbuf commands */
-
-Err cmd_write(const char* fname, Session session[static 1]) {
-    TextBuf* buf;
-    try( session_current_buf(session, &buf));
-    if (fname && *(fname = cstr_skip_space(fname))) {
-        FILE* fp = fopen(fname, "a");
-        if (!fp) {
-            return err_fmt("append: could not open file: %s", fname);
-        }
-        if (fwrite(textbuf_items(buf), 1, textbuf_len(buf), fp) != textbuf_len(buf)) {
-            fclose(fp);
-            return err_fmt("append: error writing to file: %s", fname);
-        }
-        fclose(fp);
-        return 0;
-    }
-    return "append: fname missing";
-}
-
-//
-//TODO: apply mods to text
-Err ed_print_n(Session s[static 1], TextBuf textbuf[static 1], Range range[static 1]) {
-    try(validate_range_for_buffer(textbuf, range));
-    SessionMemWriter w = (SessionMemWriter){.s=s, .write=session_writer_write_std};
-    StrView line;
-    for (size_t linum = range->beg; linum <= range->end; ++linum) {
-        if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
-        try( session_write_unsigned_std(s, linum));
-        try( w.write(&w, "\t", 1));
-        if (line.len) try( w.write(&w, (char*)line.items, line.len));
-        else try( w.write(&w, "\n", 1));
-    }
-
-    if (textbuf_line_count(textbuf) == range->end) try( w.write(&w, "\n", 1));
-    return Ok;
-}
-
-Err dbg_print_all_lines_nums(Session s[static 1], TextBuf textbuf[static 1]) {
-    size_t lnum = 1;
-    StrView line;
-    SessionMemWriter w = (SessionMemWriter){.s=s, .write=session_writer_write_std};
-    for (;textbuf_get_line(textbuf, lnum, &line); ++lnum) {
-        try( session_write_unsigned_std(s, lnum));
-        try( w.write(&w,"\t`", 2));
-        if (line.len > 1) {
-            try( w.write(&w, (char*)line.items, line.len-1));
-        } 
-        try( w.write(&w,"'\n", 2));
-    }
-    return Ok;
-}
 
 StrView parse_pattern(const char* tk) {
     StrView res = {0};
@@ -313,6 +176,48 @@ StrView parse_pattern(const char* tk) {
     return res;
 }
 
+
+//
+//TODO: apply mods to text
+Err _textbuf_print_n_(
+    Session s[static 1], TextBuf textbuf[static 1], Range range[static 1], const char* ln)
+{
+    (void)ln;
+    try(validate_range_for_buffer(textbuf, range));
+    SessionMemWriter w = (SessionMemWriter){.s=s, .write=session_writer_write_std};
+    StrView line;
+    for (size_t linum = range->beg; linum <= range->end; ++linum) {
+        if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
+        try( session_write_unsigned_std(s, linum));
+        try( w.write(&w, "\t", 1));
+        if (line.len) try( w.write(&w, (char*)line.items, line.len));
+        else try( w.write(&w, "\n", 1));
+    }
+
+    if (textbuf_line_count(textbuf) == range->end) try( w.write(&w, "\n", 1));
+    return Ok;
+}
+
+
+Err dbg_print_all_lines_nums(
+    Session s[static 1], TextBuf textbuf[static 1], Range r[static 1], const char* ln)
+{
+    (void)r;
+    cmd_assert_no_params(ln);
+    size_t lnum = 1;
+    StrView line;
+    SessionMemWriter w = (SessionMemWriter){.s=s, .write=session_writer_write_std};
+    for (;textbuf_get_line(textbuf, lnum, &line); ++lnum) {
+        try( session_write_unsigned_std(s, lnum));
+        try( w.write(&w,"\t`", 2));
+        if (line.len > 1) {
+            try( w.write(&w, (char*)line.items, line.len-1));
+        } 
+        try( w.write(&w,"'\n", 2));
+    }
+    return Ok;
+}
+
 static const char* _mem_find_esc_code_(const char* s, size_t len) {
     const char* res = s;
     while((res = memchr(res, '\033', len))) {
@@ -328,7 +233,11 @@ static const char* _mem_find_esc_code_(const char* s, size_t len) {
 }
 
 
-Err ed_write(const char* rest, TextBuf textbuf[static 1]) {
+Err cmd_textbuf_write_impl(
+    Session s[static 1], TextBuf textbuf[static 1], Range r[static 1], const char* rest
+)
+{
+    (void)s; (void)r;
     if (!rest || !*rest) { return "cannot write without file arg"; }
     rest = cstr_trim_space((char*)rest);
     if (!*rest) return "invalid url name";
@@ -353,9 +262,8 @@ Err ed_write(const char* rest, TextBuf textbuf[static 1]) {
     return Ok;
 }
 
-
-Err ed_global(TextBuf textbuf[static 1],  const char* rest) {
-    (void)textbuf;
+Err cmd_textbuf_global(Session s[static 1], TextBuf tb[static 1], Range* r, const char* rest) {
+    (void)s; (void)tb; (void)r;
     StrView pattern = parse_pattern(rest);
     if (!pattern.items || !pattern.len) { return "Could not read pattern"; }
     printf("pattern: %s\n", pattern.items);
@@ -363,43 +271,30 @@ Err ed_global(TextBuf textbuf[static 1],  const char* rest) {
 }
 
 
-Err cmd_textbuf_impl(Session s[static 1], TextBuf textbuf[static 1],  const char* line) {
+Err cmd_parse_range(Session s[static 1], Range range[static 1],  const char* inputline[static 1]) {
+    *range = (Range){0};
+    const char* line = *inputline;
     if (!line) { return Ok; }
-    Range range = {0};
+    TextBuf* textbuf;
+    try( session_current_buf(s, &textbuf));
     RangeParseCtx ctx = range_parse_ctx_from_textbuf(textbuf);
-    line = parse_range(line, &range, &ctx);
+    line = parse_range(line, range, &ctx);
     if (range_parse_failure(line)) {
         return range_parse_failure_to_err(line);
-    } else *textbuf_last_range(textbuf) = range;
-
+    } else *textbuf_last_range(textbuf) = *range;
+    *inputline = line;
     if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
 
-    if (range.end == 0) return "error: unexpected range with end == 0";
-    if (range.end > textbuf_line_count(textbuf)) return "error: range end too large";
+    if (range->end == 0) return "error: unexpected range with end == 0";
+    if (range->end > textbuf_line_count(textbuf)) return "error: range end too large";
     if (ctx.new_offset >= textbuf_len(textbuf))
-        try( textbuf_get_offset_of_line(textbuf, range.end,textbuf_current_offset(textbuf)));
+        try( textbuf_get_offset_of_line(textbuf, range->end,textbuf_current_offset(textbuf)));
     else
         *textbuf_current_offset(textbuf) = ctx.new_offset;
-    return cmd_textbuf_eval(s, textbuf, line, &range);
+    return Ok;
 }
 
 
-Err cmd_textbuf_eval(Session s[static 1], TextBuf textbuf[static 1], const char* line, Range range[static 1]) {
-    line = cstr_skip_space(line);
-
-    *textbuf_last_range(textbuf) = *range;
-
-    const char* rest = 0x0;
-
-    if (!*line) { return cmd_textbuf_print(s, textbuf, range); } /* default :NUM */
-    if ((rest = csubstr_match(line, "a", 1)) && !*rest) { return cmd_textbuf_print_all(textbuf); } //TODO: depre: use :%
-    if ((rest = csubstr_match(line, "l", 1)) && !*rest) { return dbg_print_all_lines_nums(s, textbuf); } //TODO: deprecate
-    if ((rest = csubstr_match(line, "g", 1)) && *rest) { return ed_global(textbuf, rest); }
-    if ((rest = csubstr_match(line, "n", 1)) && !*rest) { return ed_print_n(s, textbuf, range); }
-    if ((rest = csubstr_match(line, "print", 1)) && !*rest) { return cmd_textbuf_print(s, textbuf, range); }
-    if ((rest = csubstr_match(line, "write", 1))) { return ed_write(rest, textbuf); }
-    return "unknown command";
-}
 
 
 /* input commands */

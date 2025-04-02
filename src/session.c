@@ -21,6 +21,13 @@ Err session_current_buf(Session session[static 1], TextBuf* out[static 1]) {
     return Ok;
 }
 
+Err session_current_src(Session session[static 1], TextBuf* out[static 1]) {
+    HtmlDoc* d;
+    try( session_current_doc(session, &d));
+    *out = htmldoc_sourcebuf(d);
+    return Ok;
+}
+
 
 Err session_init(Session s[static 1], SessionConf sconf[static 1]) {
     UrlClient* url_client = url_client_create();

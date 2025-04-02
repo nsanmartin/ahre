@@ -25,10 +25,22 @@ Err read_line_from_user(Session session[static 1]) {
     return err;
 }
 
+typedef Err (*SessionCmdTextBufFn)
+    (Session s[static 1], TextBuf tb[static 1], Range* r, const char* rest);
+typedef struct {
+    const char* name;
+    size_t len;
+    size_t match;
+    SessionCmdTextBufFn fn;
+    unsigned flags;
+    const char* help;
+} SessionCmdTextBuf ;
+
 
 typedef Err (*SessionCmdFn)(Session s[static 1], const char* rest);
 #define CMD_NO_PARAMS 0x1
 #define CMD_CHAR 0x2
+#define CMD_EMPTY 0x4
 typedef struct {
     const char* name;
     size_t len;
@@ -41,13 +53,9 @@ typedef struct {
 static Err cmd_echo (Session s[static 1], const char* rest) { (void)s; puts(rest); return Ok; }
 static Err
 cmd_quit (Session s[static 1], const char* rest) { (void)rest; session_quit_set(s); return Ok;}
-bool _char_cmd_match_(SessionCmd cmd[static 1], const char* line) {
-    return cmd->flags & CMD_CHAR && cmd->name[0] == line[0];
-}
-
-bool _no_params_match_(SessionCmd cmd[static 1], const char* rest) {
-    return cmd->flags & CMD_NO_PARAMS && *cstr_skip_space(rest);
-}
+#define _char_cmd_match_(Scmd, Ln) ((Scmd)->flags & CMD_CHAR && (Scmd)->name[0] == (Ln)[0])
+#define _empty_match_(Scmd, Ln) ((Scmd)->flags & CMD_EMPTY && !*cstr_skip_space((Ln)))
+#define _no_params_match_(Scmd, Ln) ((Scmd)->flags & CMD_NO_PARAMS && *cstr_skip_space((Ln)))
 
 Err
 run_cmd__(Session s[static 1], const char* line, SessionCmd cmdlist[], SessionCmdFn default_cmd) {
@@ -59,10 +67,33 @@ run_cmd__(Session s[static 1], const char* line, SessionCmd cmdlist[], SessionCm
         } else if ((rest = csubstr_match(line, cmd->name, cmd->match))) {
             if (_no_params_match_(cmd, rest)) return  "unexpected param";
             else return cmd->fn(s, rest);
-        }
+        } else if (_empty_match_(cmd, line)) return cmd->fn(s, line);
     }
-    return default_cmd(s, rest);
+    return default_cmd(s, line);
 }
+
+Err
+run_cmd_textbuf__(
+    Session s[static 1],
+    const char* line,
+    SessionCmdTextBuf cmdlist[],
+    SessionCmdTextBufFn default_cmd,
+    TextBuf tb[static 1],
+    Range* r
+) {
+    const char* rest = NULL;
+    line = cstr_skip_space(line);
+    for (SessionCmdTextBuf* cmd = cmdlist; cmd->name ; ++cmd) {
+        if (_char_cmd_match_(cmd, line)) {
+            return cmd->fn(s, tb, r, cstr_skip_space(line+0));
+        } else if ((rest = csubstr_match(line, cmd->name, cmd->match))) {
+            if (_no_params_match_(cmd, rest)) return  "unexpected param";
+            else return cmd->fn(s, tb, r, rest);
+        } else if (_empty_match_(cmd, line)) return cmd->fn(s, tb, r, line);
+    }
+    return default_cmd(s, tb, r, line);
+}
+
 
 Err cmd_tabs(Session session[static 1], const char* line) {
     static SessionCmd _session_cmd_tabs_[] =
@@ -72,7 +103,6 @@ Err cmd_tabs(Session session[static 1], const char* line) {
     };
     return run_cmd__(session, line, _session_cmd_tabs_, cmd_tabs_goto);
 }
-
 
 Err cmd_doc(Session session[static 1], const char* line) {
     static SessionCmd _session_cmd_doc_[] =
@@ -86,6 +116,33 @@ Err cmd_doc(Session session[static 1], const char* line) {
         , {0}
     };
     return run_cmd__(session, line, _session_cmd_doc_, cmd_unknown);
+}
+
+static SessionCmdTextBuf _session_cmd_doc_[] =
+    { {.name="",            .fn=cmd_textbuf_print,        .help=NULL, .flags=CMD_EMPTY}
+    , {.name="g", .match=1, .fn=cmd_textbuf_global,       .help=NULL}
+    , {.name="l", .match=1, .fn=cmd_textbuf_dbg_print_all_lines_nums, .help=NULL,
+        .flags=CMD_NO_PARAMS}
+    , {.name="n", .match=1, .fn=cmd_textbuf_print_n,      .help=NULL,.flags=CMD_NO_PARAMS}
+    , {.name="print", .match=1, .fn=cmd_textbuf_print,    .help=NULL,.flags=CMD_NO_PARAMS}
+    , {.name="write", .match=1, .fn=cmd_textbuf_write,    .help=NULL }
+    , {0}
+};
+
+Err cmd_textbuf(Session s[static 1], const char* line) {
+    TextBuf* textbuf;
+    try( session_current_buf(s, &textbuf));
+    Range range;
+    try( cmd_parse_range(s, &range, &line));
+    return run_cmd_textbuf__(s, line, _session_cmd_doc_, cmd_textbuf_unknown, textbuf, &range);
+}
+
+Err cmd_sourcebuf(Session s[static 1], const char* line) {
+    TextBuf* textbuf;
+    try( session_current_src(s, &textbuf));
+    Range range;
+    try( cmd_parse_range(s, &range, &line));
+    return run_cmd_textbuf__(s, line, _session_cmd_doc_, cmd_textbuf_unknown, textbuf, &range);
 }
 
 

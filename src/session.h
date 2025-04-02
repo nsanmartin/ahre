@@ -33,6 +33,7 @@ Err process_line(Session session[static 1], const char* line);
 /* getters */
 Err session_current_buf(Session session[static 1], TextBuf* out[static 1]);
 Err session_current_doc(Session session[static 1], HtmlDoc* out[static 1]);
+Err session_current_src(Session session[static 1], TextBuf* out[static 1]);
 
 static inline Str* session_msg(Session s[static 1]) { return &s->msg; }
 
@@ -190,7 +191,7 @@ tablist_init(
 }
 
 Err session_write_range_mod(
-    SessionMemWriter writer[static 1], TextBuf textbuf[static 1], Range range[static 1]
+    SessionMemWriter w[static 1], TextBuf textbuf[static 1], Range range[static 1]
 );
 
 #endif
