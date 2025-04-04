@@ -8,6 +8,21 @@
 #define cmd_assert_no_params(Ln) do{ if(*Ln) return "error: expecting no params"; }while(0)
 Err cmd_parse_range(Session s[static 1], Range range[static 1],  const char* line[static 1]);
 
+typedef enum { cmd_base_tag, cmd_textbuf_tag } CmdTag;
+typedef struct { const char* ln; Session* s; TextBuf* tb; Range r; } CmdParams;
+typedef Err (*SessionCmdFn)(CmdParams p[static 1]);
+typedef struct SessionCmd SessionCmd;
+typedef struct SessionCmd {
+    const char* name;
+    size_t len;
+    size_t match;
+    unsigned flags;
+    const char* help;
+    SessionCmdFn fn;
+    SessionCmd* subcmds;
+} SessionCmd ;
+
+
 static inline Err cmd_unknown(Session* s, const char* ln) {
     (void)s; (void)ln; return "unknown doc command";
 }
@@ -20,11 +35,10 @@ static inline Err cmd_textbuf_unknown(Session* s, TextBuf tb[static 1], Range* r
  * Session commands
  */
 
-Err cmd_open_url(Session session[static 1], const char* url);
+Err cmd_open_url(CmdParams p[static 1]);
 
-static inline Err cmd_cookies(Session session[static 1], const char* url) {
-    (void)url;
-    return url_client_print_cookies(session_url_client(session));
+static inline Err cmd_cookies(CmdParams p[static 1]) {
+    return url_client_print_cookies(session_url_client(p->s));
 }
 
 static inline Err cmd_doc_draw(Session session[static 1], const char* rest) {
@@ -43,50 +57,50 @@ static inline Err cmd_slash_msg(Session session[static 1], const char* rest) {
  * Tabs commands
  */
 
-Err cmd_tabs(Session session[static 1], const char* line);
+Err cmd_tabs(CmdParams p[static 1]);
 
-static inline Err cmd_tabs_info(Session s[static 1], const char* line) {
-    cmd_assert_no_params(line);
-    TabList* f = session_tablist(s);
-    return tablist_info(s, f);
+static inline Err cmd_tabs_info(CmdParams p[static 1]) {
+    cmd_assert_no_params(p->ln);
+    TabList* f = session_tablist(p->s);
+    return tablist_info(p->s, f);
 }
 
-static inline Err cmd_tabs_back(Session s[static 1], const char* line) {
-    cmd_assert_no_params(line);
-    TabList* f = session_tablist(s);
+static inline Err cmd_tabs_back(CmdParams p[static 1]) {
+    cmd_assert_no_params(p->ln);
+    TabList* f = session_tablist(p->s);
     return tablist_back(f);
 }
 
-static inline Err cmd_tabs_goto(Session s[static 1], const char* line) {
-    TabList* f = session_tablist(s);
-    return tablist_move_to_node(f, line);
+static inline Err cmd_tabs_goto(CmdParams p[static 1]) {
+    TabList* f = session_tablist(p->s);
+    return tablist_move_to_node(f, p->ln);
 }
 
 /* 
  * HtmlDoc commands
  */
 Err cmd_doc_dbg_traversal(Session ctx[static 1], const char* f);
-Err cmd_doc(Session session[static 1], const char* line);
+Err cmd_doc(CmdParams p[static 1]);
 
-static inline Err cmd_doc_info(Session session[static 1], const char* line) {
-    cmd_assert_no_params(line);
+static inline Err cmd_doc_info(CmdParams p[static 1]) {
+    cmd_assert_no_params(p->ln);
     HtmlDoc* d;
-    try( session_current_doc(session, &d));
-    return htmldoc_print_info(session, d);
+    try( session_current_doc(p->s, &d));
+    return htmldoc_print_info(p->s, d);
 }
 
-static inline Err cmd_doc_A(Session session[static 1], const char* line) {
-    cmd_assert_no_params(line);
+static inline Err cmd_doc_A(CmdParams p[static 1]) {
+    cmd_assert_no_params(p->ln);
     HtmlDoc* d;
-    try( session_current_doc(session, &d));
-    return htmldoc_A(session, d);
+    try( session_current_doc(p->s, &d));
+    return htmldoc_A(p->s, d);
 }
 
-static inline Err
-cmd_doc_bookmark_add(Session session[static 1], const char* line) {
+Err bookmark_add_to_section(HtmlDoc d[static 1], const char* line, UrlClient url_client[static 1]);
+static inline Err cmd_doc_bookmark_add(CmdParams p[static 1]) {
     HtmlDoc* d;
-    try( session_current_doc(session, &d));
-    return bookmark_add_to_section(d, line, session_url_client(session));
+    try( session_current_doc(p->s, &d));
+    return bookmark_add_to_section(d, p->ln, session_url_client(p->s));
 }
 
 static inline Err cmd_doc_hide(Session session[static 1], const char* tags) {
@@ -112,7 +126,7 @@ static inline Err cmd_doc_show(Session session[static 1], const char* tags) {
  * TextBuf commands
  */
 
-Err cmd_textbuf_global(Session s[static 1], TextBuf tb[static 1], Range* r, const char* rest);
+Err cmd_textbuf_global(CmdParams p[static 1]);
 StrView parse_pattern(const char* tk);
 
 static inline Err cmd_sourcebuf_global(Session s[static 1],  const char* rest) {
@@ -161,11 +175,9 @@ static inline Err _run_sourcebuf_cmd_(Session s[static 1], const char* line, Tex
 }
 
 
-static inline Err
-cmd_textbuf_print(Session s[static 1], TextBuf tb[static 1], Range* r, const char* ln) {
-    (void)ln;
-    SessionMemWriter writer = (SessionMemWriter){.s=s, .write=session_writer_write_std};
-    return session_write_range_mod(&writer, tb, r);
+static inline Err cmd_textbuf_print(CmdParams p[static 1]) {
+    SessionMemWriter writer = (SessionMemWriter){.s=p->s, .write=session_writer_write_std};
+    return session_write_range_mod(&writer, p->tb, &p->r);
 }
 
 
@@ -174,10 +186,8 @@ Err dbg_print_all_lines_nums(
     Session s[static 1], TextBuf tb[static 1], Range r[static 1], const char* ln);
 
 static inline Err
-cmd_textbuf_dbg_print_all_lines_nums(
-    Session s[static 1], TextBuf tb[static 1], Range* r, const char* inputline
-) {
-    return dbg_print_all_lines_nums(s, tb, r, inputline);
+cmd_textbuf_dbg_print_all_lines_nums(CmdParams p[static 1]) {
+    return dbg_print_all_lines_nums(p->s, p->tb, &p->r, p->ln);
 }
 
 
@@ -185,16 +195,13 @@ Err _textbuf_print_n_(
     Session s[static 1], TextBuf textbuf[static 1], Range range[static 1], const char* ln);
 
 static inline Err
-cmd_textbuf_print_n(Session s[static 1], TextBuf tb[static 1], Range* r, const char* inputline) {
-    return  _textbuf_print_n_(s, tb, r, inputline);
-}
+cmd_textbuf_print_n(CmdParams p[static 1]) { return  _textbuf_print_n_(p->s, p->tb, &p->r, p->ln); }
 
 Err cmd_textbuf_write_impl(
     Session s[static 1], TextBuf textbuf[static 1], Range r[static 1], const char* rest);
 
-static inline Err
-cmd_textbuf_write(Session s[static 1], TextBuf tb[static 1], Range* r, const char* rest) {
-    return cmd_textbuf_write_impl(s, tb, r, rest);
+static inline Err cmd_textbuf_write(CmdParams p[static 1]) {
+    return cmd_textbuf_write_impl(p->s, p->tb, &p->r, p->ln);
 }
 
 static inline Err cmd_sourcebuf_write(Session s[static 1], const char* rest) {
@@ -257,7 +264,7 @@ static inline Err cmd_input_submit_ix(Session session[static 1], size_t ix) {
   Image Commands
 */
 
-Err cmd_image(Session session[static 1], const char* line);
+Err cmd_image(CmdParams p[static 1]);
 Err _get_image_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outnode[static 1]);
 Err cmd_image_print(Session session[static 1], size_t ix);
 

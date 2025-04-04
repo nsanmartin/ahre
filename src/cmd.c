@@ -8,16 +8,16 @@
 #define MsgLastLine EscCodePurple "%{- last line -}%" EscCodeReset
 
 /* session commands */
-Err cmd_open_url(Session session[static 1], const char* url) {
-    url = cstr_trim_space((char*)url);
-    if (*url == '\\') {
+Err cmd_open_url(CmdParams p[static 1]) {
+    p->ln = cstr_trim_space((char*)p->ln);
+    if (*p->ln == '\\') {
         Str u = (Str){0};
-        try (get_url_alias(cstr_skip_space(url + 1), &u));
-        Err err = session_open_url(session, u.items, session->url_client);
+        try (get_url_alias(cstr_skip_space(p->ln + 1), &u));
+        Err err = session_open_url(p->s, u.items, p->s->url_client);
         str_clean(&u);
         return err;
     }
-    return session_open_url(session, url, session->url_client);
+    return session_open_url(p->s, p->ln, p->s->url_client);
 }
 
 Err cmd_set_session_winsz(Session session[static 1], const char* ln) {
@@ -241,9 +241,8 @@ Err cmd_textbuf_write_impl(
     return Ok;
 }
 
-Err cmd_textbuf_global(Session s[static 1], TextBuf tb[static 1], Range* r, const char* rest) {
-    (void)s; (void)tb; (void)r;
-    StrView pattern = parse_pattern(rest);
+Err cmd_textbuf_global(CmdParams p[static 1]) {
+    StrView pattern = parse_pattern(p->ln);
     if (!pattern.items || !pattern.len) { return "Could not read pattern"; }
     printf("pattern: %s\n", pattern.items);
     return Ok;

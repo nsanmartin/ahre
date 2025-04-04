@@ -1,4 +1,5 @@
 #include "debug.h"
+#include "cmd.h"
 
 
 static Err _dbg_print_form_info_rec_(lxb_dom_node_t* node, int indent) {
@@ -42,15 +43,15 @@ Err _dbg_print_form_info_(lxb_dom_node_t* node) {
 }
 
 
-Err dbg_print_form(Session s[static 1], const char* line) {
+Err dbg_print_form(CmdParams p[static 1]) {
     try_debug_build_only();
 
-    line = cstr_skip_space(line);
+    p->ln = cstr_skip_space(p->ln);
     long long unsigned linknum;
-    try( parse_base36_or_throw(&line, &linknum));
-    line = cstr_skip_space(line);
+    try( parse_base36_or_throw(&p->ln, &linknum));
+    p->ln = cstr_skip_space(p->ln);
     TabNode* current_tab;
-    try( tablist_current_tab(session_tablist(s), &current_tab));
+    try( tablist_current_tab(session_tablist(p->s), &current_tab));
     if(!current_tab) return "error: no current tab";
 
     TabNode* n;

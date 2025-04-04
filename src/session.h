@@ -127,7 +127,6 @@ static inline Err session_press_submit(Session s[static 1], size_t ix) {
 int edcmd_print(Session session[static 1]);
 
 Err dbg_session_summary(Session session[static 1]);
-Err cmd_set(Session session[static 1], const char* line);
 
 static inline Err session_read_user_input(Session s[static 1], char* line[static 1]) {
     return session_uinput(s)->read(s, NULL, line);

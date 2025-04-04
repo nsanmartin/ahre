@@ -97,5 +97,4 @@ static inline Err log_msg__(SessionWriteFn wc, const char* format, ...) {
 #define log_debug__(Wcb, Fmt, ...) log_lvl__(Wcb, LOG_LVL_DEBUG, Fmt, __VA_ARGS__)
 #define log_todo__(Wcb, Fmt, ...) log_lvl__(Wcb, LOG_LVL_TODO, Fmt, __VA_ARGS__)
 
-Err dbg_print_form(Session s[static 1], const char* line);
 #endif
