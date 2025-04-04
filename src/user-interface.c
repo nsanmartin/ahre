@@ -25,6 +25,9 @@ Err read_line_from_user(Session session[static 1]) {
     return err;
 }
 
+#define define_err_cmd(Name, Rv) static inline Err Name(Session s[static 1], const char* ln) {\
+    (void)s; (void)ln; return Rv; }
+
 #define CMD_NO_PARAMS 0x1
 #define CMD_CHAR 0x2
 #define CMD_EMPTY 0x4
@@ -62,9 +65,8 @@ run_cmd__(Session s[static 1], const char* line, SessionCmd cmdlist[], SessionCm
     const char* rest = NULL;
     line = cstr_skip_space(line);
     for (SessionCmd* cmd = cmdlist; cmd->name ; ++cmd) {
-        if (_char_cmd_match_(cmd, line)) {
-            return cmd->fn(s, cstr_skip_space(line+1));
-        } else if ((rest = csubstr_match(line, cmd->name, cmd->match))) {
+        if (_char_cmd_match_(cmd, line)) return cmd->fn(s, cstr_skip_space(line+1));
+        else if ((rest = csubstr_match(line, cmd->name, cmd->match))) {
             if (_no_params_match_(cmd, rest)) return  "unexpected cmd param";
             else return cmd->fn(s, rest);
         } else if (_empty_match_(cmd, line)) return cmd->fn(s, line);
@@ -83,9 +85,8 @@ Err run_cmd_textbuf__(
     const char* rest = NULL;
     line = cstr_skip_space(line);
     for (SessionCmdTextBuf* cmd = cmdlist; cmd->name ; ++cmd) {
-        if (_char_cmd_match_(cmd, line)) {
-            return cmd->fn(s, tb, r, cstr_skip_space(line+0));
-        } else if ((rest = csubstr_match(line, cmd->name, cmd->match))) {
+        if (_char_cmd_match_(cmd, line)) return cmd->fn(s, tb, r, cstr_skip_space(line+0));
+        else if ((rest = csubstr_match(line, cmd->name, cmd->match))) {
             if (_no_params_match_(cmd, rest)) return  "unexpected textbuf cmd param";
             else return cmd->fn(s, tb, r, rest);
         } else if (_empty_match_(cmd, line)) return cmd->fn(s, tb, r, line);
@@ -183,6 +184,35 @@ Err cmd_image(Session session[static 1], const char* line) {
         default: return "?";
     }
     return Ok;
+}
+
+Err cmd_set_session_input(Session session[static 1], const char* line);
+Err cmd_set_session_winsz(Session session[static 1], const char* ln);
+Err cmd_set_session_ncols(Session session[static 1], const char* line);
+Err cmd_set_session_monochrome(Session session[static 1], const char* line);
+Err cmd_set_curl(Session session[static 1], const char* line);
+define_err_cmd(cmd_set_session_invalid_option, "not a session option")
+
+Err cmd_set_session(Session session[static 1], const char* line) {
+    static SessionCmd _session_cmd_set_session_[] = 
+        { {.name="input",        .match=1, .fn=cmd_set_session_input,      .help=NULL}
+        , {.name="monochrome",   .match=1, .fn=cmd_set_session_monochrome, .help=NULL}
+        , {.name="ncols",        .match=1, .fn=cmd_set_session_ncols,      .help=NULL}
+        , {.name="winsz",        .match=1, .fn=cmd_set_session_winsz,      .help=NULL}
+        , {0}
+        };
+    return run_cmd__(session, line, _session_cmd_set_session_, cmd_set_session_invalid_option);
+}
+
+define_err_cmd(cmd_set_invalid_option, "not an option")
+
+Err cmd_set(Session session[static 1], const char* line) {
+    static SessionCmd _session_cmd_set_[] = 
+        { {.name="curl",    .match=1, .fn=cmd_set_curl,    .help=NULL}
+        , {.name="session", .match=1, .fn=cmd_set_session, .help=NULL}
+        , {0}
+        };
+    return run_cmd__(session, line, _session_cmd_set_, cmd_set_invalid_option);
 }
 
 Err process_line(Session session[static 1], const char* line) {

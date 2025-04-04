@@ -20,7 +20,8 @@ Err cmd_open_url(Session session[static 1], const char* url) {
     return session_open_url(session, url, session->url_client);
 }
 
-Err cmd_set_session_winsz(Session session[static 1]) {
+Err cmd_set_session_winsz(Session session[static 1], const char* ln) {
+    cmd_assert_no_params(ln);
     size_t nrows, ncols;
     try( ui_get_win_size(&nrows, &ncols));
     *session_nrows(session) = nrows;
@@ -62,31 +63,9 @@ Err cmd_set_session_input(Session session[static 1], const char* line) {
     return Ok;
 }
 
-Err cmd_set_session(Session session[static 1], const char* line) {
-    line = cstr_skip_space(line);
-    const char* rest;
-    if ((rest=csubstr_match(line, "input", 1))) return cmd_set_session_input(session, rest);
-    if ((rest=csubstr_match(line, "monochrome", 1))) return cmd_set_session_monochrome(session, rest);
-    if ((rest=csubstr_match(line, "ncols", 1))) return cmd_set_session_ncols(session, rest);
-    if ((rest=csubstr_match(line, "winsz", 1)) && !*rest) return cmd_set_session_winsz(session);
-    return "not a session option";
-}
-
-Err cmd_set_curl(Session session[static 1], const char* line);
-
-Err cmd_set(Session session[static 1], const char* line) {
-    line = cstr_skip_space(line);
-    const char* rest;
-    if ((rest = csubstr_match(line, "session", 1))) return cmd_set_session(session, rest);
-    if ((rest = csubstr_match(line, "curl", 1))) return cmd_set_curl(session, rest);
-    return "not a curl option";
-}
 
 /* tabs commands */
-
-
 /* htmldoc commands */
-
 /*
  * These commands require a valid document, the caller should check this condition before
  */
