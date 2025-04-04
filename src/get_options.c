@@ -7,6 +7,7 @@ static Err _read_input_opt_(SessionConf sconf[static 1], const char* optopt) {
     if (!optopt || !*optopt) return "invalid input option";
     if (!strcmp("fgets", optopt)) sconf->ui = ui_fgets();
     else if (!strcmp("isocline", optopt)) sconf->ui = ui_isocline();
+    else if (!strcmp("visual", optopt)) sconf->ui = ui_vi_mode();
     else return "invalid input iterface: must be fgets or isocline";
     return Ok;
 }

@@ -5,7 +5,7 @@ const char* _options_ =
 "\t-h | --help             print help and exit\n"
 "\t-v | --version          print help and exit\n"
 "\t-m | --monochrome       disable colours\n"
-"\t-i | --input <iface>    pick input interce, it should be one of: fgets, isocline\n"
+"\t-i | --input <iface>    pick input interce, it should be one of: fgets, isocline, visual\n"
 "\t-v | --version          print help and exit\n"
 ;
 void print_help(const char* prog) {
