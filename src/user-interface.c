@@ -60,10 +60,26 @@ cmd_quit (Session s[static 1], const char* rest) { (void)rest; session_quit_set(
 #define _empty_match_(Scmd, Ln) ((Scmd)->flags & CMD_EMPTY && !*cstr_skip_space((Ln)))
 #define _no_params_match_(Scmd, Ln) ((Scmd)->flags & CMD_NO_PARAMS && *cstr_skip_space((Ln)))
 
+Err run_cmd_help(Session s[static 1], const char* ln, SessionCmd cmdlist[]) {
+    (void)s; (void)ln; (void)cmdlist;
+    ln = cstr_skip_space(ln);
+    if (!*ln) {
+
+        session_write_msg_lit__(s, "sub commands:\n");
+        for (SessionCmd* cmd = cmdlist; cmd->name ; ++cmd) {
+            session_write_msg_lit__(s, "  ");
+            session_write_msg(s, (char*)cmd->name, strlen(cmd->name));
+            session_write_msg_lit__(s, "\n");
+        }
+    }
+    return Ok;
+}
+
 Err
 run_cmd__(Session s[static 1], const char* line, SessionCmd cmdlist[], SessionCmdFn default_cmd) {
     const char* rest = NULL;
     line = cstr_skip_space(line);
+    if (*line == '?') return run_cmd_help(s, line + 1, cmdlist);
     for (SessionCmd* cmd = cmdlist; cmd->name ; ++cmd) {
         if (_char_cmd_match_(cmd, line)) return cmd->fn(s, cstr_skip_space(line+1));
         else if ((rest = csubstr_match(line, cmd->name, cmd->match))) {
@@ -99,7 +115,7 @@ Err run_cmd_textbuf__(
 Err cmd_tabs(Session session[static 1], const char* line) {
     static SessionCmd _session_cmd_tabs_[] =
         { {.name="-", .fn=cmd_tabs_back, .help=NULL, .flags=CMD_CHAR}
-        , {.name="?", .fn=cmd_tabs_info, .help=NULL, .flags=CMD_CHAR}
+        , {.name="", .fn=cmd_tabs_info, .help=NULL, .flags=CMD_EMPTY}
         , {0}
     };
     return run_cmd__(session, line, _session_cmd_tabs_, cmd_tabs_goto);
@@ -107,7 +123,7 @@ Err cmd_tabs(Session session[static 1], const char* line) {
 
 Err cmd_doc(Session session[static 1], const char* line) {
     static SessionCmd _session_cmd_doc_[] =
-        { {.name="?", .fn=cmd_doc_info,           .help=NULL, .flags=CMD_CHAR}
+        { {.name="", .fn=cmd_doc_info,           .help=NULL,  .flags=CMD_EMPTY}
         , {.name="A", .fn=cmd_doc_A,              .help=NULL, .flags=CMD_CHAR}
         , {.name="+", .fn=cmd_doc_bookmark_add,   .help=NULL, .flags=CMD_CHAR}
         , {.name="%", .fn=cmd_doc_dbg_traversal,  .help=NULL, .flags=CMD_CHAR}
@@ -153,7 +169,6 @@ Err cmd_anchor(Session session[static 1], const char* line) {
     line = cstr_skip_space(line);
     switch (*line) {
         case '\'': return cmd_anchor_print(session, (size_t)linknum); 
-        case '?': return cmd_anchor_print(session, (size_t)linknum); 
         case '\0': 
         case '*': return cmd_anchor_asterisk(session, (size_t)linknum);
         default: return "?";
@@ -166,7 +181,7 @@ Err cmd_input(Session session[static 1], const char* line) {
     try( parse_base36_or_throw(&line, &linknum));
     line = cstr_skip_space(line);
     switch (*line) {
-        case '?': return cmd_input_print(session, linknum);
+        case '\'': return cmd_input_print(session, linknum);
         case '\0': 
         case '*': return cmd_input_submit_ix(session, linknum);
         case '=': return cmd_input_ix(session, linknum, line + 1); 
@@ -180,7 +195,7 @@ Err cmd_image(Session session[static 1], const char* line) {
     try( parse_base36_or_throw(&line, &linknum));
     line = cstr_skip_space(line);
     switch (*line) {
-        case '?': return cmd_image_print(session, linknum);
+        case '\'': return cmd_image_print(session, linknum);
         default: return "?";
     }
     return Ok;
