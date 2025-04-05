@@ -18,6 +18,7 @@
 #define EscCodeItalic "\033[3m"
 #define EscCodeUnderline "\033[4m"
 
+
 #define EscCodeClsScr "\033[1;1H\033[2J" 
 #define EscCodeEraseLine "\033[2K" 
 #define EscCodeBackward1 "\033[D" 

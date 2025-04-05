@@ -36,14 +36,15 @@ Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[static 1]) {
 
 Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) {
     if (!strptr || !*strptr) return "error: unexpected NULL ptr";
-    while(**strptr && isspace(**strptr)) ++*strptr;
-    if (!**strptr) return "number not given";
-    if (!isalnum(**strptr)) return "number must consist in digits";
+    const char* str = cstr_skip_space(*strptr);
+    while(*str && isspace(*str)) ++str;
+    if (!*str) return "number not given";
+    if (!isalnum(*str)) return "number must consist in digits";
     char* endptr = NULL;
-    *num = strtoull(*strptr, &endptr, base);
+    *num = strtoull(str, &endptr, base);
     if (errno == ERANGE)
         return "warn: number out of range";
-    if (*strptr == endptr)
+    if (str== endptr)
         return "warn: number could not be parsed";
     if (*num > SIZE_MAX) 
         return "warn: number out of range (exceeds size max)";

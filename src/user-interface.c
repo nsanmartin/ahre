@@ -29,6 +29,7 @@ Err read_line_from_user(Session session[static 1]) {
 #define CMD_NO_PARAMS 0x1
 #define CMD_CHAR 0x2
 #define CMD_EMPTY 0x4
+#define CMD_ANY 0x8
 
 #define CMD_ECHO_DOC \
     "Prints in the message area the received parameters.\n"
@@ -59,6 +60,7 @@ static inline bool _empty_match_(SessionCmd* cmd, CmdParams p[static 1]) {
 static inline bool _no_params_match_(SessionCmd* cmd, CmdParams p[static 1]) {
     return cmd->flags & CMD_NO_PARAMS && *cstr_skip_space(p->ln);
 }
+static inline bool _any_match_(SessionCmd* cmd) { return cmd->flags & CMD_ANY; }
 
 static const char* _name_match_impl_(SessionCmd* cmd, CmdParams p[static 1]) {
     const char* s = p->ln;
@@ -99,14 +101,20 @@ Err run_cmd_help(Session* s, SessionCmd cmd[static 1]) {
     if (cmd->subcmds) {
         session_write_msg_lit__(s, "sub commands:\n");
         for (SessionCmd* sub = cmd->subcmds; sub->name ; ++sub) {
-            bool char_cmd = sub->flags & CMD_CHAR;
-            bool empty = sub->flags & CMD_EMPTY;
-            session_write_msg_lit__(s, "  ");
-            if (char_cmd) session_write_msg_lit__(s, "'");
-            if (empty) session_write_msg_lit__(s, "<empty>");
-            else session_write_msg(s, (char*)sub->name, strlen(sub->name));
-            if (char_cmd) session_write_msg_lit__(s, "'");
-            session_write_msg_lit__(s, "\n");
+            if (sub->flags & CMD_CHAR) {
+                session_write_msg_lit__(s, "  '");
+                session_write_msg(s, (char*)sub->name, strlen(sub->name));
+                session_write_msg_lit__(s, "'\n");
+            } else if (sub->flags & CMD_EMPTY) {
+                session_write_msg_lit__(s, "  ");
+                session_write_msg_lit__(s, "<empty>");
+                session_write_msg_lit__(s, "\n");
+            } else if (sub->flags & CMD_ANY) {
+                session_write_msg_lit__(s, "  ");
+                session_write_msg_lit__(s, "<any> ");
+                session_write_msg(s, (char*)sub->name, strlen(sub->name));
+                session_write_msg_lit__(s, "\n");
+            }
         }
     }
     return Ok;
@@ -115,11 +123,11 @@ Err run_cmd_help(Session* s, SessionCmd cmd[static 1]) {
 Err run_cmd__(CmdParams p[static 1], SessionCmd cmdlist[]) {
     p->ln = cstr_skip_space(p->ln);
     for (SessionCmd* cmd = cmdlist; cmd->name ; ++cmd) {
+        if (_any_match_(cmd)) return cmd->fn(p);
         if (_char_cmd_match_(cmd, p)) {
             if (_is_help_cmd_end_(p)) return run_cmd_help(p->s, cmd);
             return cmd->fn(p);
-        }
-        else if (_name_match_(cmd, p)) {
+        } else if (_name_match_(cmd, p)) {
             if (_is_help_cmd_end_(p)) return run_cmd_help(p->s, cmd);
             if (_no_params_match_(cmd, p)) return  "unexpected cmd param";
             else return cmd->fn(p);
@@ -130,15 +138,19 @@ Err run_cmd__(CmdParams p[static 1], SessionCmd cmdlist[]) {
 
 Err run_cmd_on_ix__(CmdParams p[static 1], SessionCmd cmdlist[]) {
     p->ln = cstr_skip_space(p->ln);
-    try( parse_size_t_or_throw(&p->ln, &p->ix, 36));
+    Err parse_failed = parse_size_t_or_throw(&p->ln, &p->ix, 36);
     p->ln = cstr_skip_space(p->ln);
+    /* we assume SIZE_MAX is not an index and is used as not id given */
+    if (parse_failed) p->ix = SIZE_MAX; 
+    //else return run_cmd__(p, cmdlist);
     return run_cmd__(p, cmdlist);
 }
 /* commands */
 
 static SessionCmd _cmd_tabs_[] =
     { {.name="-", .fn=cmd_tabs_back, .help=NULL, .flags=CMD_CHAR}
-    , {.name="", .fn=cmd_tabs_info, .help=NULL, .flags=CMD_EMPTY}
+    , {.name="",  .fn=cmd_tabs_info, .help=NULL, .flags=CMD_EMPTY}
+    , {.name="goto",  .fn=cmd_tabs_goto, .help=NULL, .flags=CMD_ANY}
     , {0}
 };
 #define CMD_TABS_DOC "ahre tabs are tres of the visited urls.\n"

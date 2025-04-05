@@ -40,7 +40,6 @@ static void _update_if_smaller_(size_t value[static 1], size_t new_value) {
 #define EMPTY_BUFFER_MSG_ "Buffer is empty\n"
 Err _vi_show_session_(Session* s) {
     if (!s) return "error: unexpected null session, this should really not happen";
-    try( lit_write__(EscCodeClsScr, stdout));
     if (session_is_empty(s)) {
         try( str_append_lit__(session_msg(s), EMPTY_SESSION_MSG_));
         session_uout(s)->flush_std(s);
@@ -57,6 +56,7 @@ Err _vi_show_session_(Session* s) {
     }
 
     session_uout(s)->flush_msg(s);
+    try( lit_write__(EscCodeClsScr, stdout));
     size_t line = textbuf_current_line(tb);
     if (!line) return "error: expecting line number, not found";
 
