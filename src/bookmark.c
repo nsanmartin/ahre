@@ -63,7 +63,10 @@ Err cmd_bookmarks(CmdParams p[static 1]) {
     return err;
 }
 
-Err bookmark_add_to_section(HtmlDoc d[static 1], const char* line, UrlClient url_client[static 1]) {
+Err bookmark_add_to_section(Session s[static 1], const char* line, UrlClient url_client[static 1]) {
+    HtmlDoc* d;
+    try( session_current_doc(s, &d));
+
     line = cstr_skip_space(line);
     bool create_section_if_not_found = true;
     if (*line == '/') {
@@ -102,6 +105,7 @@ Err bookmark_add_to_section(HtmlDoc d[static 1], const char* line, UrlClient url
     } else err = "section not found in bookmarks file";
 
     ok_then(err, bookmarks_save_to_disc(&bm, &bmfile));
+    ok_then(err, session_write_msg_lit__(s, "bookmark added\n"));
 
 clean_title:
     str_clean(title);

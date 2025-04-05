@@ -313,10 +313,4 @@ bookmarks_save_to_disc(HtmlDoc bm[static 1], Str bmfile[static 1]) {
 }
 
 
-Err bookmark_add_to_section(HtmlDoc d[static 1], const char* line, UrlClient url_client[static 1]);
-static inline Err
-bookmark_add_doc(HtmlDoc d[static 1], const char* line, UrlClient url_client[static 1]) {
-    return bookmark_add_to_section(d, line, url_client);
-}
-
 #endif

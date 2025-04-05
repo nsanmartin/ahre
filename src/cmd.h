@@ -98,7 +98,7 @@ static inline Err cmd_doc_A(CmdParams p[static 1]) {
     return htmldoc_A(p->s, d);
 }
 
-Err bookmark_add_to_section(HtmlDoc d[static 1], const char* line, UrlClient url_client[static 1]);
+Err bookmark_add_to_section(Session s[static 1], const char* line, UrlClient url_client[static 1]);
 #define CMD_DOC_BOOKMARK_ADD \
     ".+[/]SECTION_NAME\n\n"\
     "Adds current document to bookmarks.\n\n"\
@@ -107,9 +107,7 @@ Err bookmark_add_to_section(HtmlDoc d[static 1], const char* line, UrlClient url
     "If not, the section is created unless there is a complete match in which \n"\
     "case the document is added to it.\n"
 static inline Err cmd_doc_bookmark_add(CmdParams p[static 1]) {
-    HtmlDoc* d;
-    try( session_current_doc(p->s, &d));
-    return bookmark_add_to_section(d, p->ln, session_url_client(p->s));
+    return bookmark_add_to_section(p->s, p->ln, session_url_client(p->s));
 }
 
 static inline Err _cmd_doc_hide(Session session[static 1], const char* tags) {
