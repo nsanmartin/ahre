@@ -35,8 +35,15 @@ static inline Err cmd_textbuf_unknown(Session* s, TextBuf tb[static 1], Range* r
  * Session commands
  */
 
-Err cmd_open_url(CmdParams p[static 1]);
+#define CMD_GO_DOC \
+    "Open the given url as a new tab.\n"\
+    "If the url is an existing file in the host ahre will try to open it,\n"\
+    "if it is an 'alias' (such as \\bookmark) it will open it.\n"\
+    "Otherwise, it will curl it.\n"
+Err cmd_go(CmdParams p[static 1]);
 
+#define CMD_COOKIES_DOC \
+    "Show the cookies.\n"
 static inline Err cmd_cookies(CmdParams p[static 1]) {
     return url_client_print_cookies(session_url_client(p->s));
 }

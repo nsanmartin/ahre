@@ -8,7 +8,7 @@
 #define MsgLastLine EscCodePurple "%{- last line -}%" EscCodeReset
 
 /* session commands */
-Err cmd_open_url(CmdParams p[static 1]) {
+Err cmd_go(CmdParams p[static 1]) {
     p->ln = cstr_trim_space((char*)p->ln);
     if (*p->ln == '\\') {
         Str u = (Str){0};

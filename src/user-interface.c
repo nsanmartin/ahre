@@ -31,10 +31,18 @@ Err read_line_from_user(Session session[static 1]) {
 #define CMD_CHAR 0x2
 #define CMD_EMPTY 0x4
 
+#define CMD_ECHO_DOC \
+    "Prints in the message area the received parameters.\n"
+
 static Err cmd_echo (CmdParams p[static 1]) { 
-    if (p->s && p->ln && *p->ln) session_write_msg(p->s, (char*)p->ln, strlen(p->ln));
+    if (p->s && p->ln && *p->ln) {
+        session_write_msg(p->s, (char*)p->ln, strlen(p->ln));
+        session_write_msg_lit__(p->s, "\n");
+    }
     return Ok;
 }
+
+#define CMD_QUIT_DOC "Quits ahre.\n"
 static Err cmd_quit (CmdParams p[static 1]) { session_quit_set(p->s); return Ok;}
 
 static inline bool _char_cmd_match_(SessionCmd* cmd, CmdParams p[static 1]) {
@@ -68,7 +76,12 @@ static bool _is_help_cmd_end_(CmdParams p[static 1]) {
 }
 
 Err run_cmd_help(Session* s, SessionCmd cmd[static 1]) {
-
+#define RUN_CMD_DOC_TODO_MSG \
+    "Not documented command.\n"\
+    "TODO: document it.\n"
+    if (!cmd->help && !cmd->subcmds) 
+        session_write_msg(s, RUN_CMD_DOC_TODO_MSG, lit_len__(RUN_CMD_DOC_TODO_MSG));
+                
     if (cmd->help) session_write_msg(s, (char*)cmd->help, strlen(cmd->help));
     if (cmd->subcmds) {
         session_write_msg_lit__(s, "sub commands:\n");
@@ -99,14 +112,13 @@ Err run_cmd__(CmdParams p[static 1], SessionCmd cmdlist[]) {
 
 /* commands */
 
-Err cmd_tabs(CmdParams p[static 1]) {
-    static SessionCmd _session_cmd_tabs_[] =
-        { {.name="-", .fn=cmd_tabs_back, .help=NULL, .flags=CMD_CHAR}
-        , {.name="", .fn=cmd_tabs_info, .help=NULL, .flags=CMD_EMPTY}
-        , {0}
-    };
-    return run_cmd__(p, _session_cmd_tabs_);
-}
+static SessionCmd _cmd_tabs_[] =
+    { {.name="-", .fn=cmd_tabs_back, .help=NULL, .flags=CMD_CHAR}
+    , {.name="", .fn=cmd_tabs_info, .help=NULL, .flags=CMD_EMPTY}
+    , {0}
+};
+#define CMD_TABS_DOC "ahre tabs are tres of the visited urls.\n"
+Err cmd_tabs(CmdParams p[static 1]) { return run_cmd__(p, _cmd_tabs_); }
 
 static SessionCmd _cmd_doc_[] =
     { {.name="", .fn=cmd_doc_info,           .help=NULL,  .flags=CMD_EMPTY}
@@ -202,6 +214,7 @@ Err cmd_set_session(CmdParams p[static 1]) { return run_cmd__(p, _cmd_set_sessio
 
 //define_err_cmd(cmd_set_invalid_option, "not an option")
 
+#define CMD_SET_DOC "Sets an option.\n"
 Err cmd_set(CmdParams p[static 1]) {
     static SessionCmd _session_cmd_set_[] = 
         { {.name="curl",    .match=1, .fn=cmd_set_curl,    .help=NULL}
@@ -212,23 +225,33 @@ Err cmd_set(CmdParams p[static 1]) {
 }
 
 Err dbg_print_form(CmdParams p[static 1]) ;
+
+#define CMD_BOOKMARKS_DOC \
+    "This command assumes the current document is a bookmarks doc. A bookmarks \n"\
+    "doc is any one that has the structure of w3m bookmark.html (that is stored \n"\
+    " in $HOME/.w3m by w3m.\n"\
+    "In ahre we open the file at $HOME/.w3m/bookmark.html by \\go \\bookmark.\n\n"\
+    "the bookamrks command list the bookmars file sections.\n\n"\
+    "TODO: is this command useful at all?\n"
+
 Err cmd_bookmarks(CmdParams p[static 1]);
 
 
 #define CMD_HELP_DOC \
-    "Ahre\n" \
+    "Ahre has char commands and word commands.\n" \
+    "Word commands can be called with a substring, as long as there is no ambiguity.\n"\
     "Type SUB_COMMAND ? to get help for help in a sub command:\n\n"
 Err cmd_help(CmdParams p[static 1]);
 
 #define CMD_HELP_IX 14
 static SessionCmd _session_cmd_[] = 
-    { [0]={.name="bookmarks", .match=1, .fn=cmd_bookmarks, .help=NULL}
-    , [1]={.name="cookies",   .match=1, .fn=cmd_cookies,   .help=NULL}
-    , [2]={.name="echo",      .match=1, .fn=cmd_echo,      .help=NULL}
-    , [3]={.name="go",        .match=1, .fn=cmd_open_url,  .help=NULL}
-    , [4]={.name="quit",      .match=1, .fn=cmd_quit,      .help=NULL, .flags=CMD_NO_PARAMS}
-    , [5]={.name="set",       .match=1, .fn=cmd_set,       .help=NULL }
-    , [6]={.name="|",             .fn=cmd_tabs,       .help=NULL, .flags=CMD_CHAR}
+    { [0]={.name="bookmarks", .match=1, .fn=cmd_bookmarks, .help=CMD_BOOKMARKS_DOC}
+    , [1]={.name="cookies",   .match=1, .fn=cmd_cookies,   .help=CMD_COOKIES_DOC}
+    , [2]={.name="echo",      .match=1, .fn=cmd_echo,      .help=CMD_ECHO_DOC}
+    , [3]={.name="go",        .match=1, .fn=cmd_go,        .help=CMD_GO_DOC}
+    , [4]={.name="quit",      .match=1, .fn=cmd_quit,      .help=CMD_QUIT_DOC, .flags=CMD_NO_PARAMS}
+    , [5]={.name="set",       .match=1, .fn=cmd_set,       .help=CMD_SET_DOC }
+    , [6]={.name="|",             .fn=cmd_tabs,       .help=CMD_TABS_DOC, .flags=CMD_CHAR, .subcmds=_cmd_tabs_}
     , [7]={.name=".",             .fn=cmd_doc,        .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_doc_}
     , [8]={.name=":",             .fn=cmd_textbuf,    .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
     , [9]={.name="<",             .fn=cmd_sourcebuf,  .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
