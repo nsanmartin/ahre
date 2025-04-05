@@ -64,10 +64,11 @@ static inline bool _any_match_(SessionCmd* cmd) { return cmd->flags & CMD_ANY; }
 
 static const char* _name_match_impl_(SessionCmd* cmd, CmdParams p[static 1]) {
     const char* s = p->ln;
+    const char* name = cmd->name;
     size_t len = cmd->len;
     if (!*s || !isalpha(*s)) { return 0x0; }
-	for (; *s && isalpha(*s); ++s, ++cmd->name, (len?--len:len)) {
-		if (*s != *cmd->name) { return 0x0; }
+	for (; *s && isalpha(*s); ++s, ++name, (len?--len:len)) {
+		if (*s != *name) { return 0x0; }
 	}
     if (len) { 
         try(session_write_msg_lit__(p->s, "..."));
@@ -133,7 +134,8 @@ Err run_cmd__(CmdParams p[static 1], SessionCmd cmdlist[]) {
             else return cmd->fn(p);
         } else if (_empty_match_(cmd, p)) return cmd->fn(p);
     }
-    return "invalid command";
+    //return "invalid command";
+    return err_fmt("invalid command: %s", p->ln);
 }
 
 Err run_cmd_on_ix__(CmdParams p[static 1], SessionCmd cmdlist[]) {

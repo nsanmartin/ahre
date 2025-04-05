@@ -121,7 +121,7 @@ Err _vi_show_err_(Session* s, char* err, size_t len) {
     FILE* stream = stdout;
     if (err) {
         if (mem_fwrite(err, len, stream)
-        || lit_write__(" {type enter}", stream))
+        || lit_write__("{type enter}", stream))
             return "error: fprintf failure while attempting to show an error :/";
 
     }

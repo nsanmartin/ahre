@@ -262,6 +262,8 @@ draw_tag_li(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
     draw_ctx_swap_sub(ctx, &sub);
 
+    draw_subctx_trim_left(&sub);
+
     if (!err && sub.buf.len) {
         ok_then(err, draw_ctx_buf_append_lit__(ctx, " * "));
         ok_then(err, draw_ctx_append_subctx(ctx, &sub));
