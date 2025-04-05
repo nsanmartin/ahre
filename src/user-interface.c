@@ -79,16 +79,16 @@ Err run_cmd_help(Session* s, SessionCmd cmd[static 1]) {
     "TODO: document it.\n"
     if (!cmd->help && !cmd->subcmds) 
         session_write_msg(s, RUN_CMD_DOC_TODO_MSG, lit_len__(RUN_CMD_DOC_TODO_MSG));
-                
     if (cmd->help) session_write_msg(s, (char*)cmd->help, strlen(cmd->help));
     if (cmd->subcmds) {
         session_write_msg_lit__(s, "sub commands:\n");
         for (SessionCmd* sub = cmd->subcmds; sub->name ; ++sub) {
             bool char_cmd = sub->flags & CMD_CHAR;
-
+            bool empty = sub->flags & CMD_EMPTY;
             session_write_msg_lit__(s, "  ");
             if (char_cmd) session_write_msg_lit__(s, "'");
-            session_write_msg(s, (char*)sub->name, strlen(sub->name));
+            if (empty) session_write_msg_lit__(s, "<empty>");
+            else session_write_msg(s, (char*)sub->name, strlen(sub->name));
             if (char_cmd) session_write_msg_lit__(s, "'");
             session_write_msg_lit__(s, "\n");
         }
@@ -112,6 +112,15 @@ Err run_cmd__(CmdParams p[static 1], SessionCmd cmdlist[]) {
     return "invalid command";
 }
 
+Err run_cmd_on_ix__(CmdParams p[static 1], SessionCmd cmdlist[]) {
+    p->ln = cstr_skip_space(p->ln);
+    long long unsigned linknum;
+    try( parse_base36_or_throw(&p->ln, &linknum));
+    if (linknum > SIZE_MAX) return "error: integer overflow, ix too large";
+    p->ix = linknum;
+    p->ln = cstr_skip_space(p->ln);
+    return run_cmd__(p, cmdlist);
+}
 /* commands */
 
 static SessionCmd _cmd_tabs_[] =
@@ -161,43 +170,52 @@ Err cmd_sourcebuf(CmdParams p[static 1]) {
     return run_cmd__(p, _cmd_textbuf_);
 }
 
-Err cmd_anchor(CmdParams p[static 1]) {
-    p->ln = cstr_skip_space(p->ln);
-    long long unsigned linknum;
-    try( parse_base36_or_throw(&p->ln, &linknum));
-    p->ln = cstr_skip_space(p->ln);
-    switch (*p->ln) {
-        case '"': return _cmd_anchor_print(p->s, (size_t)linknum); 
-        case '\0': 
-        case '*': return _cmd_anchor_asterisk(p->s, (size_t)linknum);
-        default: return "?";
-    }
-}
+Err cmd_anchor_print(CmdParams p[static 1]) { return _cmd_anchor_print(p->s, p->ix); }
+Err cmd_anchor_asterisk(CmdParams p[static 1]) { return _cmd_anchor_asterisk(p->s, p->ix); }
 
-Err cmd_input(CmdParams p[static 1]) {
-    p->ln = cstr_skip_space(p->ln);
-    long long unsigned linknum;
-    try( parse_base36_or_throw(&p->ln, &linknum));
-    p->ln = cstr_skip_space(p->ln);
-    switch (*p->ln) {
-        case '"': return _cmd_input_print(p->s, linknum);
-        case '\0': 
-        case '*': return _cmd_input_submit_ix(p->s, linknum);
-        case '=': return _cmd_input_ix(p->s, linknum, p->ln + 1); 
-        default: return "?";
-    }
-}
+static SessionCmd _cmd_anchor_[] =
+    { {.name="\"", .fn=cmd_anchor_print,    .help=NULL, .flags=CMD_CHAR}
+    , {.name="",   .fn=cmd_anchor_asterisk, .help=NULL, .flags=CMD_EMPTY}
+    , {.name="*",  .fn=cmd_anchor_asterisk, .help=NULL, .flags=CMD_CHAR}
+    , {0}
+    };
 
+#define CMD_ANCHOR_DOC \
+    "[ LINK_ID [SUB_COMMAND]\n\n"\
+    "'[' commands are applied to the links present in the document.\n"
+Err cmd_anchor(CmdParams p[static 1]) { return run_cmd_on_ix__(p, _cmd_anchor_); }
+
+static Err cmd_input_info(CmdParams p[static 1]) { return _cmd_input_print(p->s, p->ix); }
+static Err cmd_input_submit(CmdParams p[static 1]) { return _cmd_input_submit_ix(p->s, p->ix); }
+#define CMD_INPUT_SET \
+    "{= [VALUE]\n\n"\
+    "If VALUE is given, sets the value of an input element.\n"\
+    "If not, user's input is hidden (useful for passwords).\n"
+static Err cmd_input_set(CmdParams p[static 1]) { return _cmd_input_ix(p->s, p->ix, p->ln); }
+
+static SessionCmd _cmd_input_[] =
+    { {.name="\"", .fn=cmd_input_info,   .help=NULL, .flags=CMD_CHAR}
+    , {.name="",   .fn=cmd_input_submit, .help=NULL, .flags=CMD_EMPTY}
+    , {.name="*",  .fn=cmd_input_submit, .help=NULL, .flags=CMD_CHAR}
+    , {.name="=",  .fn=cmd_input_set,   .help=CMD_INPUT_SET, .flags=CMD_CHAR}
+    , {0}
+    };
+
+#define CMD_INPUT_DOC \
+    "{ LINK_ID [SUB_COMMAND]\n\n"\
+    "'{' commands are applied to the input elements present in the document.\n"
+Err cmd_input(CmdParams p[static 1]) { return run_cmd_on_ix__(p, _cmd_input_); }
+
+static Err cmd_image_info(CmdParams p[static 1]) { return _cmd_image_print(p->s, p->ix); }
+static SessionCmd _cmd_image_[] =
+    { {.name="\"", .fn=cmd_image_info,  .help=NULL, .flags=CMD_CHAR}
+    , {0}
+    };
+#define CMD_IMAGE_DOC \
+    "( LINK_ID [SUB_COMMAND]\n\n"\
+    "'(' commands are applied to the images present in the document.\n"
 Err cmd_image(CmdParams p[static 1]) {
-    p->ln = cstr_skip_space(p->ln);
-    long long unsigned linknum;
-    try( parse_base36_or_throw(&p->ln, &linknum));
-    p->ln = cstr_skip_space(p->ln);
-    switch (*p->ln) {
-        case '"': return _cmd_image_print(p->s, linknum);
-        default: return "?";
-    }
-    return Ok;
+    return run_cmd_on_ix__(p, _cmd_image_);
 }
 
 Err cmd_set_session_input(CmdParams p[static 1]);
@@ -236,7 +254,6 @@ Err dbg_print_form(CmdParams p[static 1]) ;
     "In ahre we open the file at $HOME/.w3m/bookmark.html by \\go \\bookmark.\n\n"\
     "the bookamrks command list the bookmars file sections.\n\n"\
     "TODO: is this command useful at all?\n"
-
 Err cmd_bookmarks(CmdParams p[static 1]);
 
 
@@ -254,20 +271,22 @@ static SessionCmd _session_cmd_[] =
     , [3]={.name="go",        .match=1, .fn=cmd_go,        .help=CMD_GO_DOC}
     , [4]={.name="quit",      .match=1, .fn=cmd_quit,      .help=CMD_QUIT_DOC, .flags=CMD_NO_PARAMS}
     , [5]={.name="set",       .match=1, .fn=cmd_set,       .help=CMD_SET_DOC, .subcmds=_cmd_set_}
-    , [6]={.name="|",             .fn=cmd_tabs,       .help=CMD_TABS_DOC, .flags=CMD_CHAR, .subcmds=_cmd_tabs_}
-    , [7]={.name=".",             .fn=cmd_doc,        .help=CMD_DOC_DOC, .flags=CMD_CHAR, .subcmds=_cmd_doc_}
-    , [8]={.name=":",             .fn=cmd_textbuf,    .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
-    , [9]={.name="<",             .fn=cmd_sourcebuf,  .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
-    , [10]={.name="&",            .fn=dbg_print_form, .help=NULL, .flags=CMD_CHAR}
-    , [11]={.name=ANCHOR_OPEN_STR,.fn=cmd_anchor,     .help=NULL, .flags=CMD_CHAR}
-    , [12]={.name=INPUT_OPEN_STR, .fn=cmd_input,      .help=NULL, .flags=CMD_CHAR}
-    , [13]={.name=IMAGE_OPEN_STR, .fn=cmd_image,      .help=NULL, .flags=CMD_CHAR}
-    , [CMD_HELP_IX]={.name="?",   .fn=cmd_help, .help=CMD_HELP_DOC, .flags=CMD_CHAR, .subcmds=_session_cmd_}
+    , [6]={.name="|",  .fn=cmd_tabs,       .help=CMD_TABS_DOC, .flags=CMD_CHAR, .subcmds=_cmd_tabs_}
+    , [7]={.name=".",  .fn=cmd_doc,        .help=CMD_DOC_DOC, .flags=CMD_CHAR, .subcmds=_cmd_doc_}
+    , [8]={.name=":",  .fn=cmd_textbuf,    .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
+    , [9]={.name="<",  .fn=cmd_sourcebuf,  .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
+    , [10]={.name="&", .fn=dbg_print_form, .help=NULL, .flags=CMD_CHAR}
+    , [11]={.name=ANCHOR_OPEN_STR,.fn=cmd_anchor, .help=CMD_ANCHOR_DOC, .flags=CMD_CHAR,
+        .subcmds=_cmd_anchor_}
+    , [12]={.name=INPUT_OPEN_STR, .fn=cmd_input,  .help=CMD_INPUT_DOC, .flags=CMD_CHAR,
+        .subcmds=_cmd_input_}
+    , [13]={.name=IMAGE_OPEN_STR, .fn=cmd_image,  .help=CMD_IMAGE_DOC, .flags=CMD_CHAR}
+    , [CMD_HELP_IX]={.name="?",   .fn=cmd_help, .help=CMD_HELP_DOC, .flags=CMD_CHAR,
+        .subcmds=_session_cmd_}
     , [15]={0}
     };
 
 Err process_line(Session session[static 1], const char* line) {
-
     if (!line) { session_quit_set(session); return "no input received, exiting"; }
     line = cstr_skip_space(line);
     if (*line == '\\') line = cstr_skip_space(line + 1);
@@ -275,9 +294,7 @@ Err process_line(Session session[static 1], const char* line) {
     return run_cmd__(&(CmdParams){.s=session,.ln=line}, _session_cmd_);
 }
 
-Err cmd_help(CmdParams p[static 1]) {
-    return run_cmd_help(p->s, &_session_cmd_[CMD_HELP_IX]);
-}
+Err cmd_help(CmdParams p[static 1]) { return run_cmd_help(p->s, &_session_cmd_[CMD_HELP_IX]); }
 
 Err process_line_line_mode(Session* s, const char* line) {
     if (!s) return "error: no session :./";
@@ -287,7 +304,7 @@ Err process_line_line_mode(Session* s, const char* line) {
 Err process_line_vi_mode(Session* s, const char* line) {
     if (!s) return "error: no session :./";
     try( process_line(s, line));
-    return session_doc_draw(s);//TODO: do not rewrite the title
+    return session_doc_draw(s);
 }
 
 #include <sys/ioctl.h>

@@ -10,7 +10,7 @@
 Err _cmd_parse_range(Session s[static 1], Range range[static 1],  const char* line[static 1]);
 
 typedef enum { cmd_base_tag, cmd_textbuf_tag } CmdTag;
-typedef struct { const char* ln; Session* s; TextBuf* tb; Range r; } CmdParams;
+typedef struct { const char* ln; Session* s; TextBuf* tb; Range r; size_t ix; } CmdParams;
 typedef Err (*SessionCmdFn)(CmdParams p[static 1]);
 typedef struct SessionCmd SessionCmd;
 typedef struct SessionCmd {
