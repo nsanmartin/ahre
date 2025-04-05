@@ -1,9 +1,6 @@
 # TODO
-[ ] use trie for commands and include docs
-[ ] document basic funtionality (usefull until cmd self docuemnt themselfs)
 [ ] Unicode support
 [ ] Support default and bright colour pallets (as w3m)
-[ ] Log TAG not supported by browser when is the case
 [ ] wrap lexbor functions with Err returning wrappers whenever possible
 [ ] brwose properly anchors 
 [ ] brwose properly blockquote 
@@ -18,17 +15,15 @@
 [ ] implement other curlopt setter in user interface
 [ ] [libcurl] store cookies in file and make it configurable.
 [~] [HTML] browse ul/li
-[~] add cmd to show a and submit urls
 [ ] implement hashi arl reset
 [ ] separate more htmldoc init from draw
 [ ] implement vi_process_line method that does not print (vi mode only prints on show)
-[ ] fix password in vi mode
-[ ] on startupt if failed to ope nurl essage is lost
 [ ] use SessionMemWriter consistently (session_write_* -> session_writer_write_*)
 
 # WILL NOT DO
 [X] run test in github ci workflow (currently it does not find liblexbos.so.2): moving away from github
-
+[~] use trie for commands and include docs
+[~] document basic funtionality (usefull until cmd self docuemnt themselfs)
 
 # DONE
 ['] [HTML] implement pre tag
@@ -68,3 +63,7 @@
 [*] use array of line pointers in aebuf
 [*] use no prefix for ahre cmds and ':' for ed cmds
 [*] define ModTextBuff for TextBuffer with colors and line fit
+[*] Log TAG not supported by browser when is the case
+[*] add cmd to show a and submit urls
+[*] fix password in vi mode
+[*] on startupt if failed to open url message is lost
