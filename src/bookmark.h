@@ -144,7 +144,7 @@ bookmark_mk_entry(
     lxb_dom_element_t* a;
     Err err = bookmark_mk_anchor(domdoc, href, text, &a);
     if (err) {
-        puts("TODO: clean li elem");
+        lxb_dom_document_destroy_element(*out);
         return err;
     }
 
