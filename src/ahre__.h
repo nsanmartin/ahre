@@ -12,4 +12,5 @@ Err htmldoc_init_fetch_draw_from_curlu(
 );
 
 Err htmldoc_draw(HtmlDoc htmldoc[static 1], Session s[static 1]);
+Err htmldoc_draw_with_flags(HtmlDoc htmldoc[static 1], Session s[static 1], unsigned flags);
 #endif

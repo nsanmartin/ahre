@@ -25,8 +25,6 @@ Err read_line_from_user(Session session[static 1]) {
     return err;
 }
 
-#define define_err_cmd(Name, Rv) static inline Err Name(CmdParams p[static 1]){(void)p;return Rv;}
-
 #define CMD_NO_PARAMS 0x1
 #define CMD_CHAR 0x2
 #define CMD_EMPTY 0x4
@@ -125,18 +123,20 @@ static SessionCmd _cmd_tabs_[] =
 Err cmd_tabs(CmdParams p[static 1]) { return run_cmd__(p, _cmd_tabs_); }
 
 static SessionCmd _cmd_doc_[] =
-    { {.name="", .fn=cmd_doc_info,           .help=NULL,  .flags=CMD_EMPTY}
-    , {.name="A", .fn=cmd_doc_A,              .help=NULL, .flags=CMD_CHAR}
-    , {.name="+", .fn=cmd_doc_bookmark_add,   .help=NULL, .flags=CMD_CHAR}
+    { {.name="",     .fn=cmd_doc_info,           .help=CMD_DOC_INFO_DOC,     .flags=CMD_EMPTY}
+    , {.name="\"",   .fn=cmd_doc_info,           .help=CMD_DOC_INFO_DOC,     .flags=CMD_CHAR}
+    , {.name="A",    .fn=cmd_doc_A,              .help=NULL,                 .flags=CMD_CHAR}
+    , {.name="+",    .fn=cmd_doc_bookmark_add,   .help=CMD_DOC_BOOKMARK_ADD, .flags=CMD_CHAR}
+    , {.name="draw", .match=1, .fn=cmd_doc_draw, .help=CMD_DOC_DRAW}
     //, {.name="%", .fn=_cmd_doc_dbg_traversal,  .help=NULL, .flags=CMD_CHAR}
-    //TODO^, {.name="draw", .match=1, .fn=_cmd_doc_draw, .help=NULL}
-    //, {.name="hide", .match=1, .fn=_cmd_doc_hide, .help=NULL}
-    //, {.name="show", .match=1, .fn=_cmd_doc_show, .help=NULL}
+    //, {.name="hide", .match=1, .fn=_cmd_doc_hide, .help="Hide <ul>"}
+    //, {.name="show", .match=1, .fn=_cmd_doc_show, .help="unhide <ul>"}
     , {0}
 };
-Err cmd_doc(CmdParams p[static 1]) {
-    return run_cmd__(p, _cmd_doc_);
-}
+
+#define CMD_DOC_DOC \
+    "'.' command: commands related to the current document\n"
+Err cmd_doc(CmdParams p[static 1]) { return run_cmd__(p, _cmd_doc_); }
 
 static SessionCmd _cmd_textbuf_[] =
     { {.name="",            .fn=cmd_textbuf_print,        .help=NULL, .flags=CMD_EMPTY}
@@ -207,7 +207,6 @@ Err cmd_set_session_monochrome(CmdParams p[static 1]);
 #define CMD_SET_CURL "Set a curl option.\n"\
     "TODO: enumerate all available options.\n"
 Err cmd_set_curl(CmdParams p[static 1]);
-define_err_cmd(cmd_set_session_invalid_option, "not a session option")
 
 static SessionCmd _cmd_set_session_[] = 
     { {.name="input",        .match=1, .fn=cmd_set_session_input,      .help=NULL}
@@ -217,8 +216,6 @@ static SessionCmd _cmd_set_session_[] =
     , {0}
     };
 Err cmd_set_session(CmdParams p[static 1]) { return run_cmd__(p, _cmd_set_session_); }
-
-//define_err_cmd(cmd_set_invalid_option, "not an option")
 
 static SessionCmd _cmd_set_[] = 
     { {.name="curl",    .match=1, .fn=cmd_set_curl,    .help=CMD_SET_CURL}
@@ -258,7 +255,7 @@ static SessionCmd _session_cmd_[] =
     , [4]={.name="quit",      .match=1, .fn=cmd_quit,      .help=CMD_QUIT_DOC, .flags=CMD_NO_PARAMS}
     , [5]={.name="set",       .match=1, .fn=cmd_set,       .help=CMD_SET_DOC, .subcmds=_cmd_set_}
     , [6]={.name="|",             .fn=cmd_tabs,       .help=CMD_TABS_DOC, .flags=CMD_CHAR, .subcmds=_cmd_tabs_}
-    , [7]={.name=".",             .fn=cmd_doc,        .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_doc_}
+    , [7]={.name=".",             .fn=cmd_doc,        .help=CMD_DOC_DOC, .flags=CMD_CHAR, .subcmds=_cmd_doc_}
     , [8]={.name=":",             .fn=cmd_textbuf,    .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
     , [9]={.name="<",             .fn=cmd_sourcebuf,  .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
     , [10]={.name="&",            .fn=dbg_print_form, .help=NULL, .flags=CMD_CHAR}
@@ -290,7 +287,7 @@ Err process_line_line_mode(Session* s, const char* line) {
 Err process_line_vi_mode(Session* s, const char* line) {
     if (!s) return "error: no session :./";
     try( process_line(s, line));
-    return _cmd_doc_draw(s, "");//TODO: do not rewrite the title
+    return session_doc_draw(s);//TODO: do not rewrite the title
 }
 
 #include <sys/ioctl.h>

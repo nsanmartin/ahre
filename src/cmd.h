@@ -4,6 +4,7 @@
 #include "error.h"
 #include "session.h"
 #include "ahre__.h"
+#include "draw.h"
 
 #define cmd_assert_no_params(Ln) do{ if(*Ln) return "error: expecting no params"; }while(0)
 Err _cmd_parse_range(Session s[static 1], Range range[static 1],  const char* line[static 1]);
@@ -40,13 +41,17 @@ static inline Err cmd_cookies(CmdParams p[static 1]) {
     return url_client_print_cookies(session_url_client(p->s));
 }
 
-static inline Err _cmd_doc_draw(Session session[static 1], const char* rest) {
-    if (*rest) return "error: unexpected param";
+static inline Err session_doc_draw(Session session[static 1]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
     htmldoc_reset(htmldoc);
-    return htmldoc_draw(htmldoc, session);
+    unsigned flags = (session_monochrome(session)? DRAW_CTX_FLAG_MONOCHROME: 0);
+    return htmldoc_draw_with_flags(htmldoc, session, flags);
 }
+
+#define CMD_DOC_DRAW \
+    "Redraws the current document.\n"
+static inline Err cmd_doc_draw(CmdParams p[static 1]) { return session_doc_draw(p->s); }
 
 /*
  * Tabs commands
@@ -77,6 +82,8 @@ static inline Err cmd_tabs_goto(CmdParams p[static 1]) {
 Err _cmd_doc_dbg_traversal(Session ctx[static 1], const char* f);
 Err cmd_doc(CmdParams p[static 1]);
 
+#define CMD_DOC_INFO_DOC \
+    "Prints document information such as the title and its url.\n"
 static inline Err cmd_doc_info(CmdParams p[static 1]) {
     cmd_assert_no_params(p->ln);
     HtmlDoc* d;
@@ -92,6 +99,13 @@ static inline Err cmd_doc_A(CmdParams p[static 1]) {
 }
 
 Err bookmark_add_to_section(HtmlDoc d[static 1], const char* line, UrlClient url_client[static 1]);
+#define CMD_DOC_BOOKMARK_ADD \
+    ".+[/]SECTION_NAME\n\n"\
+    "Adds current document to bookmarks.\n\n"\
+    "If section name is preceeded by '/', te substring given is used to\n"\
+    "match a section name in the bookmark.\n"\
+    "If not, the section is created unless there is a complete match in which \n"\
+    "case the document is added to it.\n"
 static inline Err cmd_doc_bookmark_add(CmdParams p[static 1]) {
     HtmlDoc* d;
     try( session_current_doc(p->s, &d));
@@ -211,7 +225,7 @@ _get_input_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outnode[s
     if (!nodeptr) return "input element number invalid";
     *outnode = *nodeptr;
     return Ok;
-
+}
 
 static inline Err _cmd_input_print(Session session[static 1], size_t ix) {
     lxb_dom_node_t* node;

@@ -68,7 +68,7 @@ Err bookmark_add_to_section(HtmlDoc d[static 1], const char* line, UrlClient url
     bool create_section_if_not_found = true;
     if (*line == '/') {
         ++line;
-         create_section_if_not_found = false;
+        create_section_if_not_found = false;
         line = cstr_skip_space(line);
     }
     if (!*line) return "not a valid bookmark section";

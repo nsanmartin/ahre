@@ -11,9 +11,6 @@
 #define T EscCode
 #include <arl.h>
 
-#define DRAW_CTX_FLAG_MONOCHROME 0x1u
-#define DRAW_CTX_FLAG_PRE   0x2u
-
 static size_t _strview_trim_left_count_newlines_(StrView s[static 1]) {
     size_t newlines = 0;
     while(s->len && isspace(*(items__(s)))) {
@@ -62,6 +59,9 @@ static inline void draw_subctx_trim_right(DrawSubCtx sub[static 1]) {
 typedef struct { 
     HtmlDoc* htmldoc;
     ArlOf(EscCode) esc_code_stack;
+#define DRAW_CTX_FLAG_MONOCHROME 0x1u
+#define DRAW_CTX_FLAG_PRE        0x2u
+#define DRAW_CTX_FLAG_TITLE      0x4u
     unsigned flags;
     SessionWriteFn logfn;
     DrawSubCtx sub;
@@ -181,8 +181,8 @@ static inline void draw_ctx_buf_reset(DrawCtx ctx[static 1]) {
 }
 
 static inline Err
-draw_ctx_init(DrawCtx ctx[static 1], HtmlDoc htmldoc[static 1], Session s[static 1]) {
-    unsigned flags = (session_monochrome(s)? DRAW_CTX_FLAG_MONOCHROME: 0);
+draw_ctx_init(DrawCtx ctx[static 1], HtmlDoc htmldoc[static 1], Session s[static 1], unsigned flags) {
+    //unsigned flags = (session_monochrome(s)? DRAW_CTX_FLAG_MONOCHROME: 0) | DRAW_CTX_FLAG_TITLE;
     *ctx = (DrawCtx) {
         .htmldoc=htmldoc,
         .flags=flags,

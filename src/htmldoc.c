@@ -344,15 +344,16 @@ draw_tag_blockquote(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 static Err draw_tag_title(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     HtmlDoc* d = draw_ctx_htmldoc(ctx);
     *htmldoc_title(d) = node;
+    if (!(ctx->flags & DRAW_CTX_FLAG_TITLE)) return Ok;
     Str title = (Str){0};
-    try( lexbor_get_title_text_line(node, &title));
+    Err err = lexbor_get_title_text_line(node, &title);
     if (!title.len)  {
-        try( log_msg__(draw_ctx_logfn(ctx), "%s\n", "<%> no title <%>"));
+        ok_then(err, log_msg__(draw_ctx_logfn(ctx), "%s\n", "<%> no title <%>"));
         return Ok;
     }
-    if (!buffn(char,append)(&title, "\n\0", 2)) return "error: bufn append failure";
-    Err err = log_msg__(draw_ctx_logfn(ctx), "%s", title.items);
-    buffn(char,clean)(&title); 
+    ok_then(err, str_append_lit__(&title, "\n\0"));
+    ok_then(err, log_msg__(draw_ctx_logfn(ctx), "%s", title.items));
+    str_clean(&title); 
     return err;
 }
 
@@ -827,10 +828,10 @@ inline void htmldoc_destroy(HtmlDoc* htmldoc) {
     std_free(htmldoc);
 }
 
-Err htmldoc_draw(HtmlDoc htmldoc[static 1], Session s[static 1]) {
+Err htmldoc_draw_with_flags(HtmlDoc htmldoc[static 1], Session s[static 1], unsigned flags) {
     lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(htmldoc);
     DrawCtx ctx;
-    Err err = draw_ctx_init(&ctx, htmldoc, s);
+    Err err = draw_ctx_init(&ctx, htmldoc, s, flags);
     ok_then(err, draw_rec(lxb_dom_interface_node(lxbdoc), &ctx));
     ok_then(err, draw_ctx_buf_commit(&ctx));
     ok_then(err, textbuf_fit_lines(htmldoc_textbuf(htmldoc), *session_conf_ncols(session_conf(s))));
@@ -839,24 +840,30 @@ Err htmldoc_draw(HtmlDoc htmldoc[static 1], Session s[static 1]) {
     return err;
 }
 
+Err htmldoc_draw(HtmlDoc htmldoc[static 1], Session s[static 1]) {
+    unsigned flags = (session_monochrome(s)? DRAW_CTX_FLAG_MONOCHROME: 0) | DRAW_CTX_FLAG_TITLE;
+    return htmldoc_draw_with_flags(htmldoc, s, flags);
+}
+
 
 Err htmldoc_A(Session* s, HtmlDoc d[static 1]) {
     if (!s) return "error: no session";
-    BufOf(char)* buf = &(BufOf(char)){0};
-    buffn(char,append)(buf, "<li><a href=\"", sizeof( "<li><a href=\"")-1);
+    Str* buf = &(Str){0};
+    str_append_lit__(buf, "<li><a href=\"");
     char* url_buf;
     Err err = url_cstr(htmldoc_url(d), &url_buf);
     if (err) {
-        buffn(char,clean)(buf);
+        str_clean(buf);
         return err;
     }
-    buffn(char,append)(buf, url_buf, strlen(url_buf));
+    str_append(buf, url_buf, strlen(url_buf));
     curl_free(url_buf);
-    buffn(char,append)(buf, "\">", 2);
+    str_append_lit__(buf, "\">");
     try( lexbor_get_title_text_line(*htmldoc_title(d), buf));
-    buffn(char,append)(buf, "</a>", 4);
+    str_append_lit__(buf, "</a>");
+    str_append_lit__(buf, "\n");
     try( session_write_msg(s, items__(buf), len__(buf)));
-    buffn(char,clean)(buf);
+    str_clean(buf);
     return Ok;
 }
 

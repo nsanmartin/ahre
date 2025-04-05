@@ -301,7 +301,7 @@ Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) 
         if (len && line[len-1] == '\n') --len;
         err = lexbor_set_attr_value(node, line, len);
     }
-    ok_then(err, _cmd_doc_draw(session, ""));
+    ok_then(err, session_doc_draw(session));
     return err;
 }
 

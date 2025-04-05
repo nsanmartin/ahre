@@ -68,7 +68,7 @@ int test_1(void) {
     Range r;
     TextBuf* tb1 = &(TextBuf){.buf={.items=items1, .len=len1}};
     fwrite_params_queue_push((MockFwriteParams){.ptr=items1,.size=1,.nmemb=len1});
-    Err err1 = cmd_textbuf_write_impl(&s, tb1, &r, rest);
+    Err err1 = _cmd_textbuf_write_impl(&s, tb1, &r, rest);
     utest_assert(err1 == Ok, fail, __LINE__);
     utest_assert(fwrite_call_count == 1, fail, __LINE__);
 
@@ -79,7 +79,7 @@ int test_1(void) {
     fwrite_params_queue_push(
         (MockFwriteParams){.ptr=items2+5+sizeof EscCodeYellow-1,.size=1,.nmemb=4}
     );
-    Err err2 = cmd_textbuf_write_impl(&s, tb2, &r, rest);
+    Err err2 = _cmd_textbuf_write_impl(&s, tb2, &r, rest);
     utest_assert(err2 == Ok, fail, __LINE__);
     utest_assert(fwrite_call_count == 3, fail, __LINE__);
 
@@ -90,7 +90,7 @@ int test_1(void) {
     fwrite_params_queue_push(
         (MockFwriteParams){.ptr=items3+5+sizeof EscCodeYellow-1,.size=1,.nmemb=4}
     );
-    Err err3 = cmd_textbuf_write_impl(&s, tb3, &r, rest);
+    Err err3 = _cmd_textbuf_write_impl(&s, tb3, &r, rest);
     utest_assert(err3 == Ok, fail, __LINE__);
     utest_assert(fwrite_call_count == 5, fail, __LINE__);
 
