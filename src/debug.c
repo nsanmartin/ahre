@@ -133,7 +133,7 @@ Err dbg_traversal_rec(lxb_dom_node_t* node, Session ctx[static 1]) {
     return Ok;
 }
 
-Err cmd_doc_dbg_traversal(Session ctx[static 1], const char* fname) {
+Err _cmd_doc_dbg_traversal(Session ctx[static 1], const char* fname) {
     HtmlDoc* d;
     try( session_current_doc(ctx, &d));
     fname = cstr_skip_space(fname);

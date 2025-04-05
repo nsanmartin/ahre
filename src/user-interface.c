@@ -86,8 +86,12 @@ Err run_cmd_help(Session* s, SessionCmd cmd[static 1]) {
     if (cmd->subcmds) {
         session_write_msg_lit__(s, "sub commands:\n");
         for (SessionCmd* sub = cmd->subcmds; sub->name ; ++sub) {
+            bool char_cmd = sub->flags & CMD_CHAR;
+
             session_write_msg_lit__(s, "  ");
+            if (char_cmd) session_write_msg_lit__(s, "'");
             session_write_msg(s, (char*)sub->name, strlen(sub->name));
+            if (char_cmd) session_write_msg_lit__(s, "'");
             session_write_msg_lit__(s, "\n");
         }
     }
@@ -124,10 +128,10 @@ static SessionCmd _cmd_doc_[] =
     { {.name="", .fn=cmd_doc_info,           .help=NULL,  .flags=CMD_EMPTY}
     , {.name="A", .fn=cmd_doc_A,              .help=NULL, .flags=CMD_CHAR}
     , {.name="+", .fn=cmd_doc_bookmark_add,   .help=NULL, .flags=CMD_CHAR}
-    //, {.name="%", .fn=cmd_doc_dbg_traversal,  .help=NULL, .flags=CMD_CHAR}
-    //TODO^, {.name="draw", .match=1, .fn=cmd_doc_draw, .help=NULL}
-    //, {.name="hide", .match=1, .fn=cmd_doc_hide, .help=NULL}
-    //, {.name="show", .match=1, .fn=cmd_doc_show, .help=NULL}
+    //, {.name="%", .fn=_cmd_doc_dbg_traversal,  .help=NULL, .flags=CMD_CHAR}
+    //TODO^, {.name="draw", .match=1, .fn=_cmd_doc_draw, .help=NULL}
+    //, {.name="hide", .match=1, .fn=_cmd_doc_hide, .help=NULL}
+    //, {.name="show", .match=1, .fn=_cmd_doc_show, .help=NULL}
     , {0}
 };
 Err cmd_doc(CmdParams p[static 1]) {
@@ -147,13 +151,13 @@ static SessionCmd _cmd_textbuf_[] =
 
 Err cmd_textbuf(CmdParams p[static 1]) {
     try( session_current_buf(p->s, &p->tb));
-    try( cmd_parse_range(p->s, &p->r, &p->ln));
+    try( _cmd_parse_range(p->s, &p->r, &p->ln));
     return run_cmd__(p, _cmd_textbuf_);
 }
 
 Err cmd_sourcebuf(CmdParams p[static 1]) {
     try( session_current_src(p->s, &p->tb));
-    try( cmd_parse_range(p->s, &p->r, &p->ln));
+    try( _cmd_parse_range(p->s, &p->r, &p->ln));
     return run_cmd__(p, _cmd_textbuf_);
 }
 
@@ -163,9 +167,9 @@ Err cmd_anchor(CmdParams p[static 1]) {
     try( parse_base36_or_throw(&p->ln, &linknum));
     p->ln = cstr_skip_space(p->ln);
     switch (*p->ln) {
-        case '\'': return cmd_anchor_print(p->s, (size_t)linknum); 
+        case '"': return _cmd_anchor_print(p->s, (size_t)linknum); 
         case '\0': 
-        case '*': return cmd_anchor_asterisk(p->s, (size_t)linknum);
+        case '*': return _cmd_anchor_asterisk(p->s, (size_t)linknum);
         default: return "?";
     }
 }
@@ -176,10 +180,10 @@ Err cmd_input(CmdParams p[static 1]) {
     try( parse_base36_or_throw(&p->ln, &linknum));
     p->ln = cstr_skip_space(p->ln);
     switch (*p->ln) {
-        case '\'': return cmd_input_print(p->s, linknum);
+        case '"': return _cmd_input_print(p->s, linknum);
         case '\0': 
-        case '*': return cmd_input_submit_ix(p->s, linknum);
-        case '=': return cmd_input_ix(p->s, linknum, p->ln + 1); 
+        case '*': return _cmd_input_submit_ix(p->s, linknum);
+        case '=': return _cmd_input_ix(p->s, linknum, p->ln + 1); 
         default: return "?";
     }
 }
@@ -190,7 +194,7 @@ Err cmd_image(CmdParams p[static 1]) {
     try( parse_base36_or_throw(&p->ln, &linknum));
     p->ln = cstr_skip_space(p->ln);
     switch (*p->ln) {
-        case '\'': return cmd_image_print(p->s, linknum);
+        case '"': return _cmd_image_print(p->s, linknum);
         default: return "?";
     }
     return Ok;
@@ -200,6 +204,8 @@ Err cmd_set_session_input(CmdParams p[static 1]);
 Err cmd_set_session_winsz(CmdParams p[static 1]);
 Err cmd_set_session_ncols(CmdParams p[static 1]);
 Err cmd_set_session_monochrome(CmdParams p[static 1]);
+#define CMD_SET_CURL "Set a curl option.\n"\
+    "TODO: enumerate all available options.\n"
 Err cmd_set_curl(CmdParams p[static 1]);
 define_err_cmd(cmd_set_session_invalid_option, "not a session option")
 
@@ -214,14 +220,14 @@ Err cmd_set_session(CmdParams p[static 1]) { return run_cmd__(p, _cmd_set_sessio
 
 //define_err_cmd(cmd_set_invalid_option, "not an option")
 
+static SessionCmd _cmd_set_[] = 
+    { {.name="curl",    .match=1, .fn=cmd_set_curl,    .help=CMD_SET_CURL}
+    , {.name="session", .match=1, .fn=cmd_set_session, .help=NULL,.subcmds=_cmd_set_session_}
+    , {0}
+    };
 #define CMD_SET_DOC "Sets an option.\n"
 Err cmd_set(CmdParams p[static 1]) {
-    static SessionCmd _session_cmd_set_[] = 
-        { {.name="curl",    .match=1, .fn=cmd_set_curl,    .help=NULL}
-        , {.name="session", .match=1, .fn=cmd_set_session, .help=NULL,.subcmds=_cmd_set_session_}
-        , {0}
-        };
-    return run_cmd__(p, _session_cmd_set_);
+    return run_cmd__(p, _cmd_set_);
 }
 
 Err dbg_print_form(CmdParams p[static 1]) ;
@@ -250,7 +256,7 @@ static SessionCmd _session_cmd_[] =
     , [2]={.name="echo",      .match=1, .fn=cmd_echo,      .help=CMD_ECHO_DOC}
     , [3]={.name="go",        .match=1, .fn=cmd_go,        .help=CMD_GO_DOC}
     , [4]={.name="quit",      .match=1, .fn=cmd_quit,      .help=CMD_QUIT_DOC, .flags=CMD_NO_PARAMS}
-    , [5]={.name="set",       .match=1, .fn=cmd_set,       .help=CMD_SET_DOC }
+    , [5]={.name="set",       .match=1, .fn=cmd_set,       .help=CMD_SET_DOC, .subcmds=_cmd_set_}
     , [6]={.name="|",             .fn=cmd_tabs,       .help=CMD_TABS_DOC, .flags=CMD_CHAR, .subcmds=_cmd_tabs_}
     , [7]={.name=".",             .fn=cmd_doc,        .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_doc_}
     , [8]={.name=":",             .fn=cmd_textbuf,    .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
@@ -284,7 +290,7 @@ Err process_line_line_mode(Session* s, const char* line) {
 Err process_line_vi_mode(Session* s, const char* line) {
     if (!s) return "error: no session :./";
     try( process_line(s, line));
-    return cmd_doc_draw(s, "");//TODO: do not rewrite the title
+    return _cmd_doc_draw(s, "");//TODO: do not rewrite the title
 }
 
 #include <sys/ioctl.h>

@@ -6,7 +6,7 @@
 #include "ahre__.h"
 
 #define cmd_assert_no_params(Ln) do{ if(*Ln) return "error: expecting no params"; }while(0)
-Err cmd_parse_range(Session s[static 1], Range range[static 1],  const char* line[static 1]);
+Err _cmd_parse_range(Session s[static 1], Range range[static 1],  const char* line[static 1]);
 
 typedef enum { cmd_base_tag, cmd_textbuf_tag } CmdTag;
 typedef struct { const char* ln; Session* s; TextBuf* tb; Range r; } CmdParams;
@@ -21,14 +21,6 @@ typedef struct SessionCmd {
     SessionCmdFn fn;
     SessionCmd* subcmds;
 } SessionCmd ;
-
-
-static inline Err cmd_unknown(Session* s, const char* ln) {
-    (void)s; (void)ln; return "unknown doc command";
-}
-static inline Err cmd_textbuf_unknown(Session* s, TextBuf tb[static 1], Range* r, const char* ln) {
-    (void)s; (void)tb; (void)r; (void)ln; return "unknown doc command";
-}
 
 
 /*
@@ -48,16 +40,12 @@ static inline Err cmd_cookies(CmdParams p[static 1]) {
     return url_client_print_cookies(session_url_client(p->s));
 }
 
-static inline Err cmd_doc_draw(Session session[static 1], const char* rest) {
+static inline Err _cmd_doc_draw(Session session[static 1], const char* rest) {
     if (*rest) return "error: unexpected param";
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
     htmldoc_reset(htmldoc);
     return htmldoc_draw(htmldoc, session);
-}
-
-static inline Err cmd_slash_msg(Session session[static 1], const char* rest) {
-    (void)session; (void)rest; return "to search in buffer use ':/' (not just '/')";
 }
 
 /*
@@ -86,7 +74,7 @@ static inline Err cmd_tabs_goto(CmdParams p[static 1]) {
 /* 
  * HtmlDoc commands
  */
-Err cmd_doc_dbg_traversal(Session ctx[static 1], const char* f);
+Err _cmd_doc_dbg_traversal(Session ctx[static 1], const char* f);
 Err cmd_doc(CmdParams p[static 1]);
 
 static inline Err cmd_doc_info(CmdParams p[static 1]) {
@@ -110,7 +98,7 @@ static inline Err cmd_doc_bookmark_add(CmdParams p[static 1]) {
     return bookmark_add_to_section(d, p->ln, session_url_client(p->s));
 }
 
-static inline Err cmd_doc_hide(Session session[static 1], const char* tags) {
+static inline Err _cmd_doc_hide(Session session[static 1], const char* tags) {
     HtmlDoc* d;
     try( session_current_doc(session, &d));
     size_t ts = 0;
@@ -119,7 +107,7 @@ static inline Err cmd_doc_hide(Session session[static 1], const char* tags) {
     return err; 
 }
 
-static inline Err cmd_doc_show(Session session[static 1], const char* tags) {
+static inline Err _cmd_doc_show(Session session[static 1], const char* tags) {
     HtmlDoc* d;
     try( session_current_doc(session, &d));
     size_t ts = 0;
@@ -136,17 +124,9 @@ static inline Err cmd_doc_show(Session session[static 1], const char* tags) {
 Err cmd_textbuf_global(CmdParams p[static 1]);
 StrView parse_pattern(const char* tk);
 
-static inline Err cmd_sourcebuf_global(Session s[static 1],  const char* rest) {
-    (void)s;
-    StrView pattern = parse_pattern(rest);
-    if (!pattern.items || !pattern.len) { return "Could not read pattern"; }
-    printf("pattern: %s\n", pattern.items);
-    return Ok;
-}
-
 
 //TODO: pass session to this fn
-//static inline Err cmd_textbuf_print_last_range(Session s[static 1], TextBuf textbuf[static 1]) {
+//static inline Err _cmd_textbuf_print_last_range(Session s[static 1], TextBuf textbuf[static 1]) {
 //    Range r = *textbuf_last_range(textbuf);
 //    try( session_write_msg_lit__(s, "last range: ("));
 //    try( session_write_unsigned_msg(s, r.beg));
@@ -156,7 +136,7 @@ static inline Err cmd_sourcebuf_global(Session s[static 1],  const char* rest) {
 //    return Ok;
 //}
 
-//static inline Err cmd_textbuf_print_all(TextBuf textbuf[static 1]) {
+//static inline Err _cmd_textbuf_print_all(TextBuf textbuf[static 1]) {
 //    BufOf(char)* buf = &textbuf->buf;
 //    fwrite(buf->items, 1, buf->len, stdout);
 //    return NULL;
@@ -167,17 +147,9 @@ typedef Err (*TextBufCmdFn)
 
 static inline Err _run_textbuf_cmd_(Session s[static 1], const char* line, TextBufCmdFn fn) {
     Range range;
-    try( cmd_parse_range(s, &range, &line));
+    try( _cmd_parse_range(s, &range, &line));
     TextBuf* textbuf;
     try( session_current_buf(s, &textbuf));
-    return fn(s, textbuf, &range, line);
-}
-
-static inline Err _run_sourcebuf_cmd_(Session s[static 1], const char* line, TextBufCmdFn fn) {
-    Range range;
-    try( cmd_parse_range(s, &range, &line));
-    TextBuf* textbuf;
-    try( session_current_src(s, &textbuf));
     return fn(s, textbuf, &range, line);
 }
 
@@ -188,7 +160,7 @@ static inline Err cmd_textbuf_print(CmdParams p[static 1]) {
 }
 
 
-Err cmd_parse_range(Session s[static 1], Range range[static 1],  const char* line[static 1]);
+Err _cmd_parse_range(Session s[static 1], Range range[static 1],  const char* line[static 1]);
 Err dbg_print_all_lines_nums(
     Session s[static 1], TextBuf tb[static 1], Range r[static 1], const char* ln);
 
@@ -204,25 +176,21 @@ Err _textbuf_print_n_(
 static inline Err
 cmd_textbuf_print_n(CmdParams p[static 1]) { return  _textbuf_print_n_(p->s, p->tb, &p->r, p->ln); }
 
-Err cmd_textbuf_write_impl(
+Err _cmd_textbuf_write_impl(
     Session s[static 1], TextBuf textbuf[static 1], Range r[static 1], const char* rest);
 
 static inline Err cmd_textbuf_write(CmdParams p[static 1]) {
-    return cmd_textbuf_write_impl(p->s, p->tb, &p->r, p->ln);
-}
-
-static inline Err cmd_sourcebuf_write(Session s[static 1], const char* rest) {
-    return _run_sourcebuf_cmd_(s, rest, cmd_textbuf_write_impl);
+    return _cmd_textbuf_write_impl(p->s, p->tb, &p->r, p->ln);
 }
 
 /*
  * Anchor commands
  */
 
-Err cmd_anchor_print(Session session[static 1], size_t linknum);
+Err _cmd_anchor_print(Session session[static 1], size_t linknum);
 
 
-static inline Err cmd_anchor_asterisk(Session session[static 1], size_t linknum) {
+static inline Err _cmd_anchor_asterisk(Session session[static 1], size_t linknum) {
     try( session_follow_ahref(session, linknum));
     return Ok;
 }
@@ -231,7 +199,7 @@ static inline Err cmd_anchor_asterisk(Session session[static 1], size_t linknum)
 /*
  * Input commands
  */
-Err cmd_input_ix(Session session[static 1], const size_t ix, const char* line);
+Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line);
 
 
 static inline Err
@@ -243,10 +211,9 @@ _get_input_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outnode[s
     if (!nodeptr) return "input element number invalid";
     *outnode = *nodeptr;
     return Ok;
-}
 
 
-static inline Err cmd_input_print(Session session[static 1], size_t ix) {
+static inline Err _cmd_input_print(Session session[static 1], size_t ix) {
     lxb_dom_node_t* node;
     try( _get_input_by_ix(session, ix, &node));
     BufOf(char)* buf = &(BufOf(char)){0};
@@ -257,14 +224,14 @@ static inline Err cmd_input_print(Session session[static 1], size_t ix) {
     return err;
 }
 
-static inline Err cmd_input_submit_ix(Session session[static 1], size_t ix) {
+static inline Err _cmd_input_submit_ix(Session session[static 1], size_t ix) {
     return session_press_submit(session, ix);
 }
 
-///static inline Err cmd_submit(Session session[static 1], const char* line) {
+///static inline Err _cmd_submit(Session session[static 1], const char* line) {
 ///    long long unsigned num;
 ///    try(parse_base36_or_throw(&line, &num));
-///    return cmd_input_submit_ix(session, num);
+///    return _cmd_input_submit_ix(session, num);
 ///}
 
 /*
@@ -273,16 +240,16 @@ static inline Err cmd_input_submit_ix(Session session[static 1], size_t ix) {
 
 Err cmd_image(CmdParams p[static 1]);
 Err _get_image_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outnode[static 1]);
-Err cmd_image_print(Session session[static 1], size_t ix);
+Err _cmd_image_print(Session session[static 1], size_t ix);
 
 
 /*
    Misc commands
  */
 
-Err cmd_misc(Session session[static 1], const char* line);
+Err _cmd_misc(Session session[static 1], const char* line);
 
-static inline Err cmd_misc_tag(const char* rest, Session session[static 1]) {
+static inline Err _cmd_misc_tag(const char* rest, Session session[static 1]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
     return lexbor_cp_tag(rest, htmldoc->lxbdoc, textbuf_buf(htmldoc_textbuf(htmldoc)));

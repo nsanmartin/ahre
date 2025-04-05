@@ -20,46 +20,45 @@ Err cmd_go(CmdParams p[static 1]) {
     return session_open_url(p->s, p->ln, p->s->url_client);
 }
 
-Err cmd_set_session_winsz(Session session[static 1], const char* ln) {
-    cmd_assert_no_params(ln);
+Err cmd_set_session_winsz(CmdParams p[static 1]) {
     size_t nrows, ncols;
     try( ui_get_win_size(&nrows, &ncols));
-    *session_nrows(session) = nrows;
-    *session_ncols(session) = ncols;
+    *session_nrows(p->s) = nrows;
+    *session_ncols(p->s) = ncols;
     
-    try( session_write_msg_lit__(session, "win: nrows = ")); 
-    try( session_write_unsigned_msg(session, nrows));
-    try( session_write_msg_lit__(session, ", ncols = "));
-    try( session_write_unsigned_msg(session, ncols));
-    try( session_write_msg_lit__(session, "\n"));
+    try( session_write_msg_lit__(p->s, "win: nrows = ")); 
+    try( session_write_unsigned_msg(p->s, nrows));
+    try( session_write_msg_lit__(p->s, ", ncols = "));
+    try( session_write_unsigned_msg(p->s, ncols));
+    try( session_write_msg_lit__(p->s, "\n"));
     return Ok;
 }
 
-Err cmd_set_session_ncols(Session session[static 1], const char* line) {
+Err cmd_set_session_ncols(CmdParams p[static 1]) {
     size_t ncols;
-    parse_size_t_or_throw(&line, &ncols, 10);
-    if (*cstr_skip_space(line)) return "invalid argument";
-    *session_ncols(session) = ncols;
+    parse_size_t_or_throw(&p->ln, &ncols, 10);
+    if (*cstr_skip_space(p->ln)) return "invalid argument";
+    *session_ncols(p->s) = ncols;
     return Ok;
 }
 
-Err cmd_set_session_monochrome(Session session[static 1], const char* line) {
-    line = cstr_skip_space(line);
-    if (*line == '0') session_monochrome_set(session, false);
-    else if (*line == '1') session_monochrome_set(session, true);
+Err cmd_set_session_monochrome(CmdParams p[static 1]) {
+    p->ln = cstr_skip_space(p->ln);
+    if (*p->ln == '0') session_monochrome_set(p->s, false);
+    else if (*p->ln == '1') session_monochrome_set(p->s, true);
     else return "monochrome option should be '0' or '1'";
     return Ok;
 }
 
-Err cmd_set_session_input(Session session[static 1], const char* line) {
-    line = cstr_skip_space(line);
+Err cmd_set_session_input(CmdParams p[static 1]) {
+    p->ln = cstr_skip_space(p->ln);
     UserInterface ui;
     const char* rest;
-    if ((rest = csubstr_match(line, "fgets", 1)) && !*rest) ui = ui_fgets();
-    else if ((rest = csubstr_match(line, "isocline", 1)) && !*rest) ui = ui_isocline();
-    else if ((rest = csubstr_match(line, "vi", 1)) && !*rest) ui = ui_vi_mode();
-    else return "input option should be 'getline' or 'isocline'";
-    ui_switch(session_ui(session), &ui);
+    if ((rest = csubstr_match(p->ln, "fgets", 1)) && !*rest) ui = ui_fgets();
+    else if ((rest = csubstr_match(p->ln, "isocline", 1)) && !*rest) ui = ui_isocline();
+    else if ((rest = csubstr_match(p->ln, "visual", 1)) && !*rest) ui = ui_vi_mode();
+    else return "input option should be 'getline', 'isocline' or 'visual'";
+    ui_switch(session_ui(p->s), &ui);
     return Ok;
 }
 
@@ -69,7 +68,7 @@ Err cmd_set_session_input(Session session[static 1], const char* line) {
 /*
  * These commands require a valid document, the caller should check this condition before
  */
-static Err cmd_fetch(Session session[static 1]) {
+static Err _cmd_fetch(Session session[static 1]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
 
@@ -123,14 +122,14 @@ static Err shorcut_z(Session session[static 1], const char* rest) {
     return Ok;
 }
 
-Err cmd_misc(Session session[static 1], const char* line) {
+Err _cmd_misc(Session session[static 1], const char* line) {
     const char* rest = 0x0;
     line = cstr_skip_space(line);
     if ((rest = csubstr_match(line, "attr", 2))) { return "TODO: attr"; }
     if ((rest = csubstr_match(line, "class", 3))) { return "TODO: class"; }
     ///if ((rest = csubstr_match(line, "clear", 3))) { return cmd_clear(session); }
-    if ((rest = csubstr_match(line, "fetch", 1))) { return cmd_fetch(session); }
-    if ((rest = csubstr_match(line, "tag", 2))) { return cmd_misc_tag(rest, session); }
+    if ((rest = csubstr_match(line, "fetch", 1))) { return _cmd_fetch(session); }
+    if ((rest = csubstr_match(line, "tag", 2))) { return _cmd_misc_tag(rest, session); }
     if ((rest = csubword_match(line, "z", 1))) { return shorcut_z(session, rest); }
 
     return "unknown cmd";
@@ -212,7 +211,7 @@ static const char* _mem_find_esc_code_(const char* s, size_t len) {
 }
 
 
-Err cmd_textbuf_write_impl(
+Err _cmd_textbuf_write_impl(
     Session s[static 1], TextBuf textbuf[static 1], Range r[static 1], const char* rest
 )
 {
@@ -249,7 +248,7 @@ Err cmd_textbuf_global(CmdParams p[static 1]) {
 }
 
 
-Err cmd_parse_range(Session s[static 1], Range range[static 1],  const char* inputline[static 1]) {
+Err _cmd_parse_range(Session s[static 1], Range range[static 1],  const char* inputline[static 1]) {
     *range = (Range){0};
     const char* line = *inputline;
     if (!line) { return Ok; }
@@ -278,7 +277,7 @@ Err cmd_parse_range(Session s[static 1], Range range[static 1],  const char* inp
 /* input commands */
 
 
-Err cmd_input_ix(Session session[static 1], const size_t ix, const char* line) {
+Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) {
     lxb_dom_node_t* node;
     try( _get_input_by_ix(session, ix, &node));
 
@@ -302,7 +301,7 @@ Err cmd_input_ix(Session session[static 1], const size_t ix, const char* line) {
         if (len && line[len-1] == '\n') --len;
         err = lexbor_set_attr_value(node, line, len);
     }
-    ok_then(err, cmd_doc_draw(session, ""));
+    ok_then(err, _cmd_doc_draw(session, ""));
     return err;
 }
 
@@ -318,7 +317,7 @@ Err _get_image_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outno
     return Ok;
 }
 
-Err cmd_image_print(Session session[static 1], size_t ix) {
+Err _cmd_image_print(Session session[static 1], size_t ix) {
     lxb_dom_node_t* node;
     try( _get_image_by_ix(session, ix, &node));
     BufOf(char)* buf = &(BufOf(char)){0};
@@ -331,7 +330,7 @@ Err cmd_image_print(Session session[static 1], size_t ix) {
 
 /* anchor commands */
 
-Err cmd_anchor_print(Session session[static 1], size_t linknum) {
+Err _cmd_anchor_print(Session session[static 1], size_t linknum) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
     ArlOf(LxbNodePtr)* anchors = htmldoc_anchors(htmldoc);

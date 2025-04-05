@@ -4,6 +4,7 @@
 #include "mem.h"
 #include "session.h"
 #include "url-client.h"
+#include "cmd.h"
 
 
 //TODO: use init
@@ -96,11 +97,11 @@ static Err _curl_setopt_cstr_(CURL* handle, CURLoption opt, const char* rest) {
 }
 
 
-Err cmd_set_curl(Session session[static 1], const char* line) {
+Err cmd_set_curl(CmdParams p[static 1]) {
     CURLoption opt;
-    const char* rest = _parse_opt(line, &opt);
+    const char* rest = _parse_opt(p->ln, &opt);
     if (!rest) return "invalid curl opt";
-    CURL* handle = session_url_client(session)->curl;
+    CURL* handle = session_url_client(p->s)->curl;
     switch(opt) {
         case CURLOPT_VERBOSE:
         case CURLOPT_NOPROGRESS:
