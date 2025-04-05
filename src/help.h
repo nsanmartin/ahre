@@ -7,6 +7,8 @@ const char* _options_ =
 "\t-m | --monochrome       disable colours\n"
 "\t-i | --input <iface>    pick input interce, it should be one of: fgets, isocline, visual\n"
 "\t-v | --version          print help and exit\n"
+"\n\n"
+"Use '?' from within ahre to get the documentation of ahre commands\n"
 ;
 void print_help(const char* prog) {
     printf("usage: %s [options] [url ...]    visit url(s)\n\n", prog);

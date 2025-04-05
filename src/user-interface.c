@@ -215,11 +215,10 @@ Err dbg_print_form(CmdParams p[static 1]) ;
 Err cmd_bookmarks(CmdParams p[static 1]);
 
 
-Err _main_help_fn_(CmdParams p[static 1]);
-
-#define HELP_MSG \
+#define CMD_HELP_DOC \
     "Ahre\n" \
     "Type SUB_COMMAND ? to get help for help in a sub command:\n\n"
+Err cmd_help(CmdParams p[static 1]);
 
 #define CMD_HELP_IX 14
 static SessionCmd _session_cmd_[] = 
@@ -237,7 +236,7 @@ static SessionCmd _session_cmd_[] =
     , [11]={.name=ANCHOR_OPEN_STR,.fn=cmd_anchor,     .help=NULL, .flags=CMD_CHAR}
     , [12]={.name=INPUT_OPEN_STR, .fn=cmd_input,      .help=NULL, .flags=CMD_CHAR}
     , [13]={.name=IMAGE_OPEN_STR, .fn=cmd_image,      .help=NULL, .flags=CMD_CHAR}
-    , [CMD_HELP_IX]={.name="?",   .fn=_main_help_fn_, .help=HELP_MSG, .flags=CMD_CHAR, .subcmds=_session_cmd_}
+    , [CMD_HELP_IX]={.name="?",   .fn=cmd_help, .help=CMD_HELP_DOC, .flags=CMD_CHAR, .subcmds=_session_cmd_}
     , [15]={0}
     };
 
@@ -250,7 +249,7 @@ Err process_line(Session session[static 1], const char* line) {
     return run_cmd__(&(CmdParams){.s=session,.ln=line}, _session_cmd_);
 }
 
-Err _main_help_fn_(CmdParams p[static 1]) {
+Err cmd_help(CmdParams p[static 1]) {
     return run_cmd_help(p->s, &_session_cmd_[CMD_HELP_IX]);
 }
 
