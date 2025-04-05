@@ -47,8 +47,8 @@ Err dbg_print_form(CmdParams p[static 1]) {
     try_debug_build_only();
 
     p->ln = cstr_skip_space(p->ln);
-    long long unsigned linknum;
-    try( parse_base36_or_throw(&p->ln, &linknum));
+    size_t linknum;
+    try( parse_size_t_or_throw(&p->ln, &linknum, 36));
     p->ln = cstr_skip_space(p->ln);
     TabNode* current_tab;
     try( tablist_current_tab(session_tablist(p->s), &current_tab));

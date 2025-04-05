@@ -242,12 +242,6 @@ static inline Err _cmd_input_submit_ix(Session session[static 1], size_t ix) {
     return session_press_submit(session, ix);
 }
 
-///static inline Err _cmd_submit(Session session[static 1], const char* line) {
-///    long long unsigned num;
-///    try(parse_base36_or_throw(&line, &num));
-///    return _cmd_input_submit_ix(session, num);
-///}
-
 /*
   Image Commands
 */

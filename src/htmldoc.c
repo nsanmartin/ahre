@@ -708,7 +708,6 @@ Err draw_rec(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     return Ok;
 }
 
-//TODO: is this fn needed?
 Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     draw_ctx_pre_set(ctx, true);
     try( draw_list_block(node->first_child, node->last_child, ctx));
@@ -805,7 +804,6 @@ HtmlDoc* htmldoc_create(const char* url) {
     return rv;
 }
 
-//TODO: rename this fn
 void htmldoc_reset(HtmlDoc htmldoc[static 1]) {
     textbuf_reset(htmldoc_textbuf(htmldoc));
     textbuf_reset(htmldoc_sourcebuf(htmldoc));

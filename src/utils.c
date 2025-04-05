@@ -51,22 +51,3 @@ Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) {
     return Ok;
 }
 
-Err parse_base36_or_throw(const char** strptr, unsigned long long* num) {
-    //TODO: 
-    //parse_size_t_or_throw(strptr, num, 36);
-    if (!strptr || !*strptr) return "error: unexpected NULL ptr";
-    while(**strptr && isspace(**strptr)) ++*strptr;
-    if (!**strptr) return "number not given";
-    if (!isalnum(**strptr)) return "number must consist in digits";
-    char* endptr = NULL;
-    *num = strtoull(*strptr, &endptr, 36);
-    if (errno == ERANGE)
-        return "warn: number out of range";
-    if (*strptr == endptr)
-        return "warn: number could not be parsed";
-    if (*num > SIZE_MAX) 
-        return "warn: number out of range (exceeds size max)";
-    *strptr = endptr;
-    return Ok;
-}
-

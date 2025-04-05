@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "error.h"
 #include "bookmark.h"
 #include "cmd.h"
 #include "constants.h"
@@ -59,9 +60,24 @@ static inline bool _no_params_match_(SessionCmd* cmd, CmdParams p[static 1]) {
     return cmd->flags & CMD_NO_PARAMS && *cstr_skip_space(p->ln);
 }
 
+static const char* _name_match_impl_(SessionCmd* cmd, CmdParams p[static 1]) {
+    const char* s = p->ln;
+    size_t len = cmd->len;
+    if (!*s || !isalpha(*s)) { return 0x0; }
+	for (; *s && isalpha(*s); ++s, ++cmd->name, (len?--len:len)) {
+		if (*s != *cmd->name) { return 0x0; }
+	}
+    if (len) { 
+        try(session_write_msg_lit__(p->s, "..."));
+        try(session_write_msg(p->s, (char*)cmd->name, strlen(cmd->name)));
+        try(session_write_msg_lit__(p->s, "?\n"));
+        return 0x0;
+    }
+	return cstr_skip_space(s);
+}
 static inline bool _name_match_(SessionCmd* cmd, CmdParams p[static 1]) {
     const char* rest;
-    if ((rest = csubstr_match(p->ln, cmd->name, cmd->match))) {
+    if ((rest = _name_match_impl_(cmd,p))) {
         p->ln = rest;
         return true;
     }
@@ -114,10 +130,7 @@ Err run_cmd__(CmdParams p[static 1], SessionCmd cmdlist[]) {
 
 Err run_cmd_on_ix__(CmdParams p[static 1], SessionCmd cmdlist[]) {
     p->ln = cstr_skip_space(p->ln);
-    long long unsigned linknum;
-    try( parse_base36_or_throw(&p->ln, &linknum));
-    if (linknum > SIZE_MAX) return "error: integer overflow, ix too large";
-    p->ix = linknum;
+    try( parse_size_t_or_throw(&p->ln, &p->ix, 36));
     p->ln = cstr_skip_space(p->ln);
     return run_cmd__(p, cmdlist);
 }
