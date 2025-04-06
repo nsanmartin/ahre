@@ -101,11 +101,16 @@ _insert_missing_newlines_(TextBuf tb[static 1], size_t maxlen, ArlOf(size_t) ins
     StrView line;
     BufOf(char)* buf = &(BufOf(char)){0};
     while (textbuf_get_line(tb, n++, &line)) {
+        Err err;
         if (line.len && line.len <= maxlen) {
             /* line includes the '\n' */
-            try( bufofchar_append(buf, (char*)line.items, line.len));
+            err = bufofchar_append(buf, (char*)line.items, line.len);
         } else {
-            try( _insert_line_splitting_(&line, buf, maxlen, insertions));
+            err = _insert_line_splitting_(&line, buf, maxlen, insertions);
+        }
+        if (err) {
+            buffn(char,clean)(buf);
+            return err;
         }
     }
     buffn(char,clean)(textbuf_buf(tb));

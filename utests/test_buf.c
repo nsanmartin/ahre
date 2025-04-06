@@ -29,6 +29,7 @@ fail:
 static int _check_fit_lines_(
     char* str, size_t len, size_t ncols, size_t count_before, size_t count_after
 ) {
+
     TextBuf tb;
     textbuf_init(&tb);
     utest_try( textbuf_append_part(&tb, str, len), fail);
@@ -36,6 +37,7 @@ static int _check_fit_lines_(
     utest_try( textbuf_fit_lines(&tb, ncols), fail);
 
     Str* buf = textbuf_buf(&tb);
+    utest_assert(buf, fail);
     utest_assert(
         count_after == mem_count_ocurrencies(items__(buf), len__(buf), '\n'),
         fail);
@@ -75,6 +77,7 @@ int modat_arr_eq(ArlOf(ModAt)* x, ArlOf(ModAt)* y) {
     return true;
 }
 
+
 int test_2_fit_lines_mods(void) {
 #define t2str0 " [0.Historial web]| [1.Configuracion]| [2.Acceder]"
     size_t len = lit_len__(t2str0);
@@ -110,8 +113,13 @@ int test_2_fit_lines_mods(void) {
         ),
         fail
     );
+    tb.mods = (ArlOf(ModAt)){0};
+    textbuf_cleanup(&tb);
     return 0;
-fail: return 1;
+fail:
+    tb.mods = (ArlOf(ModAt)){0};
+    textbuf_cleanup(&tb);
+    return 1;
 }
 
 int main(void) {
