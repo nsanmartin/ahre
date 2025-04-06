@@ -1,6 +1,6 @@
 INCLUDE:=$(HOME)/usr/include
 CFLAGS+=-g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition \
-		-I. -Ihashi/include -Iisocline/include
+		-I. -Iche/include -Iisocline/include
 SANITIZE_FLAGS:= -fsanitize=leak -fsanitize=address -fsanitize=undefined \
 				 -fsanitize=null -fsanitize=bounds -fsanitize=pointer-overflow
 
@@ -71,7 +71,7 @@ tags: $(AHRE_HEADERS) $(AHRE_SRCS) clean-tags
 
 cscope.files: $(AHRE_HEADERS) $(AHRE_SRCS)
 	if [ -f cscope.files ]; then rm cscope.files; fi
-	find . \( -path "./.git"  -o -path "./hashi" \) ! -prune -o -name "*.[ch]" > $@
+	find . \( -path "./.git"  -o -path "./che" \) ! -prune -o -name "*.[ch]" > $@
 
 cscope: cscope.files 
 	cscope -R -b -i $<

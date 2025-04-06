@@ -1,7 +1,3 @@
-[submodule "hashi"]
-	path = hashi
-	url = https://github.com/nsanmartin/hashi.git
-    branch = dev
 [submodule "isocline"]
 	path = isocline
 	url = https://github.com/daanx/isocline.git

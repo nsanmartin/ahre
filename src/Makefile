@@ -1,7 +1,7 @@
 REPO_DIR=..
 INCLUDE:=$(HOME)/usr/include
 CFLAGS+=-g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition \
-		-I. -I$(REPO_DIR)/hashi/include -I$(REPO_DIR)/isocline/include
+		-I. -I$(REPO_DIR)/che/include -I$(REPO_DIR)/isocline/include
 
 AHRE_OBJDIR=$(REPO_DIR)/build
 AHRE_BUILD=$(REPO_DIR)/build

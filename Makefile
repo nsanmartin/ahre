@@ -5,11 +5,11 @@ test_all:
 	$(MAKE) -C utests test_all
 
 tags: $(wildcard $(AHRE_SRCDIR)/*.c) clean-tags
-	ctags -R --exclude=.git --exclude=hashi/scripts .
+	ctags -R --exclude=.git --exclude=che/scripts .
 
 cscope.files: $(AHRE_HEADERS) $(AHRE_SRCS)
 	if [ -f cscope.files ]; then rm cscope.files; fi
-	find . \( -path "./.git"  -o -path "./hashi" \) ! -prune -o -name "*.[ch]" > $@
+	find . \( -path "./.git"  -o -path "./che" \) ! -prune -o -name "*.[ch]" > $@
 
 cscope: cscope.files 
 	cscope -R -b -i $<

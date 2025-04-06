@@ -6,7 +6,7 @@
 
 #include "textbuf.h"
 
-#define BT lxb_char_t
+#define T lxb_char_t
 #include <buf.h>
 
 Err lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* buf);

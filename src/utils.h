@@ -15,11 +15,11 @@ inline static bool file_exists(const char* filename) { return !access(filename, 
 #define GET_MACRO__(_1,_2,_3,NAME,...) NAME
 
 #define lit_len__(Lit) (sizeof(Lit)-1)
-#define BT char
+#define T char
 #include <buf.h>
 
 typedef const char const_char;
-#define BT const_char
+#define T const_char
 #include <buf.h>
 
 #define T char
