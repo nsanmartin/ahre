@@ -23,30 +23,30 @@ int test_0(void) {
     RangeParseCtx ctx = range_parse_ctx_from_textbuf(&tb);
 
     parse_range_impl("1,2", &ctx, &range);
-    utest_assert(range.beg == 1, fail, __LINE__);
-    utest_assert(range.end == 2, fail, __LINE__);
+    utest_assert(range.beg == 1, fail);
+    utest_assert(range.end == 2, fail);
 
     parse_range_impl("0,5", &ctx, &range);
-    utest_assert(range.beg == 0, fail, __LINE__);
-    utest_assert(range.end == 5, fail, __LINE__);
+    utest_assert(range.beg == 0, fail);
+    utest_assert(range.end == 5, fail);
     
     parse_range_impl("0,15", &ctx, &range);
-    utest_assert(range.beg == 0, fail, __LINE__);
-    utest_assert(range.end == 5, fail, __LINE__);
+    utest_assert(range.beg == 0, fail);
+    utest_assert(range.end == 5, fail);
 
     parse_range_impl("0,", &ctx, &range);
-    utest_assert(range.beg == 0, fail, __LINE__);
-    utest_assert(range.end == 0, fail, __LINE__);
+    utest_assert(range.beg == 0, fail);
+    utest_assert(range.end == 0, fail);
 
     *textbuf_current_offset(&tb) = 2;
     ctx = range_parse_ctx_from_textbuf(&tb);
     parse_range_impl(",4", &ctx, &range);
-    utest_assert(range.beg == 2, fail, __LINE__);
-    utest_assert(range.end == 4, fail, __LINE__);
+    utest_assert(range.beg == 2, fail);
+    utest_assert(range.end == 4, fail);
 
     parse_range_impl("%", &ctx, &range);
-    utest_assert(range.beg == 1, fail, __LINE__);
-    utest_assert(range.end == len + 1, fail, __LINE__);
+    utest_assert(range.beg == 1, fail);
+    utest_assert(range.end == len + 1, fail);
     return 0;
 fail:
     return 1;

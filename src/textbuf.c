@@ -80,9 +80,10 @@ static Err _insert_line_splitting_(
                 if (!len) len = maxlen;
             }
         }
-        try( bufofchar_append(buf, beg, len)) ;
-        try( bufofchar_append_lit__(buf, "\n")) ;
         off += len;
+        try( bufofchar_append(buf, beg, len)) ;
+        if (off >= strview_len(line)) break;
+        try( bufofchar_append_lit__(buf, "\n")) ;
         if (beg + len < strview_end(line) && isspace(beg[len]))
             ++off;
         else if (!arlfn(size_t,append)(insertions,&len__(buf))) return "error: arl failure";
@@ -182,16 +183,18 @@ Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) {
 }
 
 
-static ModAt* _skip_mods_at_the_left_(ModAt it[static 1], ModAt end[static 1], size_t offset) {
-    for ( ; it < end && it->offset < offset ; ++it)
+static ModAt*
+_skip_mods_at_the_left_(ModAt it[static 1], ModAt end[static 1], size_t offset, size_t increase) {
+    for ( ; it < end && it->offset + increase < offset ; ++it)
         ;
     return it;
 }
 
-static ModAt* _move_mods_(ModAt it[static 1], ModAt end[static 1], size_t n, size_t max_off) {
-    for ( ;; ++it) {
-        if  (it == end || it->offset >= max_off) break;
-        it->offset += n;
+static ModAt* _move_mods_(ModAt it[static 1], ModAt end[static 1], size_t max_off, size_t increase) {
+    for (;;) {
+        if  (it == end || it->offset + increase >= max_off) break;
+        it->offset += increase;
+        ++it;
     }
     return it;
 }
@@ -218,8 +221,9 @@ Err textbuf_fit_lines(TextBuf tb[static 1], size_t maxlen) {
         size_t* to = from + 1;
 
         for ( ; to < arlfn(size_t,end)(&insertions) ; ++from, ++to) {
-            mod = _skip_mods_at_the_left_(mod, mend, *from);
-            mod = _move_mods_(mod, mend, (1 + from - ibegin), *to);
+            size_t increase = (1 + from - ibegin);
+            mod = _skip_mods_at_the_left_(mod, mend, *from, increase);
+            mod = _move_mods_(mod, mend, *to, increase);
         }
 
         for ( ; mod < mend ; ++mod) mod->offset += (1 + from - ibegin);
@@ -243,6 +247,7 @@ Err textbuf_append_line_indexes(TextBuf tb[static 1]) {
     return Ok;
 }
 
+/* The retrieved line includes newline (if present: the last one may not have it) */
 bool textbuf_get_line(TextBuf tb[static 1], size_t n, StrView out[static 1]) {
     if (n == 0) return false; /* lines indexes are 1-based! */
     size_t nlines = textbuf_line_count(tb);

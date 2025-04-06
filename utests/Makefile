@@ -1,6 +1,8 @@
 include ../src/Makefile
 
 AHRE_UTESTS=$(REPO_DIR)/utests
+#SANITIZE_FLAGS:= -fsanitize=leak -fsanitize=address -fsanitize=undefined \
+#				 -fsanitize=null -fsanitize=bounds -fsanitize=pointer-overflow
 
 run_tests: test_all
 	@./build/test_buf

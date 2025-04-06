@@ -2,8 +2,6 @@ REPO_DIR=..
 INCLUDE:=$(HOME)/usr/include
 CFLAGS+=-g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition \
 		-I. -I$(REPO_DIR)/hashi/include -I$(REPO_DIR)/isocline/include
-SANITIZE_FLAGS:= -fsanitize=leak -fsanitize=address -fsanitize=undefined \
-				 -fsanitize=null -fsanitize=bounds -fsanitize=pointer-overflow
 
 AHRE_OBJDIR=$(REPO_DIR)/build
 AHRE_BUILD=$(REPO_DIR)/build

@@ -179,13 +179,10 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     if (_input_is_submit_type_(s, slen)) {
 
         lexbor_find_attr_value(node, "value", &s, &slen);
-        if (slen)  {
-            try( _hypertext_id_open_(
-                ctx, draw_ctx_color_red, input_text_open_str, &input_id, input_submit_sep_str));
 
-            try( draw_ctx_buf_append(ctx, strview__((char*)s, slen)));
-        } else try( _hypertext_id_open_(
-                ctx, draw_ctx_color_red, input_text_open_str, &input_id, NULL));
+        StrViewProvider sep = slen ? input_text_sep_str : NULL;
+        try( _hypertext_id_open_(ctx, draw_ctx_color_red, input_text_open_str, &input_id, sep));
+        if (slen) try( draw_ctx_buf_append(ctx, strview__((char*)s, slen)));
         try( _hypertext_id_close_(ctx, draw_ctx_reset_color, input_submit_close_str));
         return Ok;
 
