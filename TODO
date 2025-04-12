@@ -19,6 +19,7 @@
 [ ] separate more htmldoc init from draw
 [ ] implement vi_process_line method that does not print (vi mode only prints on show)
 [ ] use SessionMemWriter consistently (session_write_* -> session_writer_write_*)
+[ ] use different sesion_cmd arrays for different modes.
 
 # WILL NOT DO
 [X] run test in github ci workflow (currently it does not find liblexbos.so.2): moving away from github

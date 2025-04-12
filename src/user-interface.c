@@ -274,6 +274,11 @@ Err cmd_set(CmdParams p[static 1]) {
 
 Err dbg_print_form(CmdParams p[static 1]) ;
 
+Err shortcut_z(Session session[static 1], const char* rest);
+#define CMD_SHORTCUT_Z \
+    "zN print the following N lines"
+Err cmd_shortcut_z(CmdParams p[static 1]) { return shortcut_z(p->s, p->ln); }
+
 #define CMD_BOOKMARKS_DOC \
     "This command assumes the current document is a bookmarks doc. A bookmarks \n"\
     "doc is any one that has the structure of w3m bookmark.html (that is stored \n"\
@@ -310,7 +315,8 @@ static SessionCmd _session_cmd_[] =
     , [13]={.name=IMAGE_OPEN_STR, .fn=cmd_image,  .help=CMD_IMAGE_DOC, .flags=CMD_CHAR}
     , [CMD_HELP_IX]={.name="?",   .fn=cmd_help, .help=CMD_HELP_DOC, .flags=CMD_CHAR,
         .subcmds=_session_cmd_}
-    , [15]={0}
+    , [15]={.name="z", .fn=cmd_shortcut_z, .help=CMD_SHORTCUT_Z, .flags=CMD_CHAR}
+    , [16]={0}
     };
 
 Err process_line(Session session[static 1], const char* line) {

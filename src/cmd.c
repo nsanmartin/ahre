@@ -92,7 +92,7 @@ static Err _cmd_fetch(Session session[static 1]) {
 }
 
 
-static Err shorcut_z(Session session[static 1], const char* rest) {
+Err shortcut_z(Session session[static 1], const char* rest) {
     TextBuf* tb;
     try( session_current_buf(session, &tb));
     if(textbuf_current_line(tb) > textbuf_line_count(tb)) return "No more lines in buffer";
@@ -104,11 +104,8 @@ static Err shorcut_z(Session session[static 1], const char* rest) {
     } 
     if (!*session_nrows(session)) return "invalid n rows";
 
-    size_t range_beg = (textbuf_last_range(tb)->beg && textbuf_last_range(tb)->end) 
-        ? textbuf_last_range(tb)->end
-        : textbuf_current_line(tb)
-        ;
-    Range r = (Range){ .beg=range_beg, .end=range_beg + *session_nrows(session) - 2 };
+    size_t range_beg = textbuf_current_line(tb);
+    Range r = (Range){ .beg=range_beg, .end=range_beg + *session_nrows(session) - 3 };
     if (r.end < r.beg) r.end = r.beg;
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
 
@@ -130,7 +127,7 @@ Err _cmd_misc(Session session[static 1], const char* line) {
     ///if ((rest = csubstr_match(line, "clear", 3))) { return cmd_clear(session); }
     if ((rest = csubstr_match(line, "fetch", 1))) { return _cmd_fetch(session); }
     if ((rest = csubstr_match(line, "tag", 2))) { return _cmd_misc_tag(rest, session); }
-    if ((rest = csubword_match(line, "z", 1))) { return shorcut_z(session, rest); }
+    if ((rest = csubword_match(line, "z", 1))) { return shortcut_z(session, rest); }
 
     return "unknown cmd";
 }

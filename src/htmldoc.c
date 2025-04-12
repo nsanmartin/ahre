@@ -825,6 +825,10 @@ inline void htmldoc_destroy(HtmlDoc* htmldoc) {
 Err htmldoc_draw_with_flags(HtmlDoc htmldoc[static 1], Session s[static 1], unsigned flags) {
     lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(htmldoc);
     DrawCtx ctx;
+    //
+    char* fragment;
+    curl_url_get(htmldoc_url(htmldoc)->cu, CURLUPART_FRAGMENT, &fragment, 0);
+    printf("URL fragment (in draw): %s\n====\n", fragment);
     Err err = draw_ctx_init(&ctx, htmldoc, s, flags);
     ok_then(err, draw_rec(lxb_dom_interface_node(lxbdoc), &ctx));
     ok_then(err, draw_ctx_buf_commit(&ctx));
