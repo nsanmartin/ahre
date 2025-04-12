@@ -23,6 +23,13 @@ static inline Err url_cstr(Url u[static 1], char* out[static 1]) {
     return err_fmt("error getting url from CURLU: %s", curl_url_strerror(code));
 }
 
+static inline Err url_fragment(Url u[static 1], char* out[static 1]) {
+    CURLUcode code = curl_url_get(u->cu, CURLUPART_FRAGMENT, out, 0);
+    if (code == CURLUE_OK || code == CURLUE_NO_FRAGMENT)
+        return Ok;
+    return err_fmt("error getting url fragment from CURLU: %s", curl_url_strerror(code));
+}
+
 static Err _prepend_file_schema_(const char* path, BufOf(char) buf[static 1]) {
     if (!*path) return "error: can't prepend schema to null path";
     try( bufofchar_append_lit__(buf, "file://"));
@@ -51,6 +58,15 @@ static inline Err get_url_alias(const char* cstr, BufOf(char)* out) {
     return err_fmt("not a url alias: %s", cstr);
 }
 
+static inline bool _file_exists_ignore_fragment_(const char* path) {
+    char* numeral = strchr(path, '#'); 
+    if (numeral) *numeral = '\0';
+    bool res = file_exists(path);
+    if (numeral) *numeral = '#';
+    return res;
+}
+
+
 /* ctor */
 static inline Err url_init(Url u[static 1],  const char* cstr) {
     if (!*(cstr=cstr_skip_space(cstr))) return "error: expecting an url";
@@ -58,7 +74,7 @@ static inline Err url_init(Url u[static 1],  const char* cstr) {
     *u = (Url){.cu=curl_url()};
     if (!u->cu) return "error initializing CURLU";
     BufOf(char)* url_buf = &(BufOf(char)){0};
-    if (file_exists(cstr)) {
+    if (_file_exists_ignore_fragment_(cstr)) {
         if((err=_prepend_file_schema_(cstr, url_buf))) {
             url_cleanup(u);
             return err;
@@ -95,7 +111,10 @@ static inline Err url_init_from_curlu(Url u[static 1],  CURLU* cu) {
 //TODO make url_int call this one
 static inline Err curlu_set_url(CURLU* u,  const char* cstr) {
     if (!*cstr) return "error: no url";
-    CURLUcode code = curl_url_set(u, CURLUPART_URL, cstr, CURLU_DEFAULT_SCHEME);
+    CURLUcode code = (*cstr == '#' && cstr[1])
+        ? curl_url_set(u, CURLUPART_FRAGMENT, cstr + 1, CURLU_DEFAULT_SCHEME)
+        : curl_url_set(u, CURLUPART_URL, cstr, CURLU_DEFAULT_SCHEME);
+
     switch (code) {
         case CURLUE_OK:
             return Ok;

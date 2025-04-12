@@ -36,6 +36,7 @@ typedef struct {
     size_t left_newlines;
     size_t right_newlines;
     TextBufMods mods;
+    size_t fragment_offset;
 } DrawSubCtx;
 
 static inline void draw_subctx_clean(DrawSubCtx subctx[static 1]) {
@@ -58,6 +59,7 @@ static inline void draw_subctx_trim_right(DrawSubCtx sub[static 1]) {
 
 typedef struct { 
     HtmlDoc* htmldoc;
+    char* fragment;
     ArlOf(EscCode) esc_code_stack;
 #define DRAW_CTX_FLAG_MONOCHROME 0x1u
 #define DRAW_CTX_FLAG_PRE        0x2u
@@ -97,6 +99,9 @@ static inline void draw_ctx_pre_set(DrawCtx ctx[static 1], bool value) {
 static inline BufOf(char)* draw_ctx_buf(DrawCtx ctx[static 1]) { return &ctx->sub.buf; }
 
 static inline TextBufMods* draw_ctx_mods(DrawCtx ctx[static 1]) { return &ctx->sub.mods; }
+static inline size_t* draw_ctx_fragment_offset(DrawCtx ctx[static 1]) { 
+    return &ctx->sub.fragment_offset;
+}
 
 
 static inline void draw_ctx_swap_sub(DrawCtx ctx[static 1], DrawSubCtx subctx[static 1]) {
@@ -139,6 +144,7 @@ draw_ctx_buf_commit(DrawCtx ctx[static 1]) {
 
         try( textbuf_append_line_indexes(tb));
         try( textbuf_append_null(tb));
+        *textbuf_current_offset(tb) = *draw_ctx_fragment_offset(ctx);
     }
     return Ok;
 }
@@ -150,6 +156,8 @@ static inline bool draw_ctx_buf_last_isgraph(DrawCtx ctx[static 1]) {
 
 static inline Err
 draw_ctx_append_subctx(DrawCtx ctx[static 1], DrawSubCtx sub[static 1]) {
+    if (sub->fragment_offset) *draw_ctx_fragment_offset(ctx)
+        = len__(draw_ctx_buf(ctx)) + sub->fragment_offset;
     if (len__(&sub->mods))
         try( textmod_concatenate(draw_ctx_mods(ctx), len__(draw_ctx_buf(ctx)), &sub->mods));
     return buffn(char, append)(
@@ -183,8 +191,11 @@ static inline void draw_ctx_buf_reset(DrawCtx ctx[static 1]) {
 static inline Err
 draw_ctx_init(DrawCtx ctx[static 1], HtmlDoc htmldoc[static 1], Session s[static 1], unsigned flags) {
     //unsigned flags = (session_monochrome(s)? DRAW_CTX_FLAG_MONOCHROME: 0) | DRAW_CTX_FLAG_TITLE;
+    char* fragment = NULL;
+    try( url_fragment(htmldoc_url(htmldoc), &fragment));
     *ctx = (DrawCtx) {
         .htmldoc=htmldoc,
+        .fragment=fragment,
         .flags=flags,
         .logfn=session_doc_msg_fn(s, htmldoc)
     };
@@ -193,6 +204,7 @@ draw_ctx_init(DrawCtx ctx[static 1], HtmlDoc htmldoc[static 1], Session s[static
 
 static inline void draw_ctx_cleanup(DrawCtx ctx[static 1]) {
     buffn(char, clean)(&ctx->sub.buf);
+    std_free(ctx->fragment);
     arlfn(EscCode, clean)(draw_ctx_esc_code_stack(ctx));
 }
 

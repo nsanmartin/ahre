@@ -75,16 +75,14 @@ Err lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* b
 //}
 
 
-// deprecated
-//Err ahre_append_href(lxb_dom_element_t* element, void* aeBuf) {
-//    TextBuf* buf = aeBuf;
+//Err lexbor_get_element_id(lxb_dom_element_t* element, Str elem_id[static 1]) {
 //    size_t value_len = 0;
 //    const lxb_char_t * value = lxb_dom_element_get_attribute(
-//        element, (const lxb_char_t*)"href", 4, &value_len
+//        element, (const lxb_char_t*)"id", 2, &value_len
 //    );
 //    if (value_len && value)
-//        return textbuf_append_line(buf, (char*)value, value_len);
-//    return NULL;
+//        return str_append(elem_id, (char*)value, value_len);
+//    return Ok;
 //}
 
 

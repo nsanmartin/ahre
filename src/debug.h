@@ -32,6 +32,7 @@ static LogLvl _log_lvl_ = LOG_LVL_WARN;
 #define try_debug_build_only() do{ if (is_debug_build()) return "not a debug build"; }while(0);
 
 static inline void dbg_log(const char* s) { printf("DEBUG %s\n", s); }
+
 static inline void dbg_print_url(Url u[static 1]) {
     char* buf;
     Err e = url_cstr(u, &buf);
@@ -41,6 +42,8 @@ static inline void dbg_print_url(Url u[static 1]) {
         curl_free(buf);
     }
 }
+
+static inline void dbg_print_curlu(CURLU* u) { dbg_print_url(&(Url){.cu=u}); }
 
 
 static const char* _log_lvl_str_[] = {

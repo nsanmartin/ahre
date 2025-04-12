@@ -46,6 +46,7 @@ Err tab_node_init_from_curlu(
         tab_node_cleanup(n);
         return err;
     }
+
     n->current_ix = n->childs->len;
     return Ok;
 }
@@ -75,7 +76,6 @@ Err tab_node_tree_append_ahref(
         curl_url_cleanup(curlu);
         return err;
     };
-
     if ((err=tab_node_append_move_child(n, &newnode))) {
         tab_node_cleanup(&newnode);
         return err;

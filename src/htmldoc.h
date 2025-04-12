@@ -137,10 +137,8 @@ HtmlDoc* htmldoc_create(const char* url);
 Err lexbor_read_doc_from_file(HtmlDoc htmldoc[static 1]) ;
 
 static inline Err
-htmldoc_fetch(
-    HtmlDoc htmldoc[static 1], UrlClient url_client[static 1], SessionWriteFn wfnc
-) {
-        return curl_lexbor_fetch_document(url_client, htmldoc, wfnc);
+htmldoc_fetch(HtmlDoc htmldoc[static 1], UrlClient url_client[static 1], SessionWriteFn wfnc) {
+    return curl_lexbor_fetch_document(url_client, htmldoc, wfnc);
 }
 
 

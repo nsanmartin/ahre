@@ -139,5 +139,14 @@ lexbor_get_title_node(lxb_html_document_t* lxbdoc, lxb_dom_node_t* title[static 
     return Ok;
 }
 
+static inline bool lexbor_element_id_match(lxb_dom_element_t* element, const char* elem_id) {
+    size_t value_len = 0;
+    const lxb_char_t * value = lxb_dom_element_get_attribute(
+        element, (const lxb_char_t*)"id", 2, &value_len
+    );
+    if (!value_len || !value) return false;
+    return strcmp(elem_id, (char*)value) == 0;
+}
+
 Err lexbor_get_title_text(lxb_dom_node_t* title, Str out[static 1]);
 #endif

@@ -601,6 +601,9 @@ const char* _dbg_get_tag_name_(size_t local_name) {
 
 
 Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    if (ctx->fragment && lexbor_element_id_match(lxb_dom_interface_element(node), ctx->fragment)) {
+        *draw_ctx_fragment_offset(ctx) = len__(draw_ctx_buf(ctx));
+    }
     switch(node->local_name) {
         case LXB_TAG_A: { return draw_tag_a(node, ctx); }
         case LXB_TAG_B: { return draw_tag_b(node, ctx); }
@@ -825,11 +828,8 @@ inline void htmldoc_destroy(HtmlDoc* htmldoc) {
 Err htmldoc_draw_with_flags(HtmlDoc htmldoc[static 1], Session s[static 1], unsigned flags) {
     lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(htmldoc);
     DrawCtx ctx;
-    //
-    char* fragment;
-    curl_url_get(htmldoc_url(htmldoc)->cu, CURLUPART_FRAGMENT, &fragment, 0);
-    printf("URL fragment (in draw): %s\n====\n", fragment);
     Err err = draw_ctx_init(&ctx, htmldoc, s, flags);
+    try(err);
     ok_then(err, draw_rec(lxb_dom_interface_node(lxbdoc), &ctx));
     ok_then(err, draw_ctx_buf_commit(&ctx));
     ok_then(err, textbuf_fit_lines(htmldoc_textbuf(htmldoc), *session_conf_ncols(session_conf(s))));
