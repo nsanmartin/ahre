@@ -1,4 +1,4 @@
-#include "get_options.h"
+#include "get-options.h"
 #include "user-out.h"
 #include "user-out-vi-mode.h"
 

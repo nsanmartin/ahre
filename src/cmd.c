@@ -1,7 +1,7 @@
 #include "bookmark.h"
 #include "cmd.h"
 #include "draw.h"
-#include "range_parse.h"
+#include "range-parse.h"
 #include "readpass.h"
 
 

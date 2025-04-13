@@ -1,7 +1,7 @@
 #include "session.h"
 #include "user-input.h"
 #include "utils.h"
-#include "escape_codes.h"
+#include "escape-codes.h"
 
 typedef enum {
     keycmd_null                = 0x0,

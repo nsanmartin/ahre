@@ -1,7 +1,7 @@
 #ifndef __AHRE_TEXTMOD_H__
 #define __AHRE_TEXTMOD_H__
 
-#include "escape_codes.h"
+#include "escape-codes.h"
 
 typedef enum {
     text_mod_blue,

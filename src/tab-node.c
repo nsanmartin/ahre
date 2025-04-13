@@ -1,4 +1,4 @@
-#include "tab_node.h"
+#include "tab-node.h"
 #include "session.h"
 #include "ahre__.h"
 

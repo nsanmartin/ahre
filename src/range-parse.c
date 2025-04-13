@@ -5,7 +5,7 @@
 
 #include "utils.h"
 #include "textbuf.h"
-#include "range_parse.h"
+#include "range-parse.h"
 #include "re.h"
 
 /*

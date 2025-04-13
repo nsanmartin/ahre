@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #include "error.h"
-#include "escape_codes.h"
+#include "escape-codes.h"
 #include "ranges.h"
 #include "str.h"
 #include "textmod.h"

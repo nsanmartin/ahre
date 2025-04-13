@@ -1,7 +1,7 @@
 #ifndef AHRE_DRAW_H__
 #define AHRE_DRAW_H__
 
-#include "escape_codes.h"
+#include "escape-codes.h"
 #include "htmldoc.h"
 #include "utils.h"
 #include "generic.h"

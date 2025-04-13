@@ -2,7 +2,7 @@
 
 #include <utests.h>
 
-#include "../src/range_parse.c"
+#include "../src/range-parse.c"
 #include "../src/re.c"
 
 

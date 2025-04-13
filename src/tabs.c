@@ -1,5 +1,5 @@
 #include "tabs.h"
-#include "tab_node.h"
+#include "tab-node.h"
 #include "session.h"
 
 Err tab_node_init(

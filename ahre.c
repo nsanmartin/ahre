@@ -3,7 +3,7 @@
 #include <curl/curl.h>
 #include <lexbor/html/html.h>
  
-#include "src/get_options.h"
+#include "src/get-options.h"
 #include "src/help.h"
 #include "src/htmldoc.h"
 #include "src/mem.h"

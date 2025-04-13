@@ -29,7 +29,7 @@ Err ui_line_show_err(Session* s, char* err, size_t len) {
 #include "ranges.h"
 #include "session.h"
 #include "textbuf.h"
-#include "escape_codes.h"
+#include "escape-codes.h"
 
 
 static Err
