@@ -18,7 +18,7 @@ test_range: $(AHRE_UTESTS)/test_range.c $(AHRE_BUILD)/isocline.o \
 	$(AHRE_BUILD)/wrapper-lexbor.o $(AHRE_BUILD)/wrapper-lexbor-curl.o $(AHRE_BUILD)/error.o \
 	$(AHRE_BUILD)/utils.o $(AHRE_BUILD)/tab_node.o  $(AHRE_BUILD)/readpass.o \
 	$(AHRE_BUILD)/user-interface.o $(AHRE_BUILD)/debug.o \
-	$(AHRE_BUILD)/user-out-line-mode.o $(AHRE_BUILD)/user-input.o $(AHRE_BUILD)/user-out-vi-mode.o \
+	 $(AHRE_BUILD)/user-input.o $(AHRE_BUILD)/user-out.o \
 	$(AHRE_BUILD)/tabs.o $(AHRE_BUILD)/bookmark.o $(AHRE_BUILD)/cmd.o 
 	$(CC) $(CFLAGS) $(SANITIZE_FLAGS) -I. -I$(INCLUDE) -I$(AHRE_UTESTS) \
 		-o $(AHRE_BUILD)/$@ \
@@ -40,8 +40,8 @@ test_ed_write: $(AHRE_UTESTS)/test_ed_write.c \
 	$(AHRE_BUILD)/wrapper-lexbor-curl.o $(AHRE_BUILD)/wrapper-lexbor.o \
 	$(AHRE_BUILD)/textbuf.o $(AHRE_BUILD)/session.o $(AHRE_BUILD)/htmldoc.o $(AHRE_BUILD)/htmldoc_tag_a.o \
 	$(AHRE_BUILD)/tab_node.o  $(AHRE_BUILD)/readpass.o $(AHRE_BUILD)/isocline.o $(AHRE_BUILD)/user-interface.o \
-	$(AHRE_BUILD)/debug.o $(AHRE_BUILD)/user-out-line-mode.o $(AHRE_BUILD)/user-input.o \
-	$(AHRE_BUILD)/user-out-vi-mode.o $(AHRE_BUILD)/tabs.o $(AHRE_BUILD)/bookmark.o 
+	$(AHRE_BUILD)/debug.o $(AHRE_BUILD)/user-out.o $(AHRE_BUILD)/user-input.o \
+	$(AHRE_BUILD)/tabs.o $(AHRE_BUILD)/bookmark.o 
 	$(CC) $(CFLAGS) $(SANITIZE_FLAGS) -I. -I$(INCLUDE) -I$(AHRE_UTESTS) \
 		-o $(AHRE_BUILD)/$@ \
 		\

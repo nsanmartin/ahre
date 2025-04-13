@@ -4,24 +4,8 @@
 #include <errno.h>
 
 #include "utils.h"
-#include "user-out-vi-mode.h"
-#include "user-out-line-mode.h"
 
 typedef struct Session Session;
-
-static inline Err ui_write_callback_stdout(const char* mem, size_t len, Session* s) {
-    (void)s;
-    return len - fwrite(mem, sizeof(const char), len, stdout) ? "error: fwrite failure": Ok;
-}
-
-
-static inline Err ui_flush_stdout(Session* s) {
-    (void)s;
-    puts("");
-    if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
-    return Ok;
-}
-
 typedef struct UserOutput UserOutput;
 
 typedef Err (*WriteUserOutputCallback)(const char* mem, size_t len, Session* ctx);
@@ -32,11 +16,6 @@ typedef void (*UserOutputCleanup)(UserOutput*);
 
 typedef struct { WriteUserOutputCallback write; Session* ctx; } SessionWriteFn;
 
-typedef union {
-    void* void_ptr;
-    ViOutCtx* vi_out_ctx;
-} UserOutCtx;
-
 struct UserOutput {
     WriteUserOutputCallback       write_msg;
     FlushUserOutputCallback       flush_msg;
@@ -46,26 +25,56 @@ struct UserOutput {
     ShowErrUserOutputCallback     show_err;
 };
 
+static inline Err ui_write_callback_stdout(const char* mem, size_t len, Session* s) {
+    (void)s;
+    return len - fwrite(mem, sizeof(const char), len, stdout) ? "error: fwrite failure": Ok;
+}
+
+/* line mode */
+static inline Err ui_line_flush_stdout(Session* s) {
+    (void)s;
+    fwrite("\n", 1, 1, stdout);
+    if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
+    return Ok;
+}
+
+Err ui_line_show_session(Session* s);
+Err ui_line_show_err(Session* s, char* err, size_t len);
+/***/
+/* vi mode */
+typedef struct Session Session;
+Err ui_vi_show_session(Session* s);
+Err ui_vi_write_msg(const char* mem, size_t len, Session* s);
+Err ui_vi_flush_msg(Session* s);
+Err ui_vi_show_err(Session* s, char* err, size_t len);
+Err ui_vi_flush_std(Session* s);
+Err ui_vi_write_std(const char* mem, size_t len, Session* s);
+
+/* getter */
+
+void _vi_cleanup_(UserOutput* uo);
+/***/
+
 /* ctor / factory */
 static inline UserOutput uout_line_mode(void) {
     return (UserOutput) {
         .write_msg    = ui_write_callback_stdout,
-        .flush_msg    = ui_flush_stdout,
+        .flush_msg    = ui_line_flush_stdout,
         .write_std    = ui_write_callback_stdout,
-        .flush_std    = ui_flush_stdout,
-        .show_session = _line_show_session_,
-        .show_err     = _line_show_err_
+        .flush_std    = ui_line_flush_stdout,
+        .show_session = ui_line_show_session,
+        .show_err     = ui_line_show_err
     };
 }
 
 static inline UserOutput uout_vi_mode(void) {
     return (UserOutput) {
-        .write_msg    = _vi_write_msg_,
-        .flush_msg    = _vi_flush_msg_,
-        .write_std    = _vi_write_std_,
-        .flush_std    = _vi_flush_std_,
-        .show_session = _vi_show_session_,
-        .show_err     = _vi_show_err_
+        .write_msg    = ui_vi_write_msg,
+        .flush_msg    = ui_vi_flush_msg,
+        .write_std    = ui_vi_write_std,
+        .flush_std    = ui_vi_flush_std,
+        .show_session = ui_vi_show_session,
+        .show_err     = ui_vi_show_err
     };
 }
 

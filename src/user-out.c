@@ -1,3 +1,31 @@
+#include "user-out.h"
+#include "session.h"
+
+/*
+ * Line mode
+ */
+
+Err ui_line_show_session(Session* s) {
+    if (!s) return "error: unexpected null session, this should really not happen";
+    if (session_is_empty(s)) return Ok;
+    return session_uout(s)->flush_std(NULL);
+}
+
+Err ui_line_show_err(Session* s, char* err, size_t len) {
+    (void)s;
+    if (err) {
+        if ((len != fwrite(err, 1, len, stderr))
+        || (1 != fwrite("\n", 1, 1, stderr))
+        ) return "error: fprintf failure while attempting to show an error :/";
+    }
+    fflush(stderr);
+    return Ok;
+}
+
+/*
+ * Vi mode
+ */
+
 #include "ranges.h"
 #include "session.h"
 #include "textbuf.h"
@@ -18,7 +46,7 @@ _vi_session_write_std_to_screen_(SessionMemWriter w[static 1], const char* mem, 
 //     return ui_write_unsigned(session_conf_uout(session_conf(s))->write_std, ui, s);
 // }
 
-Err _vi_write_std_(const char* mem, size_t len, Session* s) {
+Err ui_vi_write_std(const char* mem, size_t len, Session* s) {
     if (!s) return "error: no session";
     (void)mem;
     (void)len;
@@ -38,7 +66,7 @@ static void _update_if_smaller_(size_t value[static 1], size_t new_value) {
 
 #define EMPTY_SESSION_MSG_ "Session is empty\n"
 #define EMPTY_BUFFER_MSG_ "Buffer is empty\n"
-Err _vi_show_session_(Session* s) {
+Err ui_vi_show_session(Session* s) {
     if (!s) return "error: unexpected null session, this should really not happen";
     if (session_is_empty(s)) {
         try( str_append_lit__(session_msg(s), EMPTY_SESSION_MSG_));
@@ -75,7 +103,7 @@ Err _vi_show_session_(Session* s) {
     return Ok;
 }
 
-Err _vi_flush_std_(Session* s) {
+Err ui_vi_flush_std(Session* s) {
     if (!s) return "error: no session";
     Str* msg = session_msg(s);
     if (len__(msg)) {
@@ -96,14 +124,14 @@ Err _vi_flush_std_(Session* s) {
 }
 
 
-Err _vi_write_msg_(const char* mem, size_t len, Session* s) {
+Err ui_vi_write_msg(const char* mem, size_t len, Session* s) {
     if (!s) return "error: no session";
     return str_append(session_msg(s), (char*)mem, len);
 }
 
 #define MSG_PREFIX_ "{msg}:\n"
 #define CONTINUE_MSG_ "{% type enter to continue %}"
-Err _vi_flush_msg_(Session* s) {
+Err ui_vi_flush_msg(Session* s) {
     if (!s) return "error: no session";
     Str* msg = session_msg(s);
     if (!len__(msg)) return Ok;
@@ -116,7 +144,7 @@ Err _vi_flush_msg_(Session* s) {
     return Ok;
 }
 
-Err _vi_show_err_(Session* s, char* err, size_t len) {
+Err ui_vi_show_err(Session* s, char* err, size_t len) {
     (void)s;
     FILE* stream = stdout;
     if (err) {

@@ -1,6 +1,5 @@
 #include "get_options.h"
 #include "user-out.h"
-#include "user-out-line-mode.h"
 #include "user-out-vi-mode.h"
 
 static Err _read_input_opt_(SessionConf sconf[static 1], const char* optopt) {
