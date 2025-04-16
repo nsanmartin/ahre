@@ -33,7 +33,6 @@ static inline Err ui_write_callback_stdout(const char* mem, size_t len, Session*
 /* line mode */
 static inline Err ui_line_flush_stdout(Session* s) {
     (void)s;
-    fwrite("\n", 1, 1, stdout);
     if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
     return Ok;
 }

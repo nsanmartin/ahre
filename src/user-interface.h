@@ -5,7 +5,6 @@
 
 #include "user-input.h"
 #include "user-out.h"
-#include "user-out-vi-mode.h"
 
 typedef struct Session Session;
 typedef Err (*ProcessLineFn)(Session*,const char*);

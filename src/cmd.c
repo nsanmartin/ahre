@@ -222,6 +222,7 @@ Err _cmd_textbuf_write_impl(
     const char* items = textbuf_items(textbuf);
     const char* beg = items;
     size_t len = textbuf_len(textbuf);
+    if (len && !items[len-1]) --len;
     while (beg && beg < items + len) {
         const char* end = _mem_find_esc_code_(beg, items + len - beg);
         if (!end) end = items + len;

@@ -96,6 +96,39 @@ _set_htmldoc_url_with_effective_url_(UrlClient url_client[static 1], HtmlDoc htm
     return curlu_set_url(url_cu(htmldoc_url(htmldoc)), effective_url);
 }
 
+static Err
+_set_htmldoc_http_charset_(HtmlDoc htmldoc[static 1], CURL* curl) {
+    struct curl_header *type;
+    CURLHcode code = curl_easy_header(curl, "Content-Type", 0, CURLH_HEADER, -1, &type);
+    if (code != CURLHE_OK && code != CURLHE_NOHEADERS)
+        return err_fmt("error: curl header failed: %d", code);
+
+    if (code == CURLHE_OK) {
+        //printf("name: %s\n", type->name);
+        //printf("value: %s\n", type->value);
+#define CHARSET_KEY_ "charset="
+        char* charset = strstr(type->value, CHARSET_KEY_); /* is it case insentitive? */
+        if (charset) {
+            charset += lit_len__(CHARSET_KEY_);
+            try(str_append(
+                    textbuf_http_charset(htmldoc_textbuf(htmldoc)),
+                    charset,
+                    strlen(charset)+1
+                )
+            );
+            printf("charset: '");
+            fwrite(
+                items__(textbuf_http_charset(htmldoc_textbuf(htmldoc))),
+                1,
+                len__(textbuf_http_charset(htmldoc_textbuf(htmldoc))),
+                stdout
+            );
+            puts("'");
+        }
+    }
+    return Ok;
+}
+
 Err curl_lexbor_fetch_document(
     UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], SessionWriteFn wfnc
 ) {
@@ -105,6 +138,7 @@ Err curl_lexbor_fetch_document(
     try( _curl_set_curlu_(url_client, htmldoc));
 
     CURLcode curl_code = curl_easy_perform(url_client->curl);
+    try( _set_htmldoc_http_charset_(htmldoc, url_client->curl));
     buffn(const_char, reset)(url_client_postdata(url_client));
     if (curl_code!=CURLE_OK) 
         return _curl_perform_error_(htmldoc, curl_code);

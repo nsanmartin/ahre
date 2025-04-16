@@ -1,6 +1,5 @@
 #include "get-options.h"
 #include "user-out.h"
-#include "user-out-vi-mode.h"
 
 static Err _read_input_opt_(SessionConf sconf[static 1], const char* optopt) {
     if (!optopt || !*optopt) return "invalid input option";

@@ -116,6 +116,10 @@ inline static StrView strview_from_mem_trim(const char* s, size_t len) {
 #define str_append(StrPtr, Items, NItems) \
     (buffn(char,append)(StrPtr, Items, NItems) ? Ok : "error: str_append failure")
 #define str_append_lit__(StrPtr, Lit) str_append(StrPtr, Lit, lit_len__(Lit))
+static inline char* str_beg(Str s[static 1]) { return items__(s); }
+static inline char* str_end(Str s[static 1]) {
+    return len__(s) ? items__(s) + len__(s) : items__(s);
+}
 
 #define strview_from_lit__(LitStr) strview_from_mem(LitStr, sizeof(LitStr)-1)
 static inline StrView strview_from_str__(Str s) {return strview_from_mem(s.items, s.len); }
