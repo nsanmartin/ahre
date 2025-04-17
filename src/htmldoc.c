@@ -215,7 +215,7 @@ static Err draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
     Err err = draw_list(node->first_child, node->last_child, ctx);
 
-    draw_ctx_swap_sub(ctx, &sub);
+    if (!err) draw_ctx_swap_sub(ctx, &sub);
 
     if (sub.buf.len) {
         if (len__(draw_ctx_buf(ctx))) ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
@@ -229,7 +229,7 @@ static Err draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         //    ///ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
         //}
     draw_subctx_clean(&sub);
-    return Ok;
+    return err;
 }
 
 static Err
@@ -362,7 +362,7 @@ Err draw_mem_skipping_space(
     while(s.len) {
         StrView word = strview_split_word(&s);
         if (!word.len) break;
-        try( draw_ctx_buf_append(ctx, word));
+        try( draw_ctx_buf_append_mem_as_utf8(ctx, (char*)word.items, word.len));
         strview_trim_space_left(&s);
         if (!s.len) break;
         try( draw_ctx_buf_append_lit__(ctx, " "));
@@ -835,6 +835,7 @@ Err htmldoc_draw_with_flags(HtmlDoc htmldoc[static 1], Session s[static 1], unsi
     ok_then(err, textbuf_fit_lines(htmldoc_textbuf(htmldoc), *session_conf_ncols(session_conf(s))));
 
     draw_ctx_cleanup(&ctx);
+    if (err) arlfn(ModAt,clean) (draw_ctx_mods(&ctx));
     return err;
 }
 
@@ -914,23 +915,26 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         draw_ctx_swap_sub(ctx, &sub);
 
         if (draw_ctx_color(ctx)) try( draw_ctx_esc_code_push(ctx, esc_code_blue));
-        try( draw_list(node->first_child, node->last_child, ctx));
+        Err err = draw_list(node->first_child, node->last_child, ctx);
+        if (err) {
+            draw_subctx_clean(&sub);
+            return err;
+        }
 
         draw_ctx_swap_sub(ctx, &sub);
 
         draw_subctx_trim_left(&sub);
         draw_subctx_trim_right(&sub);
 
-        Err err = Ok;
         if (_prev_is_separable_(node)) err = draw_ctx_buf_append_lit__(ctx, " ");
         else if (sub.left_newlines) err = draw_ctx_buf_append_lit__(ctx, "\n");
         ok_then(err, _hypertext_id_open_(
                 ctx, draw_ctx_textmod_blue, anchor_open_str, &anchor_num,anchor_sep_str ));
 
         if (!err && sub.buf.len) ok_then(err, draw_ctx_append_subctx(ctx, &sub));
-        draw_subctx_clean(&sub);
         ok_then(err, _hypertext_id_close_(ctx, draw_ctx_reset_color, anchor_close_str));
         if (sub.right_newlines) ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
+        draw_subctx_clean(&sub);
         try(err);
 
     } else try( draw_list(node->first_child, node->last_child, ctx));//TODO: do this?

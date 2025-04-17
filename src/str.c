@@ -1,3 +1,6 @@
+#include <iconv.h>
+#include <errno.h>
+
 #include "error.h"
 #include "generic.h"
 #include "mem.h"
@@ -93,21 +96,6 @@ bool mem_is_all_space(const char* data, size_t len) {
     return !len;
 }
 
-///Err str_prepend(Str s[static 1], const char* cs) {
-///    if (!cs) return "error: invalid cstr (nullptr)";
-///    size_t cslen = strlen(cs);
-///    size_t len = s->len + cslen;
-///    char* buf = malloc(len + 1);
-///    if (!buf) return "error: not memory";
-///    buf[len] = '\0';
-///    memcpy(buf, cs, cslen);
-///    memcpy(buf + cslen, s->s, s->len);
-///    std_free((char*)s->s);
-///    s->s = buf;
-///    return Ok;
-///}
-
-
 const char* cstr_cat_dup(const char* s, const char* t) {
     if (!s || !t) return NULL;
     size_t slen = strlen(s);
@@ -149,4 +137,61 @@ StrView str_split_line(StrView text[static 1]) {
 
 bool substr_match_all(const char* s, size_t len, const char* cmd) {
     return (s=csubstr_match(s, cmd, len)) && !*cstr_skip_space(s);
+}
+
+Err _convert_to_utf8_(
+    const char* inbuf,
+    const size_t inlen,
+    const char* charset,
+    const char* outbuf[static 1],
+    size_t outlen[static 1]
+) {
+    iconv_t cd = iconv_open("UTF-8//TRANSLIT", charset);
+    if ((size_t)cd == (size_t)-1) {
+        if (errno == EINVAL) return err_fmt("warning: convertion to '%s' not available", charset);
+        return err_fmt("error: iconv_open failure from UTF-8//TRANSLIT to %s", charset);
+    }
+
+    size_t allocated =  4095 + inlen + 1 + inlen / 8;
+    size_t outleft = allocated;
+    *outlen = allocated; //TODO
+    *outbuf = std_malloc(allocated);
+    if (!*outbuf) return "error: malloc failure";
+
+    const char* outptr = *outbuf;
+    const char* inbeg = inbuf;
+    char const * inend = inbuf + inlen;
+    for (; inbeg < inend; /**/) {
+        size_t inleft = inend - inbeg;
+        size_t nconv = iconv(cd, (char**)&inbeg, &inleft, (char**)&outptr, &outleft);
+        if (nconv == (size_t)-1) {
+            switch(errno) {
+            case E2BIG: 
+                if (iconv_close(cd)) return "error: iconv_close failure";
+                std_free((void*)*outbuf);
+                return "TODO E2BIG";
+            //    size_t read_so_far = allocated - outleft;
+            //    *outbuf = realloc((char*)*outbuf, allocated + inlen);
+            //    if (!outbuf) return "error: realloc failure";
+            //    outptr = *outbuf + read_so_far;
+            //    allocated += inlen;
+            //    outleft = allocated - read_so_far;
+            //    continue;       
+            case EINVAL: 
+                if (iconv_close(cd)) return "error: iconv_close failure";
+                std_free((void*)*outbuf);
+                return "error? unexpected incomplete multibyte seq?";
+                //fwrite(*outbuf, 1, *outlen, stdout);
+                ////TODO: continue
+                //break;
+            default: 
+                if (iconv_close(cd)) return "error: iconv_close failure";
+                std_free((void*)*outbuf);
+                return err_fmt("error: iconv unexpected failure: %s", strerror(errno));
+            }
+        }
+    }
+    if (iconv_close(cd)) return "error: iconv_close failure";
+    *outlen = allocated - outleft;
+    return Ok;
 }

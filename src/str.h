@@ -153,4 +153,11 @@ bufofchar_append_ui_as_str(BufOf(char) buf[static 1], uintmax_t ui) {
 //    return cb(strview_from_mem(numbf, len), ctx);
 //}
 
+Err _convert_to_utf8_(
+    const char* inbuf,
+    const size_t inlen,
+    const char* charset,
+    const char* outbuf[static 1],
+    size_t outlen[static 1]
+);
 #endif

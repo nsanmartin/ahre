@@ -181,6 +181,21 @@ static inline Err draw_ctx_buf_append(DrawCtx ctx[static 1], StrView s) {
     return draw_ctx_buf_append_mem_mods(ctx, (char*)s.items, s.len, NULL);
 }
 
+static inline Err draw_ctx_buf_append_mem_as_utf8(DrawCtx ctx[static 1], char* s, size_t len) {
+    const char* utf8str;
+    size_t utf8str_len;
+    char* charset = items__(textbuf_http_charset(htmldoc_textbuf(draw_ctx_htmldoc(ctx))));
+    if (charset && strcmp(charset, "utf-8")) {
+        Err err = _convert_to_utf8_(s, len, charset, &utf8str, &utf8str_len);
+        if (!err) {
+            err = draw_ctx_buf_append_mem_mods(ctx, (char*)utf8str, utf8str_len, NULL);
+            std_free((void*)utf8str);
+        }
+        return err;
+    } else try( draw_ctx_buf_append_mem_mods(ctx, s, len, NULL));
+    return Ok;
+}
+
 #define draw_ctx_buf_append_lit__(Ctx, Str) \
     draw_ctx_buf_append_mem_mods(Ctx, Str, sizeof(Str)-1, NULL)
 
