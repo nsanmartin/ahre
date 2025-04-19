@@ -132,7 +132,7 @@ _set_htmldoc_http_charset_(HtmlDoc htmldoc[static 1], CURL* curl) {
 Err curl_lexbor_fetch_document(
     UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], SessionWriteFn wfnc
 ) {
-    try( _curl_set_write_fn_and_data_(url_client, htmldoc));//TODO: move?
+    try( _curl_set_write_fn_and_data_(url_client, htmldoc));
     try( _lexbor_parse_chunk_begin_(htmldoc));
     try( _curl_set_http_method_(url_client, htmldoc));
     try( _curl_set_curlu_(url_client, htmldoc));
@@ -144,7 +144,8 @@ Err curl_lexbor_fetch_document(
         return _curl_perform_error_(htmldoc, curl_code);
 
     try( _lexbor_parse_chunk_end_(htmldoc));
-    try(_set_htmldoc_url_with_effective_url_(url_client, htmldoc));
+    try( _set_htmldoc_url_with_effective_url_(url_client, htmldoc));
+    try( htmldoc_convert_sourcebuf_to_utf8(htmldoc));
     _print_fetch_info_(wfnc, url_client->curl);
     return Ok;
 }

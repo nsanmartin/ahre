@@ -100,6 +100,8 @@ static inline bool htmldoc_is_valid(HtmlDoc htmldoc[static 1]) {
     return htmldoc && htmldoc->lxbdoc && htmldoc->lxbdoc->body;
 }
 
+Err htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[static 1]);
+
 /* ctors */
 Err htmldoc_init(HtmlDoc d[static 1], const char* url);
 Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu, HttpMethod method);

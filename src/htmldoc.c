@@ -362,7 +362,7 @@ Err draw_mem_skipping_space(
     while(s.len) {
         StrView word = strview_split_word(&s);
         if (!word.len) break;
-        try( draw_ctx_buf_append_mem_as_utf8(ctx, (char*)word.items, word.len));
+        try( draw_ctx_buf_append(ctx, word));
         strview_trim_space_left(&s);
         if (!s.len) break;
         try( draw_ctx_buf_append_lit__(ctx, " "));
@@ -882,6 +882,11 @@ Err htmldoc_print_info(Session* s, HtmlDoc d[static 1]) {
         curl_free(url);
         ok_then(err, session_write_msg_lit__(s, "\n"));
     }
+    char* charset = items__(textbuf_http_charset(htmldoc_textbuf(d)));
+    if (charset) {
+        ok_then(err, session_write_msg(s, charset, strlen(charset)));
+        ok_then(err, session_write_msg_lit__(s, "\n"));
+    }
     return err;
 }
 
@@ -941,3 +946,35 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
    
     return Ok;
 }
+
+Err htmldoc_reparse_source(HtmlDoc d[static 1]) {
+    lxb_html_document_t* document = htmldoc_lxbdoc(d);
+    lxb_html_document_clean(document);
+    Str* html = textbuf_buf(htmldoc_sourcebuf(d));
+    if (LXB_STATUS_OK !=
+        lxb_html_document_parse(document, (const lxb_char_t*)items__(html), len__(html)))
+        return "error: lexbor reparse failed";
+    return Ok;
+}
+
+//TODO: 
+//  this is noe efficient: we parsed the document first with its original encoding
+//  and afterwards again as utf-8.
+//  liblexbor supports encofing convertion (https://github.com/lexbor/lexbor/issues/271)
+Err htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[static 1]) {
+    const char* utf8s;
+    size_t utf8slen;
+    char* from_charset = items__(textbuf_http_charset(htmldoc_textbuf(d)));//TODO: mode to htmldoc
+    TextBuf* t = htmldoc_sourcebuf(d);
+    if (from_charset && strcasecmp(from_charset, "UTF-8")) {
+        Str* buf = textbuf_buf(t);
+        try( _convert_to_utf8_(items__(buf), len__(buf), from_charset, &utf8s, &utf8slen));
+        std_free(buf->items);
+        buf->items = (char*)utf8s;
+        buf->len = utf8slen;
+        buf->capacity = utf8slen;
+    }
+    try( htmldoc_reparse_source(d));
+    return Ok;
+}
+

@@ -146,10 +146,16 @@ Err _convert_to_utf8_(
     const char* outbuf[static 1],
     size_t outlen[static 1]
 ) {
-    iconv_t cd = iconv_open("UTF-8//TRANSLIT", charset);
+    if (!inlen || !inbuf || !*inbuf) {
+        *outlen = 0;
+        *outbuf = NULL;
+        return Ok;
+    }
+#define ICONV_TO_STR_ "UTF-8"
+    iconv_t cd = iconv_open(ICONV_TO_STR_, charset);
     if ((size_t)cd == (size_t)-1) {
         if (errno == EINVAL) return err_fmt("warning: convertion to '%s' not available", charset);
-        return err_fmt("error: iconv_open failure from UTF-8//TRANSLIT to %s", charset);
+        return err_fmt("error: iconv_open failure from "ICONV_TO_STR_" to %s", charset);
     }
 
     size_t allocated =  4095 + inlen + 1 + inlen / 8;

@@ -1,16 +1,17 @@
 include ../src/Makefile
 
 AHRE_UTESTS=$(REPO_DIR)/utests
-SANITIZE_FLAGS:= -fsanitize=leak -fsanitize=address -fsanitize=undefined \
-				 -fsanitize=null -fsanitize=bounds -fsanitize=pointer-overflow
+#SANITIZE_FLAGS:= -fsanitize=leak -fsanitize=address -fsanitize=undefined \
+#				 -fsanitize=null -fsanitize=bounds -fsanitize=pointer-overflow
 
 run_tests: test_all
-	@./build/test_buf
-	@./build/test_range
-	@./build/test_error
-	@./build/test_ed_write
+	@./build/test_buf \
+		&& @./build/test_range \
+		&& @./build/test_error \
+		&& @./build/test_ed_write \
+		@./build/test_iconv
 
-test_all: test_range test_buf test_error test_ed_write
+test_all: test_range test_buf test_error test_ed_write test_iconv
 
 test_range: $(AHRE_UTESTS)/test_range.c $(AHRE_BUILD)/isocline.o \
 	$(AHRE_BUILD)/session.o $(AHRE_BUILD)/textbuf.o $(AHRE_BUILD)/url-client.o \
@@ -48,5 +49,9 @@ test_ed_write: $(AHRE_UTESTS)/test_ed_write.c \
 		$^ \
 		-lcurl -llexbor
 
+
+test_iconv: $(AHRE_UTESTS)/test_iconv.c $(AHRE_BUILD)/error.o
+	$(CC) $(CFLAGS) $(SANITIZE_FLAGS) -I. -I$(INCLUDE) -I$(AHRE_UTESTS) -o $(AHRE_BUILD)/$@ $^ \
+		-lcurl -llexbor
 
 

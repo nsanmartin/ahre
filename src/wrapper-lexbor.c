@@ -2,8 +2,6 @@
 #include "htmldoc.h"
 #include "wrapper-lexbor.h"
 
-//lxb_inline lxb_status_t append_to_buf_callback(const lxb_char_t *data, size_t len, void *bufptr) ;
-
 /* internal linkage */
 
 static StrView cstr_next_word_view(const char* s) {
@@ -14,10 +12,6 @@ static StrView cstr_next_word_view(const char* s) {
     if (s == end) { return (StrView){0}; }
     return (StrView){.items=s, .len=end-s};
 }
-
-
-
-
 
 /* external linkage */
 
@@ -59,60 +53,7 @@ Err lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* b
 }
 
 
-// deprecated
-//Err lexbor_foreach_href(
-//    lxb_dom_collection_t collection[static 1],
-//    Err (*callback)(lxb_dom_element_t* element, void* session),
-//    void* session
-//) {
-//    Err err = Ok;
-//    for (size_t i = 0; i < lxb_dom_collection_length(collection); i++) {
-//        lxb_dom_element_t* element = lxb_dom_collection_element(collection, i);
-//        if ((err=callback(element, session))) { break; };
-//    }
-//
-//    return err;
-//}
-
-
-//Err lexbor_get_element_id(lxb_dom_element_t* element, Str elem_id[static 1]) {
-//    size_t value_len = 0;
-//    const lxb_char_t * value = lxb_dom_element_get_attribute(
-//        element, (const lxb_char_t*)"id", 2, &value_len
-//    );
-//    if (value_len && value)
-//        return str_append(elem_id, (char*)value, value_len);
-//    return Ok;
-//}
-
-
-/// deprecated
-///*
-// * Writes all hrefs into textbuf
-// */
-//Err lexbor_href_write(
-//    lxb_html_document_t document[static 1],
-//    lxb_dom_collection_t** hrefs,
-//    TextBuf* textbuf
-//) {
-//    if (!*hrefs) {
-//        *hrefs = lxb_dom_collection_make(&document->dom_document, 128);
-//        if (!*hrefs) { return "failed to create lexbor collection object"; }
-//        if (LXB_STATUS_OK != lxb_dom_elements_by_tag_name(
-//            lxb_dom_interface_element(document->body), *hrefs, (const lxb_char_t *) "a", 1
-//        )) { return "failed to get elements by name"; }
-//    }
-//
-//    Err err = lexbor_foreach_href(*hrefs, ahre_append_href, (void*)textbuf);
-//    if (err) return err;
-//    return textbuf_append_null(textbuf);
-//}
-
-
-
-
-Err
-lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf) {
+Err lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf) {
     lxb_dom_node_t *node = lxb_dom_interface_node(document->body);
     if (!node) {
         return "could not get lexbor document body as node";
@@ -130,14 +71,24 @@ lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf) {
 /*
  * The signature of this fn must match the api of curl_easy_setopt CURLOPT_WRITEFUNCTION
  */
-size_t lexbor_parse_chunk_callback(char *in, size_t size, size_t nmemb, void* outstream) {
+size_t _read_curl_chunk_callback(char *in, size_t size, size_t nmemb, void* outstream) {
     HtmlDoc* htmldoc = outstream;
     size_t r = size * nmemb;
-    if (textbuf_append_part(htmldoc_sourcebuf(htmldoc), in, r)) {
-        //TODO: log error
-        return LXB_STATUS_ERROR;
-    }
-    lxb_html_document_t* document = htmldoc->lxbdoc;
+    /* Your callback should return the number of bytes actually taken care of.
+     * If that amount differs from the amount passed to your callback function,
+     * it signals an error condition to the library. This causes the transfer
+     * to get aborted and the libcurl function used returns CURLE_WRITE_ERROR.
+     * */
+    if (textbuf_append_part(htmldoc_sourcebuf(htmldoc), in, r)) return 0;
+    return r;
+}
+
+size_t lexbor_parse_chunk_callback(char *in, size_t size, size_t nmemb, void* outstream) {
+    size_t r;
+    if ((r=_read_curl_chunk_callback(in, size, nmemb, outstream)) != size * nmemb)
+        return r;
+    HtmlDoc* htmldoc = outstream;
+    lxb_html_document_t* document = htmldoc_lxbdoc(htmldoc);
     return  LXB_STATUS_OK == lxb_html_document_parse_chunk(document, (lxb_char_t*)in, r) ? r : 0;
 }
 
@@ -208,8 +159,7 @@ Err lexbor_node_to_str(lxb_dom_node_t* node, BufOf(char)* buf) {
     return Ok;
 }
 
-lxb_dom_node_t*
-_find_parent_form(lxb_dom_node_t* node) {
+lxb_dom_node_t* _find_parent_form(lxb_dom_node_t* node) {
     for (;node; node = node->parent) {
         if (node->local_name == LXB_TAG_FORM) break;
     }
@@ -230,7 +180,9 @@ Err lexbor_get_title_text(lxb_dom_node_t* title, Str out[static 1]) {
     lxb_dom_node_t* node = title->first_child; 
     lxb_dom_text_t* text = lxb_dom_interface_text(node);
     if (!text) return Ok;
-    StrView view = strview_from_mem((const char*)text->char_data.data.data, text->char_data.data.length);
+    StrView view = strview_from_mem(
+        (const char*)text->char_data.data.data, text->char_data.data.length
+    );
     if (view.len && str_append(out, (char*)view.items, view.len))
             return "error: buf append failure";
     return Ok;
