@@ -158,38 +158,37 @@ Err _convert_to_utf8_(
         return err_fmt("error: iconv_open failure from "ICONV_TO_STR_" to %s", charset);
     }
 
-    size_t allocated =  4095 + inlen + 1 + inlen / 8;
+    size_t allocated =  inlen + 1 + inlen / 8;
     size_t outleft = allocated;
     *outlen = allocated; //TODO
     *outbuf = std_malloc(allocated);
     if (!*outbuf) return "error: malloc failure";
 
-    const char* outptr = *outbuf;
+    char* outptr = (char*)*outbuf;
     const char* inbeg = inbuf;
     char const * inend = inbuf + inlen;
-    for (; inbeg < inend; /**/) {
-        size_t inleft = inend - inbeg;
+    size_t inleft = inend - inbeg;
+
+    for (; inbeg < inend;) {
         size_t nconv = iconv(cd, (char**)&inbeg, &inleft, (char**)&outptr, &outleft);
+        size_t written_so_far = allocated - outleft;
         if (nconv == (size_t)-1) {
             switch(errno) {
             case E2BIG: 
-                if (iconv_close(cd)) return "error: iconv_close failure";
-                std_free((void*)*outbuf);
-                return "TODO E2BIG";
-            //    size_t read_so_far = allocated - outleft;
-            //    *outbuf = realloc((char*)*outbuf, allocated + inlen);
-            //    if (!outbuf) return "error: realloc failure";
-            //    outptr = *outbuf + read_so_far;
-            //    allocated += inlen;
-            //    outleft = allocated - read_so_far;
-            //    continue;       
+                outleft += allocated;
+                allocated *= 2;
+                *outbuf = realloc((char*)*outbuf, allocated);
+                if (!*outbuf) {
+                    if (iconv_close(cd)) return "error: iconv_close failure after realloc failure";
+                    return "error: realloc failure";
+                }
+                inbeg = inbuf + inlen - inleft;
+                outptr = (char*)*outbuf + written_so_far;
+                continue;
             case EINVAL: 
                 if (iconv_close(cd)) return "error: iconv_close failure";
                 std_free((void*)*outbuf);
                 return "error? unexpected incomplete multibyte seq?";
-                //fwrite(*outbuf, 1, *outlen, stdout);
-                ////TODO: continue
-                //break;
             default: 
                 if (iconv_close(cd)) return "error: iconv_close failure";
                 std_free((void*)*outbuf);
