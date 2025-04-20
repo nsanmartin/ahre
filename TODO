@@ -1,31 +1,36 @@
 # TODO
-[ ] Unicode support
-[ ] Support default and bright colour pallets (as w3m)
-[ ] wrap lexbor functions with Err returning wrappers whenever possible
-[ ] brwose properly anchors 
-[ ] brwose properly blockquote 
-[ ] brwose properly center 
-[ ] implement ';' as cmd separator so that 'br;:%p' means first browse then print all (and multiline cmds)
-[ ] implement def (or some other keyword) to define procedures
-[ ] add command line option to read commands on startup
-[ ] implement ranges for doc's cache's elements. Vg: [1,4' means show anchors 1 to 4
-[ ] use libchafa for images
+[ ] [che] implement che arl reset
+[ ] [cli] add command line option to read commands on startup
+[ ] [curl] implement other curlopt setter in user interface
+[ ] [curlex] before parsing (and drawing) check if html.
+[ ] [draw] browse ul/li
+[ ] [draw] draw properly blockquote 
+[ ] [draw] draw properly center 
+[ ] [draw] draw tables as tables
+[ ] [draw] support default and bright colour pallets (as w3m)
+[ ] [feat] use libchafa for images
+[ ] [isocline] move back to readline
 [ ] [isocline] set autocomplete with ahre commands 
-[?] bug: image number invalid: check base
-[ ] implement other curlopt setter in user interface
+[ ] [lex] wrap lexbor functions with Err returning wrappers whenever possible
 [ ] [libcurl] store cookies in file and make it configurable.
-[~] [HTML] browse ul/li
-[ ] implement hashi arl reset
-[ ] separate more htmldoc init from draw
-[ ] implement vi_process_line method that does not print (vi mode only prints on show)
-[ ] use SessionMemWriter consistently (session_write_* -> session_writer_write_*)
-[ ] use different sesion_cmd arrays for different modes.
-[ ] before parsing (and drawing) check if html.
+[ ] [refa] separate more htmldoc init from draw
+[ ] [refa] use SessionMemWriter consistently (session_write_* -> session_writer_write_*)
+[ ] [ui/refa] use different sesion_cmd arrays for different modes.
+[ ] [ui] images download/send to progam
+[ ] [ui] implement ';' as cmd separator so that 'dr;:%p' means first draw then print all (and multiline cmds)
+[ ] [ui] implement def (or some other keyword) to define procedures
+[ ] [ui] implement input options
+[ ] [ui] implement ranges for doc's cache's elements. Vg: [1,4' means show anchors 1 to 4
+[ ] [ui] implement vi_process_line method that does not print (vi mode only prints on show)
 
 # WILL NOT DO
 [X] run test in github ci workflow (currently it does not find liblexbos.so.2): moving away from github
 [~] use trie for commands and include docs
 [~] document basic funtionality (usefull until cmd self docuemnt themselfs)
+
+#CLOSED
+[?] bug: image number invalid: check base
+[~] Unicode support
 
 # DONE
 ['] [HTML] implement pre tag
@@ -69,3 +74,4 @@
 [*] add cmd to show a and submit urls
 [*] fix password in vi mode
 [*] on startupt if failed to open url message is lost
+[*] brwose properly anchors 
