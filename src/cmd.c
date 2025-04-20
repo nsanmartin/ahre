@@ -193,25 +193,12 @@ Err dbg_print_all_lines_nums(
     return Ok;
 }
 
-static const char* _mem_find_esc_code_(const char* s, size_t len) {
-    const char* res = s;
-    while((res = memchr(res, '\033', len))) {
-        if (res + sizeof(EscCodeReset)-1 > s + len) return NULL;
-        const char code_prefix[] = "\033[";
-        size_t code_prefix_len = sizeof(code_prefix) - 1;
-        if (memcmp(code_prefix, res, code_prefix_len)) {
-            /* strings differ */
-            ++res;
-        } else break;
-    }
-    return res;
-}
-
 
 Err _cmd_textbuf_write_impl(
     Session s[static 1], TextBuf textbuf[static 1], Range r[static 1], const char* rest
 )
 {
+    //TODO: write range not all
     (void)s; (void)r;
     if (!rest || !*rest) { return "cannot write without file arg"; }
     rest = cstr_trim_space((char*)rest);
@@ -223,16 +210,10 @@ Err _cmd_textbuf_write_impl(
     const char* beg = items;
     size_t len = textbuf_len(textbuf);
     if (len && !items[len-1]) --len;
-    while (beg && beg < items + len) {
-        const char* end = _mem_find_esc_code_(beg, items + len - beg);
-        if (!end) end = items + len;
-        size_t chunklen = end - beg;
-        if (chunklen > 1 && fwrite(beg, 1, chunklen, fp) != chunklen) {
-            fclose(fp);
-            return err_fmt("%s: error writing to file: %s", __func__, rest);
-        }
-        if (end + 1 < items + len) beg = ((char*)memchr(end + 1, 'm', items+len-(end+1))) + 1;
-        else break;
+
+    if (len && fwrite(beg, 1, len, fp) != len) {
+        fclose(fp);
+        return err_fmt("%s: error writing to file: %s", __func__, rest);
     }
     if (fclose(fp)) return err_fmt("error closing file '%s'", rest);
     return Ok;
