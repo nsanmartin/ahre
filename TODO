@@ -1,6 +1,7 @@
 # TODO
 [ ] [che] implement che arl reset
 [ ] [cli] add command line option to read commands on startup
+[ ] [curl] implement cancel for curl commands
 [ ] [curl] implement other curlopt setter in user interface
 [ ] [curlex] before parsing (and drawing) check if html.
 [ ] [draw] browse ul/li

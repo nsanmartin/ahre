@@ -38,61 +38,30 @@ size_t mock_fwrite_called_with(const void* ptr, size_t size, size_t nmemb, FILE 
 #define fclose mock_fclose
 #include "../src/cmd.c"
 
-int test_0(void) {
-    const char* s1 = "a string with no escape codes";
-    const char* res = _mem_find_esc_code_(s1, sizeof s1 - 1);
-    utest_assert(res == NULL, fail);
-
-    const char blue[] = EscCodeBlue;
-    res = _mem_find_esc_code_(blue, sizeof blue - 1);
-    utest_assert(res == blue, fail);
-
-    const char reset[] = EscCodeReset;
-    res = _mem_find_esc_code_(reset, sizeof reset - 1);
-    utest_assert(res == reset, fail);
-
-    const char s2[] = "0123456789"EscCodeReset;
-    res = _mem_find_esc_code_(s2, sizeof s2 - 1);
-    utest_assert(res == s2 + 10, fail);
-    return 0;
-fail:
-    return 1;
+static Err _check_write_str_(char* str, size_t len) {
+    const char rest[] = "rest";
+    Session s;
+    Range r;
+    TextBuf* tb = &(TextBuf){.buf={.items=str, .len=len}};
+    fwrite_params_queue_push((MockFwriteParams){.ptr=str,.size=1,.nmemb=len});
+    return _cmd_textbuf_write_impl(&s, tb, &r, rest);
 }
 
 int test_1(void) {
-    const char rest[] = "rest";
-
     char items1[] = "12345";
-    const size_t len1 = sizeof items1 - 1;
-    Session s;
-    Range r;
-    TextBuf* tb1 = &(TextBuf){.buf={.items=items1, .len=len1}};
-    fwrite_params_queue_push((MockFwriteParams){.ptr=items1,.size=1,.nmemb=len1});
-    Err err1 = _cmd_textbuf_write_impl(&s, tb1, &r, rest);
+    Err err1 = _check_write_str_(items1, sizeof items1 - 1);
     utest_assert(err1 == Ok, fail);
     utest_assert(fwrite_call_count == 1, fail);
 
-    char items2[] = "12345"EscCodeYellow"6789";
-    const size_t len2 = sizeof items2 - 1;
-    TextBuf* tb2 = &(TextBuf){.buf={.items=items2, .len=len2}};
-    fwrite_params_queue_push((MockFwriteParams){.ptr=items2,.size=1,.nmemb=5});
-    fwrite_params_queue_push(
-        (MockFwriteParams){.ptr=items2+5+sizeof EscCodeYellow-1,.size=1,.nmemb=4}
-    );
-    Err err2 = _cmd_textbuf_write_impl(&s, tb2, &r, rest);
+    char items2[] = "123456789";
+    Err err2 = _check_write_str_(items2, sizeof items2 - 1);
     utest_assert(err2 == Ok, fail);
-    utest_assert(fwrite_call_count == 3, fail);
+    utest_assert(fwrite_call_count == 2, fail);
 
-    char items3[] = "12""\0""45"EscCodeYellow"\0""789";
-    const size_t len3 = sizeof items3 - 1;
-    TextBuf* tb3 = &(TextBuf){.buf={.items=items3, .len=len3}};
-    fwrite_params_queue_push((MockFwriteParams){.ptr=items3,.size=1,.nmemb=5});
-    fwrite_params_queue_push(
-        (MockFwriteParams){.ptr=items3+5+sizeof EscCodeYellow-1,.size=1,.nmemb=4}
-    );
-    Err err3 = _cmd_textbuf_write_impl(&s, tb3, &r, rest);
+    char items3[] = "12\045\0789";
+    Err err3 = _check_write_str_(items3, sizeof items3 - 1);
     utest_assert(err3 == Ok, fail);
-    utest_assert(fwrite_call_count == 5, fail);
+    utest_assert(fwrite_call_count == 3, fail);
 
     return 0;
 fail:
@@ -101,7 +70,6 @@ fail:
 
 int main(void) {
     print_running_test(__FILE__);
-    int errors = test_0()
-               + test_1();
+    int errors = test_1();
     print_test_result(errors);
 }

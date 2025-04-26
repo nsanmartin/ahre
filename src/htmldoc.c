@@ -79,9 +79,9 @@ draw_tag_center(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     //TODO: store center boundaries (start = len on enter, end = len on ret) and then
     // when fitting to width center those lines image.
 
-    try( draw_ctx_buf_append_lit__(ctx, "%{[center]:\n"));
+    //try( draw_ctx_buf_append_lit__(ctx, "%{[center]:\n"));
     try( draw_list(node->first_child, node->last_child, ctx));
-    try( draw_ctx_buf_append_lit__(ctx, "%}[center]\n"));
+    //try( draw_ctx_buf_append_lit__(ctx, "%}[center]\n"));
     return Ok;
 }
 
@@ -119,8 +119,8 @@ static Err
 draw_tag_form(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     ArlOf(LxbNodePtr)* forms = htmldoc_forms(draw_ctx_htmldoc(ctx));
     if (!arlfn(LxbNodePtr,append)(forms, &node)) return "error: lip set";
-    size_t form_id = len__(forms)-1;
-    try( _hypertext_id_open_(ctx, draw_ctx_color_purple, form_open_str, &form_id, form_sep_str));
+    //size_t form_id = len__(forms)-1;
+    try( _hypertext_id_open_(ctx, draw_ctx_color_purple, form_open_str, NULL, NULL));
 
     try( draw_ctx_reset_color(ctx));
 

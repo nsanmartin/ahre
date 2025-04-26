@@ -18,7 +18,7 @@ Err session_conf_from_options(int argc, char* argv[], CliParams cparams[static 1
 
     *sconf = (SessionConf) {
         .ui             = ui_vi_mode(), //ui_isocline(),
-        .ncols          = 90 > ncols ? ncols : 90,
+        .ncols          = 88 > ncols ? ncols : 88,
         .nrows          = nrows
     };
 
