@@ -210,6 +210,7 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
 
 static Err draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    draw_subctx_div_set(ctx);
     DrawSubCtx sub = (DrawSubCtx){0};
     draw_ctx_swap_sub(ctx, &sub);
 
@@ -218,16 +219,13 @@ static Err draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     if (!err) draw_ctx_swap_sub(ctx, &sub);
 
     if (sub.buf.len) {
-        if (len__(draw_ctx_buf(ctx))) ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
+        if (len__(draw_ctx_buf(ctx))) {
+            ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
+            if(!err) draw_subctx_div_clear(ctx);
+        }
         ok_then(err, draw_ctx_append_subctx(ctx, &sub));
     }
         
-        //StrView view = strview_from_mem_trim(buf.items, buf.len);
-        //if (view.len) {
-        //    if (len__(draw_ctx_buf(ctx))) ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
-        //    ok_then(err, draw_ctx_buf_append_mem(ctx, (char*)view.items, view.len));
-        //    ///ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
-        //}
     draw_subctx_clean(&sub);
     return err;
 }
@@ -926,6 +924,7 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
             return err;
         }
 
+        bool div_child = draw_subctx_div(ctx);
         draw_ctx_swap_sub(ctx, &sub);
 
         draw_subctx_trim_left(&sub);
@@ -939,6 +938,9 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         if (!err && sub.buf.len) ok_then(err, draw_ctx_append_subctx(ctx, &sub));
         ok_then(err, _hypertext_id_close_(ctx, draw_ctx_reset_color, anchor_close_str));
         if (sub.right_newlines) ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
+        if (div_child) ok_then(err, draw_ctx_buf_append_lit__(ctx, "\n"));
+        draw_subctx_div_clear(ctx);
+
         draw_subctx_clean(&sub);
         try(err);
 

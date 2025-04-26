@@ -30,6 +30,7 @@ static size_t _strview_trim_right_count_newlines_(StrView s[static 1]) {
     return newlines;
 }
 
+#define DRAW_SUBCTX_FLAG_DIV 0x1
 typedef struct {
     BufOf(char) buf;
     size_t left_trim;
@@ -37,7 +38,9 @@ typedef struct {
     size_t right_newlines;
     TextBufMods mods;
     size_t fragment_offset;
+    size_t flags;
 } DrawSubCtx;
+
 
 static inline void draw_subctx_clean(DrawSubCtx subctx[static 1]) {
     buffn(char, clean)(&subctx->buf);
@@ -68,6 +71,15 @@ typedef struct {
     SessionWriteFn logfn;
     DrawSubCtx sub;
 } DrawCtx;
+
+/* sub ctx flags */
+static inline bool
+draw_subctx_div(DrawCtx ctx[static 1]) { return ctx->sub.flags & DRAW_SUBCTX_FLAG_DIV; }
+static inline bool
+draw_subctx_div_set(DrawCtx ctx[static 1]) { return ctx->sub.flags |= DRAW_SUBCTX_FLAG_DIV; }
+static inline bool
+draw_subctx_div_clear(DrawCtx ctx[static 1]) { return ctx->sub.flags &= ~DRAW_SUBCTX_FLAG_DIV; }
+/***/
 
 typedef Err (*ImpureDrawProcedure)(DrawCtx ctx[static 1]);
 
