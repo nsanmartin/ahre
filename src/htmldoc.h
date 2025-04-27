@@ -36,6 +36,7 @@ typedef lxb_dom_node_t* LxbNodePtr;
 #define T LxbNodePtr
 #include <arl.h>
 
+// TODO: put all this directly in HtmlDoc 
 typedef struct {
     TextBuf sourcebuf;
     TextBuf textbuf;
@@ -48,15 +49,31 @@ typedef struct {
 } DocCache;
 
 typedef struct {
+    Str charset;
+    Str content_type;
+} HttpHeader;
+
+static inline void http_header_clean(HttpHeader hh[static 1]) {
+    str_clean(&hh->charset);
+    str_clean(&hh->content_type);
+}
+
+typedef struct {
     Url url;
     HttpMethod method;
     lxb_html_document_t* lxbdoc;
     DocCache cache;
     size_t hide_tags;
+    HttpHeader http_header;
 } HtmlDoc;
 
 /* getters */
-
+static inline HttpHeader*
+htmldoc_http_header(HtmlDoc h[static 1]) { return &h->http_header; }
+static inline Str*
+htmldoc_http_content_type(HtmlDoc h[static 1]) { return &htmldoc_http_header(h)->content_type; }
+static inline Str*
+htmldoc_http_charset(HtmlDoc h[static 1]) { return &htmldoc_http_header(h)->charset; }
 static inline size_t*
 htmldoc_hide_tags(HtmlDoc d[static 1]) { return &d->hide_tags; }
 static inline lxb_html_document_t*
@@ -87,6 +104,19 @@ htmldoc_method(HtmlDoc d[static 1]) { return d->method; }
 static inline bool htmldoc_is_valid(HtmlDoc htmldoc[static 1]) {
     ////TODO: remove, not needed since URLU
     return htmldoc && htmldoc->lxbdoc && htmldoc->lxbdoc->body;
+}
+
+static inline bool htmldoc_http_charset_is_utf8(HtmlDoc d[static 1]) {
+    char* from_charset = items__(htmldoc_http_charset(d));
+    return (!from_charset || !strcasecmp(from_charset, "UTF-8"));
+}
+
+#define TXT_ "text/"
+static inline bool htmldoc_http_content_type_text_or_undef(HtmlDoc d[static 1]) {
+    Str* content_type = htmldoc_http_content_type(d);
+    const size_t len = lit_len__(TXT_);
+    const size_t ctlen = len__(content_type);
+    return !ctlen || (ctlen > len && !strncmp(items__(content_type), TXT_, len));
 }
 
 Err htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[static 1]);

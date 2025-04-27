@@ -216,6 +216,7 @@ Err _cmd_textbuf_write_impl(
         return err_fmt("%s: error writing to file: %s", __func__, rest);
     }
     if (fclose(fp)) return err_fmt("error closing file '%s'", rest);
+    try( session_write_msg_lit__(s, "file written. "));
     return Ok;
 }
 
@@ -227,12 +228,12 @@ Err cmd_textbuf_global(CmdParams p[static 1]) {
 }
 
 
-Err _cmd_parse_range(Session s[static 1], Range range[static 1],  const char* inputline[static 1]) {
+Err _cmd_parse_range(
+    Range range[static 1], const char* inputline[static 1], TextBuf textbuf[static 1]
+) {
     *range = (Range){0};
     const char* line = *inputline;
     if (!line) { return Ok; }
-    TextBuf* textbuf;
-    try( session_current_buf(s, &textbuf));
     RangeParseCtx ctx = range_parse_ctx_from_textbuf(textbuf);
     line = parse_range(line, range, &ctx);
     if (range_parse_failure(line)) {

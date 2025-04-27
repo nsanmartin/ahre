@@ -44,8 +44,11 @@ CURLoption _curlopt_method_from_htmldoc_(HtmlDoc htmldoc[static 1]) {
 }
 
 Err _curl_set_write_fn_and_data_(UrlClient url_client[static 1], HtmlDoc htmldoc[static 1]) {
-    if (  curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, lexbor_parse_chunk_callback)
-       || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, htmldoc)) {
+    if (
+       curl_easy_setopt(url_client->curl, CURLOPT_HEADERDATA, htmldoc)
+    || curl_easy_setopt(url_client->curl, CURLOPT_HEADERFUNCTION, curl_header_callback)
+    || curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, lexbor_parse_chunk_callback)
+    || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, htmldoc)) {
         return "error configuring curl write fn/data";
     }
     return Ok;
@@ -96,38 +99,38 @@ _set_htmldoc_url_with_effective_url_(UrlClient url_client[static 1], HtmlDoc htm
     return curlu_set_url(url_cu(htmldoc_url(htmldoc)), effective_url);
 }
 
-static Err
-_set_htmldoc_http_charset_(HtmlDoc htmldoc[static 1], CURL* curl) {
-    struct curl_header *type;
-    CURLHcode code = curl_easy_header(curl, "Content-Type", 0, CURLH_HEADER, -1, &type);
-    if (code != CURLHE_OK && code != CURLHE_NOHEADERS)
-        return err_fmt("error: curl header failed: %d", code);
-
-    if (code == CURLHE_OK) {
-        //printf("name: %s\n", type->name);
-        //printf("value: %s\n", type->value);
-#define CHARSET_KEY_ "charset="
-        char* charset = strstr(type->value, CHARSET_KEY_); /* is it case insentitive? */
-        if (charset) {
-            charset += lit_len__(CHARSET_KEY_);
-            try(str_append(
-                    textbuf_http_charset(htmldoc_textbuf(htmldoc)),
-                    charset,
-                    strlen(charset)+1
-                )
-            );
-            printf("charset: '");
-            fwrite(
-                items__(textbuf_http_charset(htmldoc_textbuf(htmldoc))),
-                1,
-                len__(textbuf_http_charset(htmldoc_textbuf(htmldoc))),
-                stdout
-            );
-            puts("'");
-        }
-    }
-    return Ok;
-}
+//static Err
+//_set_htmldoc_http_charset_(HtmlDoc htmldoc[static 1], CURL* curl) {
+//    struct curl_header *type;
+//    CURLHcode code = curl_easy_header(curl, "Content-Type", 0, CURLH_HEADER, -1, &type);
+//    if (code != CURLHE_OK && code != CURLHE_NOHEADERS)
+//        return err_fmt("error: curl header failed: %d", code);
+//
+//    if (code == CURLHE_OK) {
+//        //printf("name: %s\n", type->name);
+//        //printf("value: %s\n", type->value);
+//#define CHARSET_KEY_ "charset="
+//        char* charset = strstr(type->value, CHARSET_KEY_); /* is it case insentitive? */
+//        if (charset) {
+//            charset += lit_len__(CHARSET_KEY_);
+//            try(str_append(
+//                    htmldoc_http_charset(htmldoc),
+//                    charset,
+//                    strlen(charset)+1
+//                )
+//            );
+//            printf("charset: '");
+//            fwrite(
+//                items__(htmldoc_http_charset(htmldoc)),
+//                1,
+//                len__(htmldoc_http_charset(htmldoc)),
+//                stdout
+//            );
+//            puts("'");
+//        }
+//    }
+//    return Ok;
+//}
 
 Err curl_lexbor_fetch_document(
     UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], SessionWriteFn wfnc
@@ -138,7 +141,6 @@ Err curl_lexbor_fetch_document(
     try( _curl_set_curlu_(url_client, htmldoc));
 
     CURLcode curl_code = curl_easy_perform(url_client->curl);
-    try( _set_htmldoc_http_charset_(htmldoc, url_client->curl));
     buffn(const_char, reset)(url_client_postdata(url_client));
     if (curl_code!=CURLE_OK) 
         return _curl_perform_error_(htmldoc, curl_code);
@@ -377,4 +379,54 @@ Err lexcurl_dup_curl_with_anchors_href(lxb_dom_node_t* anchor, CURLU* u[static 1
     }
     *u = dup;
     return Ok;
+}
+
+char* mem_whitespace(char* s, size_t len) {
+    while(len && *s && !isspace(*s)) { ++s; --len; }
+    return len ? s : NULL;
+}
+
+#define lit_match__(Lit, Mem, Len) (lit_len__(Lit) <= Len && !strncasecmp(Lit, Mem, lit_len__(Lit)))
+size_t curl_header_callback(char *buffer, size_t size, size_t nitems, void *htmldoc) {
+    /* received header is nitems * size long in 'buffer' NOT ZERO TERMINATED */
+    /* 'userdata' is set with CURLOPT_HEADERDATA */
+#define CHARSET_K "charset="
+#define CONTENT_TYPE_K "content-type:"
+
+    HtmlDoc* hd = (HtmlDoc*)htmldoc;
+    size_t len = size * nitems;
+    while (len) {
+        if (lit_match__(CHARSET_K, buffer, len)) {
+            size_t matchlen =  lit_len__(CHARSET_K);
+            buffer += matchlen;
+            len -= matchlen;
+            mem_skip_space_inplace((const char**)&buffer, &len);
+            char* ws = mem_whitespace(buffer, len);
+            size_t chslen = ws ? (size_t)(ws - buffer) : len;
+            str_reset(htmldoc_http_charset(hd));
+            str_append(htmldoc_http_charset(hd), buffer, chslen);
+            str_append_lit__(htmldoc_http_charset(hd), "\0");
+            buffer += chslen;
+            len -= chslen;
+            mem_skip_space_inplace((const char**)&buffer, &len);
+            continue;
+        } else if (lit_match__(CONTENT_TYPE_K, buffer, len)) {
+            size_t matchlen = lit_len__(CONTENT_TYPE_K);
+            buffer += matchlen;
+            len -= matchlen;
+            mem_skip_space_inplace((const char**)&buffer, &len);
+            char* colon = memchr(buffer, ';', len);
+            size_t contypelen = colon ? (size_t)(colon - buffer) : len;
+            str_reset(htmldoc_http_content_type(hd));
+            //TODO: does not depend on null termoination
+            str_append(htmldoc_http_content_type(hd), buffer, contypelen);
+            if (colon) ++contypelen;
+            buffer += contypelen;
+            len -= contypelen;
+            mem_skip_space_inplace((const char**)&buffer, &len);
+            continue;
+        } else return size * nitems;
+    }
+
+    return size * nitems;
 }

@@ -125,7 +125,6 @@ void textbuf_cleanup(TextBuf b[static 1]) {
     buffn(char, clean)(&b->buf);
     arlfn(size_t, clean)(&b->eols);
     arlfn(ModAt, clean)(textbuf_mods(b));
-    str_clean(textbuf_http_charset(b));
     *b = (TextBuf){0};
 }
 
@@ -134,7 +133,6 @@ void textbuf_reset(TextBuf b[static 1]) {
     //TODO: use reset once avalable
     arlfn(size_t, clean)(&b->eols);
     arlfn(ModAt, clean)(textbuf_mods(b));
-    str_clean(textbuf_http_charset(b));
     b->current_offset = 0;
 }
 

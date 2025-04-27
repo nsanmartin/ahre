@@ -22,7 +22,6 @@ typedef struct {
     ArlOf(size_t) eols;
     TextBufCache cache;
     TextBufMods mods;
-    Str http_charset;
 } TextBuf;
 
 
@@ -34,7 +33,6 @@ static inline TextBufMods* textbuf_mods(TextBuf tb[static 1]) { return &tb->mods
 
 static inline Range* textbuf_last_range(TextBuf t[static 1]) { return &t->cache.last_range; }
 static inline ArlOf(size_t)* textbuf_eols(TextBuf tb[static 1]) { return &tb->eols; }
-static inline Str* textbuf_http_charset(TextBuf tb[static 1]) { return &tb->http_charset; }
 
 /* ctor */
 static inline int textbuf_init(TextBuf ab[static 1]) { *ab = (TextBuf){0}; return 0; }

@@ -187,13 +187,13 @@ static SessionCmd _cmd_textbuf_[] =
 
 Err cmd_textbuf(CmdParams p[static 1]) {
     try( session_current_buf(p->s, &p->tb));
-    try( _cmd_parse_range(p->s, &p->r, &p->ln));
+    try( _cmd_parse_range(&p->r, &p->ln, p->tb));
     return run_cmd__(p, _cmd_textbuf_);
 }
 
 Err cmd_sourcebuf(CmdParams p[static 1]) {
     try( session_current_src(p->s, &p->tb));
-    try( _cmd_parse_range(p->s, &p->r, &p->ln));
+    try( _cmd_parse_range(&p->r, &p->ln, p->tb));
     return run_cmd__(p, _cmd_textbuf_);
 }
 

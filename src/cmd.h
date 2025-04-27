@@ -7,7 +7,9 @@
 #include "draw.h"
 
 #define cmd_assert_no_params(Ln) do{ if(*Ln) return "error: expecting no params"; }while(0)
-Err _cmd_parse_range(Session s[static 1], Range range[static 1],  const char* line[static 1]);
+Err _cmd_parse_range(
+    Range range[static 1], const char* inputline[static 1], TextBuf textbuf[static 1]
+);
 
 typedef enum { cmd_base_tag, cmd_textbuf_tag } CmdTag;
 typedef struct { const char* ln; Session* s; TextBuf* tb; Range r; size_t ix; } CmdParams;
@@ -159,9 +161,9 @@ typedef Err (*TextBufCmdFn)
 
 static inline Err _run_textbuf_cmd_(Session s[static 1], const char* line, TextBufCmdFn fn) {
     Range range;
-    try( _cmd_parse_range(s, &range, &line));
     TextBuf* textbuf;
     try( session_current_buf(s, &textbuf));
+    try( _cmd_parse_range(&range, &line, textbuf));
     return fn(s, textbuf, &range, line);
 }
 
@@ -172,7 +174,6 @@ static inline Err cmd_textbuf_print(CmdParams p[static 1]) {
 }
 
 
-Err _cmd_parse_range(Session s[static 1], Range range[static 1],  const char* line[static 1]);
 Err dbg_print_all_lines_nums(
     Session s[static 1], TextBuf tb[static 1], Range r[static 1], const char* ln);
 

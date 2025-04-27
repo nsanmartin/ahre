@@ -88,6 +88,8 @@ size_t lexbor_parse_chunk_callback(char *in, size_t size, size_t nmemb, void* ou
     if ((r=_read_curl_chunk_callback(in, size, nmemb, outstream)) != size * nmemb)
         return r;
     HtmlDoc* htmldoc = outstream;
+    if (!htmldoc_http_content_type_text_or_undef(htmldoc) || !htmldoc_http_charset_is_utf8(htmldoc))
+        return r;
     lxb_html_document_t* document = htmldoc_lxbdoc(htmldoc);
     return  LXB_STATUS_OK == lxb_html_document_parse_chunk(document, (lxb_char_t*)in, r) ? r : 0;
 }

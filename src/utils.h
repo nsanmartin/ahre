@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <limits.h>
 
+static inline size_t size_t_min(size_t x, size_t y) { return x > y ? x : y; }
 inline static bool file_exists(const char* filename) { return !access(filename, F_OK); }
 
 #define skip__(X)

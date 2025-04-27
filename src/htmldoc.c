@@ -825,6 +825,7 @@ void htmldoc_reset_draw(HtmlDoc htmldoc[static 1]) {
 }
 
 void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) {
+    http_header_clean(htmldoc_http_header(htmldoc));
     htmldoc_cache_cleanup(htmldoc);
     lxb_html_document_destroy(htmldoc_lxbdoc(htmldoc));
     url_cleanup(htmldoc_url(htmldoc));
@@ -892,11 +893,17 @@ Err htmldoc_print_info(Session* s, HtmlDoc d[static 1]) {
         curl_free(url);
         ok_then(err, session_write_msg_lit__(s, "\n"));
     }
-    char* charset = items__(textbuf_http_charset(htmldoc_textbuf(d)));
-    if (charset) {
-        ok_then(err, session_write_msg(s, charset, strlen(charset)));
+    Str* charset = htmldoc_http_charset(d);
+    if (len__(charset)) {
+        ok_then(err, session_write_msg(s, items__(charset), len__(charset)));
         ok_then(err, session_write_msg_lit__(s, "\n"));
     }
+    Str* content_type = htmldoc_http_content_type(d);
+    if (len__(content_type)) {
+        ok_then(err, session_write_msg(s, items__(content_type), len__(content_type)));
+        ok_then(err, session_write_msg_lit__(s, "\n"));
+    }
+
     return err;
 }
 
@@ -972,23 +979,21 @@ Err htmldoc_reparse_source(HtmlDoc d[static 1]) {
 }
 
 //TODO: 
-//  this is noe efficient: we parsed the document first with its original encoding
-//  and afterwards again as utf-8.
-//  liblexbor supports encofing convertion (https://github.com/lexbor/lexbor/issues/271)
+//  liblexbor supports encoding convertion (https://github.com/lexbor/lexbor/issues/271)
 Err htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[static 1]) {
+    if (!htmldoc_http_content_type_text_or_undef(d)) return Ok;
     const char* utf8s;
     size_t utf8slen;
-    char* from_charset = items__(textbuf_http_charset(htmldoc_textbuf(d)));//TODO: mode to htmldoc
-    TextBuf* t = htmldoc_sourcebuf(d);
-    if (from_charset && strcasecmp(from_charset, "UTF-8")) {
-        Str* buf = textbuf_buf(t);
+    if (!htmldoc_http_charset_is_utf8(d)) {
+        Str* buf = textbuf_buf(htmldoc_sourcebuf(d));
+        char* from_charset = items__(htmldoc_http_charset(d));
         try( _convert_to_utf8_(items__(buf), len__(buf), from_charset, &utf8s, &utf8slen));
         std_free(buf->items);
         buf->items = (char*)utf8s;
         buf->len = utf8slen;
         buf->capacity = utf8slen;
+        try( htmldoc_reparse_source(d));
     }
-    try( htmldoc_reparse_source(d));
     return Ok;
 }
 
