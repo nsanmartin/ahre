@@ -57,41 +57,30 @@ typedef struct {
 
 /* getters */
 
-static inline size_t* htmldoc_hide_tags(HtmlDoc d[static 1]) { return &d->hide_tags; }
-
+static inline size_t*
+htmldoc_hide_tags(HtmlDoc d[static 1]) { return &d->hide_tags; }
 static inline lxb_html_document_t*
 htmldoc_lxbdoc(HtmlDoc d[static 1]) { return d->lxbdoc; }
-
 static inline TextBuf*
 htmldoc_sourcebuf(HtmlDoc d[static 1]) { return &d->cache.sourcebuf; }
-
 static inline TextBuf*
 htmldoc_textbuf(HtmlDoc d[static 1]) { return &d->cache.textbuf; }
-
 static inline Str*
 htmldoc_screen(HtmlDoc d[static 1]) { return &d->cache.screen; }
-
 static inline ArlOf(LxbNodePtr)*
 htmldoc_anchors(HtmlDoc d[static 1]) { return &d->cache.anchors; }
-
 static inline ArlOf(LxbNodePtr)*
 htmldoc_imgs(HtmlDoc d[static 1]) { return &d->cache.imgs; }
-
 static inline ArlOf(LxbNodePtr)*
 htmldoc_inputs(HtmlDoc d[static 1]) { return &d->cache.inputs; }
-
 static inline ArlOf(LxbNodePtr)*
 htmldoc_forms(HtmlDoc d[static 1]) { return &d->cache.forms; }
-
 static inline LxbNodePtr*
 htmldoc_title(HtmlDoc d[static 1]) { return &d->cache.title; }
-
 static inline DocCache*
 htmldoc_cache(HtmlDoc d[static 1]) { return &d->cache; }
-
 static inline Url*
 htmldoc_url(HtmlDoc d[static 1]) { return &d->url; }
-
 static inline HttpMethod
 htmldoc_method(HtmlDoc d[static 1]) { return d->method; }
 
@@ -107,20 +96,11 @@ Err htmldoc_init(HtmlDoc d[static 1], const char* url);
 Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu, HttpMethod method);
 
 /* dtors */
-void htmldoc_reset(HtmlDoc htmldoc[static 1]) ;
+void htmldoc_reset_draw(HtmlDoc htmldoc[static 1]) ;
 void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) ;
 void htmldoc_destroy(HtmlDoc* htmldoc) ;
 //TODO: this fn should cleanup instead the draw data
-static inline void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
-    textbuf_cleanup(htmldoc_textbuf(htmldoc));
-    textbuf_cleanup(htmldoc_sourcebuf(htmldoc));
-    str_clean(htmldoc_screen(htmldoc));
-    arlfn(LxbNodePtr,clean)(htmldoc_anchors(htmldoc));
-    arlfn(LxbNodePtr,clean)(htmldoc_imgs(htmldoc));
-    arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
-    arlfn(LxbNodePtr,clean)(htmldoc_forms(htmldoc));
-    *htmldoc_cache(htmldoc) = (DocCache){0};
-}
+void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) ;
 
 
 /* external */

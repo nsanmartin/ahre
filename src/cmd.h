@@ -44,7 +44,7 @@ static inline Err cmd_cookies(CmdParams p[static 1]) {
 static inline Err session_doc_draw(Session session[static 1]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
-    htmldoc_reset(htmldoc);
+    htmldoc_reset_draw(htmldoc);
     unsigned flags = (session_monochrome(session)? DRAW_CTX_FLAG_MONOCHROME: 0);
     return htmldoc_draw_with_flags(htmldoc, session, flags);
 }

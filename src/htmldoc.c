@@ -804,12 +804,24 @@ HtmlDoc* htmldoc_create(const char* url) {
     return rv;
 }
 
-void htmldoc_reset(HtmlDoc htmldoc[static 1]) {
-    textbuf_reset(htmldoc_textbuf(htmldoc));
-    textbuf_reset(htmldoc_sourcebuf(htmldoc));
+void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
+    textbuf_cleanup(htmldoc_textbuf(htmldoc));
+    textbuf_cleanup(htmldoc_sourcebuf(htmldoc));
+    str_clean(htmldoc_screen(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_anchors(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_imgs(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
+    arlfn(LxbNodePtr,clean)(htmldoc_forms(htmldoc));
+    *htmldoc_cache(htmldoc) = (DocCache){0};
+}
+
+void htmldoc_reset_draw(HtmlDoc htmldoc[static 1]) {
+    /* The sourcebuf and cache ptr are kept */
+    textbuf_reset(htmldoc_textbuf(htmldoc));
+    arlfn(LxbNodePtr,clean)(htmldoc_anchors(htmldoc));
+    arlfn(LxbNodePtr,clean)(htmldoc_imgs(htmldoc));
+    arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
+    arlfn(LxbNodePtr,clean)(htmldoc_forms(htmldoc));
 }
 
 void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) {
