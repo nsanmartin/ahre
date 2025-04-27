@@ -3,7 +3,6 @@
 [ ] [cli] add command line option to read commands on startup
 [ ] [curl] implement cancel for curl commands
 [ ] [curl] implement other curlopt setter in user interface
-[ ] [curlex] before parsing (and drawing) check if html.
 [ ] [draw] browse ul/li
 [ ] [draw] draw properly blockquote 
 [ ] [draw] draw properly center 
@@ -76,3 +75,4 @@
 [*] fix password in vi mode
 [*] on startupt if failed to open url message is lost
 [*] brwose properly anchors 
+[*] [curlex] before parsing (and drawing) check if html.
