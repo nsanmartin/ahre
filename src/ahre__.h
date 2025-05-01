@@ -3,13 +3,6 @@
 
 #include "error.h"
 
-//Err htmldoc_init_fetch_draw_from_curlu(
-//    HtmlDoc d[static 1],
-//    CURLU* cu,
-//    UrlClient url_client[static 1],
-//    HttpMethod method,
-//    Session s[static 1]
-//);
 Err htmldoc_init_fetch_draw(
     HtmlDoc d[static 1],
     CurluOrCstr url[static 1],

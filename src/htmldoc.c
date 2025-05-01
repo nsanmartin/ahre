@@ -778,24 +778,6 @@ Err htmldoc_init_fetch_draw_from_cstr(
     return Ok;
 }
 
-Err htmldoc_init_fetch_draw_from_curlu(
-    HtmlDoc d[static 1],
-    CURLU* cu,
-    UrlClient url_client[static 1],
-    HttpMethod method,
-    Session s[static 1]
-) {
-    try(htmldoc_init_from_curlu(d, cu, method));
-    Err err = htmldoc_fetch(d, url_client, session_doc_msg_fn(s,d)); 
-    ok_then(err, htmldoc_draw(d, s));
-    if (err) {
-        d->url = (Url){0}; /* on failure do not free cu owned by caller */
-        htmldoc_cleanup(d);
-        return err;
-    }
-    return Ok;
-}
-
 Err htmldoc_init_fetch_draw(
     HtmlDoc d[static 1],
     CurluOrCstr url[static 1],
@@ -803,23 +785,15 @@ Err htmldoc_init_fetch_draw(
     HttpMethod method,
     Session s[static 1]
 ) {
-    //try(htmldoc_init(d, url, method));
-    //Err err = htmldoc_fetch(d, url_client, session_doc_msg_fn(s,d)); 
-    //ok_then(err, htmldoc_draw(d, s));
-    //if (err) {
-    //    d->url = (Url){0}; /* on failure do not free cu owned by caller */
-    //    htmldoc_cleanup(d);
-    //    return err;
-    //}
-    //return Ok;
-    switch (url->tag) {
-        case curlu_tag:
-            return htmldoc_init_fetch_draw_from_curlu(d, url->curlu, url_client, method, s);
-        case cstr_tag:
-            return htmldoc_init_fetch_draw_from_cstr(d, url->cstr, url_client, method, s);
-        default: return "error: invalid tag in CurluOrCstr";
-
+    try(htmldoc_init(d, url, method));
+    Err err = htmldoc_fetch(d, url_client, session_doc_msg_fn(s,d)); 
+    ok_then(err, htmldoc_draw(d, s));
+    if (err) {
+        if (url->tag == curlu_tag) d->url = (Url){0}; /*on failure do not free cu owned by caller*/
+        htmldoc_cleanup(d);
+        return err;
     }
+    return Ok;
 }
 
 HtmlDoc* htmldoc_create(const char* url) {
