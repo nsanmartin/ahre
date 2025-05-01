@@ -122,13 +122,13 @@ static inline bool htmldoc_http_content_type_text_or_undef(HtmlDoc d[static 1]) 
 Err htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[static 1]);
 
 /* ctors */
-Err htmldoc_init_from_cstr(HtmlDoc d[static 1], const char* url, HttpMethod method);
+Err _htmldoc_init_from_cstr_(HtmlDoc d[static 1], const char* url, HttpMethod method);
 Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu, HttpMethod method);
 
 static inline Err htmldoc_init(HtmlDoc d[static 1], CurluOrCstr u[static 1], HttpMethod method) {
     switch (u->tag) {
         case curlu_tag: return htmldoc_init_from_curlu(d, u->curlu, method);
-        case cstr_tag: return htmldoc_init_from_cstr(d, u->cstr, http_get);
+        case cstr_tag: return _htmldoc_init_from_cstr_(d, u->cstr, http_get);
         default: return "error: invalid tag in CurluOrCstr";
     }
 }

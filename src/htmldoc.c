@@ -718,7 +718,7 @@ Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 /* external linkage */
 
 
-Err htmldoc_init_from_cstr(HtmlDoc d[static 1], const char* cstr_url, HttpMethod method) {
+Err _htmldoc_init_from_cstr_(HtmlDoc d[static 1], const char* cstr_url, HttpMethod method) {
     Url url = {0};
     if (cstr_url && *cstr_url) {
         if (strlen(cstr_url) > MAX_URL_LEN) return "cstr_url large is not supported.";
@@ -761,22 +761,6 @@ Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu, HttpMethod method) {
     return Ok;
 }
 
-Err htmldoc_init_fetch_draw_from_cstr(
-    HtmlDoc d[static 1],
-    const char* url,
-    UrlClient url_client[static 1],
-    HttpMethod method,
-    Session s[static 1]
-) {
-    try(htmldoc_init_from_cstr(d, url, method));
-    Err err = htmldoc_fetch(d, url_client, session_doc_msg_fn(s, d));
-    ok_then(err, htmldoc_draw(d, s));
-    if (err) {
-        htmldoc_cleanup(d);
-        return err;
-    }
-    return Ok;
-}
 
 Err htmldoc_init_fetch_draw(
     HtmlDoc d[static 1],
@@ -799,7 +783,7 @@ Err htmldoc_init_fetch_draw(
 HtmlDoc* htmldoc_create(const char* url) {
     HtmlDoc* rv = std_malloc(sizeof(HtmlDoc));
     if (!rv) return NULL;
-    if (htmldoc_init_from_cstr(rv, url, http_get)) {
+    if (htmldoc_init(rv, mk_union_cstr(url), http_get)) {
         std_free(rv);
         return NULL;
     }

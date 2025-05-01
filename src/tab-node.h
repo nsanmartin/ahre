@@ -99,30 +99,30 @@ _tab_node_init_base_(TabNode n[static 1], TabNode* parent) {
 
 /**/
 
-static inline
-Err tab_node_tree_append_url(TabNode t[static 1], const char* url) {
-    TabNode* cn;
-    try( tab_node_current_node(t, &cn));
-    if (!cn) { /* head is current node */
-        cn = t;
-    }
-
-    TabNode new_node = (TabNode){.parent=cn};
-    try( htmldoc_init_from_cstr(&new_node.doc, url, http_get));
-    /* move */
-    TabNode* new_current = arl_of_tab_node_append(
-        tab_node_childs(cn), &new_node
-    );
-    if (!new_current) {
-        htmldoc_cleanup(&new_node.doc);
-        return "error: arl append failure";
-    }
-
-    size_t len = tab_node_childs(cn)->len;
-    if (!len) return "error: no childs after append";
-    cn->current_ix = len - 1;
-    return Ok;
-}
+//static inline
+//Err tab_node_tree_append_url(TabNode t[static 1], const char* url) {
+//    TabNode* cn;
+//    try( tab_node_current_node(t, &cn));
+//    if (!cn) { /* head is current node */
+//        cn = t;
+//    }
+//
+//    TabNode new_node = (TabNode){.parent=cn};
+//    try( htmldoc_init_from_cstr(&new_node.doc, url, http_get));
+//    /* move */
+//    TabNode* new_current = arl_of_tab_node_append(
+//        tab_node_childs(cn), &new_node
+//    );
+//    if (!new_current) {
+//        htmldoc_cleanup(&new_node.doc);
+//        return "error: arl append failure";
+//    }
+//
+//    size_t len = tab_node_childs(cn)->len;
+//    if (!len) return "error: no childs after append";
+//    cn->current_ix = len - 1;
+//    return Ok;
+//}
 
 
 
