@@ -5,8 +5,9 @@
 Err tab_node_init(
     TabNode n[static 1],
     TabNode* parent,
-    const char* url,
+    CurluOrCstr u[static 1],
     UrlClient url_client[static 1],
+    HttpMethod method,
     Session s[static 1]
 );
 Err tablist_append_tree_from_url(
@@ -16,7 +17,7 @@ Err tablist_append_tree_from_url(
     Session s[static 1]
 ) {
     TabNode tn = (TabNode){0};
-    try( tab_node_init(&tn, 0x0, url, url_client, s));
+    try( tab_node_init(&tn, 0x0, mk_union_cstr(url), url_client, http_get, s));
     Err err = tablist_append_move_tree(f, &tn);
     if (err) {
         tab_node_cleanup(&tn);

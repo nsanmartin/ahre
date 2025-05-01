@@ -3,44 +3,21 @@
 #include "ahre__.h"
 
 
-Err htmldoc_init_fetch_draw(
-    HtmlDoc d[static 1],
-    const char* url,
-    UrlClient url_client[static 1],
-    Session s[static 1]
-);
 Err tab_node_init(
     TabNode n[static 1],
     TabNode* parent,
-    const char* url,
-    UrlClient url_client[static 1],
-    Session s[static 1]
-) {
-    try(_tab_node_init_base_(n, parent));
-    Err e = htmldoc_init_fetch_draw(tab_node_doc(n), url, url_client, s);
-    if (e) {
-        /* doc if initialized was cleaned by htmldoc_init_fetch_draw. */
-        *tab_node_doc(n) = (HtmlDoc){0};
-        tab_node_cleanup(n);
-        return e;
-    }
-    n->current_ix = n->childs->len;
-    return Ok;
-}
-
-Err tab_node_init_from_curlu(
-    TabNode n[static 1],
-    TabNode* parent,
-    CURLU* cu,
+    CurluOrCstr u[static 1],
     UrlClient url_client[static 1],
     HttpMethod method,
     Session s[static 1]
 ) {
     try(_tab_node_init_base_(n, parent));
-    Err err = htmldoc_init_fetch_draw_from_curlu(tab_node_doc(n), cu, url_client, method, s);
+    Err err = htmldoc_init_fetch_draw(tab_node_doc(n), u, url_client, method, s);
     if (err) {
-        /* cu is owned by caller so if an erro occur we must not free it but him */
-        htmldoc_url(tab_node_doc(n))->cu = NULL;
+        if (u->tag == curlu_tag) {
+            /* cu is owned by caller so if an erro occur we must not free it but him */
+            htmldoc_url(tab_node_doc(n))->cu = NULL;
+        }
         /* we don't want tab_node_cleanup to free node_doc again */
         *tab_node_doc(n) = (HtmlDoc){0};
         tab_node_cleanup(n);
@@ -50,6 +27,7 @@ Err tab_node_init_from_curlu(
     n->current_ix = n->childs->len;
     return Ok;
 }
+
 
 Err tab_node_tree_append_ahref(
     TabNode t[static 1],
@@ -72,7 +50,7 @@ Err tab_node_tree_append_ahref(
 
     TabNode newnode;
     Err err;
-    if((err=tab_node_init_from_curlu(&newnode, n, curlu, url_client, http_get, s))) {
+    if((err=tab_node_init(&newnode, n, mk_union_curlu(curlu), url_client, http_get, s))) {
         curl_url_cleanup(curlu);
         return err;
     };
@@ -121,7 +99,7 @@ Err tab_node_tree_append_submit(
         }
 
         TabNode newnode;
-        if ((err=tab_node_init_from_curlu(&newnode, n, curlu, url_client, method, s))) {
+        if ((err=tab_node_init(&newnode, n, mk_union_curlu(curlu), url_client, method, s))) {
             curl_url_cleanup(curlu);
             return err;
         };

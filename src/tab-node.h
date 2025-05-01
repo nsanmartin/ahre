@@ -90,7 +90,7 @@ static inline Err
 _tab_node_init_base_(TabNode n[static 1], TabNode* parent) {
     *n = (TabNode){0};
     n->childs = std_malloc(sizeof *n->childs);
-    if (!n->childs) return "error: tab_node_init mem failure";
+    if (!n->childs) return "error: tab_node_init_from_cstr mem failure";
     *n->childs = (ArlOf(TabNode)){0};
     n->parent = parent;
     return Ok;
@@ -108,7 +108,7 @@ Err tab_node_tree_append_url(TabNode t[static 1], const char* url) {
     }
 
     TabNode new_node = (TabNode){.parent=cn};
-    try( htmldoc_init(&new_node.doc, url));
+    try( htmldoc_init_from_cstr(&new_node.doc, url, http_get));
     /* move */
     TabNode* new_current = arl_of_tab_node_append(
         tab_node_childs(cn), &new_node

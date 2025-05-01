@@ -717,12 +717,12 @@ Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
 /* external linkage */
 
-//TODO: deprecate, always init with fetch ? (and if bad url?)
-Err htmldoc_init(HtmlDoc d[static 1], const char* cstr_url) {
+
+Err htmldoc_init_from_cstr(HtmlDoc d[static 1], const char* cstr_url, HttpMethod method) {
     Url url = {0};
     if (cstr_url && *cstr_url) {
         if (strlen(cstr_url) > MAX_URL_LEN) return "cstr_url large is not supported.";
-        try( url_init(&url, cstr_url));
+        try( url_init_from_cstr(&url, cstr_url));
     } else { cstr_url = 0x0; }
 
     lxb_html_document_t* document = lxb_html_document_create();
@@ -736,15 +736,16 @@ Err htmldoc_init(HtmlDoc d[static 1], const char* cstr_url) {
 
     *d = (HtmlDoc){
         .url=url,
-        .method=http_get,
+        .method=method,
         .lxbdoc=document
         //.cache=(DocCache){ .textbuf=(TextBuf){0}, .sourcebuf=(TextBuf){0} }
     };
     return Ok;
 }
+
 Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu, HttpMethod method) {
     Url url = {0};
-    try( url_init_from_curlu(&url, cu));
+    try( url_init(&url, mk_union_curlu(cu)));
     lxb_html_document_t* document = lxb_html_document_create();
     if (!document) {
         curl_url_cleanup(cu);
@@ -760,13 +761,14 @@ Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu, HttpMethod method) {
     return Ok;
 }
 
-Err htmldoc_init_fetch_draw(
+Err htmldoc_init_fetch_draw_from_cstr(
     HtmlDoc d[static 1],
     const char* url,
     UrlClient url_client[static 1],
+    HttpMethod method,
     Session s[static 1]
 ) {
-    try(htmldoc_init(d, url));
+    try(htmldoc_init_from_cstr(d, url, method));
     Err err = htmldoc_fetch(d, url_client, session_doc_msg_fn(s, d));
     ok_then(err, htmldoc_draw(d, s));
     if (err) {
@@ -794,10 +796,36 @@ Err htmldoc_init_fetch_draw_from_curlu(
     return Ok;
 }
 
+Err htmldoc_init_fetch_draw(
+    HtmlDoc d[static 1],
+    CurluOrCstr url[static 1],
+    UrlClient url_client[static 1],
+    HttpMethod method,
+    Session s[static 1]
+) {
+    //try(htmldoc_init(d, url, method));
+    //Err err = htmldoc_fetch(d, url_client, session_doc_msg_fn(s,d)); 
+    //ok_then(err, htmldoc_draw(d, s));
+    //if (err) {
+    //    d->url = (Url){0}; /* on failure do not free cu owned by caller */
+    //    htmldoc_cleanup(d);
+    //    return err;
+    //}
+    //return Ok;
+    switch (url->tag) {
+        case curlu_tag:
+            return htmldoc_init_fetch_draw_from_curlu(d, url->curlu, url_client, method, s);
+        case cstr_tag:
+            return htmldoc_init_fetch_draw_from_cstr(d, url->cstr, url_client, method, s);
+        default: return "error: invalid tag in CurluOrCstr";
+
+    }
+}
+
 HtmlDoc* htmldoc_create(const char* url) {
     HtmlDoc* rv = std_malloc(sizeof(HtmlDoc));
     if (!rv) return NULL;
-    if (htmldoc_init(rv, url)) {
+    if (htmldoc_init_from_cstr(rv, url, http_get)) {
         std_free(rv);
         return NULL;
     }

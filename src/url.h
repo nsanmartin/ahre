@@ -13,6 +13,19 @@ typedef struct {
     CURLU* cu;
 } Url;
 
+typedef enum { curlu_tag, cstr_tag } CurluOrCstrTag;
+typedef struct {
+    CurluOrCstrTag tag;
+    union {
+        CURLU* curlu;
+        const char* cstr;
+    };
+} CurluOrCstr;
+
+//TODO: check type with _Generic
+#define mk_union_curlu(CU) &(CurluOrCstr){.tag=curlu_tag,.curlu=CU}
+#define mk_union_cstr(CS) &(CurluOrCstr){.tag=cstr_tag,.cstr=CS}
+
 /* getters */
 static inline CURLU* url_cu(Url u[static 1]) { return u->cu; }
 
@@ -68,19 +81,21 @@ static inline bool _file_exists_ignore_fragment_(const char* path) {
 
 
 /* ctor */
-static inline Err url_init(Url u[static 1],  const char* cstr) {
+static inline Err url_init_from_curlu(Url u[static 1],  CURLU* cu) {
+    u->cu = cu;
+    return Ok;
+}
+
+static inline Err url_init_from_cstr(Url u[static 1],  const char* cstr) {
     if (!*(cstr=cstr_skip_space(cstr))) return "error: expecting an url";
-    Err err;
-    *u = (Url){.cu=curl_url()};
-    if (!u->cu) return "error initializing CURLU";
     BufOf(char)* url_buf = &(BufOf(char)){0};
     if (_file_exists_ignore_fragment_(cstr)) {
-        if((err=_prepend_file_schema_(cstr, url_buf))) {
-            url_cleanup(u);
-            return err;
-        }
+        try(_prepend_file_schema_(cstr, url_buf));
         cstr = url_buf->items;
     }
+
+    *u = (Url){.cu=curl_url()};
+    if (!u->cu) return "error initializing CURLU";
 
     CURLUcode code = curl_url_set(u->cu, CURLUPART_URL, cstr, CURLU_DEFAULT_SCHEME);
     Err res; 
@@ -97,14 +112,17 @@ static inline Err url_init(Url u[static 1],  const char* cstr) {
     return res;
 }
 
+static inline Err url_init(Url u[static 1], CurluOrCstr cu_or_cstr [static 1]) {
+    switch (cu_or_cstr->tag) {
+        case curlu_tag: return url_init_from_curlu(u, cu_or_cstr->curlu);
+        case cstr_tag: return url_init_from_cstr(u, cu_or_cstr->cstr);
+        default: return "error: invalid tag of CurluOrCstr";
+    }
+}
+
 static inline Err url_curlu_dup(Url u[static 1], CURLU* out[static 1]) {
     *out = curl_url_dup(url_cu(u));
     if (!*out) return "error: curl_url_dup failure";
-    return Ok;
-}
-
-static inline Err url_init_from_curlu(Url u[static 1],  CURLU* cu) {
-    u->cu = cu;
     return Ok;
 }
 

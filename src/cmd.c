@@ -75,9 +75,9 @@ static Err _cmd_fetch(Session session[static 1]) {
     CURLU* new_cu;
     try( url_curlu_dup(htmldoc_url(htmldoc), &new_cu));
     HtmlDoc newdoc;
-    Err err = htmldoc_init_fetch_draw_from_curlu(
+    Err err = htmldoc_init_fetch_draw(
         &newdoc,
-        new_cu,
+        mk_union_curlu(new_cu),
         session_url_client(session),
         http_get,
         session

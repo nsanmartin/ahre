@@ -88,9 +88,19 @@ Err tablist_append_tree_from_url(
     UrlClient url_client[static 1],
     Session s[static 1]
 ) ;
+static inline Err tablist_append_tree(
+    TabList f[static 1], CurluOrCstr u[static 1], UrlClient url_client[static 1], Session s[static 1]
+) {
+    switch (u->tag) {
+        case cstr_tag: return tablist_append_tree_from_url(f, u->cstr, url_client, s);
+        case curlu_tag:
+        default: return "error: invalid tag for CurluOrCstr, only cstr supported";
+    }
+}
+
 static inline Err
 session_open_url(Session s[static 1], const char* url, UrlClient url_client[static 1]) {
-    return tablist_append_tree_from_url(session_tablist(s), url, url_client, s);
+    return tablist_append_tree(session_tablist(s), mk_union_cstr(url), url_client, s);
 }
 
 Err tab_node_tree_append_ahref(
