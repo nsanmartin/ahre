@@ -9,15 +9,6 @@
 
 /* internal linkage */
 
-void _print_fetch_info_(SessionWriteFn wc, CURL* handle) {
-    curl_off_t nbytes;
-    CURLcode curl_code = curl_easy_getinfo(handle, CURLINFO_SIZE_DOWNLOAD_T, &nbytes);
-    if (curl_code!=CURLE_OK) 
-        log_warn__(wc, "%s", curl_easy_strerror(curl_code));
-     else 
-        log_msg__(wc, "%"CURL_FORMAT_CURL_OFF_T"\n", nbytes);
-}
-
 Err _lexbor_parse_chunk_begin_(HtmlDoc htmldoc[static 1]) {
     lxb_html_document_t* lxbdoc = htmldoc->lxbdoc;
     if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(lxbdoc)) 
@@ -133,7 +124,10 @@ _set_htmldoc_url_with_effective_url_(UrlClient url_client[static 1], HtmlDoc htm
 //}
 
 Err curl_lexbor_fetch_document(
-    UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], SessionWriteFn wfnc
+    UrlClient url_client[static 1],
+    HtmlDoc htmldoc[static 1],
+    SessionWriteFn wfnc,
+    CurlLxbFetchCb cb
 ) {
     try( _curl_set_write_fn_and_data_(url_client, htmldoc));
     try( _lexbor_parse_chunk_begin_(htmldoc));
@@ -148,7 +142,7 @@ Err curl_lexbor_fetch_document(
     try( _lexbor_parse_chunk_end_(htmldoc));
     try( _set_htmldoc_url_with_effective_url_(url_client, htmldoc));
     try( htmldoc_convert_sourcebuf_to_utf8(htmldoc));
-    _print_fetch_info_(wfnc, url_client->curl);
+    if (cb) try( cb(wfnc, url_client->curl));
     return Ok;
 }
 

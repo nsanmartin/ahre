@@ -122,16 +122,7 @@ static inline bool htmldoc_http_content_type_text_or_undef(HtmlDoc d[static 1]) 
 Err htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[static 1]);
 
 /* ctors */
-Err _htmldoc_init_from_cstr_(HtmlDoc d[static 1], const char* url, HttpMethod method);
-Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu, HttpMethod method);
-
-static inline Err htmldoc_init(HtmlDoc d[static 1], CurluOrCstr u[static 1], HttpMethod method) {
-    switch (u->tag) {
-        case curlu_tag: return htmldoc_init_from_curlu(d, u->curlu, method);
-        case cstr_tag: return _htmldoc_init_from_cstr_(d, u->cstr, http_get);
-        default: return "error: invalid tag in CurluOrCstr";
-    }
-}
+Err htmldoc_init(HtmlDoc d[static 1], CurluOrCstr u[static 1], HttpMethod method);
 
 
 /* dtors */
@@ -144,7 +135,7 @@ void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) ;
 
 /* external */
 Err curl_lexbor_fetch_document(
-    UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], SessionWriteFn wcb
+    UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], SessionWriteFn wcb, CurlLxbFetchCb cb
 );
 
 /**/
@@ -157,9 +148,11 @@ HtmlDoc* htmldoc_create(const char* url);
 
 Err lexbor_read_doc_from_file(HtmlDoc htmldoc[static 1]) ;
 
-static inline Err
-htmldoc_fetch(HtmlDoc htmldoc[static 1], UrlClient url_client[static 1], SessionWriteFn wfnc) {
-    return curl_lexbor_fetch_document(url_client, htmldoc, wfnc);
+
+static inline Err htmldoc_fetch(
+    HtmlDoc htmldoc[static 1], UrlClient url_client[static 1], SessionWriteFn wfnc, CurlLxbFetchCb cb
+) {
+    return curl_lexbor_fetch_document(url_client, htmldoc, wfnc, cb);
 }
 
 

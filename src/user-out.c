@@ -1,3 +1,4 @@
+#include "debug.h"
 #include "user-out.h"
 #include "session.h"
 
@@ -22,6 +23,15 @@ Err ui_line_show_err(Session* s, char* err, size_t len) {
     return Ok;
 }
 
+Err ui_after_fetch_cb(SessionWriteFn wc, CURL* handle) {
+    curl_off_t nbytes;
+    CURLcode curl_code = curl_easy_getinfo(handle, CURLINFO_SIZE_DOWNLOAD_T, &nbytes);
+    if (curl_code!=CURLE_OK) 
+        log_warn__(wc, "%s", curl_easy_strerror(curl_code));
+     else 
+        log_msg__(wc, "%"CURL_FORMAT_CURL_OFF_T"\n", nbytes);
+     return Ok;
+}
 /*
  * Vi mode
  */

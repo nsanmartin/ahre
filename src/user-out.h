@@ -4,6 +4,7 @@
 #include <errno.h>
 
 #include "utils.h"
+#include <curl/curl.h>
 
 typedef struct Session Session;
 typedef struct UserOutput UserOutput;
@@ -16,6 +17,9 @@ typedef void (*UserOutputCleanup)(UserOutput*);
 
 typedef struct { WriteUserOutputCallback write; Session* ctx; } SessionWriteFn;
 
+typedef Err (*CurlLxbFetchCb)(SessionWriteFn wc, CURL* handle);
+
+
 struct UserOutput {
     WriteUserOutputCallback       write_msg;
     FlushUserOutputCallback       flush_msg;
@@ -23,6 +27,7 @@ struct UserOutput {
     FlushUserOutputCallback       flush_std;
     ShowSessionUserOutputCallback show_session;
     ShowErrUserOutputCallback     show_err;
+    CurlLxbFetchCb                fetch_cb;
 };
 
 static inline Err ui_write_callback_stdout(const char* mem, size_t len, Session* s) {
@@ -52,7 +57,9 @@ Err ui_vi_write_std(const char* mem, size_t len, Session* s);
 /* getter */
 
 void _vi_cleanup_(UserOutput* uo);
+
 /***/
+Err ui_after_fetch_cb(SessionWriteFn wc, CURL* handle);
 
 /* ctor / factory */
 static inline UserOutput uout_line_mode(void) {
@@ -62,7 +69,8 @@ static inline UserOutput uout_line_mode(void) {
         .write_std    = ui_write_callback_stdout,
         .flush_std    = ui_line_flush_stdout,
         .show_session = ui_line_show_session,
-        .show_err     = ui_line_show_err
+        .show_err     = ui_line_show_err,
+        .fetch_cb     = ui_after_fetch_cb
     };
 }
 

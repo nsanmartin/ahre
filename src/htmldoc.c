@@ -341,12 +341,8 @@ static Err draw_tag_title(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     if (!(ctx->flags & DRAW_CTX_FLAG_TITLE)) return Ok;
     Str title = (Str){0};
     Err err = lexbor_get_title_text_line(node, &title);
-    if (!title.len)  {
-        ok_then(err, log_msg__(draw_ctx_logfn(ctx), "%s\n", "<%> no title <%>"));
-        return Ok;
-    }
+    if (!title.len)  return Ok;
     ok_then(err, str_append_lit__(&title, "\n\0"));
-    ok_then(err, log_msg__(draw_ctx_logfn(ctx), "%s", title.items));
     str_clean(&title); 
     return err;
 }
@@ -718,7 +714,7 @@ Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 /* external linkage */
 
 
-Err _htmldoc_init_from_cstr_(HtmlDoc d[static 1], const char* cstr_url, HttpMethod method) {
+static Err _htmldoc_init_from_cstr_(HtmlDoc d[static 1], const char* cstr_url, HttpMethod method) {
     Url url = {0};
     if (cstr_url && *cstr_url) {
         if (strlen(cstr_url) > MAX_URL_LEN) return "cstr_url large is not supported.";
@@ -743,7 +739,7 @@ Err _htmldoc_init_from_cstr_(HtmlDoc d[static 1], const char* cstr_url, HttpMeth
     return Ok;
 }
 
-Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu, HttpMethod method) {
+static Err _htmldoc_init_from_curlu_(HtmlDoc d[static 1], CURLU* cu, HttpMethod method) {
     Url url = {0};
     try( url_init(&url, mk_union_curlu(cu)));
     lxb_html_document_t* document = lxb_html_document_create();
@@ -761,6 +757,14 @@ Err htmldoc_init_from_curlu(HtmlDoc d[static 1], CURLU* cu, HttpMethod method) {
     return Ok;
 }
 
+Err htmldoc_init(HtmlDoc d[static 1], CurluOrCstr u[static 1], HttpMethod method) {
+    switch (u->tag) {
+        case curlu_tag: return _htmldoc_init_from_curlu_(d, u->curlu, method);
+        case cstr_tag: return _htmldoc_init_from_cstr_(d, u->cstr, http_get);
+        default: return "error: invalid tag in CurluOrCstr";
+    }
+}
+
 
 Err htmldoc_init_fetch_draw(
     HtmlDoc d[static 1],
@@ -770,7 +774,7 @@ Err htmldoc_init_fetch_draw(
     Session s[static 1]
 ) {
     try(htmldoc_init(d, url, method));
-    Err err = htmldoc_fetch(d, url_client, session_doc_msg_fn(s,d)); 
+    Err err = htmldoc_fetch(d, url_client, session_doc_msg_fn(s,d), session_uout(s)->fetch_cb); 
     ok_then(err, htmldoc_draw(d, s));
     if (err) {
         if (url->tag == curlu_tag) d->url = (Url){0}; /*on failure do not free cu owned by caller*/
@@ -864,13 +868,18 @@ Err htmldoc_A(Session* s, HtmlDoc d[static 1]) {
 }
 
 Err htmldoc_print_info(Session* s, HtmlDoc d[static 1]) {
+    Err err = Ok;
     LxbNodePtr* title = htmldoc_title(d);
-    if (!title) return "no title in doc";
-    Str buf = (Str){0};
-    try (lexbor_get_title_text(*title, &buf));
-    Err err = session_write_msg(s, buf.items, buf.len);
-    str_clean(&buf);
-    ok_then(err, session_write_msg_lit__(s, "\n"));
+    try( session_write_unsigned_msg(s, htmldoc_sourcebuf(d)->buf.len));
+    try(session_write_msg_lit__(s, "\n"));
+    if (title) {
+        Str buf = (Str){0};
+        try (lexbor_get_title_text(*title, &buf));
+        err = session_write_msg(s, buf.items, buf.len);
+        str_clean(&buf);
+        try(err);
+        ok_then(err, session_write_msg_lit__(s, "\n"));
+    } else try(session_write_msg_lit__(s, "\n"));
     
     char* url = NULL;
     ok_then(err, url_cstr(htmldoc_url(d), &url));

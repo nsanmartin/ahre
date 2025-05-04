@@ -26,25 +26,13 @@ TabNode* arl_of_tab_node_append(ArlOf(TabNode)* list, TabNode tn[static 1]);
 
 /* Node */
 /* getters */
-static inline ArlOf(TabNode)* tab_node_childs(TabNode dn[static 1]) {
-    return dn->childs;
-}
-
-static inline size_t tab_node_child_count(TabNode dn[static 1]) {
-    return dn->childs->len;
-}
-
-static inline HtmlDoc* tab_node_doc(TabNode n[static 1]) {
-    return &n->doc;
-}
-
-static inline bool tab_node_have_current_child(TabNode n[static 1]) {
-    return n->current_ix != tab_node_child_count(n);
-}
-
-static inline TabNode* tab_node_current_child(TabNode n[static 1]) {
-     return arlfn(TabNode, at)(n->childs, n->current_ix);
-}
+static inline ArlOf(TabNode)* tab_node_childs(TabNode dn[static 1]) { return dn->childs; }
+static inline size_t tab_node_child_count(TabNode dn[static 1]) { return dn->childs->len; }
+static inline HtmlDoc* tab_node_doc(TabNode n[static 1]) { return &n->doc; }
+static inline bool
+tab_node_have_current_child(TabNode n[static 1]) {return n->current_ix != tab_node_child_count(n);}
+static inline TabNode*
+tab_node_current_child(TabNode n[static 1]) {return arlfn(TabNode, at)(n->childs, n->current_ix);}
 
 static inline bool tab_node_is_current_in_tab(TabNode n[static 1]) {
     if (tab_node_have_current_child(n)) return false;
@@ -98,33 +86,6 @@ _tab_node_init_base_(TabNode n[static 1], TabNode* parent) {
 
 
 /**/
-
-//static inline
-//Err tab_node_tree_append_url(TabNode t[static 1], const char* url) {
-//    TabNode* cn;
-//    try( tab_node_current_node(t, &cn));
-//    if (!cn) { /* head is current node */
-//        cn = t;
-//    }
-//
-//    TabNode new_node = (TabNode){.parent=cn};
-//    try( htmldoc_init_from_cstr(&new_node.doc, url, http_get));
-//    /* move */
-//    TabNode* new_current = arl_of_tab_node_append(
-//        tab_node_childs(cn), &new_node
-//    );
-//    if (!new_current) {
-//        htmldoc_cleanup(&new_node.doc);
-//        return "error: arl append failure";
-//    }
-//
-//    size_t len = tab_node_childs(cn)->len;
-//    if (!len) return "error: no childs after append";
-//    cn->current_ix = len - 1;
-//    return Ok;
-//}
-
-
 
 Err session_tab_node_print(
     Session* s,
