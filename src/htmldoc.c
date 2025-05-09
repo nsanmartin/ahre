@@ -634,7 +634,7 @@ Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         case LXB_TAG_UL: { return draw_tag_ul(node, ctx); }
         default: {
             if (node->local_name >= LXB_TAG__LAST_ENTRY)
-                log_warn__(
+                log_debug__(
                     draw_ctx_logfn(ctx),
                     "node local name (TAG) greater than last entry: %lx\n",
                     node->local_name

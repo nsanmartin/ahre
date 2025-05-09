@@ -46,8 +46,8 @@ static Err cmd_echo (CmdParams p[static 1]) {
 static Err cmd_quit (CmdParams p[static 1]) { session_quit_set(p->s); return Ok;}
 
 static inline bool _char_cmd_match_(SessionCmd* cmd, CmdParams p[static 1]) {
-    if (cmd->flags & CMD_CHAR && cmd->name[0] == p->ln[0]) {
-        ++p->ln;
+    if (cmd->flags & CMD_CHAR && p->ln && cmd->name[0] == p->ln[0]) {
+        p->ln = cstr_skip_space(++p->ln);
         return true;
     }
     return false;
@@ -144,7 +144,6 @@ Err run_cmd_on_ix__(CmdParams p[static 1], SessionCmd cmdlist[]) {
     p->ln = cstr_skip_space(p->ln);
     /* we assume SIZE_MAX is not an index and is used as not id given */
     if (parse_failed) p->ix = SIZE_MAX; 
-    //else return run_cmd__(p, cmdlist);
     return run_cmd__(p, cmdlist);
 }
 /* commands */
@@ -234,8 +233,10 @@ static SessionCmd _cmd_input_[] =
 Err cmd_input(CmdParams p[static 1]) { return run_cmd_on_ix__(p, _cmd_input_); }
 
 static Err cmd_image_info(CmdParams p[static 1]) { return _cmd_image_print(p->s, p->ix); }
+static Err cmd_image_save(CmdParams p[static 1]) { return _cmd_image_save(p->s, p->ix, p->ln); }
 static SessionCmd _cmd_image_[] =
     { {.name="\"", .fn=cmd_image_info,  .help=NULL, .flags=CMD_CHAR}
+    , {.name=">",  .fn=cmd_image_save,  .help=NULL, .flags=CMD_CHAR}
     , {0}
     };
 #define CMD_IMAGE_DOC \
@@ -296,7 +297,7 @@ Err cmd_bookmarks(CmdParams p[static 1]);
 Err cmd_help(CmdParams p[static 1]);
 
 #define CMD_HELP_IX 14
-static SessionCmd _session_cmd_[] = 
+static SessionCmd _session_cmd_[] =
     { [0]={.name="bookmarks", .match=1, .fn=cmd_bookmarks, .help=CMD_BOOKMARKS_DOC}
     , [1]={.name="cookies",   .match=1, .fn=cmd_cookies,   .help=CMD_COOKIES_DOC}
     , [2]={.name="echo",      .match=1, .fn=cmd_echo,      .help=CMD_ECHO_DOC}
@@ -308,13 +309,34 @@ static SessionCmd _session_cmd_[] =
     , [8]={.name=":",  .fn=cmd_textbuf,    .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
     , [9]={.name="<",  .fn=cmd_sourcebuf,  .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
     , [10]={.name="&", .fn=dbg_print_form, .help=NULL, .flags=CMD_CHAR}
-    , [11]={.name=ANCHOR_OPEN_STR,.fn=cmd_anchor, .help=CMD_ANCHOR_DOC, .flags=CMD_CHAR,
-        .subcmds=_cmd_anchor_}
-    , [12]={.name=INPUT_OPEN_STR, .fn=cmd_input,  .help=CMD_INPUT_DOC, .flags=CMD_CHAR,
-        .subcmds=_cmd_input_}
-    , [13]={.name=IMAGE_OPEN_STR, .fn=cmd_image,  .help=CMD_IMAGE_DOC, .flags=CMD_CHAR}
-    , [CMD_HELP_IX]={.name="?",   .fn=cmd_help, .help=CMD_HELP_DOC, .flags=CMD_CHAR,
-        .subcmds=_session_cmd_}
+    , [11]={
+        .name    = ANCHOR_OPEN_STR,
+        .fn      = cmd_anchor,
+        .help    = CMD_ANCHOR_DOC,
+        .flags   = CMD_CHAR,
+        .subcmds = _cmd_anchor_
+    }
+    , [12]={
+        .name    = INPUT_OPEN_STR,
+        .fn      = cmd_input,
+        .help    = CMD_INPUT_DOC,
+        .flags   = CMD_CHAR,
+        .subcmds = _cmd_input_
+    }
+    , [13]={
+        .name    = IMAGE_OPEN_STR,
+        .fn      = cmd_image,
+        .help    = CMD_IMAGE_DOC,
+        .flags   = CMD_CHAR,
+        .subcmds = _cmd_image_
+    }
+    , [CMD_HELP_IX]={
+        .name    = "?",
+        .fn      = cmd_help,
+        .help    = CMD_HELP_DOC,
+        .flags   = CMD_CHAR,
+        .subcmds = _session_cmd_
+    }
     , [15]={.name="z", .fn=cmd_shortcut_z, .help=CMD_SHORTCUT_Z, .flags=CMD_CHAR}
     , [16]={0}
     };

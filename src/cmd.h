@@ -248,6 +248,7 @@ static inline Err _cmd_input_submit_ix(Session session[static 1], size_t ix) {
 Err cmd_image(CmdParams p[static 1]);
 Err _get_image_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outnode[static 1]);
 Err _cmd_image_print(Session session[static 1], size_t ix);
+Err _cmd_image_save(Session session[static 1], size_t ix, const char* fname);
 
 
 /*

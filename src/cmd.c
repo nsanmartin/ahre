@@ -307,6 +307,19 @@ Err _cmd_image_print(Session session[static 1], size_t ix) {
     return err;
 }
 
+Err _cmd_image_save(Session session[static 1], size_t ix, const char* fname) {
+    lxb_dom_node_t* node;
+    try( _get_image_by_ix(session, ix, &node));
+    HtmlDoc* htmldoc;
+    try( session_current_doc(session, &htmldoc));
+    CURLU* curlu = url_cu(htmldoc_url(htmldoc));
+    try( lexcurl_dup_curl_from_node_and_attr(node, "src", 3, &curlu));
+    Err err = curl_save_url(session->url_client, curlu, fname);
+    curl_url_cleanup(curlu);
+    ok_then(err, session_write_msg_lit__(session, "img saved\n"));
+    return err;
+}
+
 
 /* anchor commands */
 

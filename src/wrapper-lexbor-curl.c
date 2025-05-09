@@ -146,6 +146,22 @@ Err curl_lexbor_fetch_document(
     return Ok;
 }
 
+Err curl_save_url(UrlClient url_client[static 1], CURLU* curlu , const char* fname) {
+    FILE* fp = fopen(fname, "wa");
+    if (!fp) return err_fmt("error opening file '%s': %s\n", fname, strerror(errno));
+    if (
+        curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, fwrite)
+    || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, fp)
+    || curl_easy_setopt(url_client->curl, CURLOPT_CURLU, curlu)
+    ) return "error configuring curl write fn/data";
+
+    CURLcode curl_code = curl_easy_perform(url_client->curl);
+    fclose(fp);
+    if (curl_code!=CURLE_OK) 
+        return err_fmt("curl failed to perform curl: %s", curl_easy_strerror(curl_code));
+    return Ok;
+}
+
 
 static Err _make_submit_get_curlu_rec(
     lxb_dom_node_t* node, BufOf(lxb_char_t) buf[static 1], CURLU* out
@@ -347,8 +363,38 @@ Err mk_submit_url (
     return "not yet supported method";
 }
 
-Err lexcurl_dup_curl_with_anchors_href(lxb_dom_node_t* anchor, CURLU* u[static 1]) {
+Err lexcurl_dup_curl_from_node_and_attr(
+    lxb_dom_node_t* node, const char* attr, size_t attr_len, CURLU* u[static 1]
+) {
 
+    size_t len;
+    const char* value = (const char*)lxb_dom_element_get_attribute(
+        lxb_dom_interface_element(node), (const lxb_char_t*)attr, attr_len, &len
+    );
+    if (!len || !value) return "attr does not have value";
+
+    CURLU* dup = curl_url_dup(*u);
+    if (!dup) return "error: memory failure (curl_url_dup)";
+    BufOf(const_char)*buf = &(BufOf(const_char)){0};
+    if ( !buffn(const_char, append)(buf, value, len)
+       ||!buffn(const_char, append)(buf, "\0", 1)
+    ) {
+        buffn(const_char, clean)(buf);
+        curl_url_cleanup(dup);
+        return "error: buffn append failure";
+    }
+    Err err = curlu_set_url(dup, buf->items);
+    buffn(const_char, clean)(buf);
+    if (err) {
+        curl_url_cleanup(dup);
+        return err;
+    }
+    *u = dup;
+    return Ok;
+}
+
+//TODO: just call lexcurl_dup_curl_from_node_and_attr
+Err lexcurl_dup_curl_with_anchors_href(lxb_dom_node_t* anchor, CURLU* u[static 1]) {
     const lxb_char_t* data;
     size_t data_len;
     lexbor_find_attr_value(anchor, "href", &data, &data_len);
