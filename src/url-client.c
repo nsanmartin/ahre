@@ -14,7 +14,11 @@ Err url_client_reset(UrlClient url_client[static 1]) {
         || curl_easy_setopt(url_client->curl, CURLOPT_NOPROGRESS, 1L)
         || curl_easy_setopt(url_client->curl, CURLOPT_FOLLOWLOCATION, 1)
         || curl_easy_setopt(url_client->curl, CURLOPT_VERBOSE, 0L)
-        || curl_easy_setopt(url_client->curl, CURLOPT_USERAGENT, "ELinks/0.13.2 (textmode; Linux 6.6.62+rpt-rpi-2712 aarch64; 213x55-2)")
+        || curl_easy_setopt(
+            url_client->curl,
+            CURLOPT_USERAGENT,
+            "ELinks/0.13.2 (textmode; Linux 6.6.62+rpt-rpi-2712 aarch64; 213x55-2)"
+        )
         //|| curl_easy_setopt(url_client->curl, CURLOPT_USERAGENT, "w3m/0.5.3")
         /* google does not want to responde properly when I use ahre's user agent */
         //|| curl_easy_setopt(url_client->curl, CURLOPT_USERAGENT, "Ahre/0.0.1")
@@ -48,7 +52,8 @@ exit_fail:
     return 0x0;
 }
 
-Err url_client_print_cookies(UrlClient uc[static 1]) {
+Err url_client_print_cookies(Session* s, UrlClient uc[static 1]) {
+    if (!s) return "error: session is null";
     struct curl_slist* cookies = NULL;
     CURLcode curl_code = curl_easy_getinfo(uc->curl, CURLINFO_COOKIELIST, &cookies);
     if (curl_code != CURLE_OK) { return "error: could not retrieve cookies list"; }
@@ -57,6 +62,7 @@ Err url_client_print_cookies(UrlClient uc[static 1]) {
     struct curl_slist* it = cookies;
     while (it) {
         printf("%s\n", it->data);
+        try(session_write_msg(s, it->data, strlen(it->data)));
         it = it->next;
     }
     curl_slist_free_all(cookies);

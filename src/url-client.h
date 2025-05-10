@@ -25,7 +25,8 @@ static inline char* url_client_escape_url(
     return curl_easy_escape(url_client->curl, u, len);
 }
 
+typedef struct Session Session;
 static inline void url_client_curl_free_cstr(char* s) { curl_free(s); }
-Err url_client_print_cookies(UrlClient uc[static 1]) ;
+Err url_client_print_cookies(Session* s, UrlClient uc[static 1]) ;
 Err url_client_reset(UrlClient url_client[static 1]) ;
 #endif

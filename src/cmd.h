@@ -40,7 +40,7 @@ Err cmd_go(CmdParams p[static 1]);
 #define CMD_COOKIES_DOC \
     "Show the cookies.\n"
 static inline Err cmd_cookies(CmdParams p[static 1]) {
-    return url_client_print_cookies(session_url_client(p->s));
+    return url_client_print_cookies(p->s, session_url_client(p->s));
 }
 
 static inline Err session_doc_draw(Session session[static 1]) {

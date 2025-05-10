@@ -90,38 +90,6 @@ _set_htmldoc_url_with_effective_url_(UrlClient url_client[static 1], HtmlDoc htm
     return curlu_set_url(url_cu(htmldoc_url(htmldoc)), effective_url);
 }
 
-//static Err
-//_set_htmldoc_http_charset_(HtmlDoc htmldoc[static 1], CURL* curl) {
-//    struct curl_header *type;
-//    CURLHcode code = curl_easy_header(curl, "Content-Type", 0, CURLH_HEADER, -1, &type);
-//    if (code != CURLHE_OK && code != CURLHE_NOHEADERS)
-//        return err_fmt("error: curl header failed: %d", code);
-//
-//    if (code == CURLHE_OK) {
-//        //printf("name: %s\n", type->name);
-//        //printf("value: %s\n", type->value);
-//#define CHARSET_KEY_ "charset="
-//        char* charset = strstr(type->value, CHARSET_KEY_); /* is it case insentitive? */
-//        if (charset) {
-//            charset += lit_len__(CHARSET_KEY_);
-//            try(str_append(
-//                    htmldoc_http_charset(htmldoc),
-//                    charset,
-//                    strlen(charset)+1
-//                )
-//            );
-//            printf("charset: '");
-//            fwrite(
-//                items__(htmldoc_http_charset(htmldoc)),
-//                1,
-//                len__(htmldoc_http_charset(htmldoc)),
-//                stdout
-//            );
-//            puts("'");
-//        }
-//    }
-//    return Ok;
-//}
 
 Err curl_lexbor_fetch_document(
     UrlClient url_client[static 1],
