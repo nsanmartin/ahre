@@ -8,6 +8,7 @@
 
 Err url_client_reset(UrlClient url_client[static 1]) {
 
+    curl_easy_reset(url_client->curl);
     /* default options to curl */
     if (   curl_easy_setopt(url_client->curl, CURLOPT_ERRORBUFFER, url_client->errbuf)
         || curl_easy_setopt(url_client->curl, CURLOPT_NOPROGRESS, 1L)
