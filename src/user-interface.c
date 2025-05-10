@@ -198,11 +198,13 @@ Err cmd_sourcebuf(CmdParams p[static 1]) {
 
 Err cmd_anchor_print(CmdParams p[static 1]) { return _cmd_anchor_print(p->s, p->ix); }
 Err cmd_anchor_asterisk(CmdParams p[static 1]) { return _cmd_anchor_asterisk(p->s, p->ix); }
+Err cmd_anchor_save(CmdParams p[static 1]) { return _cmd_anchor_save(p->s, p->ix, p->ln); }
 
 static SessionCmd _cmd_anchor_[] =
     { {.name="\"", .fn=cmd_anchor_print,    .help=NULL, .flags=CMD_CHAR}
     , {.name="",   .fn=cmd_anchor_asterisk, .help=NULL, .flags=CMD_EMPTY}
     , {.name="*",  .fn=cmd_anchor_asterisk, .help=NULL, .flags=CMD_CHAR}
+    , {.name=">",  .fn=cmd_anchor_save,     .help=NULL, .flags=CMD_CHAR}
     , {0}
     };
 

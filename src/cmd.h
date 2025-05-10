@@ -201,6 +201,7 @@ static inline Err cmd_textbuf_write(CmdParams p[static 1]) {
  */
 
 Err _cmd_anchor_print(Session session[static 1], size_t linknum);
+Err _cmd_anchor_save(Session session[static 1], size_t ix, const char* fname) ;
 
 
 static inline Err _cmd_anchor_asterisk(Session session[static 1], size_t linknum) {

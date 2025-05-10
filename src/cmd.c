@@ -323,20 +323,39 @@ Err _cmd_image_save(Session session[static 1], size_t ix, const char* fname) {
 
 /* anchor commands */
 
-Err _cmd_anchor_print(Session session[static 1], size_t linknum) {
+Err _get_anchor_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outnode[static 1]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
     ArlOf(LxbNodePtr)* anchors = htmldoc_anchors(htmldoc);
+    LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(anchors, ix);
+    if (!nodeptr) return "anchor number invalid";
+    *outnode = *nodeptr;
+    return Ok;
+}
 
-    LxbNodePtr* a = arlfn(LxbNodePtr, at)(anchors, (size_t)linknum);
-    if (!a) return "line number invalid";
+Err _cmd_anchor_print(Session session[static 1], size_t linknum) {
+    lxb_dom_node_t* a;
+    try( _get_anchor_by_ix(session, linknum, &a));
     
     BufOf(char)* buf = &(BufOf(char)){0};
-    try( lexbor_node_to_str(*a, buf));
+    try( lexbor_node_to_str(a, buf));
 
     Err err = session_write_msg(session, items__(buf), len__(buf));
     buffn(char, clean)(buf);
     return err;
 }
 
+
+Err _cmd_anchor_save(Session session[static 1], size_t ix, const char* fname) {
+    lxb_dom_node_t* node;
+    try( _get_anchor_by_ix(session, ix, &node));
+    HtmlDoc* htmldoc;
+    try( session_current_doc(session, &htmldoc));
+    CURLU* curlu = url_cu(htmldoc_url(htmldoc));
+    try( lexcurl_dup_curl_from_node_and_attr(node, "href", 4, &curlu));
+    Err err = curl_save_url(session->url_client, curlu, fname);
+    curl_url_cleanup(curlu);
+    ok_then(err, session_write_msg_lit__(session, "file saved\n"));
+    return err;
+}
 
