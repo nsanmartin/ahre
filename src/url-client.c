@@ -61,8 +61,8 @@ Err url_client_print_cookies(Session* s, UrlClient uc[static 1]) {
 
     struct curl_slist* it = cookies;
     while (it) {
-        printf("%s\n", it->data);
         try(session_write_msg(s, it->data, strlen(it->data)));
+        try(session_write_msg_lit__(s, "\n"));
         it = it->next;
     }
     curl_slist_free_all(cookies);
