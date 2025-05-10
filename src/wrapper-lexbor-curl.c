@@ -147,18 +147,23 @@ Err curl_lexbor_fetch_document(
 }
 
 Err curl_save_url(UrlClient url_client[static 1], CURLU* curlu , const char* fname) {
+    curl_easy_reset(url_client->curl);
+    try( url_client_reset(url_client));
     FILE* fp = fopen(fname, "wa");
     if (!fp) return err_fmt("error opening file '%s': %s\n", fname, strerror(errno));
     if (
-        curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, fwrite)
+       curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, fwrite)
     || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, fp)
     || curl_easy_setopt(url_client->curl, CURLOPT_CURLU, curlu)
     ) return "error configuring curl write fn/data";
 
     CURLcode curl_code = curl_easy_perform(url_client->curl);
     fclose(fp);
+
+    curl_easy_reset(url_client->curl);
     if (curl_code!=CURLE_OK) 
         return err_fmt("curl failed to perform curl: %s", curl_easy_strerror(curl_code));
+    try( url_client_reset(url_client));
     return Ok;
 }
 

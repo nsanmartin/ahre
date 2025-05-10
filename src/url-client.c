@@ -6,8 +6,23 @@
 #include "url-client.h"
 #include "cmd.h"
 
+Err url_client_reset(UrlClient url_client[static 1]) {
 
-//TODO: use init
+    /* default options to curl */
+    if (   curl_easy_setopt(url_client->curl, CURLOPT_ERRORBUFFER, url_client->errbuf)
+        || curl_easy_setopt(url_client->curl, CURLOPT_NOPROGRESS, 1L)
+        || curl_easy_setopt(url_client->curl, CURLOPT_FOLLOWLOCATION, 1)
+        || curl_easy_setopt(url_client->curl, CURLOPT_VERBOSE, 0L)
+        || curl_easy_setopt(url_client->curl, CURLOPT_USERAGENT, "ELinks/0.13.2 (textmode; Linux 6.6.62+rpt-rpi-2712 aarch64; 213x55-2)")
+        //|| curl_easy_setopt(url_client->curl, CURLOPT_USERAGENT, "w3m/0.5.3")
+        /* google does not want to responde properly when I use ahre's user agent */
+        //|| curl_easy_setopt(url_client->curl, CURLOPT_USERAGENT, "Ahre/0.0.1")
+        ///|| curl_easy_setopt(url_client->curl, CURLOPT_COOKIEFILE, "")
+        //|| curl_easy_setopt(url_client->curl, CURLOPT_COOKIEJAR, "cookies.txt")
+    ) return "error: curl configuration failed";
+    return Ok;
+}
+
 UrlClient* url_client_create(void) {
     UrlClient* rv = std_malloc(sizeof(UrlClient));
     if (!rv) { perror("Mem Error"); goto exit_fail; }
@@ -17,18 +32,8 @@ UrlClient* url_client_create(void) {
 
     *rv = (UrlClient) { .curl=handle, .errbuf={0} };
 
-    /* default options to curl */
-    if (   curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, rv->errbuf)
-        || curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 1L)
-        || curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1)
-        || curl_easy_setopt(handle, CURLOPT_VERBOSE, 0L)
-        || curl_easy_setopt(handle, CURLOPT_USERAGENT, "ELinks/0.13.2 (textmode; Linux 6.6.62+rpt-rpi-2712 aarch64; 213x55-2)")
-        //|| curl_easy_setopt(handle, CURLOPT_USERAGENT, "w3m/0.5.3")
-        /* google does not want to responde properly when I use ahre's user agent */
-        //|| curl_easy_setopt(handle, CURLOPT_USERAGENT, "Ahre/0.0.1")
-        || curl_easy_setopt(handle, CURLOPT_COOKIEFILE, "")
-        //|| curl_easy_setopt(handle, CURLOPT_COOKIEJAR, "cookies.txt")
-    ) { 
+    Err err = url_client_reset(rv);
+    if (err || curl_easy_setopt(rv->curl, CURLOPT_COOKIEFILE, "")) {
         perror("Error configuring curl, exiting."); goto cleanup_curl;
     }
 
