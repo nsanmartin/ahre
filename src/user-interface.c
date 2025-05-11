@@ -275,6 +275,9 @@ Err cmd_set(CmdParams p[static 1]) {
     return run_cmd__(p, _cmd_set_);
 }
 
+Err qjs_eval(Session s[static 1], const char* script) ;
+Err cmd_js(CmdParams p[static 1]) { return qjs_eval(p->s, p->ln); }
+
 Err dbg_print_form(CmdParams p[static 1]) ;
 
 Err shortcut_z(Session session[static 1], const char* rest);
@@ -298,34 +301,35 @@ Err cmd_bookmarks(CmdParams p[static 1]);
     "Type SUB_COMMAND ? to get help for help in a sub command:\n\n"
 Err cmd_help(CmdParams p[static 1]);
 
-#define CMD_HELP_IX 14
+#define CMD_HELP_IX 15
 static SessionCmd _session_cmd_[] =
     { [0]={.name="bookmarks", .match=1, .fn=cmd_bookmarks, .help=CMD_BOOKMARKS_DOC}
     , [1]={.name="cookies",   .match=1, .fn=cmd_cookies,   .help=CMD_COOKIES_DOC}
     , [2]={.name="echo",      .match=1, .fn=cmd_echo,      .help=CMD_ECHO_DOC}
     , [3]={.name="go",        .match=1, .fn=cmd_go,        .help=CMD_GO_DOC}
-    , [4]={.name="quit",      .match=1, .fn=cmd_quit,      .help=CMD_QUIT_DOC, .flags=CMD_NO_PARAMS}
-    , [5]={.name="set",       .match=1, .fn=cmd_set,       .help=CMD_SET_DOC, .subcmds=_cmd_set_}
-    , [6]={.name="|",  .fn=cmd_tabs,       .help=CMD_TABS_DOC, .flags=CMD_CHAR, .subcmds=_cmd_tabs_}
-    , [7]={.name=".",  .fn=cmd_doc,        .help=CMD_DOC_DOC, .flags=CMD_CHAR, .subcmds=_cmd_doc_}
-    , [8]={.name=":",  .fn=cmd_textbuf,    .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
-    , [9]={.name="<",  .fn=cmd_sourcebuf,  .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
-    , [10]={.name="&", .fn=dbg_print_form, .help=NULL, .flags=CMD_CHAR}
-    , [11]={
+    , [4]={.name="js",        .match=1, .fn=cmd_js}
+    , [5]={.name="quit",      .match=1, .fn=cmd_quit,      .help=CMD_QUIT_DOC, .flags=CMD_NO_PARAMS}
+    , [6]={.name="set",       .match=1, .fn=cmd_set,       .help=CMD_SET_DOC, .subcmds=_cmd_set_}
+    , [7]={.name="|",  .fn=cmd_tabs,       .help=CMD_TABS_DOC, .flags=CMD_CHAR, .subcmds=_cmd_tabs_}
+    , [8]={.name=".",  .fn=cmd_doc,        .help=CMD_DOC_DOC, .flags=CMD_CHAR, .subcmds=_cmd_doc_}
+    , [9]={.name=":",  .fn=cmd_textbuf,    .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
+    , [10]={.name="<",  .fn=cmd_sourcebuf,  .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
+    , [11]={.name="&", .fn=dbg_print_form, .help=NULL, .flags=CMD_CHAR}
+    , [12]={
         .name    = ANCHOR_OPEN_STR,
         .fn      = cmd_anchor,
         .help    = CMD_ANCHOR_DOC,
         .flags   = CMD_CHAR,
         .subcmds = _cmd_anchor_
     }
-    , [12]={
+    , [13]={
         .name    = INPUT_OPEN_STR,
         .fn      = cmd_input,
         .help    = CMD_INPUT_DOC,
         .flags   = CMD_CHAR,
         .subcmds = _cmd_input_
     }
-    , [13]={
+    , [14]={
         .name    = IMAGE_OPEN_STR,
         .fn      = cmd_image,
         .help    = CMD_IMAGE_DOC,
@@ -339,8 +343,8 @@ static SessionCmd _session_cmd_[] =
         .flags   = CMD_CHAR,
         .subcmds = _session_cmd_
     }
-    , [15]={.name="z", .fn=cmd_shortcut_z, .help=CMD_SHORTCUT_Z, .flags=CMD_CHAR}
-    , [16]={0}
+    , [16]={.name="z", .fn=cmd_shortcut_z, .help=CMD_SHORTCUT_Z, .flags=CMD_CHAR}
+    , [18]={0}
     };
 
 Err process_line(Session session[static 1], const char* line) {
