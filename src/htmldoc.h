@@ -8,16 +8,17 @@
 #include <lexbor/html/html.h>
 
 #include "constants.h"
-#include "textbuf.h"
+#include "doc-elem.h"
 #include "error.h"
 #include "mem.h"
-#include "url-client.h"
-#include "utils.h"
-#include "wrapper-lexbor.h"
-#include "wrapper-lexbor-curl.h"
-#include "doc-elem.h"
-#include "url.h"
 #include "session-conf.h"
+#include "textbuf.h"
+#include "url-client.h"
+#include "url.h"
+#include "utils.h"
+#include "wrapper-lexbor-curl.h"
+#include "wrapper-lexbor.h"
+#include "js-engine.h"
 
 #define HIDE_OL 0x1u
 #define HIDE_UL 0x2u
@@ -58,6 +59,7 @@ static inline void http_header_clean(HttpHeader hh[static 1]) {
     str_clean(&hh->content_type);
 }
 
+
 typedef struct {
     Url url;
     HttpMethod method;
@@ -65,41 +67,29 @@ typedef struct {
     DocCache cache;
     size_t hide_tags;
     HttpHeader http_header;
+    JsEngine jsdoc;
 } HtmlDoc;
 
 /* getters */
-static inline HttpHeader*
-htmldoc_http_header(HtmlDoc h[static 1]) { return &h->http_header; }
+static inline HttpHeader* htmldoc_http_header(HtmlDoc h[static 1]) { return &h->http_header; }
 static inline Str*
 htmldoc_http_content_type(HtmlDoc h[static 1]) { return &htmldoc_http_header(h)->content_type; }
 static inline Str*
 htmldoc_http_charset(HtmlDoc h[static 1]) { return &htmldoc_http_header(h)->charset; }
-static inline size_t*
-htmldoc_hide_tags(HtmlDoc d[static 1]) { return &d->hide_tags; }
-static inline lxb_html_document_t*
-htmldoc_lxbdoc(HtmlDoc d[static 1]) { return d->lxbdoc; }
-static inline TextBuf*
-htmldoc_sourcebuf(HtmlDoc d[static 1]) { return &d->cache.sourcebuf; }
-static inline TextBuf*
-htmldoc_textbuf(HtmlDoc d[static 1]) { return &d->cache.textbuf; }
-static inline Str*
-htmldoc_screen(HtmlDoc d[static 1]) { return &d->cache.screen; }
-static inline ArlOf(LxbNodePtr)*
-htmldoc_anchors(HtmlDoc d[static 1]) { return &d->cache.anchors; }
-static inline ArlOf(LxbNodePtr)*
-htmldoc_imgs(HtmlDoc d[static 1]) { return &d->cache.imgs; }
-static inline ArlOf(LxbNodePtr)*
-htmldoc_inputs(HtmlDoc d[static 1]) { return &d->cache.inputs; }
-static inline ArlOf(LxbNodePtr)*
-htmldoc_forms(HtmlDoc d[static 1]) { return &d->cache.forms; }
-static inline LxbNodePtr*
-htmldoc_title(HtmlDoc d[static 1]) { return &d->cache.title; }
-static inline DocCache*
-htmldoc_cache(HtmlDoc d[static 1]) { return &d->cache; }
-static inline Url*
-htmldoc_url(HtmlDoc d[static 1]) { return &d->url; }
-static inline HttpMethod
-htmldoc_method(HtmlDoc d[static 1]) { return d->method; }
+static inline size_t* htmldoc_hide_tags(HtmlDoc d[static 1]) { return &d->hide_tags; }
+static inline lxb_html_document_t* htmldoc_lxbdoc(HtmlDoc d[static 1]) { return d->lxbdoc; }
+static inline TextBuf* htmldoc_sourcebuf(HtmlDoc d[static 1]) { return &d->cache.sourcebuf; }
+static inline TextBuf* htmldoc_textbuf(HtmlDoc d[static 1]) { return &d->cache.textbuf; }
+static inline Str* htmldoc_screen(HtmlDoc d[static 1]) { return &d->cache.screen; }
+static inline ArlOf(LxbNodePtr)* htmldoc_anchors(HtmlDoc d[static 1]) { return &d->cache.anchors; }
+static inline ArlOf(LxbNodePtr)* htmldoc_imgs(HtmlDoc d[static 1]) { return &d->cache.imgs; }
+static inline ArlOf(LxbNodePtr)* htmldoc_inputs(HtmlDoc d[static 1]) { return &d->cache.inputs; }
+static inline ArlOf(LxbNodePtr)* htmldoc_forms(HtmlDoc d[static 1]) { return &d->cache.forms; }
+static inline LxbNodePtr* htmldoc_title(HtmlDoc d[static 1]) { return &d->cache.title; }
+static inline DocCache* htmldoc_cache(HtmlDoc d[static 1]) { return &d->cache; }
+static inline Url* htmldoc_url(HtmlDoc d[static 1]) { return &d->url; }
+static inline HttpMethod htmldoc_method(HtmlDoc d[static 1]) { return d->method; }
+static inline JsEngine* htmldoc_js(HtmlDoc d[static 1]) { return &d->jsdoc; }
 
 static inline bool htmldoc_is_valid(HtmlDoc htmldoc[static 1]) {
     ////TODO: remove, not needed since URLU
@@ -138,6 +128,9 @@ Err curl_lexbor_fetch_document(
     UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], SessionWriteFn wcb, CurlLxbFetchCb cb
 );
 
+static inline Err htmldoc_js_enable(HtmlDoc d[static 1]) { return jse_init(htmldoc_js(d)); }
+static inline void htmldoc_js_disable(HtmlDoc d[static 1]) { jse_clean(htmldoc_js(d)); }
+Err htmldoc_console(HtmlDoc d[static 1], Session* s, const char* line);
 /**/
 
 Err htmldoc_cache_buffer_summary(DocCache c[static 1], BufOf(char) buf[static 1]);
@@ -200,6 +193,15 @@ static inline void textmod_trim_left(TextBufMods mods[static 1], size_t n) {
             else it->offset -= n;
         }
     }
+}
+
+static inline Err htmldoc_switch_js(HtmlDoc htmldoc[static 1], Session* s) {
+    if (!s) return "error: NULL session";
+    JsEngine* js = htmldoc_js(htmldoc);
+    bool is_enabled = jse_rt(js);
+    if (is_enabled) jse_clean(js);
+    else try( jse_init(js));
+    return Ok;
 }
 
 #endif

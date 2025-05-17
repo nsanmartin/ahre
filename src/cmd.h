@@ -51,9 +51,32 @@ static inline Err session_doc_draw(Session session[static 1]) {
     return htmldoc_draw_with_flags(htmldoc, session, flags);
 }
 
+static inline Err session_doc_js(Session session[static 1]) {
+    HtmlDoc* htmldoc;
+    try( session_current_doc(session, &htmldoc));
+    return htmldoc_switch_js(htmldoc, session);
+}
+
+static inline Err session_doc_console(Session session[static 1], const char* line) {
+    HtmlDoc* htmldoc;
+    try( session_current_doc(session, &htmldoc));
+    return htmldoc_console(htmldoc, session, line);
+}
+
+
 #define CMD_DOC_DRAW \
     "Redraws the current document.\n"
 static inline Err cmd_doc_draw(CmdParams p[static 1]) { return session_doc_draw(p->s); }
+
+#define CMD_DOC_JS \
+    "Switch js engine for doc.\n"
+static inline Err cmd_doc_js(CmdParams p[static 1]) { return session_doc_js(p->s); }
+
+#define CMD_DOC_CONSOLE \
+    "js engine console\n"
+static inline Err cmd_doc_console(CmdParams p[static 1]) {
+    return session_doc_console(p->s, p->ln);
+}
 
 /*
  * Tabs commands

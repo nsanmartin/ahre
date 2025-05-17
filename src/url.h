@@ -1,8 +1,10 @@
 #ifndef __URL_AHRE_H__
 #define __URL_AHRE_H__
 
+
 #include <unistd.h>
 #include <limits.h>
+#include <strings.h>
 #include <curl/curl.h>
 
 #include "utils.h"

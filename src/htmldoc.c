@@ -757,6 +757,7 @@ static Err _htmldoc_init_from_curlu_(HtmlDoc d[static 1], CURLU* cu, HttpMethod 
     return Ok;
 }
 
+//TODO: enable js if session conf is enabled?
 Err htmldoc_init(HtmlDoc d[static 1], CurluOrCstr u[static 1], HttpMethod method) {
     switch (u->tag) {
         case curlu_tag: return _htmldoc_init_from_curlu_(d, u->curlu, method);
@@ -805,6 +806,7 @@ void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
     *htmldoc_cache(htmldoc) = (DocCache){0};
 }
 
+//TODO: reset js?
 void htmldoc_reset_draw(HtmlDoc htmldoc[static 1]) {
     /* The sourcebuf and cache ptr are kept */
     textbuf_reset(htmldoc_textbuf(htmldoc));
@@ -819,6 +821,8 @@ void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) {
     htmldoc_cache_cleanup(htmldoc);
     lxb_html_document_destroy(htmldoc_lxbdoc(htmldoc));
     url_cleanup(htmldoc_url(htmldoc));
+
+    if (jse_rt(htmldoc_js(htmldoc))) jse_clean(htmldoc_js(htmldoc));
 }
 
 inline void htmldoc_destroy(HtmlDoc* htmldoc) {
@@ -992,3 +996,7 @@ Err htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[static 1]) {
     return Ok;
 }
 
+Err htmldoc_console(HtmlDoc d[static 1], Session* s, const char* line) {
+    if (!s) return "error: no session";
+    return jse_eval(htmldoc_js(d), s, line);
+}

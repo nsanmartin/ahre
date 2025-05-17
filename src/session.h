@@ -49,6 +49,8 @@ static inline void
 session_monochrome_set(Session s[static 1], bool value) {
     session_conf_monochrome_set(session_conf(s), value);
 }
+static inline void
+session_js_set(Session s[static 1], bool value) { session_conf_js_set(session_conf(s), value); }
 static inline UserInterface*
 session_ui(Session s[static 1]) { return session_conf_ui(session_conf(s)); }
 static inline UserInput*
@@ -69,7 +71,7 @@ session_doc_msg_fn(Session s[static 1], HtmlDoc d[static 1]) {
     (void)d;
     return (SessionWriteFn) {.write=session_uout(s)->write_msg, .ctx=s};
 }
-
+static inline bool session_js(Session s[static 1]) { return session_conf_js(session_conf(s)); }
 
 /* ctor */
 Err session_init(Session s[static 1], SessionConf sconf[static 1]);

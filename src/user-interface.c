@@ -158,11 +158,13 @@ static SessionCmd _cmd_tabs_[] =
 Err cmd_tabs(CmdParams p[static 1]) { return run_cmd__(p, _cmd_tabs_); }
 
 static SessionCmd _cmd_doc_[] =
-    { {.name="",     .fn=cmd_doc_info,           .help=CMD_DOC_INFO_DOC,     .flags=CMD_EMPTY}
-    , {.name="\"",   .fn=cmd_doc_info,           .help=CMD_DOC_INFO_DOC,     .flags=CMD_CHAR}
-    , {.name="A",    .fn=cmd_doc_A,              .help=NULL,                 .flags=CMD_CHAR}
-    , {.name="+",    .fn=cmd_doc_bookmark_add,   .help=CMD_DOC_BOOKMARK_ADD, .flags=CMD_CHAR}
-    , {.name="draw", .match=1, .fn=cmd_doc_draw, .help=CMD_DOC_DRAW}
+    { {.name="",        .fn=cmd_doc_info,              .help=CMD_DOC_INFO_DOC,     .flags=CMD_EMPTY}
+    , {.name="\"",      .fn=cmd_doc_info,              .help=CMD_DOC_INFO_DOC,     .flags=CMD_CHAR}
+    , {.name="A",       .fn=cmd_doc_A,                 .help=NULL,                 .flags=CMD_CHAR}
+    , {.name="+",       .fn=cmd_doc_bookmark_add,      .help=CMD_DOC_BOOKMARK_ADD, .flags=CMD_CHAR}
+    , {.name="console", .match=1, .fn=cmd_doc_console, .help=CMD_DOC_CONSOLE}
+    , {.name="draw",    .match=1, .fn=cmd_doc_draw,    .help=CMD_DOC_DRAW}
+    , {.name="js",      .match=1, .fn=cmd_doc_js,      .help=CMD_DOC_JS}
     //, {.name="%", .fn=_cmd_doc_dbg_traversal,  .help=NULL, .flags=CMD_CHAR}
     //, {.name="hide", .match=1, .fn=_cmd_doc_hide, .help="Hide <ul>"}
     //, {.name="show", .match=1, .fn=_cmd_doc_show, .help="unhide <ul>"}
@@ -252,12 +254,16 @@ Err cmd_set_session_input(CmdParams p[static 1]);
 Err cmd_set_session_winsz(CmdParams p[static 1]);
 Err cmd_set_session_ncols(CmdParams p[static 1]);
 Err cmd_set_session_monochrome(CmdParams p[static 1]);
+Err cmd_set_session_js(CmdParams p[static 1]);
+
+
 #define CMD_SET_CURL "Set a curl option.\n"\
     "TODO: enumerate all available options.\n"
 Err cmd_set_curl(CmdParams p[static 1]);
 
 static SessionCmd _cmd_set_session_[] = 
     { {.name="input",        .match=1, .fn=cmd_set_session_input,      .help=NULL}
+    , {.name="js",           .match=1, .fn=cmd_set_session_js,         .help=NULL}
     , {.name="monochrome",   .match=1, .fn=cmd_set_session_monochrome, .help=NULL}
     , {.name="ncols",        .match=1, .fn=cmd_set_session_ncols,      .help=NULL}
     , {.name="winsz",        .match=1, .fn=cmd_set_session_winsz,      .help=NULL}
@@ -274,9 +280,6 @@ static SessionCmd _cmd_set_[] =
 Err cmd_set(CmdParams p[static 1]) {
     return run_cmd__(p, _cmd_set_);
 }
-
-Err qjs_eval(Session s[static 1], const char* script) ;
-Err cmd_js(CmdParams p[static 1]) { return qjs_eval(p->s, p->ln); }
 
 Err dbg_print_form(CmdParams p[static 1]) ;
 
@@ -301,35 +304,34 @@ Err cmd_bookmarks(CmdParams p[static 1]);
     "Type SUB_COMMAND ? to get help for help in a sub command:\n\n"
 Err cmd_help(CmdParams p[static 1]);
 
-#define CMD_HELP_IX 15
+#define CMD_HELP_IX 14
 static SessionCmd _session_cmd_[] =
     { [0]={.name="bookmarks", .match=1, .fn=cmd_bookmarks, .help=CMD_BOOKMARKS_DOC}
     , [1]={.name="cookies",   .match=1, .fn=cmd_cookies,   .help=CMD_COOKIES_DOC}
     , [2]={.name="echo",      .match=1, .fn=cmd_echo,      .help=CMD_ECHO_DOC}
     , [3]={.name="go",        .match=1, .fn=cmd_go,        .help=CMD_GO_DOC}
-    , [4]={.name="js",        .match=1, .fn=cmd_js}
-    , [5]={.name="quit",      .match=1, .fn=cmd_quit,      .help=CMD_QUIT_DOC, .flags=CMD_NO_PARAMS}
-    , [6]={.name="set",       .match=1, .fn=cmd_set,       .help=CMD_SET_DOC, .subcmds=_cmd_set_}
-    , [7]={.name="|",  .fn=cmd_tabs,       .help=CMD_TABS_DOC, .flags=CMD_CHAR, .subcmds=_cmd_tabs_}
-    , [8]={.name=".",  .fn=cmd_doc,        .help=CMD_DOC_DOC, .flags=CMD_CHAR, .subcmds=_cmd_doc_}
-    , [9]={.name=":",  .fn=cmd_textbuf,    .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
-    , [10]={.name="<",  .fn=cmd_sourcebuf,  .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
-    , [11]={.name="&", .fn=dbg_print_form, .help=NULL, .flags=CMD_CHAR}
-    , [12]={
+    , [4]={.name="quit",      .match=1, .fn=cmd_quit,      .help=CMD_QUIT_DOC, .flags=CMD_NO_PARAMS}
+    , [5]={.name="set",       .match=1, .fn=cmd_set,       .help=CMD_SET_DOC, .subcmds=_cmd_set_}
+    , [6]={.name="|",  .fn=cmd_tabs,       .help=CMD_TABS_DOC, .flags=CMD_CHAR, .subcmds=_cmd_tabs_}
+    , [7]={.name=".",  .fn=cmd_doc,        .help=CMD_DOC_DOC, .flags=CMD_CHAR, .subcmds=_cmd_doc_}
+    , [8]={.name=":",  .fn=cmd_textbuf,    .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
+    , [9]={.name="<",  .fn=cmd_sourcebuf,  .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
+    , [10]={.name="&", .fn=dbg_print_form, .help=NULL, .flags=CMD_CHAR}
+    , [11]={
         .name    = ANCHOR_OPEN_STR,
         .fn      = cmd_anchor,
         .help    = CMD_ANCHOR_DOC,
         .flags   = CMD_CHAR,
         .subcmds = _cmd_anchor_
     }
-    , [13]={
+    , [12]={
         .name    = INPUT_OPEN_STR,
         .fn      = cmd_input,
         .help    = CMD_INPUT_DOC,
         .flags   = CMD_CHAR,
         .subcmds = _cmd_input_
     }
-    , [14]={
+    , [13]={
         .name    = IMAGE_OPEN_STR,
         .fn      = cmd_image,
         .help    = CMD_IMAGE_DOC,
@@ -343,8 +345,8 @@ static SessionCmd _session_cmd_[] =
         .flags   = CMD_CHAR,
         .subcmds = _session_cmd_
     }
-    , [16]={.name="z", .fn=cmd_shortcut_z, .help=CMD_SHORTCUT_Z, .flags=CMD_CHAR}
-    , [18]={0}
+    , [15]={.name="z", .fn=cmd_shortcut_z, .help=CMD_SHORTCUT_Z, .flags=CMD_CHAR}
+    , [17]={0}
     };
 
 Err process_line(Session session[static 1], const char* line) {

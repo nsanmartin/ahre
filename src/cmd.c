@@ -50,6 +50,14 @@ Err cmd_set_session_monochrome(CmdParams p[static 1]) {
     return Ok;
 }
 
+Err cmd_set_session_js(CmdParams p[static 1]) {
+    p->ln = cstr_skip_space(p->ln);
+    if (*p->ln == '0') session_js_set(p->s, false);
+    else if (*p->ln == '1') session_js_set(p->s, true);
+    else return "js option should be '0' or '1'";
+    return Ok;
+}
+
 Err cmd_set_session_input(CmdParams p[static 1]) {
     p->ln = cstr_skip_space(p->ln);
     UserInterface ui;
