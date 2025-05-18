@@ -19,6 +19,7 @@ Err jse_eval(JsEngine js[static 1], Session* s, const char* script);
 static inline JSRuntime* jse_rt(JsEngine js[static 1]) { return js->rt; }
 static inline JSContext* jse_ctx(JsEngine js[static 1]) { return js->ctx; }
 
+//TODO: pass htmldoc and evaluate scripts
 static inline Err jse_init(JsEngine js[static 1]) {
     js->rt = JS_NewRuntime();
     if (!js->rt) return "error: could not initialize quickjs runtime";

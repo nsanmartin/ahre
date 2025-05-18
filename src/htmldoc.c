@@ -593,6 +593,24 @@ const char* _dbg_get_tag_name_(size_t local_name) {
     return _dbg_tags_[local_name];
 }
 
+Err draw_tag_script(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    HtmlDoc* d = draw_ctx_htmldoc(ctx);
+    (void)d;
+    for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
+        const char* data;
+        size_t len;
+        try( lexbor_node_get_text(it, &data, &len));
+        if (mem_skip_space_inplace(&data, &len)) {
+            Str* s = &(Str){0};
+            try( str_append(s, (char*)data, len));
+            try( str_append_lit__(s, "\0"));
+            if (!arlfn(Str,append)(htmldoc_scripts(d),s)) return "error: append failure";
+        }
+        if (it == node->last_child) break;
+    }
+    return Ok;
+}
+
 
 Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     if (ctx->fragment && lexbor_element_id_match(lxb_dom_interface_element(node), ctx->fragment)) {
@@ -621,8 +639,7 @@ Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         case LXB_TAG_P: { return draw_tag_p(node, ctx); }
         case LXB_TAG_PRE: { return draw_tag_pre(node, ctx); }
         case LXB_TAG_SCRIPT: {
-            log_todo__( draw_ctx_logfn(ctx), "%s", "script tag not implemented (skipping)");
-            return Ok;
+            return draw_tag_script(node, ctx); 
         } 
         case LXB_TAG_STYLE: {
             log_todo__( draw_ctx_logfn(ctx), "%s\n", "skiping style (not implemented)");
@@ -803,6 +820,7 @@ void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
     arlfn(LxbNodePtr,clean)(htmldoc_imgs(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_forms(htmldoc));
+    arlfn(Str,clean)(htmldoc_scripts(htmldoc));
     *htmldoc_cache(htmldoc) = (DocCache){0};
 }
 

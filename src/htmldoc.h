@@ -47,6 +47,7 @@ typedef struct {
     ArlOf(LxbNodePtr) inputs;
     ArlOf(LxbNodePtr) forms;
     LxbNodePtr title;
+    ArlOf(Str) scripts;
 } DocCache;
 
 typedef struct {
@@ -85,6 +86,7 @@ static inline ArlOf(LxbNodePtr)* htmldoc_anchors(HtmlDoc d[static 1]) { return &
 static inline ArlOf(LxbNodePtr)* htmldoc_imgs(HtmlDoc d[static 1]) { return &d->cache.imgs; }
 static inline ArlOf(LxbNodePtr)* htmldoc_inputs(HtmlDoc d[static 1]) { return &d->cache.inputs; }
 static inline ArlOf(LxbNodePtr)* htmldoc_forms(HtmlDoc d[static 1]) { return &d->cache.forms; }
+static inline ArlOf(Str)* htmldoc_scripts(HtmlDoc d[static 1]) { return &d->cache.scripts; }
 static inline LxbNodePtr* htmldoc_title(HtmlDoc d[static 1]) { return &d->cache.title; }
 static inline DocCache* htmldoc_cache(HtmlDoc d[static 1]) { return &d->cache; }
 static inline Url* htmldoc_url(HtmlDoc d[static 1]) { return &d->url; }
