@@ -67,10 +67,19 @@ typedef struct {
 #define DRAW_CTX_FLAG_MONOCHROME 0x1u
 #define DRAW_CTX_FLAG_PRE        0x2u
 #define DRAW_CTX_FLAG_TITLE      0x4u
+#define DRAW_CTX_FLAG_JS         0x8u
     unsigned flags;
     SessionWriteFn logfn;
     DrawSubCtx sub;
 } DrawCtx;
+
+static inline unsigned draw_ctx_flags_from_session(Session s[static 1]) {
+    unsigned flags
+        = (session_monochrome(s) ? DRAW_CTX_FLAG_MONOCHROME : 0)
+        | (session_js(s)         ? DRAW_CTX_FLAG_JS         : 0)
+        ;
+    return flags;
+}
 
 /* sub ctx flags */
 static inline bool

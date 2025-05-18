@@ -3,7 +3,6 @@
 
 #include <strings.h>
 #include <lexbor/html/html.h>
-#include <quickjs.h>
 
 #include "textbuf.h"
 

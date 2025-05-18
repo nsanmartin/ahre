@@ -595,7 +595,6 @@ const char* _dbg_get_tag_name_(size_t local_name) {
 
 Err draw_tag_script(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     HtmlDoc* d = draw_ctx_htmldoc(ctx);
-    (void)d;
     for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
         const char* data;
         size_t len;
@@ -850,6 +849,9 @@ inline void htmldoc_destroy(HtmlDoc* htmldoc) {
 
 Err htmldoc_draw_with_flags(HtmlDoc htmldoc[static 1], Session s[static 1], unsigned flags) {
     lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(htmldoc);
+    //TODO: if a redraw was solicited, we may instead cleanup and re init.
+    if (flags & DRAW_CTX_FLAG_JS && !htmldoc_js_is_enabled(htmldoc))
+        htmldoc_js_enable(htmldoc);
     DrawCtx ctx;
     Err err = draw_ctx_init(&ctx, htmldoc, s, flags);
     try(err);
@@ -863,7 +865,7 @@ Err htmldoc_draw_with_flags(HtmlDoc htmldoc[static 1], Session s[static 1], unsi
 }
 
 Err htmldoc_draw(HtmlDoc htmldoc[static 1], Session s[static 1]) {
-    unsigned flags = (session_monochrome(s)? DRAW_CTX_FLAG_MONOCHROME: 0) | DRAW_CTX_FLAG_TITLE;
+    unsigned flags = draw_ctx_flags_from_session(s) | DRAW_CTX_FLAG_TITLE;
     return htmldoc_draw_with_flags(htmldoc, s, flags);
 }
 

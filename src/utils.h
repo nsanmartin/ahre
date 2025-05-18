@@ -110,7 +110,6 @@ void str_reverse(char* s, size_t n) {
 
 
 Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[static 1]);
-Err parse_base36_or_throw(const char** strptr, unsigned long long* num);
 const char* parse_ull(const char* tk, uintmax_t* ullp);
 
 static inline Err bufofchar_append(BufOf(char) buf[static 1], char* s, size_t len) {

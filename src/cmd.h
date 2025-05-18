@@ -47,7 +47,7 @@ static inline Err session_doc_draw(Session session[static 1]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
     htmldoc_reset_draw(htmldoc);
-    unsigned flags = (session_monochrome(session)? DRAW_CTX_FLAG_MONOCHROME: 0);
+    unsigned flags = draw_ctx_flags_from_session(session);
     return htmldoc_draw_with_flags(htmldoc, session, flags);
 }
 

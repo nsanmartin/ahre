@@ -130,6 +130,7 @@ Err curl_lexbor_fetch_document(
     UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], SessionWriteFn wcb, CurlLxbFetchCb cb
 );
 
+static inline bool htmldoc_js_is_enabled(HtmlDoc d[static 1]) {return jse_is_enabled(htmldoc_js(d));}
 static inline Err htmldoc_js_enable(HtmlDoc d[static 1]) { return jse_init(htmldoc_js(d)); }
 static inline void htmldoc_js_disable(HtmlDoc d[static 1]) { jse_clean(htmldoc_js(d)); }
 Err htmldoc_console(HtmlDoc d[static 1], Session* s, const char* line);

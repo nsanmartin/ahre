@@ -21,6 +21,7 @@ const char* parse_l(const char* tk, long lptr[static 1]) {
 
 Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[static 1]) {
     if (buf_sz == 0) return "error: not enough size to convert num to base36 str.";
+    *len = 0;
     do {
         *buf++ = _base36digits[n % 36];
         n /= 36;

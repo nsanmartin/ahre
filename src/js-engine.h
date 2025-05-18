@@ -12,9 +12,10 @@ typedef struct {
 static inline JSRuntime* jse_runtime(JsEngine js[static 1]) { return js->rt; }
 static inline JSContext* jse_context(JsEngine js[static 1]) { return js->ctx; }
 
+static inline bool jse_is_enabled(JsEngine js[static 1]) { return js->rt; }
+
 Err jse_add_document(JsEngine jse[static 1]);
 Err jse_eval(JsEngine js[static 1], Session* s, const char* script);
-
 
 static inline JSRuntime* jse_rt(JsEngine js[static 1]) { return js->rt; }
 static inline JSContext* jse_ctx(JsEngine js[static 1]) { return js->ctx; }
