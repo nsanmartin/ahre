@@ -324,7 +324,7 @@ Err _cmd_image_save(Session session[static 1], size_t ix, const char* fname) {
     try( lexcurl_dup_curl_from_node_and_attr(node, "src", 3, &curlu));
     Err err = curl_save_url(session->url_client, curlu, fname);
     curl_url_cleanup(curlu);
-    ok_then(err, session_write_msg_lit__(session, "img saved\n"));
+    ok_then(err, session_write_msg_lit__(session, "data saved\n"));
     return err;
 }
 
