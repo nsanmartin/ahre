@@ -1,9 +1,9 @@
 [submodule "isocline"]
 	path = isocline
 	url = https://github.com/daanx/isocline.git
-[submodule "che"]
-	path = che
-    url = https://codeberg.org/nsm/che.git
 [submodule "quickjs"]
 	path = quickjs
 	url = https://github.com/quickjs-ng/quickjs.git
+[submodule "hotl"]
+	path = hotl
+	url = https://codeberg.org/nsm/hotl.git

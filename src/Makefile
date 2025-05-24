@@ -6,7 +6,7 @@ QUICKJS_LIB=$(QUICKJS_REPO)/build/libqjs.a
 INCLUDE:=$(HOME)/usr/include
 CFLAGS+=-g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition \
 		-I. \
-		-I$(REPO_DIR)/che/include \
+		-I$(REPO_DIR)/hotl/include \
 		-I$(REPO_DIR)/isocline/include \
 		-I$(QUICKJS_INCLUDE)
 
