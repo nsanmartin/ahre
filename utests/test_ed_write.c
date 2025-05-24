@@ -33,14 +33,42 @@ size_t mock_fwrite_called_with(const void* ptr, size_t size, size_t nmemb, FILE 
     return 0;
 }
 
+#define OkMock 0
 #define fopen  mock_fopen
 #define fwrite mock_fwrite_called_with
 #define fclose mock_fclose
 #include "../src/cmd.c"
 
+Err write_user_mock(const char* mem, size_t len, Session* ctx) {
+    (void)mem;(void)len;(void)ctx; return Ok;
+}
+Err flush_mock(Session* s) { (void)s; return Ok; }
+Err show_error_mock(Session* s, char* err, size_t len) { (void)s;(void)err;(void)len; return Ok; }
+
+UserOutput uout_mock_void(void) {
+    return (UserOutput) {
+        .write_msg    = write_user_mock,
+        .flush_msg    = flush_mock,
+        .write_std    = write_user_mock,
+        .flush_std    = flush_mock,
+        .show_session = flush_mock,
+        .show_err     = show_error_mock,
+        //.fetch_cb     = ui_after_fetch_cb//TODO: mock as well
+    };
+}
+
+UserInterface ui_mock_void(void) {
+    return (UserInterface) {
+        //.uin            = uinput_fgets(),
+        //.process_line   = process_line_line_mode,
+        .uout           = uout_mock_void(),
+    };
+}
+
 static Err _check_write_str_(char* str, size_t len) {
     const char rest[] = "rest";
     Session s;
+    s.conf.ui = ui_mock_void();
     Range r;
     TextBuf* tb = &(TextBuf){.buf={.items=str, .len=len}};
     fwrite_params_queue_push((MockFwriteParams){.ptr=str,.size=1,.nmemb=len});
