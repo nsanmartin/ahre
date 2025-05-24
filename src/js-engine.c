@@ -128,3 +128,13 @@ Err jse_eval(JsEngine js[static 1], Session* s, const char* script) {
     JS_FreeValue(ctx, result);
     return err;
 }
+
+Err jse_eval_doc_scripts(Session* s, HtmlDoc d[static 1]) {
+
+    ArlOf(Str)* scripts = htmldoc_scripts(d);
+    for (Str* it = arlfn(Str,begin)(scripts); it != arlfn(Str,end)(scripts); ++it) {
+       try( jse_eval(htmldoc_js(d), s, items__(it)));
+    }
+    return Ok;
+}
+

@@ -23,6 +23,8 @@
 [ ] [ui] implement ranges for doc's cache's elements. Vg: [1,4' means show anchors 1 to 4
 [ ] [ui] implement vi_process_line method that does not print (vi mode only prints on show)
 [ ] [js] add cli flag to enable js on startup
+[ ] [js] implement and bind DOM
+[ ] [js] implement and bind console object
 
 # WILL NOT DO
 [X] run test in github ci workflow (currently it does not find liblexbos.so.2): moving away from github

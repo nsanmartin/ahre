@@ -126,14 +126,19 @@ void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) ;
 
 
 /* external */
+Err jse_eval_doc_scripts(Session* s, HtmlDoc d[static 1]);
 Err curl_lexbor_fetch_document(
     UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], SessionWriteFn wcb, CurlLxbFetchCb cb
 );
 
 static inline bool htmldoc_js_is_enabled(HtmlDoc d[static 1]) {return jse_is_enabled(htmldoc_js(d));}
-static inline Err htmldoc_js_enable(HtmlDoc d[static 1]) { return jse_init(htmldoc_js(d)); }
 static inline void htmldoc_js_disable(HtmlDoc d[static 1]) { jse_clean(htmldoc_js(d)); }
 Err htmldoc_console(HtmlDoc d[static 1], Session* s, const char* line);
+static inline Err htmldoc_js_enable(HtmlDoc d[static 1], Session* s) {
+    try( jse_init(htmldoc_js(d)));
+    try( jse_eval_doc_scripts(s, d));
+    return Ok;
+}
 /**/
 
 Err htmldoc_cache_buffer_summary(DocCache c[static 1], BufOf(char) buf[static 1]);
@@ -203,7 +208,8 @@ static inline Err htmldoc_switch_js(HtmlDoc htmldoc[static 1], Session* s) {
     JsEngine* js = htmldoc_js(htmldoc);
     bool is_enabled = jse_rt(js);
     if (is_enabled) jse_clean(js);
-    else try( jse_init(js));
+    else try( htmldoc_js_enable(htmldoc, s));
+   
     return Ok;
 }
 

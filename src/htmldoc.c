@@ -849,9 +849,6 @@ inline void htmldoc_destroy(HtmlDoc* htmldoc) {
 
 Err htmldoc_draw_with_flags(HtmlDoc htmldoc[static 1], Session s[static 1], unsigned flags) {
     lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(htmldoc);
-    //TODO: if a redraw was solicited, we may instead cleanup and re init.
-    if (flags & DRAW_CTX_FLAG_JS && !htmldoc_js_is_enabled(htmldoc))
-        htmldoc_js_enable(htmldoc);
     DrawCtx ctx;
     Err err = draw_ctx_init(&ctx, htmldoc, s, flags);
     try(err);
@@ -861,6 +858,9 @@ Err htmldoc_draw_with_flags(HtmlDoc htmldoc[static 1], Session s[static 1], unsi
 
     draw_ctx_cleanup(&ctx);
     if (err) arlfn(ModAt,clean) (draw_ctx_mods(&ctx));
+    //TODO: if a redraw was solicited, we may instead cleanup and re init.
+    if (flags & DRAW_CTX_FLAG_JS && !htmldoc_js_is_enabled(htmldoc))
+        try(htmldoc_js_enable(htmldoc, s));
     return err;
 }
 
