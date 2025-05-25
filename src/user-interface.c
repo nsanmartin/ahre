@@ -115,6 +115,10 @@ Err run_cmd_help(Session* s, SessionCmd cmd[static 1]) {
                 session_write_msg_lit__(s, "<any> ");
                 session_write_msg(s, (char*)sub->name, strlen(sub->name));
                 session_write_msg_lit__(s, "\n");
+            } else if (sub->name) {
+                session_write_msg_lit__(s, "  ");
+                session_write_msg(s, (char*)sub->name, strlen(sub->name));
+                session_write_msg_lit__(s, "\n");
             }
         }
     }

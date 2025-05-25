@@ -1,5 +1,4 @@
 # TODO
-[ ] [hotl] implement hotl arl reset
 [ ] [cli] add command line option to read commands on startup
 [ ] [curl] implement cancel for curl commands
 [ ] [curl] implement other curlopt setter in user interface
@@ -8,32 +7,28 @@
 [ ] [draw] draw properly center 
 [ ] [draw] draw tables as tables
 [ ] [draw] support default and bright colour pallets (as w3m)
-[ ] [feat] use libchafa for images
-[ ] [isocline] move back to readline
+[ ] [feat] use libchafa for images (or open a separate process with custom viewer)
+[ ] [hotl] implement hotl arl reset
+[ ] [isocline] move back to readline? fork? use linenoise?
 [ ] [isocline] set autocomplete with ahre commands 
-[ ] [lex] wrap lexbor functions with Err returning wrappers whenever possible
-[ ] [libcurl] store cookies in file and make it configurable.
-[ ] [refa] separate more htmldoc init from draw
-[ ] [refa] use SessionMemWriter consistently (session_write_* -> session_writer_write_*)
-[ ] [ui/refa] use different sesion_cmd arrays for different modes.
-[ ] [ui] images download/send to progam
-[ ] [ui] implement ';' as cmd separator so that 'dr;:%p' means first draw then print all (and multiline cmds)
-[ ] [ui] implement def (or some other keyword) to define procedures
-[ ] [ui] implement input options
-[ ] [ui] implement ranges for doc's cache's elements. Vg: [1,4' means show anchors 1 to 4
-[ ] [ui] implement vi_process_line method that does not print (vi mode only prints on show)
 [ ] [js] add cli flag to enable js on startup
 [ ] [js] implement and bind DOM
 [ ] [js] implement and bind console object
-
-# WILL NOT DO
-[X] run test in github ci workflow (currently it does not find liblexbos.so.2): moving away from github
-[~] use trie for commands and include docs
-[~] document basic funtionality (usefull until cmd self docuemnt themselfs)
+[ ] [libcurl] store cookies in file and make it configurable.
+[ ] [refa][?] separate more htmldoc init from draw
+[ ] [refa][?] use SessionMemWriter consistently (session_write_* -> session_writer_write_*)
+[ ] [test] so many tests...
+[ ] [ui/refa] use different sesion_cmd arrays for different modes.
+[ ] [ui] images: send to progam
+[ ] [ui] implement ';' as cmd separator so that 'dr;:%p' means first draw then print all (and multiline cmds)
+[ ] [ui] implement def (or some other keyword) to define procedures
+[ ] [ui] implement ranges for doc's cache's elements. Vg: [1,4' means show anchors 1 to 4
+[ ] [ui] implement vi_process_line method that does not print (vi mode only prints on show)
 
 #CLOSED
-[?] bug: image number invalid: check base
-[~] Unicode support
+[X] run test in github ci workflow (currently it does not find liblexbos.so.2): moving away from github
+[~] document basic funtionality (usefull until cmd self docuemnt themselfs)
+[~] use trie for commands and include docs (the current simpler approach seems good enought)
 
 # DONE
 ['] [HTML] implement pre tag
@@ -79,3 +74,6 @@
 [*] on startupt if failed to open url message is lost
 [*] brwose properly anchors 
 [*] [curlex] before parsing (and drawing) check if html.
+[*] [lex] wrap lexbor functions with Err returning wrappers whenever possible
+[*] [ui] images download
+[*] Unicode support
