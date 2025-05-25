@@ -27,7 +27,7 @@ $(AHRE_BUILD)/ahre: $(AHRE_OBJ) $(AHRE_BUILD)/isocline.o $(QUICKJS_LIB)
 		$(REPO_DIR)/ahre.c -o $@ \
 		$^ \
 		-L$(QUICKJS_LIB) \
-		-lcurl -llexbor -lqjs -lm
+		-lcurl -llexbor -lm
 
 
 $(AHRE_OBJDIR)/%.o: $(AHRE_SRCDIR)/%.c $(AHRE_HEADERS)

@@ -26,7 +26,7 @@ test_range: $(AHRE_UTESTS)/test_range.c $(AHRE_BUILD)/isocline.o \
 		-o $(AHRE_BUILD)/$@ \
 		\
 		$^ \
-		-lcurl -llexbor -lqjs -lm
+		-lcurl -llexbor -lm
 
 test_buf: $(AHRE_UTESTS)/test_buf.c $(AHRE_BUILD)/str.o
 	$(CC) $(CFLAGS) $(SANITIZE_FLAGS) -I. -I$(INCLUDE) -I$(AHRE_UTESTS) -o $(AHRE_BUILD)/$@ $^ \
@@ -50,7 +50,7 @@ test_ed_write: $(AHRE_UTESTS)/test_ed_write.c \
 		-o $(AHRE_BUILD)/$@ \
 		\
 		$^ \
-		-lcurl -llexbor -lqjs -lm
+		-lcurl -llexbor -lm
 
 
 test_iconv: $(AHRE_UTESTS)/test_iconv.c $(AHRE_BUILD)/error.o
