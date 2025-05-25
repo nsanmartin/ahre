@@ -1,7 +1,7 @@
 Ahre
 ====
 
-A Hypertext REference browser.
+A hypertext reference www navigator.
 
 You may want to use edbrowse (https://github.com/CMB/edbrowse) or w3m
 (https://git.sr.ht/~rkta/w3m) instead.
@@ -24,8 +24,9 @@ Lexbor:
 
 Git submodules:
 ==============
-hashi (repo:  https://github.com/nsanmartin/hashi)
-isocline (repo:  https://github.com/daanx/isocline)
+hotl     (repo: https://codeberg.org/nsm/hotl)
+isocline (repo: https://github.com/daanx/isocline)
+quickjs  (repo: https://github.com/quickjs-ng/quickjs)
 
 
 Build
