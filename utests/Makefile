@@ -58,4 +58,6 @@ test_iconv: $(AHRE_UTESTS)/test_iconv.c $(AHRE_BUILD)/error.o
 	$(CC) $(CFLAGS) $(SANITIZE_FLAGS) -I. -I$(INCLUDE) -I$(AHRE_UTESTS) -o $(AHRE_BUILD)/$@ $^ \
 		-lcurl -llexbor
 
-
+test_url: $(AHRE_UTESTS)/test_url.c 
+	$(CC) $(CFLAGS) $(SANITIZE_FLAGS) -I. -I$(INCLUDE) -I$(AHRE_UTESTS) -o $(AHRE_BUILD)/$@ $^ \
+		-lcurl -llexbor

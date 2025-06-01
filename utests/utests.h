@@ -30,4 +30,11 @@ Tag: \
     else printf("%stests passed%s\n", GREEN, RESET); \
 }while(0)
 
+#define utest_ignore_params_0()
+#define utest_ignore_params_1(p) (void)p;
+#define utest_ignore_params_2(p, ...) (void)p; utest_ignore_params_1(__VA_ARGS__)
+#define utest_ignore_params_3(p, ...) (void)p; utest_ignore_params_2(__VA_ARGS__)
+#define utest_ignore_params_4(p, ...) (void)p; utest_ignore_params_3(__VA_ARGS__)
+#define utest_ignore_params(...) utest_ignore_params_(__VA_ARGS__, 4, 3, 2, 1, 0)(__VA_ARGS__)
+#define utest_ignore_params_(_1, _2, _3, _4, N, ...) utest_ignore_params_##N
 #endif

@@ -13,8 +13,13 @@ Err curl_url_to_filename_append(CURLU* cu, Str out[static 1]) {
         curl_free(curl_host);
         return "error: could not get host from url";
     }
-    size_t part_len = strlen(curl_path);
-    if (part_len < 1 || curl_path[0] != '/') {
+    size_t path_len = strlen(curl_path);
+    if (path_len < 1 || curl_path[0] != '/') {
+        /* from: https://curl.se/libcurl/c/curl_url_get.html
+         * CURLUPART_PATH 
+         * The part is always at least a slash ('/') even if no path was
+         * supplied in the URL. A URL path always starts with a slash.
+         * */
         curl_free(curl_host);
         curl_free(curl_path);
         return "error: bad part retrieved from url";
@@ -22,7 +27,7 @@ Err curl_url_to_filename_append(CURLU* cu, Str out[static 1]) {
     replace_char_inplace(curl_host, '/', '_');
     replace_char_inplace(curl_path, '/', '_');
     err = str_append(out, curl_host, strlen(curl_host));
-    if (part_len > 1) ok_then(err, str_append(out, curl_path, strlen(curl_path)));
+    if (path_len > 1) ok_then(err, str_append(out, curl_path, strlen(curl_path)));
     curl_free(curl_host); curl_free(curl_path);
     return err;
 }
