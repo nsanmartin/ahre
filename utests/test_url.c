@@ -1,14 +1,12 @@
 #include <utests.h>
 #include <stdio.h>
 #include <curl/urlapi.h>
-// #include <curl/url.h>
 
 #include "../src/error.c"
 
 typedef CURLUcode (*CurlUrlGetFn)(const CURLU* u, CURLUPart p, char** c, unsigned int f);
 static CurlUrlGetFn _mock_curl_url_get_ = NULL;
 static unsigned _curl_free_calls = 0;
-#define ignore
 
 static inline void mock_curl_free(void* p) { (void)p; ++_curl_free_calls; }
 static inline
