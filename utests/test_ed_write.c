@@ -33,7 +33,6 @@ size_t mock_fwrite_called_with(const void* ptr, size_t size, size_t nmemb, FILE 
     return 0;
 }
 
-#define OkMock 0
 #define fopen  mock_fopen
 #define fwrite mock_fwrite_called_with
 #define fclose mock_fclose

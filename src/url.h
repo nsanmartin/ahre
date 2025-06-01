@@ -10,6 +10,11 @@
 #include "config.h"
 #include "error.h"
 
+/** CURL wrappers */
+Err curl_url_to_filename_append(CURLU* cu, Str out[static 1]);
+Err fopen_or_append_fopen(const char* fname, CURLU* cu, FILE* fp[static 1]);
+/* CURL wrappers **/
+
 typedef struct {
     CURLU* cu;
 } Url;
@@ -30,11 +35,15 @@ typedef struct {
 /* getters */
 static inline CURLU* url_cu(Url u[static 1]) { return u->cu; }
 
-static inline Err url_cstr(Url u[static 1], char* out[static 1]) {
-    CURLUcode code = curl_url_get(u->cu, CURLUPART_URL, out, 0);
+static inline Err curl_url_part_cstr(CURLU* cu, CURLUPart part, char* out[static 1]) {
+    CURLUcode code = curl_url_get(cu, part, out, 0);
     if (code == CURLUE_OK)
         return Ok;
     return err_fmt("error getting url from CURLU: %s", curl_url_strerror(code));
+}
+
+static inline Err url_cstr(Url u[static 1], char* out[static 1]) {
+    return curl_url_part_cstr(u->cu, CURLUPART_URL, out);
 }
 
 static inline Err url_fragment(Url u[static 1], char* out[static 1]) {

@@ -116,7 +116,8 @@ Err curl_lexbor_fetch_document(
 
 Err curl_save_url(UrlClient url_client[static 1], CURLU* curlu , const char* fname) {
     try( url_client_reset(url_client));
-    FILE* fp = fopen(fname, "wa");
+    FILE* fp;
+    try(fopen_or_append_fopen(fname, curlu, &fp));
     if (!fp) return err_fmt("error opening file '%s': %s\n", fname, strerror(errno));
     if (
        curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, fwrite)
