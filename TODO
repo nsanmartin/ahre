@@ -1,4 +1,6 @@
 # TODO
+[ ] [build] add build option to disable js (and not require quickjs)
+[ ] [build] fix tcc quick-check build
 [ ] [cli] add command line option to read commands on startup
 [ ] [curl] implement cancel for curl commands
 [ ] [curl] implement other curlopt setter in user interface
@@ -11,7 +13,6 @@
 [ ] [hotl] implement hotl arl reset
 [ ] [isocline] move back to readline? fork? use linenoise?
 [ ] [isocline] set autocomplete with ahre commands 
-[ ] [js] add build option to disable js 
 [ ] [js] implement and bind DOM
 [ ] [js] implement and bind console object
 [ ] [libcurl] store cookies in file and make it configurable.
@@ -21,10 +22,11 @@
 [ ] [ui/refa] use different sesion_cmd arrays for different modes.
 [ ] [ui] images: send to progam
 [ ] [ui] implement ';' as cmd separator so that 'dr;:%p' means first draw then print all 
-[ ] [ui] implement multiline commands
 [ ] [ui] implement def (or some other keyword) to define procedures
+[ ] [ui] implement multiline commands
 [ ] [ui] implement ranges for doc's cache's elements. Vg: [1,4' means show anchors 1 to 4
 [ ] [ui] implement vi_process_line method that does not print (vi mode only prints on show)
+[ ] [ui] when saving images to directory path act as like anchors (generating the url).
 
 #CLOSED
 [X] run test in github ci workflow (currently it does not find liblexbos.so.2): moving away from github
