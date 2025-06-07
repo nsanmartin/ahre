@@ -5,30 +5,21 @@
 
 
 Err curl_url_to_filename_append(CURLU* cu, Str out[static 1]) {
-    char* curl_host = NULL;
-    char* curl_path = NULL;
-    try( curl_url_part_cstr(cu, CURLUPART_HOST, &curl_host));
-    Err err = curl_url_part_cstr(cu, CURLUPART_PATH, &curl_path);
+    char* url = NULL;
+    char* schema = NULL;
+    try( curl_url_part_cstr(cu, CURLUPART_URL, &url));
+    Err err = curl_url_part_cstr(cu, CURLUPART_SCHEME, &schema);
     if (err) {
-        curl_free(curl_host);
+        curl_free(url);
         return "error: could not get host from url";
     }
-    size_t path_len = strlen(curl_path);
-    if (path_len < 1 || curl_path[0] != '/') {
-        /* from: https://curl.se/libcurl/c/curl_url_get.html
-         * CURLUPART_PATH 
-         * The part is always at least a slash ('/') even if no path was
-         * supplied in the URL. A URL path always starts with a slash.
-         * */
-        curl_free(curl_host);
-        curl_free(curl_path);
-        return "error: bad part retrieved from url";
-    };
-    replace_char_inplace(curl_host, '/', '_');
-    replace_char_inplace(curl_path, '/', '_');
-    err = str_append(out, curl_host, strlen(curl_host));
-    if (path_len > 1) ok_then(err, str_append(out, curl_path, strlen(curl_path)));
-    curl_free(curl_host); curl_free(curl_path);
+    char* fname = url;
+    size_t schema_len = strlen(schema);
+    if (!strncmp(fname, schema, strlen(schema))) fname += schema_len;
+    if (!strncmp(fname, "://", 3)) fname += 3;
+    replace_char_inplace(fname, '/', '_');
+    err = str_append(out, fname, strlen(fname) + 1);
+    curl_free(schema); curl_free(url);
     return err;
 }
 

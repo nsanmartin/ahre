@@ -87,14 +87,15 @@ int test_curl_url_to_filename_append(void) {
     Err e = curl_url_to_filename_append(cu, &res);
 
     // expecting error since curl path should start with '/'
-    utest_assert(e, fail);
+    utest_assert(!e, fail);
     utest_assert(_curl_free_calls == 2, fail);
+    str_reset(&res);
 
     _mock_curl_url_get_ncall = 0;
     _mock_curl_url_get_content = (char*[]){ "FOO", (char[]){ '/', 'B', 'A', 'R', '\0' }};
     e = curl_url_to_filename_append(cu, &res);
     utest_assert(!e, fail);
-    utest_assert(!strncmp(res.items, "FOO_BAR", res.len), fail);
+    utest_assert(!strncmp(res.items, "FOO", res.len), fail);
     str_reset(&res);
     utest_assert(_curl_free_calls == 4, fail);
 
@@ -103,16 +104,40 @@ int test_curl_url_to_filename_append(void) {
     e = curl_url_to_filename_append(cu, &res);
     utest_assert(!e, fail);
     utest_assert(!strncmp(res.items, "FOO", res.len), fail);
-    str_clean(&res);
+    str_reset(&res);
     utest_assert(_curl_free_calls == 6, fail);
 
     _mock_curl_url_get_ = mock_curl_url_get_e;
     e = curl_url_to_filename_append(cu, &res);
     utest_assert(e, fail);
     utest_assert(_curl_free_calls == 6, fail);
+    str_reset(&res);
+
+    _mock_curl_url_get_ = mock_curl_url_get_1;
+    _mock_curl_url_get_ncall = 0;
+    _mock_curl_url_get_content = (char*[]){
+        (char[]){ 'h', 't', 't', 'p', ':', '/', '/', 'F', 'o', 'o', '\0' }, "http"
+    };
+    e = curl_url_to_filename_append(cu, &res);
+    utest_assert(!e, fail);
+    utest_assert(!strcmp(res.items, "Foo"), fail);
+    utest_assert(_curl_free_calls == 8, fail);
+    str_reset(&res);
+
+    _mock_curl_url_get_ncall = 0;
+    _mock_curl_url_get_content = (char*[]){
+        (char[]){ 'h', 't', 't', 'p', ':', '/', '/', 'F', 'o', 'o', '/', 'b', 'a', 'r', '\0' },
+        "http"
+    };
+    e = curl_url_to_filename_append(cu, &res);
+    utest_assert(!e, fail);
+    utest_assert(!strcmp(res.items, "Foo_bar"), fail);
+    utest_assert(_curl_free_calls == 10, fail);
+    str_clean(&res);
 
     return 0;
 fail:
+    str_clean(&res);
     return 1;
 }
 

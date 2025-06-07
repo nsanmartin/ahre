@@ -9,9 +9,10 @@ run_tests: test_all
 		&& @./build/test_range \
 		&& @./build/test_error \
 		&& @./build/test_ed_write \
-		@./build/test_iconv
+		&& @./build/test_iconv \
+		&& @./build/test_url
 
-test_all: test_range test_buf test_error test_ed_write test_iconv
+test_all: test_range test_buf test_error test_ed_write test_iconv test_url
 
 test_range: $(AHRE_UTESTS)/test_range.c $(AHRE_BUILD)/isocline.o \
 	$(AHRE_BUILD)/session.o $(AHRE_BUILD)/textbuf.o $(AHRE_BUILD)/url-client.o \
