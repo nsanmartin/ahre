@@ -11,12 +11,13 @@
 #include "src/user-out.h"
 #include "src/user-interface.h"
 #include "src/session.h"
+#include "src/reditline.h"
 
 
 
-static Err _open_many_urls_(Session session[static 1], ArlOf(const_char_ptr) urls[static 1]) {
-    for (const_char_ptr* u = arlfn(const_char_ptr,begin)(urls)
-        ; u != arlfn(const_char_ptr,end)(urls)
+static Err _open_many_urls_(Session session[static 1], ArlOf(cstr_view) urls[static 1]) {
+    for (cstr_view* u = arlfn(cstr_view,begin)(urls)
+        ; u != arlfn(cstr_view,end)(urls)
         ; ++u
     ) {
         Err err = session_open_url(session, *u, session->url_client);
@@ -25,7 +26,7 @@ static Err _open_many_urls_(Session session[static 1], ArlOf(const_char_ptr) url
             session_write_msg_lit__(session, "\n");
         }
     }
-    arlfn(const_char_ptr,clean)(urls);
+    arlfn(cstr_view,clean)(urls);
     return Ok;
 }
 
@@ -41,6 +42,7 @@ static int _loop_(Session s[static 1]) {
         if (err) if (session_show_error(s, err)) exit(EXIT_FAILURE); 
     }
     session_cleanup(s);
+    reditline_history_cleanup();//TODO move from here
     return EXIT_SUCCESS;
 }
 

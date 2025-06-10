@@ -1,19 +1,6 @@
 #include <utests.h>
 
-#include <stdio.h>
-size_t mock_fwrite_ok(const void* ptr, size_t size, size_t nmemb, FILE * stream) {
-    (void)ptr;
-    (void)stream;
-    return size * nmemb;
-}
 
-FILE* mock_fopen(const char *restrict pathname, const char *restrict mode) {
-    (void)pathname;
-    (void)mode;
-    return (FILE*)-1;
-}
-
-int mock_fclose(FILE *stream) { (void)stream; return 0; }
 typedef struct { const void* ptr; size_t size; size_t nmemb; } MockFwriteParams;
 #define fwrite_params_queue_sz 32
 static MockFwriteParams _fwrite_params_queue_[fwrite_params_queue_sz] = {0};
@@ -33,7 +20,6 @@ size_t mock_fwrite_called_with(const void* ptr, size_t size, size_t nmemb, FILE 
     return 0;
 }
 
-#define OkMock 0
 #define fopen  mock_fopen
 #define fwrite mock_fwrite_called_with
 #define fclose mock_fclose

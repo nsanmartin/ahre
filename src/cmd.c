@@ -278,9 +278,7 @@ Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) 
     if (!*line) {
         try( out->write_std("> ", 1, session));
         ArlOf(char) masked = (ArlOf(char)){0};
-
-        SessionMemWriter writer = (SessionMemWriter){.s=session,.write=session_writer_write_std};
-        err = readpass_term(&masked, &writer);
+        err = readpass_term(&masked, true);
         ok_then(err, lexbor_set_attr_value(node, masked.items, masked.len));
         arlfn(char, clean)(&masked);
     } else {

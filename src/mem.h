@@ -3,10 +3,9 @@
 
 #include <stdlib.h>
 
-#define ah_malloc malloc
-#define std_malloc malloc
+#define std_strdup  strdup
+#define std_free    free
+#define std_malloc  malloc
 #define std_realloc realloc
-#define std_free free
-#define ah_strndup strndup
 
 #endif

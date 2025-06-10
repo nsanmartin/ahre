@@ -1,19 +1,9 @@
-#include <ctype.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "reditline.h"
 
-#include "error.h"
-#include "utils.h"
-#include "user-out.h"
-#include "user-input.h"
-#include "session.h"
-
-Err readpass_term(ArlOf(char) passw[static 1], SessionMemWriter w[static 1]) {
+Err readpass_term(ArlOf(char) passw[static 1], bool write) {
     Err err = Ok;
     struct termios prev_termios;
-    try( _switch_tty_to_raw_mode_(&prev_termios));
+    try( switch_tty_to_raw_mode(&prev_termios));
 
     while (1) {
         int cint = fgetc(stdin);
@@ -27,9 +17,9 @@ Err readpass_term(ArlOf(char) passw[static 1], SessionMemWriter w[static 1]) {
             err = "error: passw append failure";
             break;
         }
-        try( w->write(w, "*", 1));
+        if (write) fwrite("*", 1, 1, stdout);
     }
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &prev_termios) == -1) return "error: tcsetattr failure";
-    try( w->write(w, "\n", 1));
+    if (write) fwrite("\n", 1, 1, stdout);
     return err;
 }

@@ -25,7 +25,7 @@
 size_t mem_count_ocurrencies(char* data, size_t len, char c);
 bool mem_is_all_space(const char* data, size_t len);
 static inline const char* mem_to_dup_str(const char* data, size_t len) {
-    char* res = ah_malloc(len + 1);
+    char* res = std_malloc(len + 1);
     if (!res) return NULL;
     memcpy(res, data, len);
     res[len] = '\0';
@@ -113,6 +113,7 @@ inline static StrView strview_from_mem_trim(const char* s, size_t len) {
 #define Str BufOf(char)
 #define str_clean buffn(char,clean)
 #define str_reset buffn(char,reset)
+#define str_at buffn(char,at)
 #define str_append(StrPtr, Items, NItems) \
     (buffn(char,append)(StrPtr, Items, NItems) ? Ok : "error: str_append failure")
 #define str_append_lit__(StrPtr, Lit) str_append(StrPtr, Lit, lit_len__(Lit))
@@ -143,15 +144,10 @@ bufofchar_append_ui_as_str(BufOf(char) buf[static 1], uintmax_t ui) {
     return "error: could not append str_ui to bufof char";
 }
 
-//static inline Err
-//serialize_unsigned(SerializeCallback cb, uintmax_t ui, void* ctx) {
-//    char numbf[3 * sizeof ui] = {0};
-//    size_t len = 0;
-//    if ((len = snprintf(numbf, (3 * sizeof ui), "%lu", ui)) > (3 * sizeof ui)) {
-//        return "error: snprintf failure";
-//    }
-//    return cb(strview_from_mem(numbf, len), ctx);
-//}
+static inline void replace_char_inplace(char* s, char from, char to) {
+    char* p;
+    while ((p=strchr(s,from))) *p = to;
+}
 
 Err _convert_to_utf8_(
     const char* inbuf,

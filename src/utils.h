@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include <limits.h>
 
+#include "mem.h"
+
 static inline size_t size_t_min(size_t x, size_t y) { return x > y ? x : y; }
 inline static bool file_exists(const char* filename) { return !access(filename, F_OK); }
 
@@ -29,8 +31,14 @@ typedef const char const_char;
 #define T size_t
 #include <arl.h>
 
-typedef const char* const_char_ptr;
-#define T const_char_ptr
+typedef const char* cstr_view;
+#define T cstr_view
+#include <arl.h>
+
+typedef const char* const_cstr;
+static inline void const_cstr_free(const_cstr* p) { std_free((void*)*p); }
+#define T const_cstr
+#define TClean const_cstr_free
 #include <arl.h>
 
 static inline int buf_of_char_cmp(const void* xp, const void* yp) {
