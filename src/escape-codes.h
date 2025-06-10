@@ -23,7 +23,7 @@
 #define EscCodeEraseLine "\033[2K" 
 #define EscCodeBackward1 "\033[D" 
 #define EscCodeSaveCursor "\033[s" 
-#define EscCodeUnsaveCursos "\033[u"
+#define EscCodeUnsaveCursor "\033[u"
 #define EscCodeDown1 "\033[B" 
 
 typedef enum {

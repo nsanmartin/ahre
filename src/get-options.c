@@ -27,7 +27,7 @@ Err session_conf_from_options(int argc, char* argv[], CliParams cparams[static 1
 
         // read positional parameter
         if (*arg != '-') {
-            if (!arlfn(const_char_ptr,append)(cparams_urls(cparams), &arg))
+            if (!arlfn(cstr_view,append)(cparams_urls(cparams), &arg))
                 return "error: arl append failure";
             continue;
         }

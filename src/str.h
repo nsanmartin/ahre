@@ -25,7 +25,7 @@
 size_t mem_count_ocurrencies(char* data, size_t len, char c);
 bool mem_is_all_space(const char* data, size_t len);
 static inline const char* mem_to_dup_str(const char* data, size_t len) {
-    char* res = ah_malloc(len + 1);
+    char* res = std_malloc(len + 1);
     if (!res) return NULL;
     memcpy(res, data, len);
     res[len] = '\0';
