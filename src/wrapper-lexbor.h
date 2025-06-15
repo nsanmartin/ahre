@@ -164,27 +164,28 @@ static inline bool lexbor_node_id_mem_match(lxb_dom_node_t* node, const char* id
 }
 
 static inline
-lxb_dom_node_t* lexbor_get_element_by_id(lxb_dom_node_t* node, const char* id, size_t idlen) {
+lxb_dom_node_t* lexbor_node_get_node_by_id(lxb_dom_node_t* node, const char* id, size_t idlen) {
 
     if (node) {
 
         if (node->type == LXB_DOM_NODE_TYPE_ELEMENT && lexbor_node_id_mem_match(node, id, idlen))
             return node;
 
-        for (lxb_dom_node_t* it = node->first_child; it; it = it->next)
-            if (lexbor_get_element_by_id(it, id, idlen))
-                return node;
+        for (lxb_dom_node_t* it = node->first_child; it; it = it->next) 
+            if (it->type == LXB_DOM_NODE_TYPE_ELEMENT && lexbor_node_id_mem_match(it, id, idlen))
+                return it;
 
     }
     return NULL;
 }
 
-static inline lxb_dom_element_t* lexbor_doc_get_element_by_id (
-    lxb_html_document_t* lxbdoc, const char* id, size_t idlen
-) {
-    return lxb_dom_interface_element(
-        lexbor_get_element_by_id(lxb_dom_interface_node(lxbdoc), id, idlen)
-    );
+static inline lxb_dom_element_t*
+lexbor_doc_get_element_by_id (lxb_html_document_t* lxbdoc, const char* id, size_t idlen) {
+    lxb_dom_node_t* node = lxb_dom_interface_node(lxbdoc);
+    if (!lxbdoc) return NULL;
+    node = lexbor_node_get_node_by_id(node, id, idlen);
+    if (!node) return NULL;
+    return lxb_dom_interface_element(node);
 }
 
 Err lexbor_get_title_text(lxb_dom_node_t* title, Str out[static 1]);
