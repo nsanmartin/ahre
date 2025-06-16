@@ -9,14 +9,12 @@
 typedef struct {
     bool version;
     bool help;
-    bool js;
     SessionConf sconf;
     ArlOf(cstr_view) urls;
 } CliParams;
 
 static inline bool* cparams_version(CliParams cparams[static 1]) { return &cparams->version; }
 static inline bool* cparams_help(CliParams cparams[static 1]) { return &cparams->help; }
-static inline bool* cparams_js(CliParams cparams[static 1]) { return &cparams->js; }
 static inline SessionConf* cparams_sconf(CliParams cparams[static 1]) { return &cparams->sconf; }
 static inline ArlOf(cstr_view)*
 cparams_urls(CliParams cparams[static 1]) { return &cparams->urls; }
