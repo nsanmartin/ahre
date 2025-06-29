@@ -171,9 +171,10 @@ lxb_dom_node_t* lexbor_node_get_node_by_id(lxb_dom_node_t* node, const char* id,
         if (node->type == LXB_DOM_NODE_TYPE_ELEMENT && lexbor_node_id_mem_match(node, id, idlen))
             return node;
 
-        for (lxb_dom_node_t* it = node->first_child; it; it = it->next) 
-            if (it->type == LXB_DOM_NODE_TYPE_ELEMENT && lexbor_node_id_mem_match(it, id, idlen))
-                return it;
+        for (lxb_dom_node_t* it = node->first_child; it; it = it->next) {
+            lxb_dom_node_t* rec = lexbor_node_get_node_by_id(it, id, idlen);
+            if (rec) return rec;
+        }
 
     }
     return NULL;

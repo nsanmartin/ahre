@@ -12,7 +12,6 @@ typedef lxb_dom_element_t* ElemPtr ;
 
 typedef struct {
     HtmlDoc* htmldoc;
-    LipOf(ElemPtr,JSValue) elements;
 } AhreQjsCtx;
 
 typedef struct {
@@ -37,18 +36,6 @@ static inline JSContext* jse_ctx(JsEngine js[static 1]) { return js->ctx; }
 Err jse_init(HtmlDoc* d);
 
 static inline void jse_clean(JsEngine js[static 1]) {
-
-    ////TODO: implement this in hotl
-    //BufOf(LipEntryOf(ElemPtr,JSValue))* table = &js->ahqctx.elements.table;
-
-    //for(LipEntryOf(ElemPtr,JSValue)* it = buffn(LipEntryOf(ElemPtr,JSValue),begin)(table);
-    //    it != buffn(LipEntryOf(ElemPtr,JSValue),end)(table);
-    //    ++it
-    //) {
-    //    JS_FreeValue(js->ctx, it->v);
-    //}
-
-    lipfn(ElemPtr,JSValue,clean)(&js->ahqctx.elements);
     JS_RunGC(js->rt);
     JS_FreeContext(js->ctx);
     JS_FreeRuntime(js->rt);
