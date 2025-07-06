@@ -148,6 +148,13 @@ Err jse_eval(JsEngine js[static 1], Session* s, const char* script) {
     
     Err err = Ok;
 
+    Str* consolebuf = jse_consolebuf(js);
+    if (len__(consolebuf)) {
+        session_write_msg(s, items__(consolebuf), len__(consolebuf));
+        session_write_msg_lit__(s, "\n");
+        str_reset(consolebuf);
+    }
+
     if (JS_IsException(result)) {
         JSValue error = JS_GetException(ctx);
         const char *error_str = JS_ToCString(ctx, error);
