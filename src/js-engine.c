@@ -7,14 +7,66 @@
 #include "js-engine.h"
 #include "htmldoc.h"
 
-static inline Err ahqctx_init(AhreQjsCtx ctx[static 1], HtmlDoc d[static 1]) {
-    *ctx = (AhreQjsCtx){.htmldoc=d};
-    return Ok;
+static inline Err
+_jse_set_global_property_str_(JSContext* ctx,const char* name, JSValue value[static 1]) {
+    JSValue global = JS_GetGlobalObject(ctx);
+    int rv = JS_SetPropertyStr(ctx, global, name, *value);
+    JS_FreeValue(ctx, global);
+    return rv == -1 /* return -1 on exception */
+        ? "error: could not set propery"
+        : Ok
+        ;
 }
 
-static inline lxb_html_document_t*
-ahqctx_lxbdoc(AhreQjsCtx ctx[static 1]) {return htmldoc_lxbdoc(ctx->htmldoc);}
+/* Console */
+static JSClassID console_class_id = 0;
+static int init_console_class(JSContext *ctx) {
+    JSRuntime* rt = JS_GetRuntime(ctx);
+    JS_NewClassID(rt, &console_class_id);
+    return JS_NewClass(rt, console_class_id, &(JSClassDef){ "Console", .finalizer=NULL });
+}
 
+static JSValue _console_log(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv) {
+    (void)ctx;
+
+    Str* buf = JS_GetOpaque(self, console_class_id);
+    if (!buf) return JS_ThrowTypeError(ctx, "js-engine: could not get console");
+
+    for (int i = 0; i < argc; ++i) {
+
+        size_t len;
+        const char* arg = JS_ToCStringLen(ctx, &len, argv[i]);
+        if (!arg) return JS_ThrowTypeError(ctx, "invalid arg");
+        str_append(buf, (char*)arg, len);
+        JS_FreeCString(ctx, arg);
+    }
+
+    return JS_NULL;
+}
+
+static Err jse_add_console(JSContext* ctx, HtmlDoc d[static 1]) {
+
+    if (init_console_class(ctx)) return "error: could not initialize console class";
+
+    JSValue console = JS_NewObjectClass(ctx, console_class_id);
+
+    if (JS_IsException(console)) return "error: could not create the console";
+
+    Str* buf = jse_consolebuf(htmldoc_js(d));
+    if (JS_SetOpaque(console, buf)) return "error: could not set the console buffer";
+    JS_SetPropertyStr(
+        ctx,
+        console,
+        "log",
+        JS_NewCFunction(ctx, _console_log, "log", 1)
+    );
+
+    try (_jse_set_global_property_str_(ctx, "console", &console));
+    return Ok;
+}
+/**/
+
+/* Html Element */
 //TODO: use one class ID for JS Runtime?
 static JSClassID element_class_id = 0;
 
@@ -26,10 +78,11 @@ static int init_element_class(JSContext *ctx) {
 }
 
 
-static Err jse_add_document(JsEngine jse[static 1], HtmlDoc d[static 1]);
+static Err jse_add_document(JSContext* ctx, HtmlDoc d[static 1]) ;
 static JSValue
-_document_getElementById(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+_document_getElementById(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv);
 
+//TODO: move to htmldoc
 Err jse_init(HtmlDoc* htmldoc) {
 
     if (!htmldoc) return "error: no HtmlDoc";
@@ -39,39 +92,37 @@ Err jse_init(HtmlDoc* htmldoc) {
     if (!js) return "error: no JsEngine in HtmlDoc";
 
     js->rt = JS_NewRuntime();
-
     if (!js->rt) return "error: could not initialize quickjs runtime";
 
     js->ctx = JS_NewContext(js->rt);
-
     if (!js->ctx) {
         JS_FreeRuntime(js->rt);
         return "error: could not initialize quickjs runtime";
     }
 
-    try( jse_add_document(js, htmldoc));
+    JS_SetContextOpaque(js->ctx, htmldoc);
+
+    Err err = Ok;
+    err = jse_add_console(js->ctx, htmldoc);
+    ok_then(err, jse_add_document(js->ctx, htmldoc));
+
+    if (err) {
+        jse_clean(js);
+        return err;
+    }
     return Ok;
 }
 
 
-//static Err jse_add_console(JsEngine js[static 1], HtmlDoc d[static 1]) { }
-
-static Err jse_add_document(JsEngine js[static 1], HtmlDoc d[static 1]) {
-
-    JSContext* ctx = js->ctx;
-    if (!ctx) return "error: null js ctx";
-
-    ahqctx_init(jse_ahqctx(js), d);
+static Err jse_add_document(JSContext* ctx, HtmlDoc d[static 1]) {
 
     if (init_element_class(ctx)) return "error: could not initialize element class";
-
-    JS_SetContextOpaque(ctx, jse_ahqctx(js));
 
     JSValue document = JS_NewObjectClass(ctx, element_class_id);
     if (JS_IsException(document)) return "error: could not create the document";
 
     lxb_dom_element_t* doc = lxb_dom_interface_element(htmldoc_lxbdoc(d));
-    JS_SetOpaque(document, doc);
+    if (JS_SetOpaque(document, doc)) return "error: could not set document opaque";
     JS_SetPropertyStr(
         ctx,
         document,
@@ -82,9 +133,7 @@ static Err jse_add_document(JsEngine js[static 1], HtmlDoc d[static 1]) {
     JS_SetPropertyStr(ctx, document, "title", JS_NewString(ctx, "Testing QuickJS Document"));
     //JS_SetPropertyStr(ctx, document, "body", JS_NewObject(ctx));
     
-    JSValue global = JS_GetGlobalObject(ctx);
-    JS_SetPropertyStr(ctx, global, "document", document);
-    JS_FreeValue(ctx, global);
+    try (_jse_set_global_property_str_(ctx, "document", &document));
     
     return Ok;
 }
@@ -133,10 +182,10 @@ static inline bool _attr_is_valid_(lxb_dom_attr_t* attr) {
 }
 
 static inline JSValue
-_element_get_attribute(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+_element_get_attribute(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv) {
     if (argc != 1) return JS_ThrowTypeError(ctx, "Expected 1 argument");
 
-   lxb_dom_element_t* element = JS_GetOpaque(this_val, element_class_id);
+   lxb_dom_element_t* element = JS_GetOpaque(self, element_class_id);
    if (!element) return JS_ThrowTypeError(ctx, "ahrerr: invalid attribute");
 
     size_t attrlen;
@@ -200,12 +249,11 @@ static inline JSValue _js_value_from_lexbor_element(JSContext *ctx, lxb_dom_elem
 }
 
 static JSValue
-_document_getElementById(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-    (void)this_val;
+_document_getElementById(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv) {
 
     if (argc != 1) return JS_ThrowTypeError(ctx, "Expected 1 argument");
 
-    lxb_dom_element_t* doc = JS_GetOpaque(this_val, element_class_id);
+    lxb_dom_element_t* doc = JS_GetOpaque(self, element_class_id);
 
     if (!doc) return JS_ThrowTypeError(ctx, "error: document not properly initialized");
 
@@ -220,23 +268,3 @@ _document_getElementById(JSContext *ctx, JSValueConst this_val, int argc, JSValu
 
     return _js_value_from_lexbor_element(ctx, element);
 }
-
-
-//// Create and bind the 'document' object
-//JSValue qjs_create_document_object(JSContext *ctx) {
-//    JSValue document = JS_NewObject(ctx);
-//
-//    // Bind methods
-//    JS_SetPropertyStr(
-//        ctx,
-//        document,
-//        "getElementById",
-//        JS_NewCFunction(ctx, _document_getElementById, "getElementById", 1)
-//    );
-//
-//    // Add properties (optional)
-//    JS_SetPropertyStr(ctx, document, "title", JS_NewString(ctx, "Lexbor+QuickJS"));
-//    JS_SetPropertyStr(ctx, document, "body", JS_NewObject(ctx));
-//
-//    return document;
-//}

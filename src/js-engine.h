@@ -11,19 +11,15 @@ typedef lxb_dom_element_t* ElemPtr ;
 #include "lip.h"
 
 typedef struct {
-    HtmlDoc* htmldoc;
-} AhreQjsCtx;
-
-typedef struct {
     JSRuntime *rt;
     JSContext *ctx;
-    AhreQjsCtx ahqctx;
+    Str consolebuf;
 } JsEngine;
 
 /* getters */
 static inline JSRuntime* jse_runtime(JsEngine js[static 1]) { return js->rt; }
 static inline JSContext* jse_context(JsEngine js[static 1]) { return js->ctx; }
-static inline AhreQjsCtx* jse_ahqctx(JsEngine js[static 1]) { return &js->ahqctx; }
+static inline Str* jse_consolebuf(JsEngine js[static 1]) { return &js->consolebuf; }
 
 static inline bool jse_is_enabled(JsEngine js[static 1]) { return js->rt; }
 
@@ -36,9 +32,11 @@ static inline JSContext* jse_ctx(JsEngine js[static 1]) { return js->ctx; }
 Err jse_init(HtmlDoc* d);
 
 static inline void jse_clean(JsEngine js[static 1]) {
+    if (!js->rt) return;
     JS_RunGC(js->rt);
     JS_FreeContext(js->ctx);
     JS_FreeRuntime(js->rt);
+    str_clean(jse_consolebuf(js));
     *js = (JsEngine){0};
 }
 
