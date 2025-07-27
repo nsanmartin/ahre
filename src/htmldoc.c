@@ -8,7 +8,6 @@
 #include "textbuf.h"
 #include "utils.h"
 #include "wrapper-lexbor.h"
-#include "ahre__.h"
 #include "session.h"
 
 Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]);

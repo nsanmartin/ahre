@@ -13,11 +13,11 @@ Err cmd_go(CmdParams p[static 1]) {
     if (*p->ln == '\\') {
         Str u = (Str){0};
         try (get_url_alias(cstr_skip_space(p->ln + 1), &u));
-        Err err = session_open_url(p->s, u.items, p->s->url_client);
+        Err err = session_open_url(p->s, u.items, session_url_client(p->s));
         str_clean(&u);
         return err;
     }
-    return session_open_url(p->s, p->ln, p->s->url_client);
+    return session_open_url(p->s, p->ln, session_url_client(p->s));
 }
 
 Err cmd_set_session_winsz(CmdParams p[static 1]) {
@@ -320,7 +320,7 @@ Err _cmd_image_save(Session session[static 1], size_t ix, const char* fname) {
     try( session_current_doc(session, &htmldoc));
     CURLU* curlu = url_cu(htmldoc_url(htmldoc));
     try( lexcurl_dup_curl_from_node_and_attr(node, "src", 3, &curlu));
-    Err err = curl_save_url(session->url_client, curlu, fname);
+    Err err = curl_save_url(session_url_client(session), curlu, fname);
     curl_url_cleanup(curlu);
     ok_then(err, session_write_msg_lit__(session, "data saved\n"));
     return err;
@@ -359,7 +359,7 @@ Err _cmd_anchor_save(Session session[static 1], size_t ix, const char* fname) {
     try( session_current_doc(session, &htmldoc));
     CURLU* curlu = url_cu(htmldoc_url(htmldoc));
     try( lexcurl_dup_curl_from_node_and_attr(node, "href", 4, &curlu));
-    Err err = curl_save_url(session->url_client, curlu, fname);
+    Err err = curl_save_url(session_url_client(session), curlu, fname);
     curl_url_cleanup(curlu);
     ok_then(err, session_write_msg_lit__(session, "file saved\n"));
     return err;

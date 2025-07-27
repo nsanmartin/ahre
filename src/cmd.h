@@ -3,7 +3,6 @@
 
 #include "error.h"
 #include "session.h"
-#include "ahre__.h"
 #include "draw.h"
 
 #define cmd_assert_no_params(Ln) do{ if(*Ln) return "error: expecting no params"; }while(0)
