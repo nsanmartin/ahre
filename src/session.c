@@ -30,12 +30,10 @@ Err session_current_src(Session session[static 1], TextBuf* out[static 1]) {
 
 
 Err session_init(Session s[static 1], SessionConf sconf[static 1]) {
-    UrlClient* url_client = url_client_create();
-    if (!url_client) { return "error:  url_client_create failure"; }
     *s = (Session) {
-        .url_client   = url_client,
         .conf         = *sconf
     };
+    try( url_client_init(session_url_client(s)));
 
     return Ok;
 }

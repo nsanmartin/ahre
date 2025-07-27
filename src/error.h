@@ -21,6 +21,7 @@ static inline bool fatal_error(Err e) {
 }
 
 #define validate_err(Value) _Generic((Value), Err: Value)
+#define validate_int(Value) _Generic((Value), int: Value)
 #define validate_uint(value) _Generic((value), \
         unsigned int: value)
 #define validate_size(value) _Generic((value), \
@@ -42,6 +43,8 @@ static inline bool fatal_error(Err e) {
 #define try_nonzero(Value, RetVal) \
     if ((!validate_size(Value))) \
         return RetVal
+
+#define tryz(Expr) do{int ahre_ierr_=validate_int((Expr));if (ahre_ierr_) return ahre_ierr_;}while(0) 
 
 #define REAL_ERR_MSG_ "a real error: "
 

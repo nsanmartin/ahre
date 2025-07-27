@@ -1,56 +1,63 @@
 #include <string.h>
 
+#include "ahre.h"
 #include "generic.h"
 #include "mem.h"
 #include "session.h"
 #include "url-client.h"
 #include "cmd.h"
 
-Err url_client_reset(UrlClient url_client[static 1]) {
+/*
+ * User agent samples:
+ *
+ * "ELinks/0.13.2 (textmode; Linux 6.6.62+rpt-rpi-2712 aarch64; 213x55-2)"
+ * "w3m/0.5.3+git20230718"
+ *
+ */
 
+Err url_client_reset(UrlClient url_client[static 1]) {
+    /* If Ahre is used as user agent then google won't work */
+#define USER_AGENT_USED_ \
+ "ELinks/0.13.2 (textmode; Linux 6.6.62+rpt-rpi-2712 aarch64; 213x55-2)"
+ 
+    Str* buf = &(Str){0};
+    char* cookiefile = "";
+    /* if an error occurs getting the cookies filename, just ignore it, we'll not use one. */
+    if (!get_cookies_filename(buf)) cookiefile = items__(buf);
+ 
     curl_easy_reset(url_client->curl);
     /* default options to curl */
     if (   curl_easy_setopt(url_client->curl, CURLOPT_ERRORBUFFER, url_client->errbuf)
         || curl_easy_setopt(url_client->curl, CURLOPT_NOPROGRESS, 1L)
         || curl_easy_setopt(url_client->curl, CURLOPT_FOLLOWLOCATION, 1)
         || curl_easy_setopt(url_client->curl, CURLOPT_VERBOSE, 0L)
-        || curl_easy_setopt(
-            url_client->curl,
-            CURLOPT_USERAGENT,
-            "ELinks/0.13.2 (textmode; Linux 6.6.62+rpt-rpi-2712 aarch64; 213x55-2)"
-        )
-        //|| curl_easy_setopt(url_client->curl, CURLOPT_USERAGENT, "w3m/0.5.3")
-        /* google does not want to responde properly when I use ahre's user agent */
-        //|| curl_easy_setopt(url_client->curl, CURLOPT_USERAGENT, "Ahre/0.0.1")
-        ///|| curl_easy_setopt(url_client->curl, CURLOPT_COOKIEFILE, "")
-        //|| curl_easy_setopt(url_client->curl, CURLOPT_COOKIEJAR, "cookies.txt")
-    ) return "error: curl configuration failed";
+        || curl_easy_setopt(url_client->curl, CURLOPT_USERAGENT, USER_AGENT_USED_)
+        || curl_easy_setopt(url_client->curl, CURLOPT_COOKIEFILE, cookiefile)
+    ) {
+        str_clean(buf);
+        return "error: curl configuration failed";
+    }
+
+    if (cookiefile) curl_easy_setopt(url_client->curl, CURLOPT_COOKIEJAR, cookiefile);
+    str_clean(buf);
     return Ok;
 }
 
-UrlClient* url_client_create(void) {
-    UrlClient* rv = std_malloc(sizeof(UrlClient));
-    if (!rv) { perror("Mem Error"); goto exit_fail; }
+Err url_client_init(UrlClient url_client[static 1]) {
+
+    *url_client = (UrlClient){0};
+
     CURL* handle = curl_easy_init();
-    if (!handle) { perror("Curl init error"); goto free_rv; }
-    //struct curl_slist *headerlist=NULL;
+    if (!handle) return "error: curl_easy_init failure";
 
-    *rv = (UrlClient) { .curl=handle, .errbuf={0} };
+    *url_client = (UrlClient) { .curl=handle };
 
-    Err err = url_client_reset(rv);
-    if (err || curl_easy_setopt(rv->curl, CURLOPT_COOKIEFILE, "")) {
-        perror("Error configuring curl, exiting."); goto cleanup_curl;
-    }
+    Err err = url_client_reset(url_client);
+    if (err) curl_easy_cleanup(handle);
 
-    return rv;
-
-cleanup_curl:
-    curl_easy_cleanup(handle);
-free_rv:
-    std_free(rv);
-exit_fail:
-    return 0x0;
+    return err;
 }
+
 
 Err url_client_print_cookies(Session* s, UrlClient uc[static 1]) {
     if (!s) return "error: session is null";
@@ -69,12 +76,6 @@ Err url_client_print_cookies(Session* s, UrlClient uc[static 1]) {
     return Ok;
 }
 
-void url_client_destroy(UrlClient* url_client) {
-    curl_easy_cleanup(url_client->curl);
-    buffn(const_char, clean)(url_client_postdata(url_client));
-    std_free(url_client);
-}
-
 
 const char* _parse_opt(const char* line, CURLoption opt[static 1]) {
 
@@ -84,6 +85,7 @@ const char* _parse_opt(const char* line, CURLoption opt[static 1]) {
     if ((rest = csubstr_match(line, "verbose", 1))) { *opt=CURLOPT_VERBOSE; return rest; }
     return NULL;
 }
+
 
 static Err _parse_setopt_long_(CURL* handle, CURLoption opt, const char* line) {
     long value = 0;

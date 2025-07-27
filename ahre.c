@@ -3,6 +3,7 @@
 #include <curl/curl.h>
 #include <lexbor/html/html.h>
  
+#include "src/ahre.h"
 #include "src/get-options.h"
 #include "src/help.h"
 #include "src/htmldoc.h"
@@ -20,7 +21,7 @@ static Err _open_many_urls_(Session session[static 1], ArlOf(cstr_view) urls[sta
         ; u != arlfn(cstr_view,end)(urls)
         ; ++u
     ) {
-        Err err = session_open_url(session, *u, session->url_client);
+        Err err = session_open_url(session, *u, session_url_client(session));
         if (err) {
             session_write_msg(session, (char*)err, strlen(err));
             session_write_msg_lit__(session, "\n");
@@ -54,7 +55,7 @@ int main(int argc, char **argv) {
 
     Err err = session_conf_from_options(argc, argv, &cparams);
     if (*cparams_help(&cparams)) { print_help(argv[0]); exit(EXIT_SUCCESS); }
-    if (*cparams_version(&cparams)) { puts("ahre version 0.0.0"); exit(EXIT_SUCCESS); }
+    if (*cparams_version(&cparams)) { puts("ahre version " AHRE_VERSION); exit(EXIT_SUCCESS); }
     ok_then(err, session_init(&session, cparams_sconf(&cparams)));
     ok_then(err, _open_many_urls_(&session, cparams_urls(&cparams)));
 
