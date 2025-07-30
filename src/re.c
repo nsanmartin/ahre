@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #include "error.h"
-#ifndef NO_REGEX
+#ifndef AHRE_REGEX_DISABLED
 #include <regex.h>
 
 Err regex_search_next_(const char* pattern, const char* string, const char** matchp) {
@@ -72,4 +72,7 @@ Err regex_maybe_find_next(const char* pattern, const char* string, size_t* off[1
 
     return Ok;
 }
-#endif
+
+#else /* regex disabled: */
+typedef int _regex_disabled_;
+#endif /* AHRE_REGEX_DISABLED */

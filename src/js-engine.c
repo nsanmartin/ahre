@@ -1,4 +1,6 @@
+#ifndef AHRE_QUICKJS_DISABLED
 #include <stdio.h>
+#include <quickjs.h>
 
 #include <lexbor/html/html.h>
 
@@ -6,6 +8,17 @@
 #include "session.h"
 #include "js-engine.h"
 #include "htmldoc.h"
+
+
+void jse_clean(JsEngine js[static 1]) {
+    if (!js->rt) return;
+    JS_RunGC(js->rt);
+    JS_FreeContext(js->ctx);
+    JS_FreeRuntime(js->rt);
+    str_clean(jse_consolebuf(js));
+    *js = (JsEngine){0};
+}
+
 
 static inline Err
 _jse_set_global_property_str_(JSContext* ctx,const char* name, JSValue value[static 1]) {
@@ -173,15 +186,6 @@ Err jse_eval(JsEngine js[static 1], Session* s, const char* script) {
     return err;
 }
 
-Err jse_eval_doc_scripts(Session* s, HtmlDoc d[static 1]) {
-
-    ArlOf(Str)* scripts = htmldoc_scripts(d);
-    for (Str* it = arlfn(Str,begin)(scripts); it != arlfn(Str,end)(scripts); ++it) {
-       try( jse_eval(htmldoc_js(d), s, items__(it)));
-    }
-    return Ok;
-}
-
 static inline bool _attr_is_valid_(lxb_dom_attr_t* attr) {
     return attr
         && attr->node.owner_document
@@ -275,3 +279,6 @@ _document_getElementById(JSContext *ctx, JSValueConst self, int argc, JSValueCon
 
     return _js_value_from_lexbor_element(ctx, element);
 }
+#else /* quickjs disabled: */
+typedef int _quickjs_disabled_;
+#endif

@@ -3,7 +3,6 @@ QUICKJS_REPO=$(REPO_DIR)/quickjs
 QUICKJS_INCLUDE=$(QUICKJS_REPO)
 QUICKJS_LIB=$(QUICKJS_REPO)/build/libqjs.a
 
-INCLUDE:=$(HOME)/usr/include
 CFLAGS+=-g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition \
 		-I. \
 		-I$(REPO_DIR)/hotl/include \
@@ -23,7 +22,6 @@ all: $(AHRE_BUILD)/ahre
 
 $(AHRE_BUILD)/ahre: $(AHRE_OBJ) $(AHRE_BUILD)/isocline.o $(QUICKJS_LIB)
 	$(CC) $(CFLAGS) \
-		-I$(INCLUDE) \
 		$(REPO_DIR)/ahre.c -o $@ \
 		$^ \
 		-L$(QUICKJS_LIB) \
@@ -32,7 +30,6 @@ $(AHRE_BUILD)/ahre: $(AHRE_OBJ) $(AHRE_BUILD)/isocline.o $(QUICKJS_LIB)
 
 $(AHRE_OBJDIR)/%.o: $(AHRE_SRCDIR)/%.c $(AHRE_HEADERS)
 	$(CC) $(CFLAGS) \
-		-I$(INCLUDE) \
 		-c -o $@ \
 		$< 
 
