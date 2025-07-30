@@ -126,7 +126,7 @@ void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) ;
 
 
 /* external */
-Err jse_eval_doc_scripts(Session* s, HtmlDoc d[static 1]);
+static inline Err jse_eval_doc_scripts(Session* s, HtmlDoc d[static 1]);
 Err curl_lexbor_fetch_document(
     UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], SessionWriteFn wcb, CurlLxbFetchCb cb
 );
@@ -210,6 +210,16 @@ static inline Err htmldoc_switch_js(HtmlDoc htmldoc[static 1], Session* s) {
     if (is_enabled) jse_clean(js);
     else try( htmldoc_js_enable(htmldoc, s));
    
+    return Ok;
+}
+
+
+static inline Err jse_eval_doc_scripts(Session* s, HtmlDoc d[static 1]) {
+
+    ArlOf(Str)* scripts = htmldoc_scripts(d);
+    for (Str* it = arlfn(Str,begin)(scripts); it != arlfn(Str,end)(scripts); ++it) {
+       try( jse_eval(htmldoc_js(d), s, items__(it)));
+    }
     return Ok;
 }
 

@@ -42,7 +42,10 @@ make
 
 To build using tcc the NO_REGEX flag must be passed:
 
-CC=tcc CFLAGS=-DNO_REGEX make
+CC=tcc CFLAGS=-DAHRE_REGEX_DISABLED make
+
+To build with no quickjs (and hence no js):
+CFLAGS=-DAHRE_QUICKJS_DISABLED make
 
 Run
 ===
