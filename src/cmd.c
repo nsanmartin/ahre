@@ -36,7 +36,7 @@ Err cmd_set_session_winsz(CmdParams p[static 1]) {
 
 Err cmd_set_session_ncols(CmdParams p[static 1]) {
     size_t ncols;
-    parse_size_t_or_throw(&p->ln, &ncols, 10);
+    try( parse_size_t_or_throw(&p->ln, &ncols, 10));
     if (*cstr_skip_space(p->ln)) return "invalid argument";
     *session_ncols(p->s) = ncols;
     return Ok;
