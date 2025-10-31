@@ -20,9 +20,16 @@ lxb_inline lxb_status_t append_to_buf_callback(const lxb_char_t *data, size_t le
 
 size_t lexbor_parse_chunk_callback(char *en, size_t size, size_t nmemb, void* outstream);
 
-void lexbor_find_attr_value(
-    lxb_dom_node_t* node, const char* attr_name, const lxb_char_t* out[static 1], size_t* len
+bool lexbor_find_attr_value(
+    lxb_dom_node_t* node,
+    const char* attr_name,
+    size_t attr_len,
+    const lxb_char_t* out[static 1],
+    size_t* len
 ); 
+#define lexbor_find_lit_attr_value__(Node, AttrName, OutPtr, LenPtr) \
+    lexbor_find_attr_value(Node, AttrName, lit_len__(AttrName), OutPtr, LenPtr)
+
 Err lexbor_set_attr_value( lxb_dom_node_t* node, const char* value, size_t valuelen);
 
 lxb_dom_node_t* _find_parent_form(lxb_dom_node_t* node) ;

@@ -17,7 +17,7 @@ inline static bool file_exists(const char* filename) { return !access(filename, 
 #define skip__(X)
 #define GET_MACRO__(_1,_2,_3,NAME,...) NAME
 
-#define lit_len__(Lit) (sizeof(Lit)-1)
+#define lit_len__(Lit) (Lit == NULL ? 0 : sizeof(Lit)-1)
 #define T char
 #include <buf.h>
 

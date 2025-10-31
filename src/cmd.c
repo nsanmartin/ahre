@@ -269,10 +269,6 @@ Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) 
     lxb_dom_node_t* node;
     try( _get_input_by_ix(session, ix, &node));
 
-    const lxb_char_t* type;
-    size_t len;
-    lexbor_find_attr_value(node, "type", &type, &len);
-
     UserOutput* out = session_uout(session);
     Err err = Ok;
     if (!*line) {

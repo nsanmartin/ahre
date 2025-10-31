@@ -144,13 +144,13 @@ static Err _make_submit_get_curlu_rec(
 
         const lxb_char_t* value;
         size_t valuelen;
-        lexbor_find_attr_value(node, "value", &value, &valuelen);
-        if (!value || valuelen == 0) return Ok;
+        if (!lexbor_find_lit_attr_value__(node, "value", &value, &valuelen))
+            return Ok;
 
         const lxb_char_t* name;
         size_t namelen;
-        lexbor_find_attr_value(node, "name", &name, &namelen);
-        if (!name || namelen == 0) return Ok;
+        if (!lexbor_find_lit_attr_value__(node, "name", &name, &namelen))
+            return Ok;
 
         if (strcasecmp("password", (char*)name) == 0)
             return "warn: passwords not allowed in get requests";
@@ -188,13 +188,13 @@ static Err _append_lexbor_name_value_attrs_if_both_(
     char* escaped;
     const lxb_char_t* value;
     size_t valuelen;
-    lexbor_find_attr_value(node, "value", &value, &valuelen);
-    if (!value || valuelen == 0) return Ok;
+    if (!lexbor_find_lit_attr_value__(node, "value", &value, &valuelen))
+        return Ok;
 
     const lxb_char_t* name;
     size_t namelen;
-    lexbor_find_attr_value(node, "name", &name, &namelen);
-    if (!name || namelen == 0) return Ok;
+    if (!lexbor_find_lit_attr_value__(node, "name", &name, &namelen))
+        return Ok;
     if (strcasecmp("password", (char*)name) == 0 && !is_https)
         return "warn: passwords allowed only under https";
 
@@ -312,11 +312,11 @@ Err mk_submit_url (
 ) {
     const lxb_char_t* action;
     size_t action_len;
-    lexbor_find_attr_value(form, "action", &action, &action_len);
+    lexbor_find_lit_attr_value__(form, "action", &action, &action_len);
 
     const lxb_char_t* method;
     size_t method_len;
-    lexbor_find_attr_value(form, "method", &method, &method_len);
+    lexbor_find_lit_attr_value__(form, "method", &method, &method_len);
 
     if (action && action_len) {
         BufOf(const_char)* buf = &(BufOf(const_char)){0};
@@ -370,8 +370,7 @@ Err lexcurl_dup_curl_from_node_and_attr(
 Err lexcurl_dup_curl_with_anchors_href(lxb_dom_node_t* anchor, CURLU* u[static 1]) {
     const lxb_char_t* data;
     size_t data_len;
-    lexbor_find_attr_value(anchor, "href", &data, &data_len);
-    if (!data || !data_len)
+    if (!lexbor_find_lit_attr_value__(anchor, "href", &data, &data_len))
         return "anchor does not have href";
 
     CURLU* dup = curl_url_dup(*u);
