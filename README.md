@@ -1,14 +1,16 @@
-Ahre
-====
+# Ahre
 
-A hypertext reference www navigator.
+A hypertext reference www navigator or browser.
 
-You may want to use edbrowse (https://github.com/CMB/edbrowse) or w3m
-(https://git.sr.ht/~rkta/w3m) instead.
+## Website
+[ahre web page](https://ahre.pages.dev/)
+
+## Other text browsers:
++ [edbrowse](https://github.com/CMB/edbrowse)
++ [w3m](https://git.sr.ht/~rkta/w3m)
 
 
-External dependencies
-======== ============
+## External dependencies
 
 Curl:
 
@@ -22,15 +24,13 @@ Lexbor:
   git repo:  https://github.com/lexbor/lexbor
 
 
-Git submodules:
-==============
+## Git submodules:
 hotl     (repo: https://codeberg.org/nsm/hotl)
 isocline (repo: https://github.com/daanx/isocline)
 quickjs  (repo: https://github.com/quickjs-ng/quickjs)
 
 
-Build
-=====
+## Build
 
 git clone
 git submodule update --init
@@ -47,11 +47,9 @@ CC=tcc CFLAGS=-DAHRE_REGEX_DISABLED make
 To build with no quickjs (and hence no js):
 CFLAGS=-DAHRE_QUICKJS_DISABLED make
 
-Run
-===
+## Run
 
 ./build/ahre <url>
 
-Usage:
-=====
+## Usage:
 See ./doc/quick-reference-guide.txt
