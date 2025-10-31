@@ -20,7 +20,7 @@ typedef struct SessionMemWriter {
 } SessionMemWriter;
 
 typedef struct Session {
-    UrlClient* url_client;
+    UrlClient url_client;
     TabList tablist;
     SessionConf conf;
     /* accidental data */
@@ -38,7 +38,7 @@ Err session_current_src(Session session[static 1], TextBuf* out[static 1]);
 static inline Str* session_msg(Session s[static 1]) { return &s->msg; }
 
 static inline UrlClient* session_url_client(Session session[static 1]) {
-    return session->url_client;
+    return &session->url_client;
 }
 static inline SessionConf* session_conf(Session s[static 1]) { return &s->conf; }
 static inline bool session_quit(Session s[static 1]) { return session_conf_quit(session_conf(s)); }
@@ -78,7 +78,7 @@ Err session_init(Session s[static 1], SessionConf sconf[static 1]);
 
 /* dtor */
 static inline void session_cleanup(Session s[static 1]) {
-    url_client_destroy(s->url_client);
+    url_client_cleanup(session_url_client(s));
     tablist_cleanup(session_tablist(s));
     str_clean(session_msg(s));
 }
@@ -118,7 +118,7 @@ static inline Err session_follow_ahref(Session s[static 1], size_t linknum) {
     TabNode* current_tab;
     try( tablist_current_tab(session_tablist(s), &current_tab));
     if(current_tab)
-        return tab_node_tree_append_ahref(current_tab , linknum, s->url_client, s);
+        return tab_node_tree_append_ahref(current_tab , linknum, session_url_client(s), s);
     
     return "error: where is the href if current tree is empty?";
 }
@@ -208,4 +208,14 @@ Err session_write_range_mod(
     SessionMemWriter w[static 1], TextBuf textbuf[static 1], Range range[static 1]
 );
 
+Err htmldoc_init_fetch_draw(
+    HtmlDoc d[static 1],
+    CurluOrCstr url[static 1],
+    UrlClient url_client[static 1],
+    HttpMethod method,
+    Session s[static 1]
+);
+
+Err htmldoc_draw(HtmlDoc htmldoc[static 1], Session s[static 1]);
+Err htmldoc_draw_with_flags(HtmlDoc htmldoc[static 1], Session s[static 1], unsigned flags);
 #endif

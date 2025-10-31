@@ -1,42 +1,60 @@
 #ifndef __AHRE_JS_ENGINE_H__
 #define __AHRE_JS_ENGINE_H__
 
-#include <quickjs.h>
+typedef struct HtmlDoc HtmlDoc;
+
+#ifndef AHRE_QUICKJS_DISABLED
+
+typedef struct JSRuntime JSRuntime;
+typedef struct JSContext JSContext;
 
 typedef struct {
     JSRuntime *rt;
     JSContext *ctx;
+    Str consolebuf;
 } JsEngine;
 
 /* getters */
 static inline JSRuntime* jse_runtime(JsEngine js[static 1]) { return js->rt; }
 static inline JSContext* jse_context(JsEngine js[static 1]) { return js->ctx; }
+static inline Str* jse_consolebuf(JsEngine js[static 1]) { return &js->consolebuf; }
 
 static inline bool jse_is_enabled(JsEngine js[static 1]) { return js->rt; }
 
-Err jse_add_document(JsEngine jse[static 1]);
 Err jse_eval(JsEngine js[static 1], Session* s, const char* script);
 
 static inline JSRuntime* jse_rt(JsEngine js[static 1]) { return js->rt; }
 static inline JSContext* jse_ctx(JsEngine js[static 1]) { return js->ctx; }
 
 //TODO: pass htmldoc and evaluate scripts
-static inline Err jse_init(JsEngine js[static 1]) {
-    js->rt = JS_NewRuntime();
-    if (!js->rt) return "error: could not initialize quickjs runtime";
-    js->ctx = JS_NewContext(js->rt);
-    if (!js->ctx) {
-        JS_FreeRuntime(js->rt);
-        return "error: could not initialize quickjs runtime";
-    }
-    try( jse_add_document(js));
-    return Ok;
+Err jse_init(HtmlDoc* d);
+
+void jse_clean(JsEngine js[static 1]);
+
+#else /* quickjs disabled: */
+
+#define AHRE_QUICKJS_DISABLED_MSG \
+    "warn: quickjs not supported in this build. Disable js with \\set session js 0"
+
+typedef int JSRuntime;
+typedef int JSContext;
+typedef int JsEngine;
+
+/* getters */
+
+static inline bool jse_is_enabled(JsEngine js[static 1]) { (void)js; return 0; }
+
+static inline Err jse_eval(JsEngine js[static 1], Session* s, const char* script) {
+    (void)js; (void)s; (void)script; return AHRE_QUICKJS_DISABLED_MSG;
 }
 
-static inline void jse_clean(JsEngine js[static 1]) {
-    JS_FreeContext(js->ctx);
-    JS_FreeRuntime(js->rt);
-    *js = (JsEngine){0};
-}
+static inline JSRuntime* jse_rt(JsEngine js[static 1]) { (void)js; return 0; }
+static inline JSContext* jse_ctx(JsEngine js[static 1]) { (void)js; return 0; }
 
-#endif
+//TODO: pass htmldoc and evaluate scripts
+static inline Err jse_init(HtmlDoc* d) { (void)d; return AHRE_QUICKJS_DISABLED_MSG; }
+
+static inline void jse_clean(JsEngine js[static 1]){ (void)js; }
+
+#endif /* AHRE_QUICKJS_DISABLED */
+#endif /* __AHRE_JS_ENGINE_H__ */

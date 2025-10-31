@@ -14,7 +14,7 @@ _check_compiler_ () {
         _run_tests_
 }
 
-#_check_compiler_ tcc -DNO_REGEX && \ TODO: fix tcc build
+#_check_compiler_ tcc -DAHRE_REGEX_DISABLED && \ TODO: fix tcc build
     _check_compiler_ clang && \
     _check_compiler_ gcc && \
     make clean

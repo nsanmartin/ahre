@@ -1,6 +1,5 @@
 #include "tab-node.h"
 #include "session.h"
-#include "ahre__.h"
 
 
 Err tab_node_init(

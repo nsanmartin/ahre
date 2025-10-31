@@ -13,9 +13,8 @@ typedef struct UrlClient {
 
 static inline BufOf(const_char)* url_client_postdata(UrlClient uc[static 1]) { return &uc->postdata; }
 /* ctor */
-UrlClient* url_client_create(void);
+Err url_client_init(UrlClient url_client[static 1]);
 /* dtor */
-void url_client_destroy(UrlClient* url_client);
 
 
 /* curl easy escape */
@@ -23,6 +22,11 @@ static inline char* url_client_escape_url(
     UrlClient url_client[static 1], const char* u, size_t len
 ) {
     return curl_easy_escape(url_client->curl, u, len);
+}
+
+static inline void url_client_cleanup(UrlClient* url_client) {
+    curl_easy_cleanup(url_client->curl);
+    buffn(const_char, clean)(url_client_postdata(url_client));
 }
 
 typedef struct Session Session;

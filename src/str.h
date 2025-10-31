@@ -44,6 +44,12 @@ static inline Err mem_fwrite(const char* mem, size_t len, FILE* stream) {
     return Ok;
 }
 
+static inline int memstr_cmp(const char* mem, size_t len, const char* cstr) {
+    size_t cmplen = strlen(cstr);
+    if (cmplen > len) cmplen = len;
+    return strncmp(mem, cstr, cmplen);
+}
+
 #define lit_write__(Lit, Stream) mem_fwrite(Lit,lit_len__(Lit), Stream)
 
 /* cstr fns */

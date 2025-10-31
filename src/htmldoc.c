@@ -8,7 +8,6 @@
 #include "textbuf.h"
 #include "utils.h"
 #include "wrapper-lexbor.h"
-#include "ahre__.h"
 #include "session.h"
 
 Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]);
@@ -612,7 +611,8 @@ Err draw_tag_script(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
 
 Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
-    if (ctx->fragment && lexbor_element_id_match(lxb_dom_interface_element(node), ctx->fragment)) {
+    if (ctx->fragment
+    && lexbor_element_id_cstr_match(lxb_dom_interface_element(node), ctx->fragment)) {
         *draw_ctx_fragment_offset(ctx) = len__(draw_ctx_buf(ctx));
     }
     switch(node->local_name) {

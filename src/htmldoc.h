@@ -61,7 +61,7 @@ static inline void http_header_clean(HttpHeader hh[static 1]) {
 }
 
 
-typedef struct {
+typedef struct HtmlDoc {
     Url url;
     HttpMethod method;
     lxb_html_document_t* lxbdoc;
@@ -126,7 +126,7 @@ void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) ;
 
 
 /* external */
-Err jse_eval_doc_scripts(Session* s, HtmlDoc d[static 1]);
+static inline Err jse_eval_doc_scripts(Session* s, HtmlDoc d[static 1]);
 Err curl_lexbor_fetch_document(
     UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], SessionWriteFn wcb, CurlLxbFetchCb cb
 );
@@ -135,7 +135,7 @@ static inline bool htmldoc_js_is_enabled(HtmlDoc d[static 1]) {return jse_is_ena
 static inline void htmldoc_js_disable(HtmlDoc d[static 1]) { jse_clean(htmldoc_js(d)); }
 Err htmldoc_console(HtmlDoc d[static 1], Session* s, const char* line);
 static inline Err htmldoc_js_enable(HtmlDoc d[static 1], Session* s) {
-    try( jse_init(htmldoc_js(d)));
+    try( jse_init(d));
     try( jse_eval_doc_scripts(s, d));
     return Ok;
 }
@@ -210,6 +210,16 @@ static inline Err htmldoc_switch_js(HtmlDoc htmldoc[static 1], Session* s) {
     if (is_enabled) jse_clean(js);
     else try( htmldoc_js_enable(htmldoc, s));
    
+    return Ok;
+}
+
+
+static inline Err jse_eval_doc_scripts(Session* s, HtmlDoc d[static 1]) {
+
+    ArlOf(Str)* scripts = htmldoc_scripts(d);
+    for (Str* it = arlfn(Str,begin)(scripts); it != arlfn(Str,end)(scripts); ++it) {
+       try( jse_eval(htmldoc_js(d), s, items__(it)));
+    }
     return Ok;
 }
 
