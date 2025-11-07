@@ -7,6 +7,7 @@
 #include "generic.h"
 #include "session-conf.h"
 #include "session.h"
+#include "url-client.h"
 
 #define T EscCode
 #include <arl.h>
@@ -70,6 +71,7 @@ typedef struct {
 #define DRAW_CTX_FLAG_JS         0x8u
     unsigned flags;
     SessionWriteFn logfn;
+    Session* session;
     DrawSubCtx sub;
 } DrawCtx;
 
@@ -96,6 +98,9 @@ static inline HtmlDoc* draw_ctx_htmldoc(DrawCtx ctx[static 1]) { return ctx->htm
 
 static inline SessionWriteFn draw_ctx_logfn(DrawCtx ctx[static 1]) { return ctx->logfn; }
 
+static inline UrlClient* draw_ctx_url_client(DrawCtx ctx[static 1]) {
+    return session_url_client(ctx->session);
+}
 static inline bool draw_ctx_hide_tags(DrawCtx ctx[static 1], size_t tags) {
     return *htmldoc_hide_tags(draw_ctx_htmldoc(ctx)) & tags;
 }
@@ -217,10 +222,11 @@ draw_ctx_init(DrawCtx ctx[static 1], HtmlDoc htmldoc[static 1], Session s[static
     char* fragment = NULL;
     try( url_fragment(htmldoc_url(htmldoc), &fragment));
     *ctx = (DrawCtx) {
-        .htmldoc=htmldoc,
-        .fragment=fragment,
-        .flags=flags,
-        .logfn=session_doc_msg_fn(s, htmldoc)
+        .htmldoc  = htmldoc,
+        .fragment = fragment,
+        .flags    = flags,
+        .logfn    = session_doc_msg_fn(s, htmldoc),
+        .session  = s
     };
     return Ok;
 }

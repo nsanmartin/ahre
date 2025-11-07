@@ -22,7 +22,7 @@ Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[static 1]);
     (arlfn(LxbNodePtr,append)(ArrayList, (NodePtr)) ? Ok : "error: lip set")
 
 
-Err _hypertext_id_open_(
+static Err _hypertext_id_open_(
     DrawCtx ctx[static 1],
     ImpureDrawProcedure visual_effect,
     StrViewProvider open_str_provider,
@@ -36,7 +36,7 @@ Err _hypertext_id_open_(
     return Ok;
 }
 
-Err _hypertext_open_(
+static Err _hypertext_open_(
     DrawCtx ctx[static 1], ImpureDrawProcedure visual_effect, StrViewProvider prefix_str_provider
 ) {
     if (visual_effect) try( visual_effect(ctx));
@@ -45,7 +45,7 @@ Err _hypertext_open_(
 }
 
 
-Err _hypertext_id_close_(
+static Err _hypertext_id_close_(
     DrawCtx ctx[static 1],
     ImpureDrawProcedure visual_effect,
     StrViewProvider close_str_provider
@@ -55,7 +55,7 @@ Err _hypertext_id_close_(
     return Ok;
 }
 
-Err _hypertext_close_(
+static Err _hypertext_close_(
     DrawCtx ctx[static 1],
     ImpureDrawProcedure visual_effect,
     StrViewProvider postfix_provider
@@ -85,7 +85,7 @@ draw_tag_center(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 }
 
 static Err
-brose_ctx_append_img_alt_(lxb_dom_node_t* img, DrawCtx ctx[static 1]) {
+browse_ctx_append_img_alt_(lxb_dom_node_t* img, DrawCtx ctx[static 1]) {
 
     const lxb_char_t* alt;
     size_t alt_len;
@@ -106,7 +106,7 @@ draw_tag_img(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     try( _hypertext_id_open_(
             ctx, draw_ctx_color_light_green, image_open_str, &img_count, image_close_str));
 
-    try( brose_ctx_append_img_alt_(node, ctx));
+    try( browse_ctx_append_img_alt_(node, ctx));
     try (draw_list(node->first_child, node->last_child, ctx));
     try( _hypertext_id_close_(ctx, draw_ctx_reset_color, NULL));
     return Ok;
@@ -343,7 +343,7 @@ static Err draw_tag_title(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     return err;
 }
 
-Err draw_mem_skipping_space(
+static Err draw_mem_skipping_space(
     const char* data, size_t len, DrawCtx ctx[static 1], lxb_dom_node_t* prev
 ) {
     StrView s = strview_from_mem(data, len);
@@ -589,22 +589,7 @@ const char* _dbg_get_tag_name_(size_t local_name) {
     return _dbg_tags_[local_name];
 }
 
-Err draw_tag_script(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
-    HtmlDoc* d = draw_ctx_htmldoc(ctx);
-    for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
-        const char* data;
-        size_t len;
-        try( lexbor_node_get_text(it, &data, &len));
-        if (mem_skip_space_inplace(&data, &len)) {
-            Str* s = &(Str){0};
-            try( str_append(s, (char*)data, len));
-            try( str_append_lit__(s, "\0"));
-            if (!arlfn(Str,append)(htmldoc_scripts(d),s)) return "error: append failure";
-        }
-        if (it == node->last_child) break;
-    }
-    return Ok;
-}
+
 
 
 Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
@@ -635,7 +620,10 @@ Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         case LXB_TAG_P: { return draw_tag_p(node, ctx); }
         case LXB_TAG_PRE: { return draw_tag_pre(node, ctx); }
         case LXB_TAG_SCRIPT: {
-            return draw_tag_script(node, ctx); 
+            return Ok; /*
+                          draw_tag_script(node, ctx);
+                          Here draw only body scripts
+                          */
         } 
         case LXB_TAG_STYLE: {
             log_todo__( draw_ctx_logfn(ctx), "%s\n", "skiping style (not implemented)");
@@ -724,127 +712,7 @@ Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     return Ok;
 }
 
-/* external linkage */
-
-
-static Err _htmldoc_init_from_cstr_(HtmlDoc d[static 1], const char* cstr_url, HttpMethod method) {
-    Url url = {0};
-    if (cstr_url && *cstr_url) {
-        if (strlen(cstr_url) > MAX_URL_LEN) return "cstr_url large is not supported.";
-        try( url_init_from_cstr(&url, cstr_url));
-    } else { cstr_url = 0x0; }
-
-    lxb_html_document_t* document = lxb_html_document_create();
-    if (!document) {
-        if (cstr_url) {
-            url_cleanup(htmldoc_url(d));
-        }
-
-        return "error: lxb failed to create html document";
-    }
-
-    *d = (HtmlDoc){
-        .url=url,
-        .method=method,
-        .lxbdoc=document
-        //.cache=(DocCache){ .textbuf=(TextBuf){0}, .sourcebuf=(TextBuf){0} }
-    };
-    return Ok;
-}
-
-static Err _htmldoc_init_from_curlu_(HtmlDoc d[static 1], CURLU* cu, HttpMethod method) {
-    Url url = {0};
-    try( url_init(&url, mk_union_curlu(cu)));
-    lxb_html_document_t* document = lxb_html_document_create();
-    if (!document) {
-        curl_url_cleanup(cu);
-        return "error: lxb failed to create html document";
-    }
-
-    *d = (HtmlDoc){
-        .url=url,
-        .method=method,
-        .lxbdoc=document
-        //.cache=(DocCache){ .textbuf=(TextBuf){0}, .sourcebuf=(TextBuf){0} };
-    };
-    return Ok;
-}
-
-//TODO: enable js if session conf is enabled?
-Err htmldoc_init(HtmlDoc d[static 1], CurluOrCstr u[static 1], HttpMethod method) {
-    switch (u->tag) {
-        case curlu_tag: return _htmldoc_init_from_curlu_(d, u->curlu, method);
-        case cstr_tag: return _htmldoc_init_from_cstr_(d, u->cstr, http_get);
-        default: return "error: invalid tag in CurluOrCstr";
-    }
-}
-
-
-Err htmldoc_init_fetch_draw(
-    HtmlDoc d[static 1],
-    CurluOrCstr url[static 1],
-    UrlClient url_client[static 1],
-    HttpMethod method,
-    Session s[static 1]
-) {
-    try(htmldoc_init(d, url, method));
-    Err err = htmldoc_fetch(d, url_client, session_doc_msg_fn(s,d), session_uout(s)->fetch_cb); 
-    ok_then(err, htmldoc_draw(d, s));
-    if (err) {
-        if (url->tag == curlu_tag) d->url = (Url){0}; /*on failure do not free cu owned by caller*/
-        htmldoc_cleanup(d);
-        return err;
-    }
-    return Ok;
-}
-
-HtmlDoc* htmldoc_create(const char* url) {
-    HtmlDoc* rv = std_malloc(sizeof(HtmlDoc));
-    if (!rv) return NULL;
-    if (htmldoc_init(rv, mk_union_cstr(url), http_get)) {
-        std_free(rv);
-        return NULL;
-    }
-    return rv;
-}
-
-void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
-    textbuf_cleanup(htmldoc_textbuf(htmldoc));
-    textbuf_cleanup(htmldoc_sourcebuf(htmldoc));
-    str_clean(htmldoc_screen(htmldoc));
-    arlfn(LxbNodePtr,clean)(htmldoc_anchors(htmldoc));
-    arlfn(LxbNodePtr,clean)(htmldoc_imgs(htmldoc));
-    arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
-    arlfn(LxbNodePtr,clean)(htmldoc_forms(htmldoc));
-    arlfn(Str,clean)(htmldoc_scripts(htmldoc));
-    *htmldoc_cache(htmldoc) = (DocCache){0};
-}
-
-//TODO: reset js?
-void htmldoc_reset_draw(HtmlDoc htmldoc[static 1]) {
-    /* The sourcebuf and cache ptr are kept */
-    textbuf_reset(htmldoc_textbuf(htmldoc));
-    arlfn(LxbNodePtr,clean)(htmldoc_anchors(htmldoc));
-    arlfn(LxbNodePtr,clean)(htmldoc_imgs(htmldoc));
-    arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
-    arlfn(LxbNodePtr,clean)(htmldoc_forms(htmldoc));
-}
-
-void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) {
-    http_header_clean(htmldoc_http_header(htmldoc));
-    htmldoc_cache_cleanup(htmldoc);
-    lxb_html_document_destroy(htmldoc_lxbdoc(htmldoc));
-    url_cleanup(htmldoc_url(htmldoc));
-
-    if (jse_rt(htmldoc_js(htmldoc))) jse_clean(htmldoc_js(htmldoc));
-}
-
-inline void htmldoc_destroy(HtmlDoc* htmldoc) {
-    htmldoc_cleanup(htmldoc);
-    std_free(htmldoc);
-}
-
-Err htmldoc_draw_with_flags(HtmlDoc htmldoc[static 1], Session s[static 1], unsigned flags) {
+static Err _htmldoc_draw_with_flags_(HtmlDoc htmldoc[static 1], Session s[static 1], unsigned flags) {
     lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(htmldoc);
     DrawCtx ctx;
     Err err = draw_ctx_init(&ctx, htmldoc, s, flags);
@@ -856,16 +724,160 @@ Err htmldoc_draw_with_flags(HtmlDoc htmldoc[static 1], Session s[static 1], unsi
     draw_ctx_cleanup(&ctx);
     if (err) arlfn(ModAt,clean) (draw_ctx_mods(&ctx));
     //TODO: if a redraw was solicited, we may instead cleanup and re init.
-    if (flags & DRAW_CTX_FLAG_JS && !htmldoc_js_is_enabled(htmldoc))
-        try(htmldoc_js_enable(htmldoc, s));
     return err;
 }
 
-Err htmldoc_draw(HtmlDoc htmldoc[static 1], Session s[static 1]) {
+
+static Err _htmldoc_draw_(HtmlDoc htmldoc[static 1], Session s[static 1]) {
     unsigned flags = draw_ctx_flags_from_session(s) | DRAW_CTX_FLAG_TITLE;
-    return htmldoc_draw_with_flags(htmldoc, s, flags);
+    return _htmldoc_draw_with_flags_(htmldoc, s, flags);
 }
 
+
+#define HTMLDOC_FLAG_JS 0x1u
+Err htmldoc_init(
+/*
+ * HtmlDoc Ctor. may receive urlstr and/or url.
+ * If both are received: duplicates url and set part with urlstr
+ * If only url         : duplicate url
+ * If only urlstr      : creates a nre url from it
+ * If none             : it is an error
+ */
+    HtmlDoc     d[static 1],
+    const char* urlstr,
+    Url*        url,
+    HttpMethod  method,
+    unsigned    flags
+) {
+    Err e = Ok;
+
+    lxb_html_document_t* document = lxb_html_document_create();
+    if (!document) return "error: lxb failed to create html document";
+
+    if (flags & HTMLDOC_FLAG_JS) 
+        try_or_jump(e, Failure_Lxb_Html_Document_Destroy, jse_init(d));
+
+    Url dup;
+    if (urlstr && url) {
+        try_or_jump(e, Failure_Jse_Clean, url_dup(url, &dup));
+        try_or_jump(e, Failure_Url_Cleanup, curlu_set_url_or_fragment(dup.cu, urlstr));
+    } else if (urlstr) {
+        try_or_jump(
+            e, Failure_Jse_Clean, url_init_from_cstr(&dup, urlstr)
+        );
+    } else if (url) {
+        try_or_jump(e, Failure_Jse_Clean, url_dup(url, &dup));
+    } else
+        return "error: cannot initialize htmldoc with nonurl nor urlstr";
+
+
+    d->url    = dup;
+    d->method = method;
+    d->lxbdoc = document;
+
+    return Ok;
+
+Failure_Url_Cleanup:
+    url_cleanup(url);
+Failure_Jse_Clean:
+    jse_clean(htmldoc_js(d));
+Failure_Lxb_Html_Document_Destroy:
+    lxb_html_document_destroy(document);
+
+    return e;
+}
+
+
+/* external linkage */
+
+Err htmldoc_init_fetch_draw(
+    HtmlDoc     d[static 1],
+    const char* urlstr,
+    Url*        url,
+    UrlClient   url_client[static 1],
+    HttpMethod  method,
+    Session     s[static 1]
+) {
+    Err e = Ok;
+    unsigned flags = session_js(s) ? HTMLDOC_FLAG_JS : 0x0;
+    try(htmldoc_init(d, urlstr, url, method, flags));
+    try_or_jump(
+        e,
+        Failure_HtmlDoc_Cleanup,
+        htmldoc_fetch( d, url_client, session_doc_msg_fn(s,d), session_uout(s)->fetch_cb)
+    );
+
+    htmldoc_eval_js_scripts_or_continue(d, s);
+    try_or_jump(
+        e,
+        Failure_HtmlDoc_Cleanup,
+        _htmldoc_draw_(d, s)
+    );
+
+    return Ok;
+
+Failure_HtmlDoc_Cleanup:
+    htmldoc_cleanup(d);
+    return e;
+}
+
+
+void htmldoc_reset_draw(HtmlDoc htmldoc[static 1]) {
+    textbuf_reset(htmldoc_textbuf(htmldoc));
+    arlfn(LxbNodePtr,clean)(htmldoc_anchors(htmldoc));
+    arlfn(LxbNodePtr,clean)(htmldoc_imgs(htmldoc));
+    arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
+    arlfn(LxbNodePtr,clean)(htmldoc_forms(htmldoc));
+}
+
+
+void htmldoc_fetchcache_cleanup(HtmlDoc htmldoc[static 1]) {
+    textbuf_cleanup(htmldoc_sourcebuf(htmldoc));
+    arlfn(Str,clean)(htmldoc_head_scripts(htmldoc));
+    arlfn(Str,clean)(htmldoc_body_scripts(htmldoc));
+    htmldoc->fetch_cache = (DocFetchCache){0};
+}
+
+void htmldoc_drawcache_cleanup(HtmlDoc htmldoc[static 1]) {
+    textbuf_cleanup(htmldoc_textbuf(htmldoc));
+    arlfn(LxbNodePtr,clean)(htmldoc_anchors(htmldoc));
+    arlfn(LxbNodePtr,clean)(htmldoc_imgs(htmldoc));
+    arlfn(LxbNodePtr,clean)(htmldoc_inputs(htmldoc));
+    arlfn(LxbNodePtr,clean)(htmldoc_forms(htmldoc));
+
+    str_clean(htmldoc_screen(htmldoc));
+    htmldoc->draw_cache = (DocDrawCache){0};
+}
+
+void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
+    htmldoc_drawcache_cleanup(htmldoc);
+    htmldoc_fetchcache_cleanup(htmldoc);
+}
+
+
+
+void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) {
+    http_header_clean(htmldoc_http_header(htmldoc));
+    htmldoc_cache_cleanup(htmldoc);
+    lxb_html_document_destroy(htmldoc_lxbdoc(htmldoc));
+    url_cleanup(htmldoc_url(htmldoc));
+
+    if (jse_rt(htmldoc_js(htmldoc))) jse_clean(htmldoc_js(htmldoc));
+}
+
+
+inline void htmldoc_destroy(HtmlDoc* htmldoc) {
+    htmldoc_cleanup(htmldoc);
+    std_free(htmldoc);
+}
+
+
+
+Err htmldoc_redraw(HtmlDoc htmldoc[static 1], Session s[static 1]) {
+    htmldoc_reset_draw(htmldoc);
+    unsigned flags = draw_ctx_flags_from_session(s);
+    return _htmldoc_draw_with_flags_(htmldoc, s, flags);
+}
 
 Err htmldoc_A(Session* s, HtmlDoc d[static 1]) {
     if (!s) return "error: no session";
@@ -1015,4 +1027,29 @@ Err htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[static 1]) {
 Err htmldoc_console(HtmlDoc d[static 1], Session* s, const char* line) {
     if (!s) return "error: no session";
     return jse_eval(htmldoc_js(d), s, line);
+}
+
+static Err jse_eval_doc_scripts(Session* s, HtmlDoc d[static 1]) {
+    Err e = Ok;
+    ArlOf(Str)* scripts = htmldoc_head_scripts(d);
+    for (Str* it = arlfn(Str,begin)(scripts); it != arlfn(Str,end)(scripts); ++it) {
+       e = jse_eval(htmldoc_js(d), s, items__(it));
+        if (e) session_write_msg(s, (char*)e, strlen(e));
+    }
+    return Ok;
+}
+
+//TODO: make this fn not Err and rename it
+Err htmldoc_js_enable(HtmlDoc d[static 1], Session* s) {
+    try( jse_init(d));
+    Err e = jse_eval_doc_scripts(s, d);
+    if (e) session_write_msg(s, (char*)e, strlen(e));
+    return Ok;
+}
+
+void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[static 1], Session* s) {
+    if (htmldoc_js_is_enabled(d)) {
+        Err e = jse_eval_doc_scripts(s, d);
+        if (e) session_write_msg(s, (char*)e, strlen(e));
+    }
 }

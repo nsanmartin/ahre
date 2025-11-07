@@ -15,9 +15,11 @@
 [ ] [isocline] set autocomplete with ahre commands 
 [ ] [js] implement and bind DOM
 [ ] [js] implement and bind console object
+[ ] [js] use curl multi interface to downloas the scripts
 [ ] [libcurl] store cookies in file and make it configurable.
 [ ] [refa][?] separate more htmldoc init from draw
 [ ] [refa][?] use SessionMemWriter consistently (session_write_* -> session_writer_write_*)
+[ ] [refa][ui] move from OOP to more functional
 [ ] [test] so many tests...
 [ ] [ui/refa] use different sesion_cmd arrays for different modes.
 [ ] [ui] images: send to progam
@@ -27,6 +29,8 @@
 [ ] [ui] implement ranges for doc's cache's elements. Vg: [1,4' means show anchors 1 to 4
 [ ] [ui] implement vi_process_line method that does not print (vi mode only prints on show)
 [ ] [ui] when saving images to directory path act as like anchors (generating the url).
+[ ] [ui] manage .+SECTION when SECTION is substring of SECTION'
+[ ] [bug] jump to content should only jump to content, not open a new doc
 
 #CLOSED
 [X] run test in github ci workflow (currently it does not find liblexbos.so.2): moving away from github

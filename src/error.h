@@ -31,6 +31,8 @@ static inline bool fatal_error(Err e) {
 // type Err value. If the Err value is not null (not Ok) then it immediately
 // returns that value. If not it does nothing.
 #define try(Expr) do{Err ahre_err_=validate_err((Expr));if (ahre_err_) return ahre_err_;}while(0) 
+#define try_or_jump(ErrLval, Label, Expr) do{\
+    ErrLval=validate_err((Expr));if (ErrLval) goto Label;}while(0)
 
 #define ok_then(Error, Expr) do{ if (!Error) { Error=validate_err((Expr));}} while(0) 
 

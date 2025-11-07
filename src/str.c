@@ -200,3 +200,15 @@ Err _convert_to_utf8_(
     *outlen = allocated - outleft;
     return Ok;
 }
+
+
+#ifdef TESTING_FAILURES
+static unsigned APPENDS__ = 0;
+Err str_append(Str* s, char* items, size_t len) {
+    bool condition = (++APPENDS__) % 480 == 0;
+    if (condition) {
+        return err_fmt("TESTING: appends limit (APPENDS__: %d)", APPENDS__);
+    }
+    return (buffn(char,append)(s, items, len) ? Ok : "error: str_append failure");
+}
+#endif

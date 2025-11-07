@@ -1,22 +1,27 @@
 #include "tab-node.h"
 #include "session.h"
 
+Err htmldoc_init_fetch_draw(
+    HtmlDoc     d[static 1],
+    const char* urlstr,
+    Url*        url,
+    UrlClient   url_client[static 1],
+    HttpMethod  method,
+    Session     s[static 1]
+);
 
 Err tab_node_init(
-    TabNode n[static 1],
-    TabNode* parent,
-    CurluOrCstr u[static 1],
-    UrlClient url_client[static 1],
-    HttpMethod method,
-    Session s[static 1]
+    TabNode     n[static 1],
+    TabNode*    parent,
+    const char* urlstr,
+    Url*        url,
+    UrlClient   url_client[static 1],
+    HttpMethod  method,
+    Session     s[static 1]
 ) {
     try(_tab_node_init_base_(n, parent));
-    Err err = htmldoc_init_fetch_draw(tab_node_doc(n), u, url_client, method, s);
+    Err err = htmldoc_init_fetch_draw(tab_node_doc(n), urlstr, url, url_client, method, s);
     if (err) {
-        if (u->tag == curlu_tag) {
-            /* cu is owned by caller so if an erro occur we must not free it but him */
-            htmldoc_url(tab_node_doc(n))->cu = NULL;
-        }
         /* we don't want tab_node_cleanup to free node_doc again */
         *tab_node_doc(n) = (HtmlDoc){0};
         tab_node_cleanup(n);
@@ -29,11 +34,12 @@ Err tab_node_init(
 
 
 Err tab_node_tree_append_ahref(
-    TabNode t[static 1],
-    size_t linknum,
+    TabNode   t[static 1],
+    size_t    linknum,
     UrlClient url_client[static 1],
-    Session s[static 1]
-) {
+    Session   s[static 1]
+)
+{
     TabNode* n;
     try(  tab_node_current_node(t, &n));
     if (!n) return "error: current node not found";
@@ -43,20 +49,31 @@ Err tab_node_tree_append_ahref(
     LxbNodePtr* a = arlfn(LxbNodePtr, at)(anchors, linknum);
     if (!a) return "link number invalid";
 
-    CURLU* curlu = url_cu(htmldoc_url(d));
-    //TODO: dup in htmldoc ctor
-    try( lexcurl_dup_curl_with_anchors_href(*a, &curlu));
+    /* CURLU* curlu = url_cu(htmldoc_url(d)); */
+    /* //TODO: dup in htmldoc ctor */
+    /* try( lexcurl_dup_curl_from_node_and_attr(*a, "href", 4, &curlu)); */
+    Str url = (Str){0};
+    try (lexbor_append_null_terminated_attr(*a, "href", 4, &url));
 
     TabNode newnode;
     Err err;
-    if((err=tab_node_init(&newnode, n, mk_union_curlu(curlu), url_client, http_get, s))) {
-        curl_url_cleanup(curlu);
-        return err;
-    };
-    if ((err=tab_node_append_move_child(n, &newnode))) {
-        tab_node_cleanup(&newnode);
-        return err;
-    }
+    try_or_jump(
+        err,
+        Clean_Url_Str,
+        tab_node_init(&newnode, n, url.items, htmldoc_url(d), url_client, http_get, s)
+    );
+    /* if((err=tab_node_init(&newnode, n, NULL, &url, htmldoc_url(d), url_client, http_get, s))) { return err; }; */
+    try_or_jump(
+        err,
+        Failure_New_Node_Cleanup,
+        tab_node_append_move_child(n, &newnode)
+    );
+    /* if ((err=tab_node_append_move_child(n, &newnode))) { tab_node_cleanup(&newnode); return err; } */
+    goto Clean_Url_Str;
+Failure_New_Node_Cleanup:
+    tab_node_cleanup(&newnode);
+Clean_Url_Str:
+    str_clean(&url);
     return Ok;
 }
 
@@ -77,36 +94,32 @@ Err tab_node_tree_append_submit(
     ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(d);
     CURLU* curlu = curl_url_dup(url_cu(htmldoc_url(d)));
     if (!curlu) return "error: memory failure (curl_url_dup)";
+    Url u = {.cu=curlu};
 
+    Err e = Ok;
     LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(inputs, ix);
     if (!nodeptr) {
-        curl_url_cleanup(curlu);
-        return "link number invalid";
+        e = "link number invalid";
+        goto Clean_Url;
     }
     if (!_lexbor_attr_has_value(*nodeptr, "type", "submit")) {
-        curl_url_cleanup(curlu);
-        return "warn: not submit input";
+        e = "warn: not submit input";
+        goto Clean_Url;
     }
 
     lxb_dom_node_t* form = _find_parent_form(*nodeptr);
     if (form) {
         HttpMethod method;
-        Err err;
-        if ((err = mk_submit_url(url_client, form, &curlu, &method))) {
-            curl_url_cleanup(curlu);
-            return err;
-        }
+        try_or_jump(e, Clean_Url, mk_submit_url(url_client, form, &curlu, &method));
 
         TabNode newnode;
-        if ((err=tab_node_init(&newnode, n, mk_union_curlu(curlu), url_client, method, s))) {
-            curl_url_cleanup(curlu);
-            return err;
-        };
-        if ((err=tab_node_append_move_child(n, &newnode))) {
-            curl_url_cleanup(curlu);
-            return err;
-        }
-    } else { puts("expected form, not found"); }
+        try_or_jump(e, Clean_Url, tab_node_init(&newnode, n, NULL, &u, url_client, method, s));
+        try_or_jump(e, Clean_Url, tab_node_append_move_child(n, &newnode));
+    } else { return "expected form, not found"; }
+
+Clean_Url:
+    url_cleanup(&u);
+
     return Ok;
 }
 

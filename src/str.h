@@ -14,6 +14,7 @@
 
 #include <ctype.h>
 #include <string.h>
+#include <errno.h>
 
 #include "error.h"
 #include "generic.h"
@@ -50,6 +51,15 @@ static inline int memstr_cmp(const char* mem, size_t len, const char* cstr) {
     return strncmp(mem, cstr, cmplen);
 }
 
+static inline Err mem_to_cstr(char* mem[static 1], size_t len) {
+    *mem = std_realloc(*mem, len + 1);
+    if (!*mem) {
+        return err_fmt("realloc failure: %s", strerror(errno));
+    }
+    *mem[len] = '\0';
+    return Ok;
+}
+
 #define lit_write__(Lit, Stream) mem_fwrite(Lit,lit_len__(Lit), Stream)
 
 /* cstr fns */
@@ -66,7 +76,6 @@ static inline bool cstr_starts_with(const char* s, const char* t) {
 
 const char* cstr_cat_dup(const char* s, const char* t);
 const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen);
-
 
 /* strview fns */
 typedef struct {
@@ -120,12 +129,45 @@ inline static StrView strview_from_mem_trim(const char* s, size_t len) {
 #define str_clean buffn(char,clean)
 #define str_reset buffn(char,reset)
 #define str_at buffn(char,at)
+#define _str_ensure_extra_capacity(StrPtr, Len) \
+    (buffn(char,__ensure_extra_capacity)(StrPtr, Len) ? Ok : "error: ensure extra capacity failure")
+#define str_append_lit__(StrPtr, Lit) str_append(StrPtr, Lit, lit_len__(Lit))
 #define str_append(StrPtr, Items, NItems) \
     (buffn(char,append)(StrPtr, Items, NItems) ? Ok : "error: str_append failure")
-#define str_append_lit__(StrPtr, Lit) str_append(StrPtr, Lit, lit_len__(Lit))
+
+static inline size_t str_append_flip(
+    const char* mem,
+    size_t      size,
+    size_t      nmemb,
+    Str         out[static 1]
+) 
+{
+    size_t len = size * nmemb;
+
+    if (buffn(char,append)(out, (char*)mem, len))
+        return len;
+    return 0;
+}
+
 static inline char* str_beg(Str s[static 1]) { return items__(s); }
 static inline char* str_end(Str s[static 1]) {
     return len__(s) ? items__(s) + len__(s) : items__(s);
+}
+static inline Err null_terminated_str_from_mem(
+    const char* mem,
+    size_t      len,
+    Str         out[static 1]
+)
+{
+    str_reset(out); 
+    Err e = _str_ensure_extra_capacity(out, len + 1);
+    ok_then(e, str_append(out, (char*)mem, len));
+    if (e) {
+        str_clean(out);
+        return e;
+    }
+    items__(out)[len] = '\0';
+    return Ok;
 }
 
 #define strview_from_lit__(LitStr) strview_from_mem(LitStr, sizeof(LitStr)-1)

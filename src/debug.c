@@ -78,9 +78,7 @@ Err dbg_traversal_text(lxb_dom_node_t* node,  Session ctx[static 1]) {
     size_t len;
     try( lexbor_node_get_text(node, &data, &len));
 
-    //if (draw_ctx_pre(ctx)) { return Ok; } else
     if (mem_skip_space_inplace(&data, &len)) {
-        //.try( draw_mem_skipping_space(data, len, ctx));
         session_write_msg_lit__(ctx, "{TEXT BEG}<<<\n");
         session_write_msg(ctx, (char*)data, len);
         session_write_msg_lit__(ctx, "\n>>>{TEXT END}\n");
