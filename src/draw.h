@@ -60,7 +60,7 @@ static inline void draw_subctx_trim_right(DrawSubCtx sub[static 1]) {
     sub->buf.len = content.len;
 }
 
-typedef struct { 
+typedef struct {
     HtmlDoc* htmldoc;
     char* fragment;
     ArlOf(EscCode) esc_code_stack;
@@ -104,6 +104,7 @@ static inline bool draw_ctx_hide_tags(DrawCtx ctx[static 1], size_t tags) {
 static inline TextBuf* draw_ctx_textbuf(DrawCtx ctx[static 1]) {
     return htmldoc_textbuf(draw_ctx_htmldoc(ctx));
 }
+
 
 
 static inline BufOf(char)* draw_ctx_textbuf_buf_(DrawCtx ctx[static 1]) {

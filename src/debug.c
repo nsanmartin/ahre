@@ -8,12 +8,12 @@ static Err _dbg_print_form_info_rec_(lxb_dom_node_t* node, int indent) {
 
         const lxb_char_t* name;
         size_t namelen;
-        lexbor_find_attr_value(node, "name", &name, &namelen);
+        lexbor_find_lit_attr_value__(node, "name", &name, &namelen);
         if (!name || namelen == 0 || strcmp((char*)name, "password") == 0) return Ok;
 
         const lxb_char_t* value;
         size_t valuelen;
-        lexbor_find_attr_value(node, "value", &value, &valuelen);
+        lexbor_find_lit_attr_value__(node, "value", &value, &valuelen);
 
         if (!value || valuelen == 0)
             log_debug__(

@@ -106,29 +106,25 @@ Err lexbor_set_attr_value(lxb_dom_node_t* node, const char* value, size_t valuel
     return Ok;
 }
 
-/*
- * This is innefficient. For each time an attr is queried, 
- * all of them are iterated, but: there are more priority tasks and
- * there are usually few attrs. 
- */
-void lexbor_find_attr_value(
-    lxb_dom_node_t* node, const char* attr_name, const lxb_char_t* out[static 1], size_t* len
+bool lexbor_find_attr_value(
+    lxb_dom_node_t* node,
+    const char* attr_name,
+    size_t attr_len,
+    const lxb_char_t* out[static 1],
+    size_t* len
 ) 
 {
-    lxb_dom_attr_t* attr;
-
-    attr = lxb_dom_element_first_attribute(lxb_dom_interface_element(node));
-    while (attr) {
-        size_t data_len;
-        const lxb_char_t* data = lxb_dom_attr_qualified_name(attr, &data_len);
-        if (lexbor_str_eq(attr_name, data, data_len))  {
-            *out = lxb_dom_attr_value(attr, len);
-            return;
-        }
-        attr = lxb_dom_element_next_attribute(attr);
+    if (attr_name && attr_len) {
+        *out = lxb_dom_element_get_attribute(
+            lxb_dom_interface_element(node),
+            (const lxb_char_t*)attr_name,
+            attr_len,
+            len
+        );
+        if (*out && *len) return true;
     }
+    return false;
 
-    *out = NULL; *len = 0;
 }
 
 Err lexbor_node_to_str(lxb_dom_node_t* node, BufOf(char)* buf) {
@@ -173,8 +169,9 @@ bool _lexbor_attr_has_value(
 ) {
     const lxb_char_t* value;
     size_t valuelen;
-    lexbor_find_attr_value(node, attr, &value, &valuelen);
-    return value && valuelen && lexbor_str_eq(expected_value, value, valuelen);
+    return attr
+        && lexbor_find_attr_value(node, attr, strlen(attr), &value, &valuelen)
+        && lexbor_str_eq(expected_value, value, valuelen);
 }
 
 Err lexbor_get_title_text(lxb_dom_node_t* title, Str out[static 1]) {

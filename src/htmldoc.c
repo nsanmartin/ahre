@@ -89,9 +89,7 @@ brose_ctx_append_img_alt_(lxb_dom_node_t* img, DrawCtx ctx[static 1]) {
 
     const lxb_char_t* alt;
     size_t alt_len;
-    lexbor_find_attr_value(img, "alt", &alt, &alt_len);
-
-    if (alt && alt_len) {
+    if (lexbor_find_lit_attr_value__(img, "alt", &alt, &alt_len)) {
         try( draw_ctx_buf_append(ctx, strview__((char*)alt, alt_len)));
     }
     return Ok;
@@ -164,8 +162,7 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     const lxb_char_t* s;
     size_t slen;
 
-    lexbor_find_attr_value(node, "type", &s, &slen);
-    if (slen && !strcmp("hidden", (char*)s)) 
+    if (lexbor_find_lit_attr_value__(node, "type", &s, &slen) && !strcmp("hidden", (char*)s))
         return Ok;
 
     HtmlDoc* d = draw_ctx_htmldoc(ctx);
@@ -177,7 +174,7 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     /* submit */
     if (_input_is_submit_type_(s, slen)) {
 
-        lexbor_find_attr_value(node, "value", &s, &slen);
+        lexbor_find_lit_attr_value__(node, "value", &s, &slen);
 
         StrViewProvider sep = slen ? input_text_sep_str : NULL;
         try( _hypertext_id_open_(ctx, draw_ctx_color_red, input_text_open_str, &input_id, sep));
@@ -192,14 +189,14 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         ctx, draw_ctx_color_red, input_text_open_str, &input_id, NULL));
 
     if (_input_is_text_type_(s, slen)) {
-        lexbor_find_attr_value(node, "value", &s, &slen);
-        if (slen) {
+        if (lexbor_find_lit_attr_value__(node, "value", &s, &slen)) {
             try( draw_ctx_buf_append_lit__(ctx, "="));
             try( draw_ctx_buf_append(ctx, strview__((char*)s, slen)));
         }
     } else if (lexbor_str_eq("password", s, slen)) {
-        lexbor_find_attr_value(node, "value", &s, &slen);
-        if (slen) try( draw_ctx_buf_append_lit__(ctx, "=********"));
+        if (lexbor_find_lit_attr_value__(node, "value", &s, &slen)) {
+            try( draw_ctx_buf_append_lit__(ctx, "=********"));
+        }
     } else {
         try( draw_ctx_buf_append_lit__(ctx, "[input not supported yet]"));
     }
@@ -929,8 +926,7 @@ Err htmldoc_print_info(Session* s, HtmlDoc d[static 1]) {
 static bool _node_has_href(lxb_dom_node_t* node) {
     const lxb_char_t* data;
     size_t data_len;
-    lexbor_find_attr_value(node, "href", &data, &data_len);
-    return data && data_len;
+    return lexbor_find_lit_attr_value__(node, "href", &data, &data_len);
 }
 
 static bool _prev_is_separable_(lxb_dom_node_t n[static 1]) {
