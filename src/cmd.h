@@ -42,12 +42,11 @@ static inline Err cmd_cookies(CmdParams p[static 1]) {
     return url_client_print_cookies(p->s, session_url_client(p->s));
 }
 
+Err htmldoc_redraw(HtmlDoc htmldoc[static 1], Session s[static 1]);
 static inline Err session_doc_draw(Session session[static 1]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
-    htmldoc_reset_draw(htmldoc);
-    unsigned flags = draw_ctx_flags_from_session(session);
-    return htmldoc_draw_with_flags(htmldoc, session, flags);
+    return htmldoc_redraw(htmldoc, session);
 }
 
 static inline Err session_doc_js(Session session[static 1]) {

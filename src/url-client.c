@@ -14,34 +14,60 @@
  * "w3m/0.5.3+git20230718"
  *
  */
+#define USER_AGENT_USED_ "ahre/" AHRE_VERSION
 
-Err url_client_reset(UrlClient url_client[static 1]) {
-    /* If Ahre is used as user agent then google won't work */
-#define USER_AGENT_USED_ \
- "ELinks/0.13.2 (textmode; Linux 6.6.62+rpt-rpi-2712 aarch64; 213x55-2)"
- 
+Err url_client_setopt_long(UrlClient url_client[static 1], CURLoption opt, long value) {
+    CURLcode code = curl_easy_setopt(url_client->curl, opt, value);
+    if (code != CURLE_OK)
+        return err_fmt("error: could not set long CURLOPT: %s", curl_easy_strerror(code));
+    return Ok;
+}
+
+
+
+Err url_client_setopt_cstr(UrlClient url_client[static 1], CURLoption opt, char* value) {
+    CURLcode code = curl_easy_setopt(url_client->curl, opt, value);
+    if (code != CURLE_OK)
+        return err_fmt("error: could not set cstr CURLOPT: %s", curl_easy_strerror(code));
+    return Ok;
+}
+
+
+Err url_client_set_cookies(UrlClient url_client[static 1]) {
+    Err e = Ok;
     Str* buf = &(Str){0};
     char* cookiefile = "";
     /* if an error occurs getting the cookies filename, just ignore it, we'll not use one. */
-    if (!get_cookies_filename(buf)) cookiefile = items__(buf);
- 
-    curl_easy_reset(url_client->curl);
-    /* default options to curl */
-    if (   curl_easy_setopt(url_client->curl, CURLOPT_ERRORBUFFER, url_client->errbuf)
+    if (Ok == get_cookies_filename(buf)) cookiefile = items__(buf);
+    /* this call leaks in old curl versoins */
+    try_or_jump(e, cleanup, url_client_setopt_cstr(url_client, CURLOPT_COOKIEFILE, cookiefile));
+    try_or_jump(e, cleanup, url_client_setopt_cstr(url_client, CURLOPT_COOKIEJAR, cookiefile));
+cleanup:
+    str_clean(buf);
+    return e;
+}
+
+Err url_client_set_basic_options(UrlClient url_client[static 1]) {
+    if ( 0
         || curl_easy_setopt(url_client->curl, CURLOPT_NOPROGRESS, 1L)
         || curl_easy_setopt(url_client->curl, CURLOPT_FOLLOWLOCATION, 1)
         || curl_easy_setopt(url_client->curl, CURLOPT_VERBOSE, 0L)
         || curl_easy_setopt(url_client->curl, CURLOPT_USERAGENT, USER_AGENT_USED_)
-        || curl_easy_setopt(url_client->curl, CURLOPT_COOKIEFILE, cookiefile)
     ) {
-        str_clean(buf);
-        return "error: curl configuration failed";
+        return "error: curl setopt failed (url_client_set_basic_options)";
     }
-
-    if (cookiefile) curl_easy_setopt(url_client->curl, CURLOPT_COOKIEJAR, cookiefile);
-    str_clean(buf);
-    return Ok;
+    return url_client_set_cookies(url_client);
 }
+
+
+Err url_client_reset(UrlClient url_client[static 1]) {
+ 
+    curl_easy_reset(url_client->curl);
+    if (curl_easy_setopt(url_client->curl, CURLOPT_ERRORBUFFER, url_client->errbuf))
+        return "error: curl errorbuffer configuration failed";
+    return url_client_set_basic_options(url_client);
+}
+
 
 Err url_client_init(UrlClient url_client[static 1]) {
 

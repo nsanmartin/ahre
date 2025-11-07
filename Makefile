@@ -1,4 +1,4 @@
-ahre:
+ahre: tags
 	$(MAKE) -C src ../build/ahre
 
 test_all:

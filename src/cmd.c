@@ -76,24 +76,28 @@ Err cmd_set_session_input(CmdParams p[static 1]) {
 /*
  * These commands require a valid document, the caller should check this condition before
  */
+Err htmldoc_init_fetch_draw(
+    HtmlDoc     d[static 1],
+    const char* urlstr,
+    Url*        url,
+    UrlClient   url_client[static 1],
+    HttpMethod  method,
+    Session     s[static 1]
+);
+
 static Err _cmd_fetch(Session session[static 1]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
 
-    CURLU* new_cu;
-    try( url_curlu_dup(htmldoc_url(htmldoc), &new_cu));
     HtmlDoc newdoc;
     Err err = htmldoc_init_fetch_draw(
         &newdoc,
-        mk_union_curlu(new_cu),
+        NULL,
+        htmldoc_url(htmldoc),
         session_url_client(session),
         http_get,
         session
     );
-    if (err) {
-        curl_url_cleanup(new_cu);
-        return err;
-    }
     htmldoc_cleanup(htmldoc);
     *htmldoc = newdoc;
     return err;
@@ -127,6 +131,7 @@ Err shortcut_z(Session session[static 1], const char* rest) {
     return Ok;
 }
 
+//TODO: use it or delete it
 Err _cmd_misc(Session session[static 1], const char* line) {
     const char* rest = 0x0;
     line = cstr_skip_space(line);

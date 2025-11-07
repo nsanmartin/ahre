@@ -171,7 +171,7 @@ Err jse_eval(JsEngine js[static 1], Session* s, const char* script) {
     if (JS_IsException(result)) {
         JSValue error = JS_GetException(ctx);
         const char *error_str = JS_ToCString(ctx, error);
-        err = err_fmt("error evaluting js: %s\n", error_str);
+        err = err_fmt("error evaluating js: %s\n", error_str);
         JS_FreeCString(ctx, error_str);
         JS_FreeValue(ctx, error);
     } else {

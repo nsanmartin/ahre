@@ -2,7 +2,7 @@
 #define AHRE_SESSION_H__
 
 #include "session-conf.h"
-#include "htmldoc.h"
+/* #include "htmldoc.h" */
 #include "tabs.h"
 #include "user-input.h"
 #include "user-out.h"
@@ -208,14 +208,5 @@ Err session_write_range_mod(
     SessionMemWriter w[static 1], TextBuf textbuf[static 1], Range range[static 1]
 );
 
-Err htmldoc_init_fetch_draw(
-    HtmlDoc d[static 1],
-    CurluOrCstr url[static 1],
-    UrlClient url_client[static 1],
-    HttpMethod method,
-    Session s[static 1]
-);
 
-Err htmldoc_draw(HtmlDoc htmldoc[static 1], Session s[static 1]);
-Err htmldoc_draw_with_flags(HtmlDoc htmldoc[static 1], Session s[static 1], unsigned flags);
 #endif
