@@ -24,6 +24,9 @@ Err curl_url_to_filename_append(CURLU* cu, Str out[static 1]) {
 }
 
 Err _append_fopen(const char* dirname, CURLU* cu, FILE* fp[static 1]) {
+/*
+ * Append cu modified to dirname and open it in write mode.
+ */
     Err err = Ok;
     Str* path = &(Str){0};
     try( str_append(path, (char*)dirname, strlen(dirname)));
@@ -41,6 +44,10 @@ Err _append_fopen(const char* dirname, CURLU* cu, FILE* fp[static 1]) {
 }
 
 Err fopen_or_append_fopen(const char* fname, CURLU* cu, FILE* fp[static 1]) {
+/*
+ * If fname is the path of an existing dir, then modify cu to modcu and open fname/modcu.
+ * Otherwise, open fname.
+ */
     struct stat st;
     if (!fname || !*fname) return "cannot open empty file name";
     *fp = NULL; 

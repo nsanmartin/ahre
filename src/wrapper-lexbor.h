@@ -20,15 +20,42 @@ lxb_inline lxb_status_t append_to_buf_callback(const lxb_char_t *data, size_t le
 
 size_t lexbor_parse_chunk_callback(char *en, size_t size, size_t nmemb, void* outstream);
 
-bool lexbor_find_attr_value(
-    lxb_dom_node_t* node,
+static inline bool _lexbor_element_find_attr_value_(
+    lxb_dom_element_t* element,
     const char* attr_name,
     size_t attr_len,
     const lxb_char_t* out[static 1],
     size_t* len
-); 
-#define lexbor_find_lit_attr_value__(Node, AttrName, OutPtr, LenPtr) \
-    lexbor_find_attr_value(Node, AttrName, lit_len__(AttrName), OutPtr, LenPtr)
+) 
+{
+    if (attr_name && attr_len) {
+        *out = lxb_dom_element_get_attribute(element, (const lxb_char_t*)attr_name, attr_len, len);
+        if (*out && *len) return true;
+    }
+    return false;
+
+}
+
+static inline bool _lexbor_node_find_attr_value_(
+    lxb_dom_node_t*   node,
+    const char*       attr_name,
+    size_t            attr_len,
+    const lxb_char_t* out[static 1],
+    size_t*           len
+) {
+    return _lexbor_element_find_attr_value_(
+        lxb_dom_interface_element(node), attr_name, attr_len, out, len
+    );
+}
+#define lexbor_find_attr_value(X, AttrName, AttrLen, OutStr, OutLen) \
+    _Generic((X), \
+        lxb_dom_element_t*: _lexbor_element_find_attr_value_, \
+        lxb_dom_node_t*   : _lexbor_node_find_attr_value_ \
+    )(X, AttrName, AttrLen, OutStr, OutLen) 
+
+
+#define lexbor_find_lit_attr_value__(X, AttrName, OutPtr, LenPtr) \
+    lexbor_find_attr_value(X, AttrName, lit_len__(AttrName), OutPtr, LenPtr)
 
 Err lexbor_set_attr_value( lxb_dom_node_t* node, const char* value, size_t valuelen);
 

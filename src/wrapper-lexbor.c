@@ -106,26 +106,6 @@ Err lexbor_set_attr_value(lxb_dom_node_t* node, const char* value, size_t valuel
     return Ok;
 }
 
-bool lexbor_find_attr_value(
-    lxb_dom_node_t* node,
-    const char* attr_name,
-    size_t attr_len,
-    const lxb_char_t* out[static 1],
-    size_t* len
-) 
-{
-    if (attr_name && attr_len) {
-        *out = lxb_dom_element_get_attribute(
-            lxb_dom_interface_element(node),
-            (const lxb_char_t*)attr_name,
-            attr_len,
-            len
-        );
-        if (*out && *len) return true;
-    }
-    return false;
-
-}
 
 Err lexbor_node_to_str(lxb_dom_node_t* node, BufOf(char)* buf) {
     lxb_dom_attr_t* attr = lxb_dom_element_first_attribute(lxb_dom_interface_element(node));

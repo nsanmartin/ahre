@@ -36,6 +36,9 @@ typedef struct {
 static inline CURLU* url_cu(Url u[static 1]) { return u->cu; }
 
 static inline Err curl_url_part_cstr(CURLU* cu, CURLUPart part, char* out[static 1]) {
+/*
+ * Get cu's part. The caller should curl_free out.
+ */
     CURLUcode code = curl_url_get(cu, part, out, 0);
     if (code == CURLUE_OK)
         return Ok;
@@ -98,7 +101,8 @@ static inline Err url_init_from_curlu(Url u[static 1],  CURLU* cu) {
 
 static inline Err url_init_from_cstr(Url u[static 1],  const char* cstr) {
     if (!*(cstr=cstr_skip_space(cstr))) return "error: expecting an url";
-    BufOf(char)* url_buf = &(BufOf(char)){0};
+    Str* url_buf = &(Str){0};
+    //TODO? why ignore fragment?
     if (_file_exists_ignore_fragment_(cstr)) {
         try(_prepend_file_schema_(cstr, url_buf));
         cstr = url_buf->items;
@@ -107,18 +111,13 @@ static inline Err url_init_from_cstr(Url u[static 1],  const char* cstr) {
     *u = (Url){.cu=curl_url()};
     if (!u->cu) return "error initializing CURLU";
 
+    Err res = Ok;
     CURLUcode code = curl_url_set(u->cu, CURLUPART_URL, cstr, CURLU_DEFAULT_SCHEME);
-    Err res; 
-    switch (code) {
-        case CURLUE_OK:
-            res = Ok;
-            break;
-        default:
-            res = err_fmt("error setting url '%s', CURLU: %s", cstr, curl_url_strerror(code));
-            url_cleanup(u);
-            break;
+    if (CURLUE_OK != code) {
+        res = err_fmt("error setting url '%s', CURLU: %s", cstr, curl_url_strerror(code));
+        url_cleanup(u);
     }
-    buffn(char, clean)(url_buf);
+    str_clean(url_buf);
     return res;
 }
 
@@ -130,14 +129,36 @@ static inline Err url_init(Url u[static 1], CurluOrCstr cu_or_cstr [static 1]) {
     }
 }
 
+static inline Err url_dup(Url u[static 1], Url out[static 1]) {
+/*
+ * Duplicates in place. In case of failure it has no effect.
+ */
+    CURLU* dup = curl_url_dup(url_cu(u));
+    if (!dup) return "error: curl_url_dup failure";
+    out->cu = dup;
+    return Ok;
+}
+
 static inline Err url_curlu_dup(Url u[static 1], CURLU* out[static 1]) {
     *out = curl_url_dup(url_cu(u));
     if (!*out) return "error: curl_url_dup failure";
     return Ok;
 }
 
+static inline Err curlu_set_url_path(CURLU* u,  const char* cstr) {
+    if (!cstr || !*cstr) return "error: no url part";
+    CURLUcode code = curl_url_set(u, CURLUPART_URL, cstr, CURLU_DEFAULT_SCHEME);
+
+    switch (code) {
+        case CURLUE_OK:
+            return Ok;
+        default:
+            return err_fmt("error setting CURLU PATH with '%s': %s", cstr, curl_url_strerror(code));
+    }
+}
+
 //TODO make url_int call this one
-static inline Err curlu_set_url(CURLU* u,  const char* cstr) {
+static inline Err curlu_set_url_or_fragment(CURLU* u,  const char* cstr) {
     if (!*cstr) return "error: no url";
     CURLUcode code = (*cstr == '#' && cstr[1])
         ? curl_url_set(u, CURLUPART_FRAGMENT, cstr + 1, CURLU_DEFAULT_SCHEME)
