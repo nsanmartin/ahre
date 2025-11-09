@@ -34,6 +34,7 @@ static inline size_t strview_to_hide_tag(StrView s) {
 }
 
 typedef lxb_dom_node_t* LxbNodePtr;
+typedef lxb_dom_element_t* LxbElemPtr;
 #define T LxbNodePtr
 #include <arl.h>
 

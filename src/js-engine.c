@@ -152,6 +152,7 @@ static Err jse_add_document(JSContext* ctx, HtmlDoc d[static 1]) {
 }
 
 Err jse_eval(JsEngine js[static 1], Session* s, const char* script) {
+    if (!script) return "error: jse_eval cannot evaluate nullptr";
 
     JSContext *ctx = jse_context(js);
 

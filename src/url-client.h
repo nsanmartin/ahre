@@ -7,11 +7,13 @@
 
 typedef struct UrlClient {
     CURL* curl;
+    CURLM* curlm;
     char  errbuf[CURL_ERROR_SIZE];
     Str   postdata;
 } UrlClient;
 
 static inline CURL* url_client_curl(UrlClient url_client[static 1]) { return url_client->curl; }
+static inline CURLM* url_client_multi(UrlClient url_client[static 1]) { return url_client->curlm; }
 
 static inline Str* url_client_postdata(UrlClient uc[static 1]) { return &uc->postdata; }
 /* ctor */
@@ -27,6 +29,7 @@ static inline char* url_client_escape_url(
 }
 
 static inline void url_client_cleanup(UrlClient* url_client) {
+    curl_multi_cleanup(url_client->curlm);
     curl_easy_cleanup(url_client->curl);
     str_clean(url_client_postdata(url_client));
 }
@@ -36,4 +39,6 @@ static inline void url_client_curl_free_cstr(char* s) { curl_free(s); }
 Err url_client_print_cookies(Session* s, UrlClient uc[static 1]) ;
 Err url_client_reset(UrlClient url_client[static 1]);
 Err url_client_set_basic_options(UrlClient url_client[static 1]);
+Err url_client_curlu_to_file(UrlClient url_client[static 1], CURLU* curlu , const char* fname);
+
 #endif

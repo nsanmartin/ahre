@@ -321,7 +321,7 @@ Err _cmd_image_save(Session session[static 1], size_t ix, const char* fname) {
     try( session_current_doc(session, &htmldoc));
     CURLU* curlu = url_cu(htmldoc_url(htmldoc));
     try( lexcurl_dup_curl_from_node_and_attr(node, "src", 3, &curlu));
-    Err err = curl_save_url(session_url_client(session), curlu, fname);
+    Err err = url_client_curlu_to_file(session_url_client(session), curlu, fname);
     curl_url_cleanup(curlu);
     ok_then(err, session_write_msg_lit__(session, "data saved\n"));
     return err;
@@ -360,7 +360,7 @@ Err _cmd_anchor_save(Session session[static 1], size_t ix, const char* fname) {
     try( session_current_doc(session, &htmldoc));
     CURLU* curlu = url_cu(htmldoc_url(htmldoc));
     try( lexcurl_dup_curl_from_node_and_attr(node, "href", 4, &curlu));
-    Err err = curl_save_url(session_url_client(session), curlu, fname);
+    Err err = url_client_curlu_to_file(session_url_client(session), curlu, fname);
     curl_url_cleanup(curlu);
     ok_then(err, session_write_msg_lit__(session, "file saved\n"));
     return err;

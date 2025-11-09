@@ -5,6 +5,7 @@
 #include "str.h"
 #include "wrapper-lexbor-curl.h"
 #include "wrapper-lexbor.h"
+#include "wrapper-curl.h"
 
 #include "debug.h"
 
@@ -102,35 +103,6 @@ static Err _set_htmldoc_url_with_effective_url_(
 }
 
 
-static Err _fetch_append_tag_script_from_src_attr_(
-    const char*    src,
-    size_t         src_len,
-    UrlClient      url_client[static 1],
-    Url            u[static 1],
-    ArlOf(Str)     out[static 1]
-) {
-    Err e = Ok; 
-    CURLU* curl_u;
-    try( url_curlu_dup(u, &curl_u));
-
-    Str* url_path = &(Str){0};
-    try_or_jump(e, Clean_Curl_U,   null_terminated_str_from_mem(src, src_len, url_path));
-    try_or_jump(e, Clean_Url_Path, curlu_set_url_path(curl_u, items__(url_path)));
-    Str* s = &(Str){0};
-    try_or_jump(e, Clean_Url_Path, url_client_curlu_to_str(url_client, curl_u, s));
-    
-
-    if (!arlfn(Str,append)(out,s)) {
-        str_clean(s);
-        e = "error: append failure";
-    }
-
-Clean_Url_Path: str_clean(url_path);
-Clean_Curl_U: curl_url_cleanup(curl_u);
-    return e;
-}
-
-
 Err
 _fetch_tag_script_from_text_(lxb_dom_node_t node[static 1], ArlOf(Str) out[static 1]) {
 
@@ -149,34 +121,45 @@ _fetch_tag_script_from_text_(lxb_dom_node_t node[static 1], ArlOf(Str) out[stati
 }
 
 
-static Err _lexbor_script_collection_append_to_arl_of_str_(
-    lxb_dom_element_t    root[static 1],
-    lxb_dom_collection_t collection[static 1],
-    UrlClient            url_client[static 1],
-    Url                  url[static 1],
-    SessionWriteFn       wfnc,
-    ArlOf(Str)           out[static 1]
+static Err _get_scripts_collection_(
+    lxb_html_document_t     doc[static 1],
+    lxb_dom_element_t       elem[static 1],
+    lxb_dom_collection_t*   arr_ptr[static 1]
 ) {
+    *arr_ptr = lxb_dom_collection_make(&doc->dom_document, 32);
+    if (*arr_ptr == NULL)
+        return "error: lexbor failed to create Collection object";
     if (LXB_STATUS_OK !=
-        lxb_dom_elements_by_tag_name(root, collection, (const lxb_char_t *) "script", 6))
-        return  "error: lexbor failed to get elements by name";
+        lxb_dom_elements_by_tag_name(elem, *arr_ptr, (const lxb_char_t *) "script", 6))
+        return  "error: lexbor failed to get scripts";
+    return Ok;
+}
 
-    for (size_t i = 0; i < lxb_dom_collection_length(collection); i++) {
-        lxb_dom_element_t* element = lxb_dom_collection_element(collection, i);
+
+static Err _split_remote_local_(
+    lxb_dom_collection_t* elems, 
+    ArlOf(Str)            scripts[static 1],
+    ArlOf(Str)            urls[static 1],
+    SessionWriteFn        wfnc
+) {
+    for (size_t i = 0; i < lxb_dom_collection_length(elems); i++) {
+        Err e = Ok;
+        lxb_dom_element_t* element = lxb_dom_collection_element(elems, i);
         if (!element) return "error: lexbor collection failed to retrieve element";
-        lxb_dom_node_t*    node    = lxb_dom_interface_node(element);
-
+        lxb_dom_node_t*   node = lxb_dom_interface_node(element);
         const lxb_char_t* src;
         size_t            src_len;
-        Err               e = Ok;
+
         if (lexbor_find_lit_attr_value__(node, "src", &src, &src_len)) {
-            e = (_fetch_append_tag_script_from_src_attr_(
-                (char*)src, src_len, url_client, url, out
-            ));
+            Str* url = &(Str){0};
+            try(null_terminated_str_from_mem((const char*)src, src_len, url));
+            arlfn(Str, append)(urls, url);
         } else {
             for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
-                e = _fetch_tag_script_from_text_(it, out);
-                if (e || it == node->last_child) break;
+                e = _fetch_tag_script_from_text_(it, scripts);
+               if (e || it == node->last_child) break;
+               else log_warn__(wfnc, "%s\n", "script elem with more than one child??");
+               //Q? can script elem have mode that one (text) child?
             }
         }
         if (e) log_warn__(wfnc, "%s\n", e);
@@ -185,43 +168,72 @@ static Err _lexbor_script_collection_append_to_arl_of_str_(
 }
 
 
+
+static void _map_append_nullchar_(ArlOf(Str) strlist[static 1], SessionWriteFn wfnc) {
+    for ( Str* sp = arlfn(Str,begin)(strlist) ; sp != arlfn(Str,end)(strlist) ; ++sp) {
+        Err e0 = str_append_lit__(sp, "\0");
+        if (e0) {
+            str_reset(sp);
+            log_warn__(wfnc, "could not append \\0 to str: %s", e0);
+        }
+    }
+}
+
 Err curl_lexbor_fetch_scripts(
     HtmlDoc        htmldoc[static 1],
     UrlClient      url_client[static 1],
     SessionWriteFn wfnc
 ) {
+    Err e = Ok;
+    //TODO!: evaluate scripts in order
+
     lxb_html_document_t* doc = htmldoc_lxbdoc(htmldoc);
-    if (!doc) return "error: lexbor failed to create doc object";
+    lxb_dom_collection_t* head_scripts;
+    lxb_dom_collection_t* body_scripts;
 
-    lxb_dom_collection_t *collection = lxb_dom_collection_make(&doc->dom_document, 128);
-    if (collection == NULL) {
-        /* doc is owned by htmldoc do not destroy */
-        return "error: lexbor failed to create Collection object";
-    }
+    try(_get_scripts_collection_(doc, lxb_dom_interface_element(doc->head), &head_scripts));
+    try_or_jump(e, Lxb_Array_Head_Destroy,
+            _get_scripts_collection_(doc, lxb_dom_interface_element(doc->body), &body_scripts));
 
-    lxb_dom_element_t* body = lxb_dom_interface_element(doc->body);
-    lxb_dom_element_t* head = lxb_dom_interface_element(doc->head);
-    Url*               url  = htmldoc_url(htmldoc);
 
-    Err e = _lexbor_script_collection_append_to_arl_of_str_(
-        body,
-        collection,
-        url_client,
-        url,
-        wfnc,
-        htmldoc_head_scripts(htmldoc)
-    );
+    ArlOf(Str)* head_urls = &(ArlOf(Str)){0};
+    ArlOf(Str)* body_urls = &(ArlOf(Str)){0};
 
-    ok_then(e,  _lexbor_script_collection_append_to_arl_of_str_(
-        head,
-        collection,
-        url_client,
-        url,
-        wfnc,
-        htmldoc_head_scripts(htmldoc)
-    ));
+    try_or_jump(e, Lxb_Array_Body_Destroy,
+            _split_remote_local_(head_scripts, htmldoc_head_scripts(htmldoc), head_urls, wfnc));
+    try_or_jump(e, Clean_Head_Urls,
+            _split_remote_local_(body_scripts, htmldoc_body_scripts(htmldoc), body_urls, wfnc));
 
-    lxb_dom_collection_destroy(collection, true);
+    ArlOf(CurlPtr)*  easies = &(ArlOf(CurlPtr)){0};
+    ArlOf(CurlUPtr)* curlus = &(ArlOf(CurlUPtr)){0};
+    CURLM*           multi  = url_client_multi(url_client);
+    CURLU*           curlu  = url_cu(htmldoc_url(htmldoc));
+
+    e = w_curl_multi_add_handles(
+        multi, curlu, head_urls, htmldoc_head_scripts(htmldoc), easies, curlus, wfnc);
+    if (e) log_warn__(wfnc, "could not add head handles: %s", e);
+    e = w_curl_multi_add_handles(
+        multi, curlu, body_urls, htmldoc_body_scripts(htmldoc), easies, curlus, wfnc);
+    if (e) log_warn__(wfnc, "could not add body handles: %s", e);
+
+    e = w_curl_multi_perform_poll(multi);
+
+    w_curl_multi_remove_handles(multi, easies, wfnc);
+
+    arlfn(CurlPtr,clean)(easies);
+    arlfn(CurlUPtr,clean)(curlus);
+
+    _map_append_nullchar_(htmldoc_head_scripts(htmldoc), wfnc);
+    _map_append_nullchar_(htmldoc_body_scripts(htmldoc), wfnc);
+
+    arlfn(Str,clean)(body_urls);
+Clean_Head_Urls:
+    arlfn(Str,clean)(head_urls);
+
+Lxb_Array_Body_Destroy:
+    lxb_dom_collection_destroy(body_scripts, true);
+Lxb_Array_Head_Destroy:
+    lxb_dom_collection_destroy(head_scripts, true);
     return e;
 }
 
@@ -311,6 +323,7 @@ Err curl_save_url(UrlClient url_client[static 1], CURLU* curlu , const char* fna
     try( url_client_reset(url_client));
     return Ok;
 }
+
 
 
 static Err
@@ -537,50 +550,4 @@ failure:
 char* mem_whitespace(char* s, size_t len) {
     while(len && *s && !isspace(*s)) { ++s; --len; }
     return len ? s : NULL;
-}
-
-
-#define lit_match__(Lit, Mem, Len) (lit_len__(Lit) <= Len && !strncasecmp(Lit, Mem, lit_len__(Lit)))
-size_t curl_header_callback(char *buffer, size_t size, size_t nitems, void *htmldoc) {
-    /* received header is nitems * size long in 'buffer' NOT ZERO TERMINATED */
-    /* 'userdata' is set with CURLOPT_HEADERDATA */
-#define CHARSET_K "charset="
-#define CONTENT_TYPE_K "content-type:"
-
-    HtmlDoc* hd = (HtmlDoc*)htmldoc;
-    size_t len = size * nitems;
-    while (len) {
-        if (lit_match__(CHARSET_K, buffer, len)) {
-            size_t matchlen =  lit_len__(CHARSET_K);
-            buffer += matchlen;
-            len -= matchlen;
-            mem_skip_space_inplace((const char**)&buffer, &len);
-            char* ws = mem_whitespace(buffer, len);
-            size_t chslen = ws ? (size_t)(ws - buffer) : len;
-            str_reset(htmldoc_http_charset(hd));
-            str_append(htmldoc_http_charset(hd), buffer, chslen);
-            str_append_lit__(htmldoc_http_charset(hd), "\0");
-            buffer += chslen;
-            len -= chslen;
-            mem_skip_space_inplace((const char**)&buffer, &len);
-            continue;
-        } else if (lit_match__(CONTENT_TYPE_K, buffer, len)) {
-            size_t matchlen = lit_len__(CONTENT_TYPE_K);
-            buffer += matchlen;
-            len -= matchlen;
-            mem_skip_space_inplace((const char**)&buffer, &len);
-            char* colon = memchr(buffer, ';', len);
-            size_t contypelen = colon ? (size_t)(colon - buffer) : len;
-            str_reset(htmldoc_http_content_type(hd));
-            //TODO: does not depend on null termoination
-            str_append(htmldoc_http_content_type(hd), buffer, contypelen);
-            if (colon) ++contypelen;
-            buffer += contypelen;
-            len -= contypelen;
-            mem_skip_space_inplace((const char**)&buffer, &len);
-            continue;
-        } else return size * nitems;
-    }
-
-    return size * nitems;
 }

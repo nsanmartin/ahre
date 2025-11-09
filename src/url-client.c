@@ -14,7 +14,9 @@
  * "w3m/0.5.3+git20230718"
  *
  */
-#define USER_AGENT_USED_ "ahre/" AHRE_VERSION
+#define _W3M_USER_AGENT_ "w3m/0.5.3+git20230718"
+#define _AHRE_USER_AGENT_ "ahre/" AHRE_VERSION
+#define USER_AGENT_USED_ _AHRE_USER_AGENT_
 
 Err url_client_setopt_long(UrlClient url_client[static 1], CURLoption opt, long value) {
     CURLcode code = curl_easy_setopt(url_client->curl, opt, value);
@@ -70,18 +72,28 @@ Err url_client_reset(UrlClient url_client[static 1]) {
 
 
 Err url_client_init(UrlClient url_client[static 1]) {
+    Err e = Ok;
 
     *url_client = (UrlClient){0};
 
-    CURL* handle = curl_easy_init();
-    if (!handle) return "error: curl_easy_init failure";
+    url_client->curl = curl_easy_init();
+    if (!url_client->curl) return "error: curl_easy_init failure";
 
-    *url_client = (UrlClient) { .curl=handle };
+    url_client->curlm = curl_multi_init();
+    if (!url_client->curlm) {
+        e = "error: curl_multi_init failure";
+        goto Failure_Curl_Easy_Cleanup;
+    }
 
-    Err err = url_client_reset(url_client);
-    if (err) curl_easy_cleanup(handle);
+    try_or_jump(e, Failure_Curl_Multi_Cleanup, url_client_reset(url_client));
 
-    return err;
+    return Ok;
+
+Failure_Curl_Multi_Cleanup:
+    curl_easy_cleanup(url_client->curl);
+Failure_Curl_Easy_Cleanup:
+    curl_multi_cleanup(url_client->curlm);
+    return e;
 }
 
 
@@ -153,4 +165,26 @@ Err cmd_set_curl(CmdParams p[static 1]) {
     }
     return Ok;
 }
+
+Err url_client_curlu_to_file(UrlClient url_client[static 1], CURLU* curlu , const char* fname) {
+    try( url_client_reset(url_client));
+    FILE* fp;
+    try(fopen_or_append_fopen(fname, curlu, &fp));
+    if (!fp) return err_fmt("error opening file '%s': %s\n", fname, strerror(errno));
+    if (
+       curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, fwrite)
+    || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, fp)
+    || curl_easy_setopt(url_client->curl, CURLOPT_CURLU, curlu)
+    ) return "error configuring curl write fn/data";
+
+    CURLcode curl_code = curl_easy_perform(url_client->curl);
+    fclose(fp);
+
+    curl_easy_reset(url_client->curl);
+    if (curl_code!=CURLE_OK) 
+        return err_fmt("curl failed to perform curl: %s", curl_easy_strerror(curl_code));
+    try( url_client_reset(url_client));
+    return Ok;
+}
+
 
