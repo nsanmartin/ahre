@@ -9,6 +9,7 @@
 #define T lxb_char_t
 #include <buf.h>
 
+
 Err lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* buf);
 
 lxb_inline lxb_status_t append_to_buf_callback(const lxb_char_t *data, size_t len, void *bufptr) {
@@ -224,4 +225,14 @@ lexbor_doc_get_element_by_id (lxb_html_document_t* lxbdoc, const char* id, size_
 }
 
 Err lexbor_get_title_text(lxb_dom_node_t* title, Str out[static 1]);
+
+static inline Err lexbor_append_null_terminated_attr(
+    lxb_dom_node_t* node, const char* attr, size_t attr_len, Str s[static 1]
+) {
+    const lxb_char_t* data;
+    size_t data_len;
+    if (!lexbor_find_attr_value(node, attr, attr_len, &data, &data_len))
+        return "lexbor node does not have attr";
+    return null_terminated_str_from_mem((char*)data, data_len, s);
+}
 #endif

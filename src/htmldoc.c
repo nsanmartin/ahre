@@ -749,6 +749,7 @@ Err htmldoc_init(
     HttpMethod  method,
     unsigned    flags
 ) {
+    *d = (HtmlDoc){0};
     Err e = Ok;
 
     lxb_html_document_t* document = lxb_html_document_create();
@@ -1030,12 +1031,21 @@ Err htmldoc_console(HtmlDoc d[static 1], Session* s, const char* line) {
 }
 
 static Err jse_eval_doc_scripts(Session* s, HtmlDoc d[static 1]) {
-    Err e = Ok;
-    ArlOf(Str)* scripts = htmldoc_head_scripts(d);
-    for (Str* it = arlfn(Str,begin)(scripts); it != arlfn(Str,end)(scripts); ++it) {
-       e = jse_eval(htmldoc_js(d), s, items__(it));
+
+    for ( Str* it = arlfn(Str,begin)(htmldoc_head_scripts(d))
+        ; it != arlfn(Str,end)(htmldoc_head_scripts(d))
+        ; ++it) {
+        Err e = jse_eval(htmldoc_js(d), s, items__(it));
         if (e) session_write_msg(s, (char*)e, strlen(e));
     }
+
+    for ( Str* it = arlfn(Str,begin)(htmldoc_body_scripts(d))
+        ; it != arlfn(Str,end)(htmldoc_body_scripts(d))
+        ; ++it) {
+        Err e = jse_eval(htmldoc_js(d), s, items__(it));
+        if (e) session_write_msg(s, (char*)e, strlen(e));
+    }
+
     return Ok;
 }
 

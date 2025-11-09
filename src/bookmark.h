@@ -8,23 +8,7 @@
 #include "htmldoc.h"
 #include "error.h"
 
-static inline Err
-bookmark_sections_body(HtmlDoc bookmark[static 1], lxb_dom_node_t* out[static 1]) {
-    lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(bookmark);
-    lxb_dom_node_t* node = lxb_dom_interface_node(lxbdoc);
-    if (!node) return "error: no document";
-    if (node->type != LXB_DOM_NODE_TYPE_DOCUMENT) return "not a bookmark file";
-    lxb_dom_node_t* html = node->first_child;
-    if (!html) return "not a bookmark file: expecting an html tag";
-    if (html != node->last_child) return "not a bookmark file";
-    if (html->local_name != LXB_TAG_HTML) return "not a bookmark file";
-    if (!html->first_child) return "not a bookmark: expecting head";
-    if (html->first_child->local_name != LXB_TAG_HEAD) return "not a bookmark file";
-    if (!html->last_child) return "not a bookmark: expecting body";
-    if (html->last_child->local_name != LXB_TAG_BODY) return "not a bookmark file";
-    *out = html->last_child;
-    return Ok;
-}
+Err bookmark_sections_body(HtmlDoc bookmark[static 1], lxb_dom_node_t* out[static 1]);
 
 static inline Err bookmark_sections(lxb_dom_node_t* body, ArlOf(BufOf(char))* out) {
     for (lxb_dom_node_t* it = body->first_child; it != body->last_child; it = it->next) {

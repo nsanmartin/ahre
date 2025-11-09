@@ -23,6 +23,10 @@
 
 
 /* mem fns */
+static inline char* mem_is_whitespace(char* s, size_t len) {
+    while(len && *s && !isspace(*s)) { ++s; --len; }
+    return len ? s : NULL;
+}
 size_t mem_count_ocurrencies(char* data, size_t len, char c);
 bool mem_is_all_space(const char* data, size_t len);
 static inline const char* mem_to_dup_str(const char* data, size_t len) {
