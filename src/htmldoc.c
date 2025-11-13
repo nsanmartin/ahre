@@ -749,11 +749,13 @@ Err htmldoc_init(
     HttpMethod  method,
     unsigned    flags
 ) {
-    *d = (HtmlDoc){0};
     Err e = Ok;
 
-    lxb_html_document_t* document = lxb_html_document_create();
-    if (!document) return "error: lxb failed to create html document";
+    /*
+     * lexbor doc should be initialized before jse_init
+     */
+    *d = (HtmlDoc){ .lxbdoc = lxb_html_document_create() };
+    if (!d->lxbdoc) return "error: lxb failed to create html document";
 
     if (flags & HTMLDOC_FLAG_JS) 
         try_or_jump(e, Failure_Lxb_Html_Document_Destroy, jse_init(d));
@@ -774,7 +776,6 @@ Err htmldoc_init(
 
     d->url    = dup;
     d->method = method;
-    d->lxbdoc = document;
 
     return Ok;
 
@@ -783,7 +784,7 @@ Failure_Url_Cleanup:
 Failure_Jse_Clean:
     jse_clean(htmldoc_js(d));
 Failure_Lxb_Html_Document_Destroy:
-    lxb_html_document_destroy(document);
+    lxb_html_document_destroy(d->lxbdoc);
 
     return e;
 }
