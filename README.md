@@ -1,6 +1,6 @@
 # Ahre
 
-A hypertext reference www navigator or browser.
+A hypertext reference www navigator or text web browser for linux.
 
 ## Website
 [ahre web page](https://ahre.pages.dev/)
@@ -12,44 +12,42 @@ A hypertext reference www navigator or browser.
 
 ## External dependencies
 
-Curl:
-
-  In debian it may be installed by any of:
-  + libcurl4-openssl-dev 7.88.1-10+deb12u8
-  + libcurl4-nss-dev 7.88.1-10+deb12u8
-  + libcurl4-gnutls-dev 7.88.1-10+deb12u8
-
-Lexbor:
-
-  git repo:  https://github.com/lexbor/lexbor
++ [libcutl](https://curl.se/libcurl/) https://github.com/curl/curl
++ [lexbor](https://lexbor.com/) https://github.com/lexbor/lexbor
 
 
 ## Git submodules:
-hotl     (repo: https://codeberg.org/nsm/hotl)
-isocline (repo: https://github.com/daanx/isocline)
-quickjs  (repo: https://github.com/quickjs-ng/quickjs)
++ hotl     (repo: https://codeberg.org/nsm/hotl)
++ isocline (repo: https://github.com/daanx/isocline)
++ quickjs  (repo: https://github.com/quickjs-ng/quickjs)
 
 
 ## Build
 
+```
 git clone
 git submodule update --init
+```
 
-(to update: git submodule update --recursive --remote)
+(to update: `git submodule update --recursive --remote`)
 
+```
 mkdir build
 make
+```
 
-To build using tcc the NO_REGEX flag must be passed:
+To build using tcc the `NO_REGEX` flag must be passed:
 
-CC=tcc CFLAGS=-DAHRE_REGEX_DISABLED make
+`CC=tcc CFLAGS=-DAHRE_REGEX_DISABLED make`
 
 To build with no quickjs (and hence no js):
-CFLAGS=-DAHRE_QUICKJS_DISABLED make
+`CFLAGS=-DAHRE_QUICKJS_DISABLED make` (TODO: fix Makefile for this).
 
 ## Run
 
-./build/ahre <url>
+```
+./build/ahre ahre.pages.dev
+```
 
 ## Usage:
-See ./doc/quick-reference-guide.txt
+See [./doc/quick-reference-guide.md](https://codeberg.org/nsm/ahre/src/branch/main/doc/quick-reference-guide.md)
