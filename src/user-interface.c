@@ -18,32 +18,13 @@
 #include "wrapper-lexbor-curl.h"
 
 
-Err read_line_from_user(Session session[static 1]) {
-    char* line = 0x0;
-    try( session_uinput(session)->read(session, NULL, &line));
-    Err err = process_line(session, line);
-    std_free(line);
-    return err;
-}
-
 #define CMD_NO_PARAMS 0x1
 #define CMD_CHAR 0x2
 #define CMD_EMPTY 0x4
 #define CMD_ANY 0x8
 
-#define CMD_ECHO_DOC \
-    "Prints in the message area the received parameters.\n"
 
-static Err cmd_echo (CmdParams p[static 1]) { 
-    if (p->s && p->ln && *p->ln) {
-        session_write_msg(p->s, (char*)p->ln, strlen(p->ln));
-        session_write_msg_lit__(p->s, "\n");
-    }
-    return Ok;
-}
-
-#define CMD_QUIT_DOC "Quits ahre.\n"
-static Err cmd_quit (CmdParams p[static 1]) { session_quit_set(p->s); return Ok;}
+/* internal linkage */
 
 static inline bool _char_cmd_match_(SessionCmd* cmd, CmdParams p[static 1]) {
     if (cmd->flags & CMD_CHAR && p->ln && cmd->name[0] == p->ln[0]) {
@@ -53,6 +34,7 @@ static inline bool _char_cmd_match_(SessionCmd* cmd, CmdParams p[static 1]) {
     return false;
 }
 
+
 static inline bool _empty_match_(SessionCmd* cmd, CmdParams p[static 1]) {
     return cmd->flags & CMD_EMPTY && !*cstr_skip_space(p->ln);
 }
@@ -60,6 +42,7 @@ static inline bool _empty_match_(SessionCmd* cmd, CmdParams p[static 1]) {
 static inline bool _no_params_match_(SessionCmd* cmd, CmdParams p[static 1]) {
     return cmd->flags & CMD_NO_PARAMS && *cstr_skip_space(p->ln);
 }
+
 static inline bool _any_match_(SessionCmd* cmd) { return cmd->flags & CMD_ANY; }
 
 static const char* _name_match_impl_(SessionCmd* cmd, CmdParams p[static 1]) {
@@ -92,7 +75,8 @@ static bool _is_help_cmd_end_(CmdParams p[static 1]) {
     return *ln == '?' && !*cstr_skip_space(ln+1);
 }
 
-Err run_cmd_help(Session* s, SessionCmd cmd[static 1]) {
+
+static Err run_cmd_help(Session* s, SessionCmd cmd[static 1]) {
 #define RUN_CMD_DOC_TODO_MSG \
     "Not documented command.\n"\
     "TODO: document it.\n"
@@ -125,7 +109,8 @@ Err run_cmd_help(Session* s, SessionCmd cmd[static 1]) {
     return Ok;
 }
 
-Err run_cmd__(CmdParams p[static 1], SessionCmd cmdlist[]) {
+
+static Err run_cmd__(CmdParams p[static 1], SessionCmd cmdlist[]) {
     p->ln = cstr_skip_space(p->ln);
     for (SessionCmd* cmd = cmdlist; cmd->name ; ++cmd) {
         if (_any_match_(cmd)) return cmd->fn(p);
@@ -142,7 +127,8 @@ Err run_cmd__(CmdParams p[static 1], SessionCmd cmdlist[]) {
     return err_fmt("invalid command: %s", p->ln);
 }
 
-Err run_cmd_on_ix__(CmdParams p[static 1], SessionCmd cmdlist[]) {
+
+static Err run_cmd_on_ix__(CmdParams p[static 1], SessionCmd cmdlist[]) {
     p->ln = cstr_skip_space(p->ln);
     Err parse_failed = parse_size_t_or_throw(&p->ln, &p->ix, 36);
     p->ln = cstr_skip_space(p->ln);
@@ -150,7 +136,71 @@ Err run_cmd_on_ix__(CmdParams p[static 1], SessionCmd cmdlist[]) {
     if (parse_failed) p->ix = SIZE_MAX; 
     return run_cmd__(p, cmdlist);
 }
-/* commands */
+
+/* anchor commands */
+
+Err cmd_anchor_print(CmdParams p[static 1]) { return _cmd_anchor_print(p->s, p->ix); }
+Err cmd_anchor_asterisk(CmdParams p[static 1]) { return _cmd_anchor_asterisk(p->s, p->ix); }
+Err cmd_anchor_save(CmdParams p[static 1]) { return _cmd_anchor_save(p->s, p->ix, p->ln); }
+
+static SessionCmd _cmd_anchor_[] =
+    { {.name="\"", .fn=cmd_anchor_print,    .help=NULL, .flags=CMD_CHAR}
+    , {.name="",   .fn=cmd_anchor_asterisk, .help=NULL, .flags=CMD_EMPTY}
+    , {.name="*",  .fn=cmd_anchor_asterisk, .help=NULL, .flags=CMD_CHAR}
+    , {.name=">",  .fn=cmd_anchor_save,     .help=NULL, .flags=CMD_CHAR}
+    , {0}
+    };
+
+/* input commands ({) */
+
+static Err cmd_input_info(CmdParams p[static 1]) { return _cmd_input_print(p->s, p->ix); }
+static Err cmd_input_submit(CmdParams p[static 1]) { return _cmd_input_submit_ix(p->s, p->ix); }
+#define CMD_INPUT_SET \
+    "{= [VALUE]\n\n"\
+    "If VALUE is given, sets the value of an input element.\n"\
+    "If not, user's input is hidden (useful for passwords).\n"
+static Err cmd_input_set(CmdParams p[static 1]) { return _cmd_input_ix(p->s, p->ix, p->ln); }
+
+
+static SessionCmd _cmd_input_[] =
+    { {.name="\"", .fn=cmd_input_info,   .help=NULL, .flags=CMD_CHAR}
+    , {.name="",   .fn=cmd_input_submit, .help=NULL, .flags=CMD_EMPTY}
+    , {.name="*",  .fn=cmd_input_submit, .help=NULL, .flags=CMD_CHAR}
+    , {.name="=",  .fn=cmd_input_set,   .help=CMD_INPUT_SET, .flags=CMD_CHAR}
+    , {0}
+    };
+
+/* set session comands */
+
+Err cmd_set_session_input(CmdParams p[static 1]);
+Err cmd_set_session_winsz(CmdParams p[static 1]);
+Err cmd_set_session_ncols(CmdParams p[static 1]);
+Err cmd_set_session_monochrome(CmdParams p[static 1]);
+Err cmd_set_session_js(CmdParams p[static 1]);
+
+
+static SessionCmd _cmd_set_session_[] = 
+    { {.name="input",        .match=1, .fn=cmd_set_session_input,      .help=NULL}
+    , {.name="js",           .match=1, .fn=cmd_set_session_js,         .help=NULL}
+    , {.name="monochrome",   .match=1, .fn=cmd_set_session_monochrome, .help=NULL}
+    , {.name="ncols",        .match=1, .fn=cmd_set_session_ncols,      .help=NULL}
+    , {.name="winsz",        .match=1, .fn=cmd_set_session_winsz,      .help=NULL}
+    , {0}
+    };
+
+/* set commands */
+#define CMD_SET_CURL "Set a curl option.\n"\
+    "TODO: enumerate all available options.\n"
+Err cmd_set_curl(CmdParams p[static 1]);
+Err cmd_set_session(CmdParams p[static 1]) { return run_cmd__(p, _cmd_set_session_); }
+
+static SessionCmd _cmd_set_[] = 
+    { {.name="curl",    .match=1, .fn=cmd_set_curl,    .help=CMD_SET_CURL}
+    , {.name="session", .match=1, .fn=cmd_set_session, .help=NULL,.subcmds=_cmd_set_session_}
+    , {0}
+    };
+
+/* tab commands */
 
 static SessionCmd _cmd_tabs_[] =
     { {.name="-", .fn=cmd_tabs_back, .help=NULL, .flags=CMD_CHAR}
@@ -158,8 +208,8 @@ static SessionCmd _cmd_tabs_[] =
     , {.name="goto",  .fn=cmd_tabs_goto, .help=NULL, .flags=CMD_ANY}
     , {0}
 };
-#define CMD_TABS_DOC "ahre tabs are tres of the visited urls.\n"
-Err cmd_tabs(CmdParams p[static 1]) { return run_cmd__(p, _cmd_tabs_); }
+
+/* doc commands */
 
 static SessionCmd _cmd_doc_[] =
     { {.name="",        .fn=cmd_doc_info,              .help=CMD_DOC_INFO_DOC,     .flags=CMD_EMPTY}
@@ -175,9 +225,7 @@ static SessionCmd _cmd_doc_[] =
     , {0}
 };
 
-#define CMD_DOC_DOC \
-    "'.' command: commands related to the current document\n"
-Err cmd_doc(CmdParams p[static 1]) { return run_cmd__(p, _cmd_doc_); }
+/* texbuf commands */
 
 static SessionCmd _cmd_textbuf_[] =
     { {.name="",            .fn=cmd_textbuf_print,        .help=NULL, .flags=CMD_EMPTY}
@@ -189,6 +237,59 @@ static SessionCmd _cmd_textbuf_[] =
     , {.name="write", .match=1, .fn=cmd_textbuf_write,    .help=NULL }
     , {0}
 };
+
+/* image commands (() */
+
+static Err cmd_image_info(CmdParams p[static 1]) { return _cmd_image_print(p->s, p->ix); }
+static Err cmd_image_save(CmdParams p[static 1]) { return _cmd_image_save(p->s, p->ix, p->ln); }
+static SessionCmd _cmd_image_[] =
+    { {.name="\"", .fn=cmd_image_info,  .help=NULL, .flags=CMD_CHAR}
+    , {.name=">",  .fn=cmd_image_save,  .help=NULL, .flags=CMD_CHAR}
+    , {0}
+    };
+
+/* session commands */
+
+#define CMD_BOOKMARKS_DOC \
+    "This command assumes the current document is a bookmarks doc. A bookmarks \n"\
+    "doc is any one that has the structure of w3m bookmark.html (that is stored \n"\
+    " in $HOME/.w3m by w3m.\n"\
+    "In ahre we open the file at $HOME/.w3m/bookmark.html by \\go \\bookmark.\n\n"\
+    "the bookamrks command list the bookmars file sections.\n\n"\
+    "TODO: is this command useful at all?\n"
+Err cmd_bookmarks(CmdParams p[static 1]);
+
+
+#define CMD_ECHO_DOC "Prints in the message area the received parameters.\n"
+static Err cmd_echo (CmdParams p[static 1]) { 
+    if (p->s && p->ln && *p->ln) session_write_msg_ln(p->s, (char*)p->ln, strlen(p->ln));
+    return Ok;
+}
+
+#define CMD_ANCHOR_DOC \
+    "[ LINK_ID [SUB_COMMAND]\n\n"\
+    "'[' commands are applied to the links present in the document.\n"
+Err cmd_anchor(CmdParams p[static 1]) { return run_cmd_on_ix__(p, _cmd_anchor_); }
+
+#define CMD_HELP_DOC \
+    "Ahre has char commands and word commands.\n" \
+    "Word commands can be called with a substring, as long as there is no ambiguity.\n"\
+    "Type SUB_COMMAND ? to get help for help in a sub command:\n\n"
+static Err cmd_help(CmdParams p[static 1]);
+
+
+
+#define CMD_QUIT_DOC "Quits ahre.\n"
+static Err cmd_quit (CmdParams p[static 1]) { session_quit_set(p->s); return Ok;}
+
+#define CMD_SET_DOC "Sets an option.\n"
+Err cmd_set(CmdParams p[static 1]) { return run_cmd__(p, _cmd_set_); }
+
+#define CMD_TABS_DOC "ahre tabs are tres of the visited urls.\n"
+Err cmd_tabs(CmdParams p[static 1]) { return run_cmd__(p, _cmd_tabs_); }
+
+#define CMD_DOC_DOC "'.' command: commands related to the current document\n"
+Err cmd_doc(CmdParams p[static 1]) { return run_cmd__(p, _cmd_doc_); }
 
 Err cmd_textbuf(CmdParams p[static 1]) {
     try( session_current_buf(p->s, &p->tb));
@@ -202,111 +303,24 @@ Err cmd_sourcebuf(CmdParams p[static 1]) {
     return run_cmd__(p, _cmd_textbuf_);
 }
 
-Err cmd_anchor_print(CmdParams p[static 1]) { return _cmd_anchor_print(p->s, p->ix); }
-Err cmd_anchor_asterisk(CmdParams p[static 1]) { return _cmd_anchor_asterisk(p->s, p->ix); }
-Err cmd_anchor_save(CmdParams p[static 1]) { return _cmd_anchor_save(p->s, p->ix, p->ln); }
-
-static SessionCmd _cmd_anchor_[] =
-    { {.name="\"", .fn=cmd_anchor_print,    .help=NULL, .flags=CMD_CHAR}
-    , {.name="",   .fn=cmd_anchor_asterisk, .help=NULL, .flags=CMD_EMPTY}
-    , {.name="*",  .fn=cmd_anchor_asterisk, .help=NULL, .flags=CMD_CHAR}
-    , {.name=">",  .fn=cmd_anchor_save,     .help=NULL, .flags=CMD_CHAR}
-    , {0}
-    };
-
-#define CMD_ANCHOR_DOC \
-    "[ LINK_ID [SUB_COMMAND]\n\n"\
-    "'[' commands are applied to the links present in the document.\n"
-Err cmd_anchor(CmdParams p[static 1]) { return run_cmd_on_ix__(p, _cmd_anchor_); }
-
-static Err cmd_input_info(CmdParams p[static 1]) { return _cmd_input_print(p->s, p->ix); }
-static Err cmd_input_submit(CmdParams p[static 1]) { return _cmd_input_submit_ix(p->s, p->ix); }
-#define CMD_INPUT_SET \
-    "{= [VALUE]\n\n"\
-    "If VALUE is given, sets the value of an input element.\n"\
-    "If not, user's input is hidden (useful for passwords).\n"
-static Err cmd_input_set(CmdParams p[static 1]) { return _cmd_input_ix(p->s, p->ix, p->ln); }
-
-static SessionCmd _cmd_input_[] =
-    { {.name="\"", .fn=cmd_input_info,   .help=NULL, .flags=CMD_CHAR}
-    , {.name="",   .fn=cmd_input_submit, .help=NULL, .flags=CMD_EMPTY}
-    , {.name="*",  .fn=cmd_input_submit, .help=NULL, .flags=CMD_CHAR}
-    , {.name="=",  .fn=cmd_input_set,   .help=CMD_INPUT_SET, .flags=CMD_CHAR}
-    , {0}
-    };
+Err dbg_print_form(CmdParams p[static 1]) ;
 
 #define CMD_INPUT_DOC \
     "{ LINK_ID [SUB_COMMAND]\n\n"\
     "'{' commands are applied to the input elements present in the document.\n"
 Err cmd_input(CmdParams p[static 1]) { return run_cmd_on_ix__(p, _cmd_input_); }
 
-static Err cmd_image_info(CmdParams p[static 1]) { return _cmd_image_print(p->s, p->ix); }
-static Err cmd_image_save(CmdParams p[static 1]) { return _cmd_image_save(p->s, p->ix, p->ln); }
-static SessionCmd _cmd_image_[] =
-    { {.name="\"", .fn=cmd_image_info,  .help=NULL, .flags=CMD_CHAR}
-    , {.name=">",  .fn=cmd_image_save,  .help=NULL, .flags=CMD_CHAR}
-    , {0}
-    };
+
 #define CMD_IMAGE_DOC \
     "( LINK_ID [SUB_COMMAND]\n\n"\
     "'(' commands are applied to the images present in the document.\n"
-Err cmd_image(CmdParams p[static 1]) {
-    return run_cmd_on_ix__(p, _cmd_image_);
-}
-
-Err cmd_set_session_input(CmdParams p[static 1]);
-Err cmd_set_session_winsz(CmdParams p[static 1]);
-Err cmd_set_session_ncols(CmdParams p[static 1]);
-Err cmd_set_session_monochrome(CmdParams p[static 1]);
-Err cmd_set_session_js(CmdParams p[static 1]);
+Err cmd_image(CmdParams p[static 1]) { return run_cmd_on_ix__(p, _cmd_image_); }
 
 
-#define CMD_SET_CURL "Set a curl option.\n"\
-    "TODO: enumerate all available options.\n"
-Err cmd_set_curl(CmdParams p[static 1]);
-
-static SessionCmd _cmd_set_session_[] = 
-    { {.name="input",        .match=1, .fn=cmd_set_session_input,      .help=NULL}
-    , {.name="js",           .match=1, .fn=cmd_set_session_js,         .help=NULL}
-    , {.name="monochrome",   .match=1, .fn=cmd_set_session_monochrome, .help=NULL}
-    , {.name="ncols",        .match=1, .fn=cmd_set_session_ncols,      .help=NULL}
-    , {.name="winsz",        .match=1, .fn=cmd_set_session_winsz,      .help=NULL}
-    , {0}
-    };
-Err cmd_set_session(CmdParams p[static 1]) { return run_cmd__(p, _cmd_set_session_); }
-
-static SessionCmd _cmd_set_[] = 
-    { {.name="curl",    .match=1, .fn=cmd_set_curl,    .help=CMD_SET_CURL}
-    , {.name="session", .match=1, .fn=cmd_set_session, .help=NULL,.subcmds=_cmd_set_session_}
-    , {0}
-    };
-#define CMD_SET_DOC "Sets an option.\n"
-Err cmd_set(CmdParams p[static 1]) {
-    return run_cmd__(p, _cmd_set_);
-}
-
-Err dbg_print_form(CmdParams p[static 1]) ;
-
+#define CMD_SHORTCUT_Z "zN print the following N lines"
 Err shortcut_z(Session session[static 1], const char* rest);
-#define CMD_SHORTCUT_Z \
-    "zN print the following N lines"
 Err cmd_shortcut_z(CmdParams p[static 1]) { return shortcut_z(p->s, p->ln); }
 
-#define CMD_BOOKMARKS_DOC \
-    "This command assumes the current document is a bookmarks doc. A bookmarks \n"\
-    "doc is any one that has the structure of w3m bookmark.html (that is stored \n"\
-    " in $HOME/.w3m by w3m.\n"\
-    "In ahre we open the file at $HOME/.w3m/bookmark.html by \\go \\bookmark.\n\n"\
-    "the bookamrks command list the bookmars file sections.\n\n"\
-    "TODO: is this command useful at all?\n"
-Err cmd_bookmarks(CmdParams p[static 1]);
-
-
-#define CMD_HELP_DOC \
-    "Ahre has char commands and word commands.\n" \
-    "Word commands can be called with a substring, as long as there is no ambiguity.\n"\
-    "Type SUB_COMMAND ? to get help for help in a sub command:\n\n"
-Err cmd_help(CmdParams p[static 1]);
 
 #define CMD_HELP_IX 14
 static SessionCmd _session_cmd_[] =
@@ -353,6 +367,21 @@ static SessionCmd _session_cmd_[] =
     , [17]={0}
     };
 
+static Err cmd_help(CmdParams p[static 1]) { return run_cmd_help(p->s, &_session_cmd_[CMD_HELP_IX]); }
+
+/* commands section end */
+/************************/
+
+
+/* Err read_line_from_user(Session session[static 1]) { */
+/*     char* line = 0x0; */
+/*     try( session_uinput(session)->read(session, NULL, &line)); */
+/*     Err err = process_line(session, line); */
+/*     std_free(line); */
+/*     return err; */
+/* } */
+
+
 Err process_line(Session session[static 1], const char* line) {
     if (!line) { session_quit_set(session); return "no input received, exiting"; }
     line = cstr_skip_space(line);
@@ -360,8 +389,6 @@ Err process_line(Session session[static 1], const char* line) {
     if (!*line) { return Ok; }
     return run_cmd__(&(CmdParams){.s=session,.ln=line}, _session_cmd_);
 }
-
-Err cmd_help(CmdParams p[static 1]) { return run_cmd_help(p->s, &_session_cmd_[CMD_HELP_IX]); }
 
 Err process_line_line_mode(Session* s, const char* line) {
     if (!s) return "error: no session :./";

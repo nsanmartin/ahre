@@ -165,13 +165,20 @@ static inline Err session_write_msg(Session s[static 1], char* msg, size_t len) 
     return uo->write_msg(msg, len, s);
 }
 
+#define session_write_msg_lit__(Ses, LitStr) session_write_msg(Ses, LitStr, lit_len__(LitStr))
+
+static inline Err session_write_msg_ln(Session s[static 1], char* msg, size_t len) {
+    UserOutput* uo = session_uout(s);
+    try(uo->write_msg(msg, len, s));
+    return session_write_msg_lit__(s, "\n");
+}
+
 static inline Err
 session_writer_write_std(SessionMemWriter w[static 1], const char* msg, size_t len) {
     UserOutput* uo = session_uout(w->s);
     return uo->write_std(msg, len, w->s);
 }
 
-#define session_write_msg_lit__(Ses, LitStr) session_write_msg(Ses, LitStr, lit_len__(LitStr))
 
 static inline Err session_write_unsigned_std(Session s[static 1], uintmax_t ui) {
     return ui_write_unsigned(session_conf_uout(session_conf(s))->write_std, ui, s);
