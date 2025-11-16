@@ -1,6 +1,6 @@
 # Ahre
 
-A hypertext reference www navigator or browser.
+A hypertext reference www navigator or text web browser for linux.
 
 ## Website
 [ahre web page](https://ahre.pages.dev/)
