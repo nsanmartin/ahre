@@ -7,6 +7,7 @@
 #include "textbuf.h"
 #include "range-parse.h"
 #include "re.h"
+#include "str.h"
 
 /*
  * + . current line,
@@ -17,177 +18,153 @@
  * + '< and '>  the previous selection begins and ends
  * + /pat/ is the next line where pat matches
  * + \/ the next line in which the previous search pattern matches
- * + \& the next line in which the previous substitute pattern matches 
+ * + \& the next line in which the previous substitute pattern matches
 */
-
 
 
 /* internal linkage */
 
-static const char*
-parse_range_addr_num(const char* tk, uintmax_t num, uintmax_t maximum, size_t* out) {
-    uintmax_t ull;
-    if (*tk == '+') {
-        ++tk;
-        const char* rest = parse_ull(tk, &ull);
-        if (!rest) { ull = 1; }
-        else { tk = rest; }
-        num += ull; 
-        if (num < ull) { return to_range_parse_err("error: unsigned overflow reading range"); }
-        if (num > maximum) { return to_range_parse_err("invalid range end (too large)"); }
-    } else if (*tk == '-') {
-        ++tk;
-        const char* rest = parse_ull(tk, &ull);
-        if (!rest) { ull = 1; }
-        else { tk = rest; }
-        if (ull > num) { return to_range_parse_err("error: ull > num"); }
-        num -= ull; 
-        if (num > maximum) { return to_range_parse_err("invalid range end (too large)"); }
-    }
-    *out = num;
-    return tk;
-}
-
 _Static_assert(sizeof(size_t) <= sizeof(uintmax_t), "range parser requires this precondition");
 
-static ParseRv
-parse_offset_search_regex(ParseRv tk, TextBuf tb[static 1], size_t out[static 1]) {
-    size_t current_offset = *textbuf_current_offset(tb);
-    const char* buf = textbuf_items(tb) + current_offset;
-    if (!buf) { return to_range_parse_err("error: invalid current offset"); }
-    char* end = strchr(tk, '/');
-    const char* res = end ? end + 1 : tk + strlen(tk);
-    if (end) *end = '\0';
-    size_t match = 0;
-    size_t* pmatch = &match;
-    Err err = regex_maybe_find_next(tk, buf, &pmatch);
-    if (end) *end = '/';
-    if (err) return err_prepend_char(err, '\x01');
 
-    if (!pmatch) return to_range_parse_err("pattern not found"); 
-    *out =  current_offset + match;
-
-    return res;
+static Err
+_parse_range_addr_delta_(const char* tk, RangeAddr out[static 1], const char* endptr[static 1]) {
+    tk = cstr_skip_space(tk);
+    if (*tk == '+' || *tk == '-') {
+        //TODO: what if "+  7778"?
+        intmax_t i;
+        try( parse_ll_err(tk, &i, endptr));
+        if (i > INT_MAX) { return "error: relative rnge too large"; }
+        if (tk == *endptr) {
+            out->delta = *tk == '-' ? -1 : 1;
+            *endptr = tk + 1;
+        } else out->delta = i;
+        return Ok;
+    }
+    out->delta = 0;
+    *endptr    = tk;
+    return Ok;
 }
 
 
-static ParseRv
-parse_range_addr(const char* tk, RangeParseCtx ctx[static 1], size_t out[static 1]) {
-
-    ParseRv const no_parse = tk;
-    ParseRv rest;
-    uintmax_t curr = ctx->current_line;
-    uintmax_t max  = ctx->nlines;
-    if (!tk) { return NULL; }
-    if (!*tk) { return tk; }
+static Err
+_parse_range_addr_(const char* tk, RangeAddr out[static 1], const char* endptr[static 1]) {
+    if (!tk) return "error: cannot parse NULL";
+    *out = (RangeAddr){.tag=range_addr_none_tag};
+    tk = cstr_skip_space(tk);
+    if (!*tk) return Ok;
     if (*tk == '/') {
+        *out = (RangeAddr) { .tag = range_addr_search_tag };
         ++tk;
-        size_t offset;
-        try_parse_range((rest = parse_offset_search_regex(tk, ctx->tb, &offset)));
-        Err err = textbuf_get_line_of_offset(ctx->tb, offset, out);
-        if (err) return to_range_parse_err("error: invalid offset obtained");
-        ctx->new_offset = offset;
-        return rest;
-
+        char* end = strchr(tk, '/');
+        if (end) {
+            size_t l = 1 + (end - tk);
+            out->s = (StrView){.items=tk, .len=l};
+            return _parse_range_addr_delta_(tk+l, out, endptr);
+        } else {
+            size_t l = strlen(tk);
+            out->s = (StrView){.items=tk, .len=l+1};
+            *endptr = tk + l;
+            return Ok;
+        }
     } else if (*tk == '.' || *tk == '+' || *tk == '-')  {
-        if (*tk == '.') { ++tk; }
-        try_parse_range((rest = parse_range_addr_num(tk, curr, max, out)));
-        return rest;
+        *out = (RangeAddr) { .tag = range_addr_curr_tag };
+        if (*tk == '.') tk = cstr_skip_space(tk+1);
+        if (*tk == '+' || *tk == '-')
+            return _parse_range_addr_delta_(tk, out, endptr);
+        return Ok;
+
     } else if (*tk == '$') {
-        ++tk;
-        try_parse_range((rest=parse_range_addr_num(tk, max, max, out)));
-        return rest;
+        *out = (RangeAddr) { .tag = range_addr_end_tag };
+        *endptr = tk + 1;
+        return Ok;
     } else if (isdigit(*tk)) {
         /* tk does not start neither with - nor + */
-        try_parse_range((rest = parse_ull(tk, &curr)));
-        if (curr > max) { return to_range_parse_err("invalid range (num too large)"); }
-        *out = curr;
-        if (*rest == '+' || *rest == '-') {
-            try_parse_range((rest = parse_range_addr_num(rest+1, curr, max, out)));
-        }
-        return rest;
-    } 
+        *out = (RangeAddr) { .tag = range_addr_num_tag };
+        try( parse_ull_err(tk, &out->n, endptr)); //no need to check tk != endptr
+        *endptr = cstr_skip_space(*endptr);
+        if (**endptr == '+' || **endptr == '-')
+            return _parse_range_addr_delta_(*endptr, out, endptr);
+        return Ok;
+    }
 
     if (*tk == '+' || *tk == '-') {
-        try_parse_range((rest = parse_range_addr_num(tk+1, curr, max, out)));
-        return rest;
+        *out = (RangeAddr) { .tag = range_addr_curr_tag };
+        return _parse_range_addr_delta_(*endptr, out, endptr);
     }
-    return no_parse;
+    return Ok;
 }
 
-
-static const char*
-parse_range_impl(const char* tk, RangeParseCtx ctx[static 1], Range range[static 1]) {
-
-    if (!tk) return NULL; /* invalid input */
-
-    ParseRv const no_parse = tk;
-    tk = cstr_skip_space(tk);
-
-    if (!*tk) return no_parse; /* empty string */
-
-    if (*tk == '^') {
-        *range = *textbuf_last_range(ctx->tb);
-        if (range->end == 0) { return err_fmt("\x01no last range"); }
-        return tk + 1;
-    }
-
-    /* full range */
-    if (*tk == '%') {
-        ++tk;
-        range_set_full(range, ctx);
-        return tk;
-    } 
-
-    ParseRv rest;
-    /* ,Addr? */
-    if (*tk == ',') {
-        ++tk;
-        range_beg_set_curr(range, ctx);
-        try_parse_range((rest = parse_range_addr(tk, ctx, &range->end)));
-        return rest;
-    }
-
-    try_parse_range((rest = parse_range_addr(tk, ctx, &range->beg)));
-    if (tk == rest /* no_parse */) {
-        /* No range was giving so defaulting to current line.
-         * This is the case of e.g. 'p' that prints current line.
-         */
-        range_both_set_curr(range, ctx);
-        return rest;
-    }
-    
-    /* Addr... */
-    tk = cstr_skip_space(rest);
-    if (*tk == ',') {
-        ++tk;
-        /* Addr,... */
-        try_parse_range((rest = parse_range_addr(tk, ctx, &range->end)));
-        if (tk == rest /* no_parse */) range_end_set_beg(range);
-        return rest;
-    } else {
-        /* AddrEORange */
-        range_end_set_beg(range);
-        return tk;
-    }
-
-}
 
 /* external linkage */
 
-ParseRv
-parse_range(const char* tk, Range range[static 1], RangeParseCtx ctx[static 1]) {
-    ParseRv parse_str = parse_range_impl(tk, ctx, range);
-    if (range_parse_failure(parse_str)) return parse_str;
-    if (tk == parse_str /* no_parse */) {
-        range_both_set_curr(range, ctx);
-        return parse_str;
+
+Err parse_range(
+    const char*      tk,
+    RangeParseResult res[static 1],
+    const char*      endptr[static 1]
+) {
+    if (!tk) return "Error: cannot parse NULL, invalid input";
+
+    tk = cstr_skip_space(tk);
+
+    if (!*tk) { /* empty string */
+        *endptr = tk;
+        *res = (RangeParseResult) {
+            .beg={.tag=range_addr_curr_tag},
+            .end={.tag=range_addr_none_tag}
+        };
+        return Ok;
     }
-    if (range->beg == 0 || range->end == 0) return to_range_parse_err("Zero not supported in ranges");
-    if (range->end < range->beg) return to_range_parse_err("backward range");
 
-    if (textbuf_line_count(ctx->tb) < range->end)
-        return to_range_parse_err("error: not expecting invalid range end");
-    return parse_str;
+    if (*tk == '^') {
+        *endptr = cstr_skip_space(tk + 1);
+        *res = (RangeParseResult) {
+            .beg={.tag=range_addr_prev_tag},
+            .end={.tag=range_addr_prev_tag}
+        };
+        return Ok;
+    }
+
+    if (*tk == '%') { /* full range */
+        *endptr = cstr_skip_space(tk + 1);
+        *res = (RangeParseResult) {
+            .beg={.tag=range_addr_num_tag, .n=1},
+            .end={.tag=range_addr_end_tag}
+        };
+        return Ok;
+    }
+
+    /* ,Addr? */
+    if (*tk == ',') {
+        ++tk;
+        *res = (RangeParseResult) { .beg={.tag=range_addr_curr_tag, .n=1}, };
+        return _parse_range_addr_(tk, &res->end, endptr);
+    }
+
+    *res = (RangeParseResult) {0};
+    try (_parse_range_addr_(tk, &res->beg, endptr));
+    if (tk == *endptr /* no_parse */) {
+        /* No range was giving so defaulting to current line.
+         * This is the case of e.g. 'p' that prints current line.
+         */
+        *res = (RangeParseResult) {
+            .beg={.tag=range_addr_curr_tag},
+            .end={.tag=range_addr_none_tag}
+        };
+        return Ok;
+    }
+
+    /* Addr... */
+    tk = cstr_skip_space(*endptr);
+    if (*tk == ',') {
+        ++tk;
+        /* Addr,... */
+        return _parse_range_addr_(tk, &res->end, endptr);
+    } else {
+        /* AddrEORange */
+        res->end = (RangeAddr){.tag=range_addr_none_tag};
+        return Ok;
+    }
+
 }
-

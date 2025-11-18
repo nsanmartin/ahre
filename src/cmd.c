@@ -247,23 +247,18 @@ Err _cmd_parse_range(
     *range = (Range){0};
     const char* line = *inputline;
     if (!line) { return Ok; }
-    RangeParseCtx ctx = range_parse_ctx_from_textbuf(textbuf);
-    line = parse_range(line, range, &ctx);
-    if (range_parse_failure(line)) {
-        return range_parse_failure_to_err(line);
-    } else *textbuf_last_range(textbuf) = *range;
-    *inputline = line;
-    if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
+    size_t match_offset = textbuf_len(textbuf); // we use this value to indicate None value
+    try( textbuf_parse_range(textbuf, line, range, inputline, &match_offset));
 
+    if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
     if (range->end == 0) return "error: unexpected range with end == 0";
     if (range->end > textbuf_line_count(textbuf)) return "error: range end too large";
-    if (ctx.new_offset >= textbuf_len(textbuf))
-        try( textbuf_get_offset_of_line(textbuf, range->end,textbuf_current_offset(textbuf)));
+    if (match_offset >= textbuf_len(textbuf))
+        try( textbuf_get_offset_of_line(textbuf, range->end, textbuf_current_offset(textbuf)));
     else
-        *textbuf_current_offset(textbuf) = ctx.new_offset;
+        *textbuf_current_offset(textbuf) = match_offset;
     return Ok;
 }
-
 
 
 

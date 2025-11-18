@@ -3,11 +3,39 @@
 
 const char _base36digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
+/* note that if something like "   -1" is received, 2^NBits -1 is returned */
+Err parse_ull_err(const char* tk, uintmax_t ullp[static 1], const char* endptr[static 1]) {
+    if (!tk) return "error parsing ull: NULL received";
+    if (!*tk) return "error parsing ull: \"\\0\" received";
+    *ullp = strtoull(tk, (char**)endptr, 10);
+    if (ERANGE == errno && ULLONG_MAX == *ullp) { return err_fmt("error: %s", strerror(errno)); }
+    return Ok;
+}
+
+
+Err parse_ll_err(const char* tk, intmax_t llp[static 1], const char* endptr[static 1]) {
+    if (!tk) return "error parsing ll: NULL received";
+    if (!*tk) return "error parsing ll: \"\\0\" received";
+    *llp = strtoll(tk, (char**)endptr, 10);
+    if (ERANGE == errno && (LLONG_MAX == *llp || LLONG_MIN == *llp))
+       return err_fmt("error: %s", strerror(errno));
+    return Ok;
+}
+
 const char* parse_ull(const char* tk, uintmax_t* ullp) {
     if (!tk || !*tk) { return NULL; }
     char* endptr = 0x0;
-    *ullp = strtoll(tk, &endptr, 10);
+    *ullp = strtoull(tk, &endptr, 10);
     if (ERANGE == errno && ULLONG_MAX == *ullp) { return NULL; }
+    return endptr == tk ? NULL: endptr;
+}
+
+
+const char* parse_ll(const char* tk, intmax_t* llp) {
+    if (!tk || !*tk) { return NULL; }
+    char* endptr = 0x0;
+    *llp = strtoll(tk, &endptr, 10);
+    if (ERANGE == errno && (LLONG_MAX == *llp||LLONG_MIN == *llp)) { return NULL; }
     return endptr == tk ? NULL: endptr;
 }
 

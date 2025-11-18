@@ -2,6 +2,8 @@
 
 #include "textbuf.h"
 #include "generic.h"
+#include "range-parse.h"
+#include "re.h"
 
 /*
  * TextBuf lines indexes are 1-based so be careful 
@@ -285,3 +287,97 @@ bool textbuf_get_line(TextBuf tb[static 1], size_t n, StrView out[static 1]) {
     */
     return false;
 }
+
+Err _regex_search_pattern_in_buf_(
+    StrView pattern[static 1], const char* buf, size_t match_offset[static 1]
+) {
+    const char* lastptr = items__(pattern) + len__(pattern) - 1;
+    char last           = *lastptr;
+    *(char*)lastptr     = '\0';
+    size_t match        = 0;
+    size_t* pmatch      = &match;
+    Err err             = regex_maybe_find_next(items__(pattern), buf, &pmatch);
+    *(char*)lastptr     = last;
+    if (err) return err;
+    if (!pmatch) return "pattern not found";
+    *match_offset =  match;
+    return Ok;
+}
+
+Err _textbuf_regex_search_linenum(
+    TextBuf tb[static 1],
+    StrView pattern[static 1],
+    size_t  outln[static 1],
+    size_t  match_offset[static 1]
+) {
+    size_t current_offset = *textbuf_current_offset(tb);
+    const char* buf = textbuf_items(tb) + current_offset;
+    try( _regex_search_pattern_in_buf_(pattern, buf, match_offset));
+    return textbuf_get_line_of_offset(tb, *match_offset, outln);
+}
+
+Err _textbuf_range_addr_to_size_t_(
+    TextBuf          tb[static 1],
+    RangeParseResult parse[static 1],
+    Range            range_out[static 1],
+    size_t           match_offset[static 1]
+) {
+    *match_offset          = 0;
+    size_t current_offset  = *textbuf_current_offset(tb);
+    const char* buf = textbuf_items(tb);
+    switch (parse->beg.tag) {
+        case range_addr_curr_tag: range_out->beg = textbuf_current_line(tb) + parse->beg.delta;
+            break;
+        case range_addr_end_tag: range_out->beg = textbuf_line_count(tb) + parse->beg.delta;
+            break;
+        case range_addr_none_tag: /*?*/
+             return "unexpected none range";
+        case range_addr_num_tag: range_out->beg = parse->beg.n + parse->beg.delta;
+            break;
+        case range_addr_search_tag:
+            try( _regex_search_pattern_in_buf_(&parse->beg.s, buf + current_offset, match_offset));
+            *match_offset += current_offset;
+            current_offset = *match_offset;
+            try( textbuf_get_line_of_offset(tb, *match_offset, &range_out->beg));
+            break;
+        case range_addr_prev_tag: 
+            if (parse->end.tag != range_addr_prev_tag) return "error: invalid range parsed";
+            *range_out = *textbuf_last_range(tb);
+            return Ok;
+        default: return "error: invalid RangeParseResult beg tag";
+    }
+    switch (parse->end.tag) {
+        case range_addr_curr_tag: range_out->end = textbuf_current_line(tb) + parse->beg.delta;
+            break;
+        case range_addr_end_tag: range_out->end = textbuf_line_count(tb) + parse->beg.delta;
+            break;
+        case range_addr_none_tag: range_out->end = range_out->beg;
+            break;
+        case range_addr_num_tag: range_out->end = parse->end.n + parse->beg.delta;
+            break;
+        case range_addr_search_tag:
+            try( _regex_search_pattern_in_buf_(&parse->end.s, buf + current_offset, match_offset));
+            *match_offset += current_offset;
+            current_offset = *match_offset;
+            try( textbuf_get_line_of_offset(tb, *match_offset, &range_out->end));
+            break;
+        case range_addr_prev_tag: 
+            return "error: range_addr_prev_tag should be in beg and end";
+        default: return "error: invalid RangeParseResult end tag";
+    }
+    return Ok;
+}
+
+Err textbuf_parse_range(
+    TextBuf     tb[static 1],
+    const char* tk,
+    Range       out[static 1],
+    const char* endptr[static 1],
+    size_t      match_offset[static 1]
+) {
+    RangeParseResult res;
+    try( parse_range(tk, &res, endptr));
+    try(_textbuf_range_addr_to_size_t_(tb, &res, out, match_offset));
+    return Ok;
+}
+

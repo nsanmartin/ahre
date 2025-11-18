@@ -128,4 +128,12 @@ static inline Err validate_range_for_buffer(TextBuf textbuf[static 1], Range ran
 }
 
 Err textbuf_line_offset(TextBuf tb[static 1], size_t line, size_t out[static 1]);
+
+Err textbuf_parse_range(
+    TextBuf     tb[static 1],
+    const char* tk,
+    Range       out[static 1],
+    const char* endptr[static 1],
+    size_t      match_offset[static 1]
+);
 #endif

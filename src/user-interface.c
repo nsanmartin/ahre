@@ -88,21 +88,15 @@ static Err run_cmd_help(Session* s, SessionCmd cmd[static 1]) {
         for (SessionCmd* sub = cmd->subcmds; sub->name ; ++sub) {
             if (sub->flags & CMD_CHAR) {
                 session_write_msg_lit__(s, "  '");
-                session_write_msg(s, (char*)sub->name, strlen(sub->name));
-                session_write_msg_lit__(s, "'\n");
+                session_write_msg_ln(s, (char*)sub->name, strlen(sub->name));
             } else if (sub->flags & CMD_EMPTY) {
-                session_write_msg_lit__(s, "  ");
-                session_write_msg_lit__(s, "<empty>");
-                session_write_msg_lit__(s, "\n");
+                session_write_msg_lit__(s, "  <empty>\n");
             } else if (sub->flags & CMD_ANY) {
-                session_write_msg_lit__(s, "  ");
-                session_write_msg_lit__(s, "<any> ");
-                session_write_msg(s, (char*)sub->name, strlen(sub->name));
-                session_write_msg_lit__(s, "\n");
+                session_write_msg_lit__(s, "  <any> ");
+                session_write_msg_ln(s, (char*)sub->name, strlen(sub->name));
             } else if (sub->name) {
                 session_write_msg_lit__(s, "  ");
-                session_write_msg(s, (char*)sub->name, strlen(sub->name));
-                session_write_msg_lit__(s, "\n");
+                session_write_msg_ln(s, (char*)sub->name, strlen(sub->name));
             }
         }
     }
@@ -127,6 +121,15 @@ static Err run_cmd__(CmdParams p[static 1], SessionCmd cmdlist[]) {
     return err_fmt("invalid command: %s", p->ln);
 }
 
+
+/* static Err run_cmd_on_range__(CmdParams p[static 1], SessionCmd cmdlist[]) { */
+/*     p->ln = cstr_skip_space(p->ln); */
+/*     Err parse_failed = parse_size_t_or_throw(&p->ln, &p->ix, 36); */
+/*     p->ln = cstr_skip_space(p->ln); */
+/*     /1* we assume SIZE_MAX is not an index and is used as not id given *1/ */
+/*     if (parse_failed) p->ix = SIZE_MAX; */ 
+/*     return run_cmd__(p, cmdlist); */
+/* } */
 
 static Err run_cmd_on_ix__(CmdParams p[static 1], SessionCmd cmdlist[]) {
     p->ln = cstr_skip_space(p->ln);
