@@ -16,6 +16,9 @@
 #include "utils.h"
 #include "readpass.h"
 #include "wrapper-lexbor-curl.h"
+#include "range-parse.h"
+#include "htmldoc.h"
+#include "writer.h"
 
 
 #define CMD_NO_PARAMS 0x1
@@ -117,19 +120,19 @@ static Err run_cmd__(CmdParams p[static 1], SessionCmd cmdlist[]) {
             else return cmd->fn(p);
         } else if (_empty_match_(cmd, p)) return cmd->fn(p);
     }
-    //return "invalid command";
     return err_fmt("invalid command: %s", p->ln);
 }
 
 
-/* static Err run_cmd_on_range__(CmdParams p[static 1], SessionCmd cmdlist[]) { */
-/*     p->ln = cstr_skip_space(p->ln); */
-/*     Err parse_failed = parse_size_t_or_throw(&p->ln, &p->ix, 36); */
-/*     p->ln = cstr_skip_space(p->ln); */
-/*     /1* we assume SIZE_MAX is not an index and is used as not id given *1/ */
-/*     if (parse_failed) p->ix = SIZE_MAX; */ 
-/*     return run_cmd__(p, cmdlist); */
-/* } */
+static Err run_cmd_on_range__(CmdParams p[static 1], SessionCmd cmdlist[]) {
+    p->ln = cstr_skip_space(p->ln);
+    const char* endptr;
+    try(parse_range(p->ln, &p->rp, &endptr));
+    p->ln = endptr;
+
+    p->ln = cstr_skip_space(p->ln);
+    return run_cmd__(p, cmdlist);
+}
 
 static Err run_cmd_on_ix__(CmdParams p[static 1], SessionCmd cmdlist[]) {
     p->ln = cstr_skip_space(p->ln);
@@ -203,7 +206,7 @@ static SessionCmd _cmd_set_[] =
     , {0}
     };
 
-/* tab commands */
+/* tab commands (|) */
 
 static SessionCmd _cmd_tabs_[] =
     { {.name="-", .fn=cmd_tabs_back, .help=NULL, .flags=CMD_CHAR}
@@ -212,13 +215,71 @@ static SessionCmd _cmd_tabs_[] =
     , {0}
 };
 
+static Err cmd_doc_scripts_list(CmdParams p[static 1]) {
+
+    HtmlDoc* h;
+    try(session_current_doc(p->s, &h));
+    size_t head_scripts_count = len__(htmldoc_head_scripts(h));
+    size_t body_scripts_count = len__(htmldoc_body_scripts(h));
+    char buf[SIZE_T_TO_STR_BUFSZ] = {0};
+    size_t len;
+
+    session_write_msg_lit__(p->s, "head script count: ");
+    try( unsigned_to_str(head_scripts_count, buf, SIZE_T_TO_STR_BUFSZ, &len));
+    session_write_msg_ln(p->s, buf, len);
+    session_write_msg_lit__(p->s, "body script count: ");
+    try( unsigned_to_str(body_scripts_count, buf, SIZE_T_TO_STR_BUFSZ, &len));
+    session_write_msg_ln(p->s, buf, len);
+    return Ok;
+}
+
+static Err cmd_doc_scripts_save(CmdParams p[static 1]) {
+    Err e = Ok;
+    HtmlDoc* h;
+    try(session_current_doc(p->s, &h));
+    Writer w;
+    FILE* fp;
+    try(file_open(p->ln, "w", &fp));
+    try_or_jump(e, Failure, writer_init__(&w, fp));
+    try_or_jump(e, Failure, htmldoc_scripts_write(h, &p->rp, &w));
+    e = file_close(fp);
+    ok_then(e, session_write_msg_lit__(p->s, "script(s) saved\n"));
+    return Ok;
+Failure:
+    file_close(fp);
+    return e;
+}
+
+static Err cmd_doc_scripts_show(CmdParams p[static 1]) {
+    HtmlDoc* h;
+    try(session_current_doc(p->s, &h));
+    Writer w;
+    try(writer_init__(&w, p->s));
+    return htmldoc_scripts_write(h, &p->rp, &w);
+}
+
+/* doc scripts commands */
+static SessionCmd _cmd_doc_scripts_[] =
+    { {.name="",   .fn=cmd_doc_scripts_list, .help=NULL, .flags=CMD_EMPTY}
+    , {.name=">",  .fn=cmd_doc_scripts_save, .help=NULL, .flags=CMD_CHAR}
+    , {.name="\"", .fn=cmd_doc_scripts_show, .help=NULL, .flags=CMD_CHAR}
+    , {0}
+};
+
+
 /* doc commands */
+
+#define CMD_DOC_SCRIPTS_DOC "Doc's scripts cmd (only if js is enabled)"
+static inline Err cmd_doc_scripts_cmd(CmdParams p[static 1]) {
+    return run_cmd_on_range__(p, _cmd_doc_scripts_);
+}
 
 static SessionCmd _cmd_doc_[] =
     { {.name="",        .fn=cmd_doc_info,              .help=CMD_DOC_INFO_DOC,     .flags=CMD_EMPTY}
-    , {.name="\"",      .fn=cmd_doc_info,              .help=CMD_DOC_INFO_DOC,     .flags=CMD_CHAR}
-    , {.name="A",       .fn=cmd_doc_A,                 .help=NULL,                 .flags=CMD_CHAR}
+    , {.name="$",       .fn=cmd_doc_scripts_cmd,           .help=CMD_DOC_SCRIPTS_DOC,  .flags=CMD_CHAR}
     , {.name="+",       .fn=cmd_doc_bookmark_add,      .help=CMD_DOC_BOOKMARK_ADD, .flags=CMD_CHAR}
+    , {.name="A",       .fn=cmd_doc_A,                 .help=NULL,                 .flags=CMD_CHAR}
+    , {.name="\"",      .fn=cmd_doc_info,              .help=CMD_DOC_INFO_DOC,     .flags=CMD_CHAR}
     , {.name="console", .match=1, .fn=cmd_doc_console, .help=CMD_DOC_CONSOLE}
     , {.name="draw",    .match=1, .fn=cmd_doc_draw,    .help=CMD_DOC_DRAW}
     , {.name="js",      .match=1, .fn=cmd_doc_js,      .help=CMD_DOC_JS}
@@ -296,14 +357,12 @@ Err cmd_doc(CmdParams p[static 1]) { return run_cmd__(p, _cmd_doc_); }
 
 Err cmd_textbuf(CmdParams p[static 1]) {
     try( session_current_buf(p->s, &p->tb));
-    try( _cmd_parse_range(&p->r, &p->ln, p->tb));
-    return run_cmd__(p, _cmd_textbuf_);
+    return run_cmd_on_range__(p, _cmd_textbuf_);
 }
 
 Err cmd_sourcebuf(CmdParams p[static 1]) {
     try( session_current_src(p->s, &p->tb));
-    try( _cmd_parse_range(&p->r, &p->ln, p->tb));
-    return run_cmd__(p, _cmd_textbuf_);
+    return run_cmd_on_range__(p, _cmd_textbuf_);
 }
 
 Err dbg_print_form(CmdParams p[static 1]) ;

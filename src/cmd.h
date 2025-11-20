@@ -6,12 +6,16 @@
 #include "draw.h"
 
 #define cmd_assert_no_params(Ln) do{ if(*Ln) return "error: expecting no params"; }while(0)
-Err _cmd_parse_range(
-    Range range[static 1], const char* inputline[static 1], TextBuf textbuf[static 1]
-);
 
-typedef enum { cmd_base_tag, cmd_textbuf_tag } CmdTag;
-typedef struct { const char* ln; Session* s; TextBuf* tb; Range r; size_t ix; } CmdParams;
+// typedef enum { cmd_base_tag, cmd_textbuf_tag } CmdTag;
+typedef struct {
+    const char* ln;
+    Session*               s;
+    TextBuf*               tb; /* in order to reuse buf cmds for source & buf, we pass it */
+    RangeParse       rp;
+    size_t                 ix; /* TODO: deprecate this and use only range */
+} CmdParams;
+
 typedef Err (*SessionCmdFn)(CmdParams p[static 1]);
 typedef struct SessionCmd SessionCmd;
 typedef struct SessionCmd {
@@ -160,47 +164,27 @@ Err cmd_textbuf_global(CmdParams p[static 1]);
 StrView parse_pattern(const char* tk);
 
 
-//TODO: pass session to this fn
-//static inline Err _cmd_textbuf_print_last_range(Session s[static 1], TextBuf textbuf[static 1]) {
-//    Range r = *textbuf_last_range(textbuf);
-//    try( session_write_msg_lit__(s, "last range: ("));
-//    try( session_write_unsigned_msg(s, r.beg));
-//    try( session_write_msg_lit__(s, ", "));
-//    try( session_write_unsigned_msg(s, r.end));
-//    try( session_write_msg_lit__(s, ")\n"));
-//    return Ok;
-//}
-
-//static inline Err _cmd_textbuf_print_all(TextBuf textbuf[static 1]) {
-//    BufOf(char)* buf = &textbuf->buf;
-//    fwrite(buf->items, 1, buf->len, stdout);
-//    return NULL;
-//}
-
 typedef Err (*TextBufCmdFn)
     (Session s[static 1], TextBuf tb[static 1], Range r[static 1], const char* ln);
-
-static inline Err _run_textbuf_cmd_(Session s[static 1], const char* line, TextBufCmdFn fn) {
-    Range range;
-    TextBuf* textbuf;
-    try( session_current_buf(s, &textbuf));
-    try( _cmd_parse_range(&range, &line, textbuf));
-    return fn(s, textbuf, &range, line);
-}
 
 
 static inline Err cmd_textbuf_print(CmdParams p[static 1]) {
     SessionMemWriter writer = (SessionMemWriter){.s=p->s, .write=session_writer_write_std};
-    return session_write_range_mod(&writer, p->tb, &p->r);
+    Range rng;
+    try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
+    return session_write_range_mod(&writer, p->tb, &rng);
 }
 
 
 Err dbg_print_all_lines_nums(
-    Session s[static 1], TextBuf tb[static 1], Range r[static 1], const char* ln);
+    Session s[static 1], TextBuf tb[static 1], Range r[static 1], const char* ln
+);
 
 static inline Err
 cmd_textbuf_dbg_print_all_lines_nums(CmdParams p[static 1]) {
-    return dbg_print_all_lines_nums(p->s, p->tb, &p->r, p->ln);
+    Range rng;
+    try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
+    return dbg_print_all_lines_nums(p->s, p->tb, &rng, p->ln);
 }
 
 
@@ -208,13 +192,26 @@ Err _textbuf_print_n_(
     Session s[static 1], TextBuf textbuf[static 1], Range range[static 1], const char* ln);
 
 static inline Err
-cmd_textbuf_print_n(CmdParams p[static 1]) { return  _textbuf_print_n_(p->s, p->tb, &p->r, p->ln); }
+cmd_textbuf_print_n(CmdParams p[static 1]) {
+    Range rng;
+    try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
+    return  _textbuf_print_n_(p->s, p->tb, &rng, p->ln);
+}
 
 Err _cmd_textbuf_write_impl(
-    Session s[static 1], TextBuf textbuf[static 1], Range r[static 1], const char* rest);
+   Session s[static 1], TextBuf textbuf[static 1], Range r[static 1], const char* rest
+);
 
 static inline Err cmd_textbuf_write(CmdParams p[static 1]) {
-    return _cmd_textbuf_write_impl(p->s, p->tb, &p->r, p->ln);
+//TODO: allow >/>> modes
+    const char* filename = cstr_trim_space((char*)p->ln);
+    if (range_parse_is_none(&p->rp)) {
+        try( textbuf_to_file(p->tb, filename, "w"));
+        return session_write_msg_lit__(p->s, "file written.");
+    }
+    Range rng;
+    try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
+    return _cmd_textbuf_write_impl(p->s, p->tb, &rng, filename);
 }
 
 /*

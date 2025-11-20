@@ -285,15 +285,13 @@ bookmarks_save_to_disc(HtmlDoc bm[static 1], Str bmfile[static 1]) {
     Str source = (Str){0};
     try( bookmark_to_source(bm, &source));
 
-    FILE* fp = fopen(bmfile->items, "w");
-    if (!fp) {
-        str_clean(&source);
-        return err_fmt("error saving bm file '%s': %s", bmfile->items, strerror(errno));
-    }
+    FILE* fp;
+    try(file_open(bmfile->items, "w", &fp));
+
     Err err = Ok;
     size_t written = fwrite(source.items, 1, source.len, fp);
     if (written != source.len) err = "error: could not write to bookmarks file";
-    fclose(fp);
+    try(file_close(fp));
     str_clean(&source);
     return err;
 }

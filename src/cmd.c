@@ -209,28 +209,28 @@ Err dbg_print_all_lines_nums(
 
 Err _cmd_textbuf_write_impl(
     Session s[static 1], TextBuf textbuf[static 1], Range r[static 1], const char* rest
-)
-{
-    //TODO: write range not all
-    (void)s; (void)r;
+) {
     if (!rest || !*rest) { return "cannot write without file arg"; }
     rest = cstr_trim_space((char*)rest);
     if (!*rest) return "invalid url name";
     FILE* fp = fopen(rest, "w");
     if (!fp) return err_fmt("%s: could not open file: %s", __func__, rest); 
 
-    const char* items = textbuf_items(textbuf);
-    const char* beg = items;
-    size_t len = textbuf_len(textbuf);
-    if (len && !items[len-1]) --len;
-
-    if (len && fwrite(beg, 1, len, fp) != len) {
-        fclose(fp);
-        return err_fmt("%s: error writing to file: %s", __func__, rest);
+    Err e = Ok;
+    for (size_t linum = r->beg; linum <= r->end; ++linum) {
+        StrView line;
+        if (!textbuf_get_line(textbuf, linum, &line)) {
+            e = "error: invalid linum"; break;
+        }
+        if (line.len && fwrite(line.items, 1, line.len, fp) != line.len) {
+            e = err_fmt("%s: error writing to file: %s", __func__, rest);
+            break;
+        }
     }
-    if (fclose(fp)) return err_fmt("error closing file '%s'", rest);
-    try( session_write_msg_lit__(s, "file written. "));
-    return Ok;
+
+    if (!fclose(fp)) try( session_write_msg_lit__(s, "file written. "));
+    else             try( session_write_msg_lit__(s, "Error coling file..."));
+    return e;
 }
 
 Err cmd_textbuf_global(CmdParams p[static 1]) {
@@ -239,27 +239,6 @@ Err cmd_textbuf_global(CmdParams p[static 1]) {
     printf("pattern: %s\n", pattern.items);
     return Ok;
 }
-
-
-Err _cmd_parse_range(
-    Range range[static 1], const char* inputline[static 1], TextBuf textbuf[static 1]
-) {
-    *range = (Range){0};
-    const char* line = *inputline;
-    if (!line) { return Ok; }
-    size_t match_offset = textbuf_len(textbuf); // we use this value to indicate None value
-    try( textbuf_parse_range(textbuf, line, range, inputline, &match_offset));
-
-    if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
-    if (range->end == 0) return "error: unexpected range with end == 0";
-    if (range->end > textbuf_line_count(textbuf)) return "error: range end too large";
-    if (match_offset >= textbuf_len(textbuf))
-        try( textbuf_get_offset_of_line(textbuf, range->end, textbuf_current_offset(textbuf)));
-    else
-        *textbuf_current_offset(textbuf) = match_offset;
-    return Ok;
-}
-
 
 
 /* input commands */

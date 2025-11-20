@@ -6,5 +6,5 @@
 
 
 Err
-parse_range( const char* tk, RangeParseResult res[static 1], const char* endptr[static 1]);
+parse_range( const char* tk, RangeParse res[static 1], const char* endptr[static 1]);
 #endif

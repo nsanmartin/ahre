@@ -160,6 +160,7 @@ session_writer_write_msg(SessionMemWriter w[static 1], const char* msg, size_t l
     return uo->write_msg(msg, len, w->s);
 }
 
+
 static inline Err session_write_msg(Session s[static 1], char* msg, size_t len) {
     UserOutput* uo = session_uout(s);
     return uo->write_msg(msg, len, s);

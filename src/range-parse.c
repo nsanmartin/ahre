@@ -50,48 +50,49 @@ _parse_range_addr_delta_(const char* tk, RangeAddr out[static 1], const char* en
 static Err
 _parse_range_addr_(const char* tk, RangeAddr out[static 1], const char* endptr[static 1]) {
     if (!tk) return "error: cannot parse NULL";
+    *endptr = tk;
     *out = (RangeAddr){.tag=range_addr_none_tag};
-    tk = cstr_skip_space(tk);
-    if (!*tk) return Ok;
-    if (*tk == '/') {
+    if (!**endptr) return Ok;
+    if (**endptr == '/') {
         *out = (RangeAddr) { .tag = range_addr_search_tag };
-        ++tk;
-        char* end = strchr(tk, '/');
+        ++*endptr;
+        char* end = strchr(*endptr, '/');
         if (end) {
-            size_t l = 1 + (end - tk);
-            out->s = (StrView){.items=tk, .len=l};
-            return _parse_range_addr_delta_(tk+l, out, endptr);
+            size_t l = 1 + (end - *endptr);
+            out->s = (StrView){.items=*endptr, .len=l};
+            return _parse_range_addr_delta_(*endptr+l, out, endptr);
         } else {
-            size_t l = strlen(tk);
-            out->s = (StrView){.items=tk, .len=l+1};
-            *endptr = tk + l;
+            size_t l = strlen(*endptr);
+            out->s = (StrView){.items=*endptr, .len=l+1};
+            *endptr = *endptr + l;
             return Ok;
         }
-    } else if (*tk == '.' || *tk == '+' || *tk == '-')  {
+    } else if (**endptr == '.' || **endptr == '+' || **endptr == '-')  {
         *out = (RangeAddr) { .tag = range_addr_curr_tag };
-        if (*tk == '.') tk = cstr_skip_space(tk+1);
-        if (*tk == '+' || *tk == '-')
-            return _parse_range_addr_delta_(tk, out, endptr);
+        if (**endptr == '.') *endptr = cstr_skip_space(*endptr+1);
+        if (**endptr == '+' || **endptr == '-')
+            return _parse_range_addr_delta_(*endptr, out, endptr);
         return Ok;
 
-    } else if (*tk == '$') {
+    } else if (**endptr == '$') {
         *out = (RangeAddr) { .tag = range_addr_end_tag };
-        *endptr = tk + 1;
-        return Ok;
-    } else if (isdigit(*tk)) {
-        /* tk does not start neither with - nor + */
+        *endptr = *endptr + 1;
+        return _parse_range_addr_delta_(*endptr, out, endptr);
+    } else if (isdigit(**endptr)) {
+        /* *endptr does not start neither with - nor + */
         *out = (RangeAddr) { .tag = range_addr_num_tag };
-        try( parse_ull_err(tk, &out->n, endptr)); //no need to check tk != endptr
+        try( parse_ull_err(*endptr, &out->n, endptr)); //no need to check tk != endptr
         *endptr = cstr_skip_space(*endptr);
         if (**endptr == '+' || **endptr == '-')
             return _parse_range_addr_delta_(*endptr, out, endptr);
         return Ok;
     }
 
-    if (*tk == '+' || *tk == '-') {
+    if (**endptr == '+' || **endptr == '-') {
         *out = (RangeAddr) { .tag = range_addr_curr_tag };
         return _parse_range_addr_delta_(*endptr, out, endptr);
     }
+    *endptr = tk;
     return Ok;
 }
 
@@ -101,7 +102,7 @@ _parse_range_addr_(const char* tk, RangeAddr out[static 1], const char* endptr[s
 
 Err parse_range(
     const char*      tk,
-    RangeParseResult res[static 1],
+    RangeParse res[static 1],
     const char*      endptr[static 1]
 ) {
     if (!tk) return "Error: cannot parse NULL, invalid input";
@@ -110,8 +111,8 @@ Err parse_range(
 
     if (!*tk) { /* empty string */
         *endptr = tk;
-        *res = (RangeParseResult) {
-            .beg={.tag=range_addr_curr_tag},
+        *res = (RangeParse) {
+            .beg={.tag=range_addr_none_tag},
             .end={.tag=range_addr_none_tag}
         };
         return Ok;
@@ -119,7 +120,7 @@ Err parse_range(
 
     if (*tk == '^') {
         *endptr = cstr_skip_space(tk + 1);
-        *res = (RangeParseResult) {
+        *res = (RangeParse) {
             .beg={.tag=range_addr_prev_tag},
             .end={.tag=range_addr_prev_tag}
         };
@@ -128,8 +129,8 @@ Err parse_range(
 
     if (*tk == '%') { /* full range */
         *endptr = cstr_skip_space(tk + 1);
-        *res = (RangeParseResult) {
-            .beg={.tag=range_addr_num_tag, .n=1},
+        *res = (RangeParse) {
+            .beg={.tag=range_addr_beg_tag},
             .end={.tag=range_addr_end_tag}
         };
         return Ok;
@@ -138,18 +139,18 @@ Err parse_range(
     /* ,Addr? */
     if (*tk == ',') {
         ++tk;
-        *res = (RangeParseResult) { .beg={.tag=range_addr_curr_tag, .n=1}, };
+        *res = (RangeParse) { .beg={.tag=range_addr_curr_tag, .n=1}, };
         return _parse_range_addr_(tk, &res->end, endptr);
     }
 
-    *res = (RangeParseResult) {0};
+    *res = (RangeParse) {0};
     try (_parse_range_addr_(tk, &res->beg, endptr));
     if (tk == *endptr /* no_parse */) {
         /* No range was giving so defaulting to current line.
          * This is the case of e.g. 'p' that prints current line.
          */
-        *res = (RangeParseResult) {
-            .beg={.tag=range_addr_curr_tag},
+        *res = (RangeParse) {
+            .beg={.tag=range_addr_none_tag},
             .end={.tag=range_addr_none_tag}
         };
         return Ok;

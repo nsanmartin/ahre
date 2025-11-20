@@ -4,6 +4,7 @@
 #include "generic.h"
 #include "range-parse.h"
 #include "re.h"
+#include "session.h"
 
 /*
  * TextBuf lines indexes are 1-based so be careful 
@@ -316,22 +317,28 @@ Err _textbuf_regex_search_linenum(
     return textbuf_get_line_of_offset(tb, *match_offset, outln);
 }
 
-Err _textbuf_range_addr_to_size_t_(
+Err _textbuf_range_parse_to_range_(
     TextBuf          tb[static 1],
-    RangeParseResult parse[static 1],
+    RangeParse parse[static 1],
     Range            range_out[static 1],
     size_t           match_offset[static 1]
 ) {
-    *match_offset          = 0;
+    *range_out             = (Range){0};
     size_t current_offset  = *textbuf_current_offset(tb);
     const char* buf = textbuf_items(tb);
     switch (parse->beg.tag) {
+        case range_addr_beg_tag: range_out->beg = 1 + parse->beg.delta;
+            break;
         case range_addr_curr_tag: range_out->beg = textbuf_current_line(tb) + parse->beg.delta;
             break;
         case range_addr_end_tag: range_out->beg = textbuf_line_count(tb) + parse->beg.delta;
             break;
         case range_addr_none_tag: /*?*/
-             return "unexpected none range";
+             if (parse->end.tag == range_addr_none_tag) {
+                range_out->end = range_out->beg = textbuf_current_line(tb);
+                return Ok;
+             }
+             return "unexpected none beg range";
         case range_addr_num_tag: range_out->beg = parse->beg.n + parse->beg.delta;
             break;
         case range_addr_search_tag:
@@ -344,16 +351,18 @@ Err _textbuf_range_addr_to_size_t_(
             if (parse->end.tag != range_addr_prev_tag) return "error: invalid range parsed";
             *range_out = *textbuf_last_range(tb);
             return Ok;
-        default: return "error: invalid RangeParseResult beg tag";
+        default: return "error: invalid RangeParse beg tag";
     }
     switch (parse->end.tag) {
-        case range_addr_curr_tag: range_out->end = textbuf_current_line(tb) + parse->beg.delta;
+        case range_addr_beg_tag: range_out->end = 1 + parse->beg.delta;
             break;
-        case range_addr_end_tag: range_out->end = textbuf_line_count(tb) + parse->beg.delta;
+        case range_addr_curr_tag: range_out->end = textbuf_current_line(tb) + parse->end.delta;
+            break;
+        case range_addr_end_tag: range_out->end = textbuf_line_count(tb) + parse->end.delta;
             break;
         case range_addr_none_tag: range_out->end = range_out->beg;
             break;
-        case range_addr_num_tag: range_out->end = parse->end.n + parse->beg.delta;
+        case range_addr_num_tag: range_out->end = parse->end.n + parse->end.delta;
             break;
         case range_addr_search_tag:
             try( _regex_search_pattern_in_buf_(&parse->end.s, buf + current_offset, match_offset));
@@ -363,21 +372,51 @@ Err _textbuf_range_addr_to_size_t_(
             break;
         case range_addr_prev_tag: 
             return "error: range_addr_prev_tag should be in beg and end";
-        default: return "error: invalid RangeParseResult end tag";
+        default: return "error: invalid RangeParse end tag";
     }
     return Ok;
 }
 
-Err textbuf_parse_range(
-    TextBuf     tb[static 1],
-    const char* tk,
-    Range       out[static 1],
-    const char* endptr[static 1],
-    size_t      match_offset[static 1]
-) {
-    RangeParseResult res;
-    try( parse_range(tk, &res, endptr));
-    try(_textbuf_range_addr_to_size_t_(tb, &res, out, match_offset));
+static inline Err _textbuf_range_validate_(TextBuf tb[static 1], Range r[static 1]) {
+    if (r->end < r->beg) return "Backward r given";
+    if (r->end == 0) return "error: unexpected r with end == 0";
+    if (r->end > textbuf_line_count(tb)) return "r end too large";
     return Ok;
 }
 
+
+Err textbuf_range_from_parsed_range(
+    TextBuf          textbuf[static 1],
+    RangeParse rres[static 1],
+    Range            range[static 1]
+) {
+    size_t match_offset = textbuf_len(textbuf); /* we use this value to indicate None value */
+    try(_textbuf_range_parse_to_range_(textbuf, rres, range, &match_offset));
+    if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
+    try(_textbuf_range_validate_(textbuf, range));
+    if (match_offset >= textbuf_len(textbuf))
+        try( textbuf_get_offset_of_line(textbuf, range->end, textbuf_current_offset(textbuf)));
+    else
+        *textbuf_current_offset(textbuf) = match_offset;
+    return Ok;
+}
+
+Err textbuf_to_file(TextBuf textbuf[static 1], const char* filename, const char* mode) {
+    if (!filename || !*filename) { return "cannot write without file arg"; }
+    filename = cstr_trim_space((char*)filename);
+    if (!*filename) return "invalid url name";
+    FILE* fp;
+    try(file_open(filename, mode, &fp));
+
+    const char* items = textbuf_items(textbuf);
+    const char* beg = items;
+    size_t len = textbuf_len(textbuf);
+    if (len && !items[len-1]) --len;
+
+    if (len && fwrite(beg, 1, len, fp) != len) {
+        fclose(fp);
+        return err_fmt("%s: error writing to file: %s", __func__, filename);
+    }
+    if (fclose(fp)) return err_fmt("error closing file '%s'", filename);
+    return Ok;
+}
