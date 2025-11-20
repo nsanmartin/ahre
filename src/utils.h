@@ -10,6 +10,9 @@
 #include <limits.h>
 
 #include "mem.h"
+#include "error.h"
+
+#define SIZE_T_TO_STR_BUFSZ 64
 
 static inline size_t size_t_min(size_t x, size_t y) { return x > y ? x : y; }
 inline static bool file_exists(const char* filename) { return !access(filename, F_OK); }
@@ -119,6 +122,8 @@ void str_reverse(char* s, size_t n) {
 
 Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[static 1]);
 const char* parse_ull(const char* tk, uintmax_t* ullp);
+Err parse_ull_err(const char* tk, uintmax_t ullp[static 1], const char* endptr[static 1]);
+Err parse_ll_err(const char* tk, intmax_t llp[static 1], const char* endptr[static 1]);
 
 static inline Err bufofchar_append(BufOf(char) buf[static 1], char* s, size_t len) {
     if (buffn(char, append)(buf, s, len)) return Ok;
@@ -135,5 +140,16 @@ Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) ;
 #define foreach__(T,It,Col) \
     for (T* It = arlfn(T,begin)(Col) ; It < arlfn(T,end)(Col) ; ++It)
 
-/* * */
+static inline Err file_open(const char* filename, const char* mode, FILE* fpp[static 1]) {
+    *fpp = fopen(filename, mode);
+    if (!*fpp)
+        return err_fmt("error opening file '%s': %s", filename, strerror(errno));
+    return Ok;
+}
+
+static inline Err file_close(FILE* fp) {
+    if (fclose(fp)) return err_fmt("error closing file: %s", strerror(errno));
+    return Ok;
+}
+
 #endif

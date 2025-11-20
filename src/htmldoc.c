@@ -9,6 +9,7 @@
 #include "utils.h"
 #include "wrapper-lexbor.h"
 #include "session.h"
+#include "writer.h"
 
 Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]);
 Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[static 1]);
@@ -1063,4 +1064,67 @@ void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[static 1], Session* s) {
         Err e = jse_eval_doc_scripts(s, d);
         if (e) session_write_msg(s, (char*)e, strlen(e));
     }
+}
+
+Err _htmldoc_scripts_range_from_parsed_range_(
+    HtmlDoc          h[static 1],
+    RangeParse p[static 1],
+    Range            r[static 1]
+) {
+    *r = (Range){0};
+    size_t head_script_count = len__(htmldoc_head_scripts(h));
+    size_t body_script_count = len__(htmldoc_body_scripts(h));
+    if (!head_script_count && !body_script_count) return "HtmlDoc has no scripts";
+    size_t script_max = head_script_count + body_script_count - 1;
+    switch (p->beg.tag) {
+        case range_addr_curr_tag:
+        case range_addr_none_tag:
+        case range_addr_prev_tag: 
+        case range_addr_search_tag:
+             return "invalid range.beg address for scripts";
+        case range_addr_beg_tag: r->beg = 0 + p->beg.delta;
+            break;
+        case range_addr_end_tag: r->beg = script_max + p->beg.delta;
+            break;
+        case range_addr_num_tag: r->beg = p->beg.n + p->beg.delta;
+            break;
+        default: return "error: invalid RangeParse beg tag";
+    }
+    switch (p->end.tag) {
+        case range_addr_curr_tag:
+        case range_addr_prev_tag: 
+        case range_addr_search_tag:
+             return "invalid range.end address for scripts";
+        case range_addr_beg_tag: r->end = 0 + p->end.delta;
+            break;
+        case range_addr_none_tag: r->end = r->beg;
+            break;
+        case range_addr_end_tag: r->end = script_max + p->end.delta;
+            break;
+        case range_addr_num_tag: r->end = p->end.n + p->end.delta;
+            break;
+        default: return "error: invalid RangeParse end tag";
+    }
+    return Ok;
+}
+
+
+Err htmldoc_scripts_write(HtmlDoc h[static 1], RangeParse rp[static 1], Writer w[static 1]) {
+    if (!htmldoc_js_is_enabled(h)) return "enable js to get the scripts";
+
+    Range r;
+    try(_htmldoc_scripts_range_from_parsed_range_(h, rp, &r));
+    for (size_t it = r.beg; it <= r.end; ++it) {
+        char buf[SIZE_T_TO_STR_BUFSZ] = {0};
+        size_t len;
+        try( unsigned_to_str(it, buf, SIZE_T_TO_STR_BUFSZ, &len));
+        Str* sc;
+        try( htmldoc_script_at(h, it, &sc));
+        try(writer_write_lit__(w, "// script: "));
+        try(writer_write(w, buf, len));
+        try(writer_write_lit__(w, "\n"));
+        try(writer_write(w, items__(sc), len__(sc) - 1));
+        try(writer_write_lit__(w, "\n"));
+    }
+    return Ok;
 }

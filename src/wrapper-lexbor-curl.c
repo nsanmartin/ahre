@@ -258,9 +258,9 @@ Err curl_lexbor_fetch_document(
     try( _lexbor_parse_chunk_end_(htmldoc));
     try( _set_htmldoc_url_with_effective_url_(url_client, htmldoc));
     try( htmldoc_convert_sourcebuf_to_utf8(htmldoc));
-    if (cb) try( cb(wfnc, url_client->curl));
     if (htmldoc_js_is_enabled(htmldoc))
         try(curl_lexbor_fetch_scripts(htmldoc, url_client, wfnc));
+    if (cb) try( cb(wfnc, url_client->curl));
     return Ok;
 }
 

@@ -105,6 +105,14 @@ static inline ArlOf(Str)* htmldoc_body_scripts(HtmlDoc d[static 1]) {
     return &d->fetch_cache.body_scripts;
 }
 
+static inline Err htmldoc_script_at(HtmlDoc d[static 1], size_t ix, Str* sptr[static 1]) {
+    *sptr = arlfn(Str,at)(htmldoc_head_scripts(d), ix);
+    if (*sptr) return Ok;
+    *sptr = arlfn(Str,at)(htmldoc_body_scripts(d), ix - len__(htmldoc_head_scripts(d)));
+    if (*sptr) return Ok;
+    return err_fmt("not script at %d", ix);
+}
+
 static inline LxbNodePtr* htmldoc_title(HtmlDoc d[static 1]) { return &d->draw_cache.title; }
 static inline Url* htmldoc_url(HtmlDoc d[static 1]) { return &d->url; }
 static inline HttpMethod htmldoc_method(HtmlDoc d[static 1]) { return d->method; }
@@ -237,5 +245,5 @@ static inline Err htmldoc_switch_js(HtmlDoc htmldoc[static 1], Session* s) {
 
 
 void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[static 1], Session* s);
-
 #endif
+
