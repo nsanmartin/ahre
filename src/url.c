@@ -7,8 +7,8 @@
 Err curl_url_to_filename_append(CURLU* cu, Str out[static 1]) {
     char* url = NULL;
     char* schema = NULL;
-    try( curl_url_part_cstr(cu, CURLUPART_URL, &url));
-    Err err = curl_url_part_cstr(cu, CURLUPART_SCHEME, &schema);
+    try( w_curl_url_get_malloc(cu, CURLUPART_URL, &url));
+    Err err = w_curl_url_get_malloc(cu, CURLUPART_SCHEME, &schema);
     if (err) {
         curl_free(url);
         return "error: could not get host from url";

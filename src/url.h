@@ -5,7 +5,7 @@
 #include <limits.h>
 #include <strings.h>
 #include <curl/curl.h>
-
+#include "wrapper-curl.h"
 #include "utils.h"
 #include "config.h"
 #include "error.h"
@@ -35,18 +35,9 @@ typedef struct {
 /* getters */
 static inline CURLU* url_cu(Url u[static 1]) { return u->cu; }
 
-static inline Err curl_url_part_cstr(CURLU* cu, CURLUPart part, char* out[static 1]) {
-/*
- * Get cu's part. The caller should curl_free out.
- */
-    CURLUcode code = curl_url_get(cu, part, out, 0);
-    if (code == CURLUE_OK)
-        return Ok;
-    return err_fmt("error getting url from CURLU: %s", curl_url_strerror(code));
-}
 
-static inline Err url_cstr(Url u[static 1], char* out[static 1]) {
-    return curl_url_part_cstr(u->cu, CURLUPART_URL, out);
+static inline Err url_cstr_malloc(Url u[static 1], char* out[static 1]) {
+    return w_curl_url_get_malloc(u->cu, CURLUPART_URL, out);
 }
 
 static inline Err url_fragment(Url u[static 1], char* out[static 1]) {

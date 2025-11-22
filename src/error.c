@@ -8,165 +8,156 @@
 
 //static constexpr size_t MAX_MSG_LEN = 512;
 #define MAX_MSG_LEN 1024u
+#define TRUNC_ERR "TRERR:"
+
 /* _Thread_local */ size_t ERR_MSG_LEN = 0;
 /* _Thread_local */ char MSGBUF[MAX_MSG_LEN+1] = {0};
 
 
-/*
- * err_fmt only accepts %s and %d format specifiers.
- */
-static Err _err_fmt_count_params(const char* s, size_t nparams[static 1]) {
-   nparams = 0;
-   while ((s = strchr(s, '%'))) {
-       ++s;
-       if (*s == 's' || *s == 'd') {
-           ++*nparams;
-           continue;
-       } else if (*s == '%') { 
-           continue;
-       }
-       return "error: invalid err_fmt format string.";
-   }
-   return Ok;
-}
 
-
-Err _is_err_fmt_valid(Err fmt, ...) {
-    size_t nparams;
-    try(_err_fmt_count_params(fmt, &nparams));
+Err _err_fmt_vsnprinf_(Err fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    while (nparams--) {
-        if (MSGBUF == va_arg(ap, char *)) {
-            return "error: err_fmt cannot receive as parameter a return value from err_fmt";
-        }
-    }
-    va_end(ap);
-    return Ok;
-}
+    const char* beg = fmt;
+    const char* end;
+    for (;(end = strchr(beg, '%')); ++beg) {
+        if (beg > end) return "error: strchr error.";
+        else if (beg <= end) { beg = end + 1; }
 
-/*
- * err_fmt cannot use an err_fmt return value as parameter.
- */
-Err err_fmt_(Err fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    int bytes = vsnprintf(MSGBUF, MAX_MSG_LEN, fmt, ap);
-    va_end(ap);
-    if (bytes < 0) {
-        return "error: while processing another error mesage, a failure was produced";
+        if(*beg == 's') {
+            if (va_arg(ap, const char *) == MSGBUF)
+                return "error: err_fmt can't receive as parameter an err_fmt return value";
+        } else  va_arg(ap, int);
     }
-    ERR_MSG_LEN = bytes;     
-    MSGBUF[MAX_MSG_LEN] = '\0';
+    va_end(ap);
+
+    char err_msg_buf[MAX_MSG_LEN+1] = {0};
+    va_start(ap, fmt);
+    int bytes = vsnprintf(err_msg_buf, MAX_MSG_LEN, fmt, ap);
+    va_end(ap);
+    if (bytes < 0) return "error: while processing another error mesage, a failure was produced";
+    if ((size_t)bytes >= MAX_MSG_LEN) {
+        // message was truncated
+        bytes = MAX_MSG_LEN;
+        memcpy(err_msg_buf, TRUNC_ERR, sizeof(TRUNC_ERR)-1);
+    }
+    memcpy(MSGBUF, err_msg_buf, bytes + 1);
     return MSGBUF;
 }
 
-static Err _msg_buf_append(char* buf[static 1], const char* s, size_t sz) {
-    if (*buf + sz >= MSGBUF + MAX_MSG_LEN) return "error: err_fmt too large.";
-    memmove(*buf, s, sz);
-    *buf += sz;
-    ERR_MSG_LEN += sz;
+
+static Err _msg_buf_append(
+    char*  errmsgbuf,
+    size_t errmsgbuflen[static 1],
+    size_t errmsgbufmaxlen,
+    char*  bufptr[static 1],
+    const  char* s,
+    size_t sz
+) {
+    if (*bufptr + sz >= errmsgbuf + errmsgbufmaxlen) return "error: err_fmt too large.";
+    memmove(*bufptr, s, sz);
+    *bufptr += sz;
+    *errmsgbuflen += sz;
     return Ok;
 }
 
-static Err _num_to_str(char* buf, size_t sz, int n, size_t len[static 1]) {
-    if (!sz) return "error: not enough size to convert num to str.";
+
+static Err _msg_buf_append_num_(
+    char*  errmsgbuf,
+    size_t errmsgbuflen[static 1],
+    size_t errmsgbufmaxlen,
+    char*  bufptr[static 1],
+    int    n
+) {
+    if (*errmsgbuflen >= errmsgbufmaxlen) return "error: err_fmt too large.";
     if (n == 0) {
-        *buf = '0';
-        *len = 1;
+        **bufptr       = '0';
+        *bufptr  += 1;
+        *errmsgbuflen  += 1;
         return Ok;
     } else if (n == INT_MIN) {
         const size_t intminssz = sizeof "INT_MIN" - 1;
-        if (buf + intminssz >= MSGBUF + MAX_MSG_LEN) return "error: err_fmt too large.";
-        memmove(buf, "INT_MIN", intminssz);
-        //buf += intminssz;
-        *len += intminssz;
+        if (*bufptr + intminssz >= errmsgbuf + errmsgbufmaxlen) return "error: err_fmt too large.";
+        memmove(*bufptr, "INT_MIN", intminssz);
+        *bufptr       += intminssz;
+        *errmsgbuflen += intminssz;
         return Ok;
     }
-    *len = 0;
-    bool negative = n < 0;
-    char* num = buf;
 
-    if (negative) {
+    if (n < 0) {
         n = -n;
-        *buf++ = '-';
-        ++*len;
+        **bufptr = '-';
+        *bufptr  += 1;
+        ++*errmsgbuflen;
     }
-    while (n != 0 && sz > 0) {
-        --sz;
-        ++*len;
-        *buf++ = '0' + (n % 10);
+    char* num            = *bufptr;
+    while (n != 0 && *errmsgbuflen < errmsgbufmaxlen) {
+        **bufptr = '0' + (n % 10);
+        *bufptr  += 1;
+        ++*errmsgbuflen;
         n /= 10;
     }
-    if (sz == 0 && n != 0) return "error: not enough size to convert num to str.";
-    str_reverse(num + negative, *len - negative);
+    if (*errmsgbuflen >= errmsgbufmaxlen)
+        return "error: not enough size to convert num to str.";
+    str_reverse(num, *bufptr - num);
+
     return Ok;
 }
 
-Err err_prepend_char(Err err, char c) {
-    if (MSGBUF != err) {
-        MSGBUF[0] = c;
-        ERR_MSG_LEN = 1;
-        char* buf = MSGBUF + 1;
-        try( _msg_buf_append(&buf, err, strlen(err)));
-        MSGBUF[ERR_MSG_LEN] = '\0';
-        return MSGBUF;
-    }
-    if (ERR_MSG_LEN == MAX_MSG_LEN)
-        return "error: while returning error, not enought size to prepend to err buf";
-    memmove(MSGBUF, MSGBUF + 1, ERR_MSG_LEN);
-    MSGBUF[0] = c;
-    ++ERR_MSG_LEN;
-    MSGBUF[ERR_MSG_LEN] = '\0';
-    return MSGBUF;
-}
 
-Err err_fmt(Err fmt, ...) {
+//TODO: deprecate
+Err _err_fmt_while_(Err fmt, ...) {
     if (!fmt || !*fmt) { return "error: err_fmt fmt is empty."; }
+
+    const size_t errmsgbufmaxlen  = MAX_MSG_LEN;
+    size_t errmsgbuflen           = 0;
+    char errmsgbuf[MAX_MSG_LEN+1] = {0};
+
     const char* beg = fmt;
     const char* end;
-    char* buf = MSGBUF;
+    char* buf = errmsgbuf;
     va_list ap;
 
     va_start(ap, fmt);
-    ERR_MSG_LEN = 0;     
+    errmsgbuflen = 0;     
 
     while ((end = strchr(beg, '%'))) {
         if (end < beg) return "error: strchr error.";
         else if (beg < end) {
-            try(_msg_buf_append(&buf, beg, end-beg));
+            try(_msg_buf_append(errmsgbuf, &errmsgbuflen, errmsgbufmaxlen, &buf, beg, end-beg));
             beg = end + 1;
         } else if (beg == end) { ++beg; }
 
         switch(*beg) {
-            case 's': {
+            case 's':
                 const char* s = va_arg(ap, const char *);
                 if (s == MSGBUF)
                     return "error: err_fmt can't receive as parameter an err_fmt return value";
                 if (s == NULL) s = "(null)";
-                try(_msg_buf_append(&buf, s, strlen(s)));
+                try(_msg_buf_append(errmsgbuf, &errmsgbuflen, errmsgbufmaxlen, &buf, s, strlen(s)));
                 break;
-                      }
-            case 'd':{
-                size_t len = 0;
-                try(_num_to_str(buf, MSGBUF + MAX_MSG_LEN - buf, va_arg(ap, int), &len));
-                buf += len;
-                ERR_MSG_LEN += len;
+
+            case 'd':
+                try(_msg_buf_append_num_(
+                    errmsgbuf,
+                    &errmsgbuflen,
+                    errmsgbufmaxlen,
+                    &buf,
+                    va_arg(ap, int)
+                ));
                 break;
-                     }
-            case '%':{
-                try(_msg_buf_append(&buf, "%", 1));
+
+            case '%':
+                try(_msg_buf_append(errmsgbuf, &errmsgbuflen, errmsgbufmaxlen, &buf, "%", 1));
                 break;
-                     }
+
             default:
                 return "error: unsupported fmt";
         }
         ++beg;
     }
 
-    try(_msg_buf_append(&buf, beg, strlen(beg)));
-
-    MSGBUF[ERR_MSG_LEN] = '\0';
+    try(_msg_buf_append(errmsgbuf, &errmsgbuflen, errmsgbufmaxlen, &buf, beg, strlen(beg)));
+    memcpy(MSGBUF, errmsgbuf, errmsgbuflen + 1);
     return MSGBUF;
 }
-

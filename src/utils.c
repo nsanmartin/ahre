@@ -1,6 +1,45 @@
 #include <errno.h>
 #include "utils.h"
 
+
+/* file utils */
+
+Err file_open(const char* filename, const char* mode, FILE* fpp[static 1]) {
+    *fpp = fopen(filename, mode);
+    if (!*fpp)
+        return err_fmt("error opening file '%s': %s", filename, strerror(errno));
+    return Ok;
+}
+
+Err _file_write_(const char* mem, size_t len, FILE* fp, const char* caller) {
+    if (len && fwrite(mem, 1, len, fp) != len)
+        return err_fmt("(%s) error writing to file: %s", caller, strerror(errno));
+    return Ok;
+} 
+
+Err _file_write_or_close_(const char* mem, size_t len, FILE* fp, const char* caller) {
+    if (len && fwrite(mem, 1, len, fp) != len) {
+        const char* fwrite_strerr = strerror(errno);
+        bool close_err = fclose(fp);
+        if (close_err) {
+            const char* fclose_strerr = strerror(errno);
+            return err_fmt(
+                "error: both fwrite (%s) and fclose (%s) failed (%s)",
+                fwrite_strerr, fclose_strerr, caller
+            );
+        }
+        return err_fmt("error: fwrite failed: %s (%s)", fwrite_strerr, caller);
+    }
+    return Ok;
+} 
+
+Err file_close(FILE* fp) {
+    if (fclose(fp)) return err_fmt("error closing file: %s", strerror(errno));
+    return Ok;
+}
+
+// file utils
+
 const char _base36digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 /* note that if something like "   -1" is received, 2^NBits -1 is returned */

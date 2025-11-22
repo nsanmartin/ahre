@@ -102,7 +102,7 @@ Err bookmark_add_to_section(Session s[static 1], const char* line, UrlClient url
     try(_get_bookmarks_doc_(url_client, &bmfile, &bm));
 
     char* url;
-    if ((err = url_cstr(htmldoc_url(d), &url))) goto clean_bmfile_and_bmdoc;
+    if ((err = url_cstr_malloc(htmldoc_url(d), &url))) goto clean_bmfile_and_bmdoc;
 
     lxb_dom_node_t* body;
     if ((err = bookmark_sections_body(&bm, &body))) goto free_curl_url;

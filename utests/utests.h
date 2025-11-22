@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "../src/error.h"
+
 #define RESET   "\033[0m"
 #define RED     "\033[31m"
 #define GREEN   "\033[32m"
@@ -51,4 +53,14 @@ static inline FILE* mock_fopen(const char *restrict pathname, const char *restri
 }
 
 static inline int mock_fclose(FILE *stream) { (void)stream; return 0; }
+
+static inline Err mock_file_open(const char* filename, const char* mode, FILE* fpp[static 1]) {
+    (void)filename; (void)mode; (void)fpp; return Ok;
+}
+
+static inline Err mock_file_write_(const char* mem, size_t len, FILE* fp) {
+    (void)mem; (void) len; (void) fp;  return Ok;
+} 
+static inline Err mock_file_close(FILE* fp) { (void)fp; return Ok; }
+
 #endif

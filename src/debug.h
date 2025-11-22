@@ -35,7 +35,7 @@ static inline void dbg_log(const char* s) { printf("DEBUG %s\n", s); }
 
 static inline void dbg_print_url(Url u[static 1]) {
     char* buf;
-    Err e = url_cstr(u, &buf);
+    Err e = url_cstr_malloc(u, &buf);
     if (e) printf("DEBUG error: %s\n", e);
     else {
         printf("DEBUG url: %s\n", buf);

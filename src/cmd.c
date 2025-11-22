@@ -216,21 +216,16 @@ Err _cmd_textbuf_write_impl(
     FILE* fp = fopen(rest, "w");
     if (!fp) return err_fmt("%s: could not open file: %s", __func__, rest); 
 
-    Err e = Ok;
     for (size_t linum = r->beg; linum <= r->end; ++linum) {
         StrView line;
         if (!textbuf_get_line(textbuf, linum, &line)) {
-            e = "error: invalid linum"; break;
+            file_close(fp);//TODO: do not ignore error
+            return "error: invalid linum";
         }
-        if (line.len && fwrite(line.items, 1, line.len, fp) != line.len) {
-            e = err_fmt("%s: error writing to file: %s", __func__, rest);
-            break;
-        }
+        try(file_write_or_close(line.items, line.len, fp));
     }
-
-    if (!fclose(fp)) try( session_write_msg_lit__(s, "file written. "));
-    else             try( session_write_msg_lit__(s, "Error coling file..."));
-    return e;
+    try(file_close(fp));
+    return session_write_msg_lit__(s, "file written. ");
 }
 
 Err cmd_textbuf_global(CmdParams p[static 1]) {

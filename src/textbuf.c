@@ -412,11 +412,6 @@ Err textbuf_to_file(TextBuf textbuf[static 1], const char* filename, const char*
     const char* beg = items;
     size_t len = textbuf_len(textbuf);
     if (len && !items[len-1]) --len;
-
-    if (len && fwrite(beg, 1, len, fp) != len) {
-        fclose(fp);
-        return err_fmt("%s: error writing to file: %s", __func__, filename);
-    }
-    if (fclose(fp)) return err_fmt("error closing file '%s'", filename);
-    return Ok;
+    try(file_write_or_close(beg, len, fp));
+    return file_close(fp);
 }

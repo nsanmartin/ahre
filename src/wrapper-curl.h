@@ -59,6 +59,18 @@ static inline Err w_curl_url_dup(CURLU* u, CURLU* dup[static 1]) {
     return (*dup = curl_url_dup(u)) ? Ok : "error: curl_url_dup failure";
 }
 
+
+static inline Err w_curl_url_get_malloc(CURLU* cu, CURLUPart part, char* out[static 1]) {
+/*
+ * Get cu's part. The caller should curl_free out.
+ */
+    CURLUcode code = curl_url_get(cu, part, out, 0);
+    if (code == CURLUE_OK)
+        return Ok;
+    return err_fmt("error getting url from CURLU: %s", curl_url_strerror(code));
+}
+
+
 Err w_curl_multi_add(
     CURLM*         multi,
     CURLU*         baseurl,
@@ -70,6 +82,7 @@ Err w_curl_multi_add(
 );
 
 
+#include "user-out.h"
 void
 w_curl_multi_remove_handles(CURLM* multi, ArlOf(CurlPtr)  easies[static 1], SessionWriteFn wfnc);
 

@@ -14,6 +14,8 @@
 
 #define SIZE_T_TO_STR_BUFSZ 64
 
+#define SIZE_T_TO_STR_BUFSZ 64
+
 static inline size_t size_t_min(size_t x, size_t y) { return x > y ? x : y; }
 inline static bool file_exists(const char* filename) { return !access(filename, F_OK); }
 
@@ -140,16 +142,10 @@ Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) ;
 #define foreach__(T,It,Col) \
     for (T* It = arlfn(T,begin)(Col) ; It < arlfn(T,end)(Col) ; ++It)
 
-static inline Err file_open(const char* filename, const char* mode, FILE* fpp[static 1]) {
-    *fpp = fopen(filename, mode);
-    if (!*fpp)
-        return err_fmt("error opening file '%s': %s", filename, strerror(errno));
-    return Ok;
-}
 
-static inline Err file_close(FILE* fp) {
-    if (fclose(fp)) return err_fmt("error closing file: %s", strerror(errno));
-    return Ok;
-}
-
+#define file_write_or_close(Mem, Len, Fp) _file_write_or_close_(Mem, Len, Fp, __FILE__)
+Err _file_write_or_close_(const char* mem, size_t len, FILE* fp, const char* caller);
+Err file_open(const char* filename, const char* mode, FILE* fpp[static 1]);
+Err _file_write_(const char* mem, size_t len, FILE* fp, const char* caller);
+Err file_close(FILE* fp);
 #endif

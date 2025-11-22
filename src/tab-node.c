@@ -202,7 +202,7 @@ Err session_tab_node_print(
             str_clean(&title_text);
     } else {
         char* buf;
-        Err e = url_cstr(htmldoc_url(d), &buf);
+        Err e = url_cstr_malloc(htmldoc_url(d), &buf);
         if (e) {
             try( session_write_msg_lit__(s, "error: "));
             try( session_write_msg(s, (char*)e, strlen(e)));

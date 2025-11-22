@@ -887,7 +887,7 @@ Err htmldoc_A(Session* s, HtmlDoc d[static 1]) {
     Str* buf = &(Str){0};
     str_append_lit__(buf, "<li><a href=\"");
     char* url_buf;
-    Err err = url_cstr(htmldoc_url(d), &url_buf);
+    Err err = url_cstr_malloc(htmldoc_url(d), &url_buf);
     if (err) {
         str_clean(buf);
         return err;
@@ -908,17 +908,19 @@ Err htmldoc_print_info(Session* s, HtmlDoc d[static 1]) {
     LxbNodePtr* title = htmldoc_title(d);
     try( session_write_unsigned_msg(s, htmldoc_sourcebuf(d)->buf.len));
     try(session_write_msg_lit__(s, "\n"));
+
     if (title) {
         Str buf = (Str){0};
         try (lexbor_get_title_text(*title, &buf));
-        err = session_write_msg(s, buf.items, buf.len);
+        if (!buf.len) err = session_write_msg_lit__(s,  "<NO TITLE>");
+        else err = session_write_msg(s, buf.items, buf.len);
         str_clean(&buf);
         try(err);
         ok_then(err, session_write_msg_lit__(s, "\n"));
     } else try(session_write_msg_lit__(s, "\n"));
     
     char* url = NULL;
-    ok_then(err, url_cstr(htmldoc_url(d), &url));
+    ok_then(err, url_cstr_malloc(htmldoc_url(d), &url));
     if (url) {
         ok_then(err, session_write_msg(s, url, strlen(url)));
         curl_free(url);
