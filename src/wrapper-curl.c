@@ -63,7 +63,7 @@ Err w_curl_multi_add_handles(
     SessionWriteFn   wfnc
 ) {
 
-    //TODO: do it in one op
+    //TODO: do it in one op, of implement reserve/capacity in hotl
     for (size_t i = 0; i < len__(urls); ++i) {
         if (!arlfn(Str,append)(scripts, &(Str){0}))
             return "error: arlfn(Str,append) failure";

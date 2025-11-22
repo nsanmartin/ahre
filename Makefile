@@ -1,11 +1,26 @@
-ahre: tags
+tags_ahre: tags ahre
+
+ahre:
 	$(MAKE) -C src ../build/ahre
+
 
 test_all:
 	$(MAKE) -C utests test_all
 
+run_tests:
+	$(MAKE) -C utests run_tests
+
+
 tags: $(wildcard $(AHRE_SRCDIR)/*.c) clean-tags
-	ctags -R --exclude=.git --exclude=che/scripts .
+	ctags -R \
+		--exclude=.git \
+		--exclude=hotl/scripts \
+		--exclude=html \
+		--exclude=js \
+		--exclude=tmp \
+		--exclude=build \
+		--exclude=quickjs/tests \
+		--exclude=quickjs/examples  .
 
 cscope.files: $(AHRE_HEADERS) $(AHRE_SRCS)
 	if [ -f cscope.files ]; then rm cscope.files; fi

@@ -11,7 +11,6 @@ typedef const char* Err;
 #define Ok ((Err)0x0)
 
 static inline Err err_skip(void) { return Ok; }
-Err err_fmt(Err fmt, ...);
 
 static Err FATAL_ERROR_PREFIX = "error";
 static size_t FATAL_ERROR_PREFIX_LEN = sizeof(FATAL_ERROR_PREFIX) - 1;
@@ -51,4 +50,10 @@ static inline bool fatal_error(Err e) {
 #define REAL_ERR_MSG_ "a real error: "
 
 Err err_prepend_char(Err err, char c);
+
+Err _err_fmt_vsnprinf_(Err fmt, ...);
+Err _err_fmt_while_(Err fmt, ...);
+
+#define err_fmt(Fmt, ...) _err_fmt_vsnprinf_(Fmt,__VA_ARGS__)
+
 #endif

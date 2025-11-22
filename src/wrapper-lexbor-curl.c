@@ -63,26 +63,26 @@ Err _curl_set_http_method_(UrlClient url_client[static 1], HtmlDoc htmldoc[stati
 
 Err _curl_set_curlu_(UrlClient url_client[static 1], HtmlDoc htmldoc[static 1]) {
     char* url_str = NULL;
-    try( url_cstr(htmldoc_url(htmldoc), &url_str));
-    if (curl_easy_setopt(url_client->curl, CURLOPT_URL, url_str)) 
-        return "error: curl failed to set url";
+    try( url_cstr_malloc(htmldoc_url(htmldoc), &url_str));
+    CURLcode code = curl_easy_setopt(url_client->curl, CURLOPT_URL, url_str);
     curl_free(url_str);
-    return Ok;
+    if (CURLE_OK == code) return Ok;
+    return err_fmt("error: curl failed to set url %s", curl_easy_strerror(code));
 
     // TODO: once this fix 
     // https://github.com/curl/curl/commit/5ffc73c78ec48f6ddf38c68ae7e8ff41f54801e6 
     // is available replace this implementation
-    //CURL* curlu = url_cu(htmldoc_url(htmldoc));
-    //if (curl_easy_setopt(url_client->curl, CURLOPT_CURLU, curlu)) 
-    //    return "error: curl failed to set url";
-    //return Ok;
+    /* CURL* curlu = url_cu(htmldoc_url(htmldoc)); */
+    /* CURLcode code = curl_easy_setopt(url_client->curl, CURLOPT_CURLU, curlu); */
+    /* if (CURLE_OK == code) return Ok; */
+    /* return err_fmt("error: curl failed to set urlL %s", curl_easy_strerror(code)); */
 }
 
 
 Err _curl_perform_error_( HtmlDoc htmldoc[static 1], CURLcode curl_code) {
     Url* url = htmldoc_url(htmldoc);
     char* u;
-    Err e = url_cstr(url, &u);
+    Err e = url_cstr_malloc(url, &u);
     if (e) u = "and url could not be obtained due to another error :/";
     Err err = err_fmt(
         "curl failed to perform curl: %s (%s)", curl_easy_strerror(curl_code), u
@@ -191,6 +191,8 @@ Err curl_lexbor_fetch_scripts(
     lxb_dom_collection_t* head_scripts;
     lxb_dom_collection_t* body_scripts;
 
+    if (len__(htmldoc_head_scripts(htmldoc)) + len__(htmldoc_body_scripts(htmldoc)))
+        return "error: htmldoc must have no scripts before fetching them";
     try(_get_scripts_collection_(doc, lxb_dom_interface_element(doc->head), &head_scripts));
     try_or_jump(e, Lxb_Array_Head_Destroy,
             _get_scripts_collection_(doc, lxb_dom_interface_element(doc->body), &body_scripts));
@@ -251,6 +253,7 @@ Err curl_lexbor_fetch_document(
     try( _curl_set_curlu_(url_client, htmldoc));
 
     CURLcode curl_code = curl_easy_perform(url_client->curl);
+
     str_reset(url_client_postdata(url_client));
     if (curl_code!=CURLE_OK) 
         return _curl_perform_error_(htmldoc, curl_code);
@@ -271,7 +274,7 @@ Err url_client_curlu_to_str(
     Err e = Ok;
     /* try( url_client_reset(url_client)); */
     char* url_str = NULL;
-    /* try( curl_url_part_cstr(curlu, CURLUPART_URL, &url_str)); */
+    /* try( w_curl_url_get_malloc(curlu, CURLUPART_URL, &url_str)); */
     if (curl_easy_setopt(url_client->curl, CURLOPT_URL, url_str)) {
         e = "error: curl failed to set url";
         goto cleanup;
