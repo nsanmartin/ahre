@@ -55,3 +55,17 @@ is used to evaluate the javascript and apply the changes in the document.}
 `htmldoc_draw` "draws" the document as text traversing the tree parsed by lexbor. It calls 
 `draw_rec_tag` to draw each elemment and for each tag T `draw_tag_T` and `draw_text`r
 for text.
+
+# Debug Build
+
+The defult build `make ahre` uses the `-g` flag so can be used for debugging. There is
+an additional build `make -f Makefile.debug` in `./src` that uses the
+`$HOME/test/local/lib` to link libcurl. So to be able to step into libcurl code
+you need to build curl configuring it with
+`./confugure --prefix=$HOME/test/local --with-openssl --enble-debug`
+
+or with any other ssl option.
+
+And for quickjs, you need to `make debug` the quickjs sources.
+
+The target is `./build/debug`.

@@ -185,7 +185,7 @@ Err cmd_set_session_monochrome(CmdParams p[static 1]);
 Err cmd_set_session_js(CmdParams p[static 1]);
 
 
-static SessionCmd _cmd_set_session_[] = 
+static SessionCmd _cmd_session_set_[] = 
     { {.name="input",        .match=1, .fn=cmd_set_session_input,      .help=NULL}
     , {.name="js",           .match=1, .fn=cmd_set_session_js,         .help=NULL}
     , {.name="monochrome",   .match=1, .fn=cmd_set_session_monochrome, .help=NULL}
@@ -195,16 +195,13 @@ static SessionCmd _cmd_set_session_[] =
     };
 
 /* set commands */
-#define CMD_SET_CURL "Set a curl option.\n"\
-    "TODO: enumerate all available options.\n"
-Err cmd_set_curl(CmdParams p[static 1]);
-Err cmd_set_session(CmdParams p[static 1]) { return run_cmd__(p, _cmd_set_session_); }
+#define SESSION_SET_DOC "Sets a session conf\n"
+Err cmd_session_set(CmdParams p[static 1]) { return run_cmd__(p, _cmd_session_set_); }
 
-static SessionCmd _cmd_set_[] = 
-    { {.name="curl",    .match=1, .fn=cmd_set_curl,    .help=CMD_SET_CURL}
-    , {.name="session", .match=1, .fn=cmd_set_session, .help=NULL,.subcmds=_cmd_set_session_}
-    , {0}
-    };
+/* static SessionCmd _cmd_set_[] = */ 
+/*     { {.name="session", .match=1, .fn=cmd_session_set, .help=NULL,.subcmds=_cmd_session_set_} */
+/*     , {0} */
+/*     }; */
 
 /* tab commands (|) */
 
@@ -266,6 +263,18 @@ static SessionCmd _cmd_doc_scripts_[] =
     , {0}
 };
 
+
+#define CMD_CURL_SET "Set a curl option.\n"\
+    "TODO: enumerate all available options.\n"
+Err cmd_curl_set(CmdParams p[static 1]);
+static SessionCmd _cmd_curl_[] =
+    { [0]={.name="cookies", .match=1, .fn=cmd_curl_cookies, .help=CMD_CURL_COOKIES_DOC}
+    , [1]={.name="version", .match=1, .fn=cmd_curl_version, .help=CMD_CURL_VERSION_DOC}
+    , [2]={.name="set",     .match=1, .fn=cmd_curl_set,     .help=CMD_CURL_SET}
+    , [3]={0}
+    };
+#define CMD_CURL_DOC "Curl commands.\n"
+Err cmd_curl(CmdParams p[static 1]) { return run_cmd__(p, _cmd_curl_); }
 
 /* doc commands */
 
@@ -346,8 +355,8 @@ static Err cmd_help(CmdParams p[static 1]);
 #define CMD_QUIT_DOC "Quits ahre.\n"
 static Err cmd_quit (CmdParams p[static 1]) { session_quit_set(p->s); return Ok;}
 
-#define CMD_SET_DOC "Sets an option.\n"
-Err cmd_set(CmdParams p[static 1]) { return run_cmd__(p, _cmd_set_); }
+/* #define CMD_SET_DOC "Sets an option.\n" */
+/* Err cmd_set(CmdParams p[static 1]) { return run_cmd__(p, _cmd_set_); } */
 
 #define CMD_TABS_DOC "ahre tabs are tres of the visited urls.\n"
 Err cmd_tabs(CmdParams p[static 1]) { return run_cmd__(p, _cmd_tabs_); }
@@ -386,17 +395,17 @@ Err cmd_shortcut_z(CmdParams p[static 1]) { return shortcut_z(p->s, p->ln); }
 
 #define CMD_HELP_IX 14
 static SessionCmd _session_cmd_[] =
-    { [0]={.name="bookmarks", .match=1, .fn=cmd_bookmarks, .help=CMD_BOOKMARKS_DOC}
-    , [1]={.name="cookies",   .match=1, .fn=cmd_cookies,   .help=CMD_COOKIES_DOC}
-    , [2]={.name="echo",      .match=1, .fn=cmd_echo,      .help=CMD_ECHO_DOC}
-    , [3]={.name="go",        .match=1, .fn=cmd_go,        .help=CMD_GO_DOC}
-    , [4]={.name="quit",      .match=1, .fn=cmd_quit,      .help=CMD_QUIT_DOC, .flags=CMD_NO_PARAMS}
-    , [5]={.name="set",       .match=1, .fn=cmd_set,       .help=CMD_SET_DOC, .subcmds=_cmd_set_}
+    { [0]={.name="bookmarks", .match=1, .fn=cmd_bookmarks,   .help=CMD_BOOKMARKS_DOC}
+    , [1]={.name="curl",      .match=1, .fn=cmd_curl,        .help=CMD_CURL_DOC,    .subcmds=_cmd_curl_}
+    , [2]={.name="echo",      .match=1, .fn=cmd_echo,        .help=CMD_ECHO_DOC}
+    , [3]={.name="go",        .match=1, .fn=cmd_go,          .help=CMD_GO_DOC}
+    , [4]={.name="quit",      .match=1, .fn=cmd_quit,        .help=CMD_QUIT_DOC,    .flags=CMD_NO_PARAMS}
+    , [5]={.name="set",       .match=1, .fn=cmd_session_set, .help=SESSION_SET_DOC, .subcmds=_cmd_session_set_}
     , [6]={.name="|",  .fn=cmd_tabs,       .help=CMD_TABS_DOC, .flags=CMD_CHAR, .subcmds=_cmd_tabs_}
-    , [7]={.name=".",  .fn=cmd_doc,        .help=CMD_DOC_DOC, .flags=CMD_CHAR, .subcmds=_cmd_doc_}
-    , [8]={.name=":",  .fn=cmd_textbuf,    .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
-    , [9]={.name="<",  .fn=cmd_sourcebuf,  .help=NULL, .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
-    , [10]={.name="&", .fn=dbg_print_form, .help=NULL, .flags=CMD_CHAR}
+    , [7]={.name=".",  .fn=cmd_doc,        .help=CMD_DOC_DOC,  .flags=CMD_CHAR, .subcmds=_cmd_doc_}
+    , [8]={.name=":",  .fn=cmd_textbuf,    .help=NULL,         .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
+    , [9]={.name="<",  .fn=cmd_sourcebuf,  .help=NULL,         .flags=CMD_CHAR, .subcmds=_cmd_textbuf_}
+    , [10]={.name="&", .fn=dbg_print_form, .help=NULL,         .flags=CMD_CHAR}
     , [11]={
         .name    = ANCHOR_OPEN_STR,
         .fn      = cmd_anchor,

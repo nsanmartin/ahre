@@ -40,11 +40,25 @@ typedef struct SessionCmd {
     "Otherwise, it will curl it.\n"
 Err cmd_go(CmdParams p[static 1]);
 
-#define CMD_COOKIES_DOC \
+/*
+ * Curl commands
+ */
+
+#define CMD_CURL_COOKIES_DOC \
     "Show the cookies.\n"
-static inline Err cmd_cookies(CmdParams p[static 1]) {
+static inline Err cmd_curl_cookies(CmdParams p[static 1]) {
     return url_client_print_cookies(p->s, session_url_client(p->s));
 }
+
+#define CMD_CURL_VERSION_DOC \
+    "Shows curl's version.\n"
+static inline Err cmd_curl_version(CmdParams p[static 1]) {
+    if (!p->s) return "error: session is null";
+    char* version = curl_version();
+    return session_write_msg_ln(p->s, version, strlen(version));
+}
+
+// curl commands
 
 Err htmldoc_redraw(HtmlDoc htmldoc[static 1], Session s[static 1]);
 static inline Err session_doc_draw(Session session[static 1]) {

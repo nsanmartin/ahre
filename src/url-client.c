@@ -106,8 +106,7 @@ Err url_client_print_cookies(Session* s, UrlClient uc[static 1]) {
 
     struct curl_slist* it = cookies;
     while (it) {
-        try(session_write_msg(s, it->data, strlen(it->data)));
-        try(session_write_msg_lit__(s, "\n"));
+        try(session_write_msg_ln(s, it->data, strlen(it->data)));
         it = it->next;
     }
     curl_slist_free_all(cookies);
@@ -149,7 +148,7 @@ static Err _curl_setopt_cstr_(CURL* handle, CURLoption opt, const char* rest) {
 }
 
 
-Err cmd_set_curl(CmdParams p[static 1]) {
+Err cmd_curl_set(CmdParams p[static 1]) {
     CURLoption opt;
     const char* rest = _parse_opt(p->ln, &opt);
     if (!rest) return "invalid curl opt";
