@@ -72,6 +72,7 @@ static inline bool lexbor_str_eq(const char* s, const lxb_char_t* lxb_str, size_
 }
 
 Err dbg_print_title(lxb_dom_node_t* title) ;
+Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request req[static 1]);
 Err mk_submit_url (
     UrlClient url_client[static 1],
     lxb_dom_node_t* form,

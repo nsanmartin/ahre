@@ -2,13 +2,12 @@
 #include "tab-node.h"
 #include "session.h"
 
-Err tab_node_init(
+Err tab_node_init_from_request(
     TabNode     n[static 1],
     TabNode*    parent,
-    const char* urlstr,
     Url*        url,
     UrlClient   url_client[static 1],
-    HttpMethod  method,
+    Request     r[static 1],
     Session     s[static 1]
 );
 
@@ -20,15 +19,20 @@ Err tablist_append_tree_from_url(
     Session s[static 1]
 ) {
     TabNode tn = (TabNode){0};
-    try( tab_node_init(&tn, 0x0, url, NULL, url_client, http_get, s));
-    Err err = tablist_append_move_tree(f, &tn);
-    if (err) {
-        tab_node_cleanup(&tn);
-        return err;
+    Request r = (Request){.method=http_get,.url=(Str){.items=(char*)url,.len=strlen(url)}};
+    try( tab_node_init_from_request(&tn, NULL, NULL, url_client, &r, s));
+
+    Err err = Ok;
+    try_or_jump(err, Failure_Tab_Node_Cleanup, tablist_append_move_tree(f, &tn));
+    if (!f->tabs.len) {
+        err = "error: expecting tabs in the tab list after appending a tab";
+        goto Failure_Tab_Node_Cleanup;
     }
-    if (!f->tabs.len) return "error: expecting tabs in the tab list after appending a tab";
     f->current_tab = f->tabs.len - 1;
     return Ok;
+Failure_Tab_Node_Cleanup:
+    tab_node_cleanup(&tn);
+    return err;
 }
 
 

@@ -139,10 +139,15 @@ bookmark_mk_entry(
 
 #define _htmldoc_fetch_bookmark_ htmldoc_fetch /* bookmark does not have js so it's simpler */
 static inline Err
-_get_bookmarks_doc_(UrlClient url_client[static 1], Str* bmfile, HtmlDoc out[static 1]) {
+_get_bookmarks_doc_(
+    UrlClient url_client[static 1],
+    Str*      bmfile,
+    Writer    msg_writer[static 1],
+    HtmlDoc   out[static 1]
+) {
     try( get_bookmark_filename_if_it_exists(bmfile));
-    try(htmldoc_init(out, bmfile->items, NULL, http_get, 0x0));
-    Err err = _htmldoc_fetch_bookmark_(out, url_client, output_dev_null__, NULL);
+    try(htmldoc_init_bookmark(out, bmfile->items));
+    Err err = _htmldoc_fetch_bookmark_(out, url_client, msg_writer);
     if (err) {
         htmldoc_cleanup(out);
         return err;

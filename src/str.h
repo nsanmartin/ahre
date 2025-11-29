@@ -140,6 +140,14 @@ inline static StrView strview_from_mem_trim(const char* s, size_t len) {
     (buffn(char,append)(StrPtr, Items, NItems) ? Ok : "error: str_append failure")
      //: err_fmt("error: str_append failure ("__FILE__":%d", __LINE__))
 
+#define str_append_z(StrPtr, Items, NItems) \
+    ((!buffn(char,append)(StrPtr, Items, NItems) || !buffn(char,append)(StrPtr, "\0", 1))\
+     ? "error: str_append_z failure" : Ok)
+
+#define str_append_ln(StrPtr, Items, NItems) \
+    ((!buffn(char,append)(StrPtr, Items, NItems) || !buffn(char,append)(StrPtr, "\n", 1))\
+     ? "error: str_append_ln failure" : Ok)
+
 static inline size_t str_append_flip(
     const char* mem,
     size_t      size,

@@ -736,52 +736,61 @@ static Err _htmldoc_draw_(HtmlDoc htmldoc[static 1], Session s[static 1]) {
 
 
 #define HTMLDOC_FLAG_JS 0x1u
-Err htmldoc_init(
-/*
- * HtmlDoc Ctor. may receive urlstr and/or url.
- * If both are received: duplicates url and set part with urlstr
- * If only url         : duplicate url
- * If only urlstr      : creates a nre url from it
- * If none             : it is an error
- */
-    HtmlDoc     d[static 1],
-    const char* urlstr,
-    Url*        url,
-    HttpMethod  method,
-    unsigned    flags
-) {
+
+Err _dup_url_from_request_(Request r[static 1], Url* u, Url out[static 1]) {
     Err e = Ok;
-
-    /*
-     * lexbor doc should be initialized before jse_init
-     */
-    *d = (HtmlDoc){ .lxbdoc = lxb_html_document_create() };
-    if (!d->lxbdoc) return "error: lxb failed to create html document";
-
-    if (flags & HTMLDOC_FLAG_JS) 
-        try_or_jump(e, Failure_Lxb_Html_Document_Destroy, jse_init(d));
-
-    Url dup;
-    if (urlstr && url) {
-        try_or_jump(e, Failure_Jse_Clean, url_dup(url, &dup));
-        try_or_jump(e, Failure_Url_Cleanup, curlu_set_url_or_fragment(dup.cu, urlstr));
-    } else if (urlstr) {
-        try_or_jump(
-            e, Failure_Jse_Clean, url_init_from_cstr(&dup, urlstr)
-        );
-    } else if (url) {
-        try_or_jump(e, Failure_Jse_Clean, url_dup(url, &dup));
+    if (u && len__(request_url_str(r))) {
+        try(url_dup(u, out));
+        try_or_jump(e, Failure_Url_Cleanup,
+            curlu_set_url_or_fragment(url_cu(out), items__(request_url_str(r))));
+    } else if (len__(request_url_str(r))) {
+        try(url_init_from_cstr(out, items__(request_url_str(r))));
+    } else if (u) {
+        try(url_dup(u, out));
     } else
         return "error: cannot initialize htmldoc with nonurl nor urlstr";
-
-
-    d->url    = dup;
-    d->method = method;
 
     return Ok;
 
 Failure_Url_Cleanup:
-    url_cleanup(url);
+    url_cleanup(out);
+    return e;
+}
+
+
+Err htmldoc_init_from_request(
+    HtmlDoc   d[static 1],
+    Request   r[static 1],
+    Url       u[static 1],
+    UrlClient uc[static 1],
+    Session*  s
+) {
+    if (!s) return "error: expecting a session, recived NULL";
+    Err e = Ok;
+    Writer w;
+    try(session_msg_writer_init(&w, s));
+    unsigned flags = session_js(s) ? HTMLDOC_FLAG_JS : 0x0;
+
+    /* lexbor doc should be initialized before jse_init */
+    *d = (HtmlDoc){
+        .method = request_method(r),
+        .lxbdoc = lxb_html_document_create()
+    };
+    if (!d->lxbdoc) return "error: lxb failed to create html document";
+    if (flags & HTMLDOC_FLAG_JS) 
+        try_or_jump(e, Failure_Lxb_Html_Document_Destroy, jse_init(d));
+    try_or_jump(e, Failure_Jse_Clean, _dup_url_from_request_(r, u, htmldoc_url(d)));
+    try_or_jump(e, Failure_Url_Cleanup, url_from_request(r, uc, htmldoc_url(d)));
+
+    try_or_jump(e, Failure_Url_Cleanup, htmldoc_fetch(d, uc, &w));
+
+    htmldoc_eval_js_scripts_or_continue(d, s);
+    try_or_jump( e, Failure_Url_Cleanup, _htmldoc_draw_(d, s));
+
+    return Ok;
+
+Failure_Url_Cleanup:
+    url_cleanup(htmldoc_url(d));
 Failure_Jse_Clean:
     jse_clean(htmldoc_js(d));
 Failure_Lxb_Html_Document_Destroy:
@@ -791,38 +800,27 @@ Failure_Lxb_Html_Document_Destroy:
 }
 
 
-/* external linkage */
-
-Err htmldoc_init_fetch_draw(
-    HtmlDoc     d[static 1],
-    const char* urlstr,
-    Url*        url,
-    UrlClient   url_client[static 1],
-    HttpMethod  method,
-    Session     s[static 1]
-) {
+Err htmldoc_init_bookmark(HtmlDoc d[static 1], const char* urlstr) {
     Err e = Ok;
-    unsigned flags = session_js(s) ? HTMLDOC_FLAG_JS : 0x0;
-    try(htmldoc_init(d, urlstr, url, method, flags));
-    try_or_jump(
-        e,
-        Failure_HtmlDoc_Cleanup,
-        htmldoc_fetch( d, url_client, session_doc_msg_fn(s,d), session_uout(s)->fetch_cb)
-    );
 
-    htmldoc_eval_js_scripts_or_continue(d, s);
-    try_or_jump(
-        e,
-        Failure_HtmlDoc_Cleanup,
-        _htmldoc_draw_(d, s)
-    );
+    *d = (HtmlDoc){ .lxbdoc = lxb_html_document_create() };
+    if (!d->lxbdoc) return "error: lxb failed to create html document";
+    Url dup;
+    if (!urlstr) return "error: cannot initialize bookmark with not path";
+    try_or_jump(e, Failure_Lxb_Html_Document_Destroy, url_init_from_cstr(&dup, urlstr));
+
+    d->url    = dup;
+    d->method = http_get;
 
     return Ok;
 
-Failure_HtmlDoc_Cleanup:
-    htmldoc_cleanup(d);
+Failure_Lxb_Html_Document_Destroy:
+    lxb_html_document_destroy(d->lxbdoc);
     return e;
 }
+
+
+/* external linkage */
 
 
 void htmldoc_reset_draw(HtmlDoc htmldoc[static 1]) {
@@ -906,8 +904,12 @@ Err htmldoc_A(Session* s, HtmlDoc d[static 1]) {
 Err htmldoc_print_info(Session* s, HtmlDoc d[static 1]) {
     Err err = Ok;
     LxbNodePtr* title = htmldoc_title(d);
-    try( session_write_unsigned_msg(s, htmldoc_sourcebuf(d)->buf.len));
-    try(session_write_msg_lit__(s, "\n"));
+    try (session_write_msg_lit__(s, "DOWNLOAD SIZE: "));
+    try (session_write_unsigned_msg(s, *htmldoc_curlinfo_sz_download(d)));
+    try (session_write_msg_lit__(s, "\n"));
+    try (session_write_msg_lit__(s, "html size: "));
+    try (session_write_unsigned_msg(s, htmldoc_sourcebuf(d)->buf.len));
+    try (session_write_msg_lit__(s, "\n"));
 
     if (title) {
         Str buf = (Str){0};

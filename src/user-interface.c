@@ -237,7 +237,7 @@ static Err cmd_doc_scripts_save(CmdParams p[static 1]) {
     Writer w;
     FILE* fp;
     try(file_open(p->ln, "w", &fp));
-    try_or_jump(e, Failure, writer_init__(&w, fp));
+    try_or_jump(e, Failure, file_writer_init(&w, fp));
     try_or_jump(e, Failure, htmldoc_scripts_write(h, &p->rp, &w));
     e = file_close(fp);
     ok_then(e, session_write_msg_lit__(p->s, "script(s) saved\n"));
@@ -251,7 +251,7 @@ static Err cmd_doc_scripts_show(CmdParams p[static 1]) {
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
     Writer w;
-    try(writer_init__(&w, p->s));
+    try(session_std_writer_init(&w, p->s));
     return htmldoc_scripts_write(h, &p->rp, &w);
 }
 
@@ -283,6 +283,11 @@ static inline Err cmd_doc_scripts_cmd(CmdParams p[static 1]) {
     return run_cmd_on_range__(p, _cmd_doc_scripts_);
 }
 
+#define CMD_DOC_FETCh \
+    "Fetchs the current document.\n"
+static inline Err cmd_doc_fetch(CmdParams p[static 1]) { return cmd_fetch(p->s); }
+
+
 static SessionCmd _cmd_doc_[] =
     { {.name="",        .fn=cmd_doc_info,              .help=CMD_DOC_INFO_DOC,     .flags=CMD_EMPTY}
     , {.name="$",       .fn=cmd_doc_scripts_cmd,           .help=CMD_DOC_SCRIPTS_DOC,  .flags=CMD_CHAR}
@@ -291,6 +296,7 @@ static SessionCmd _cmd_doc_[] =
     , {.name="\"",      .fn=cmd_doc_info,              .help=CMD_DOC_INFO_DOC,     .flags=CMD_CHAR}
     , {.name="console", .match=1, .fn=cmd_doc_console, .help=CMD_DOC_CONSOLE}
     , {.name="draw",    .match=1, .fn=cmd_doc_draw,    .help=CMD_DOC_DRAW}
+    , {.name="fetch",   .match=1, .fn=cmd_doc_fetch,   .help=CMD_DOC_DRAW}
     , {.name="js",      .match=1, .fn=cmd_doc_js,      .help=CMD_DOC_JS}
     //, {.name="%", .fn=_cmd_doc_dbg_traversal,  .help=NULL, .flags=CMD_CHAR}
     //, {.name="hide", .match=1, .fn=_cmd_doc_hide, .help="Hide <ul>"}

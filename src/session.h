@@ -2,29 +2,19 @@
 #define AHRE_SESSION_H__
 
 #include "session-conf.h"
-/* #include "htmldoc.h" */
 #include "tabs.h"
 #include "user-input.h"
 #include "user-out.h"
 #include "utils.h"
+#include "writer.h"
 
-
-typedef struct Session Session;
-
-typedef Err (*UserLineCallback)(Session* session, const char*);
-
-typedef struct SessionMemWriter SessionMemWriter;
-typedef struct SessionMemWriter {
-    Session* s;
-    Err (*write)(SessionMemWriter* self, const char*, size_t);
-} SessionMemWriter;
 
 typedef struct Session {
     UrlClient url_client;
     TabList tablist;
     SessionConf conf;
     /* accidental data */
-    Str msg; //TODO: add one msg buffer per htmldoc
+    Msg msg; //TODO: add one msg buffer per htmldoc
 } Session;
 
 
@@ -35,7 +25,7 @@ Err session_current_buf(Session session[static 1], TextBuf* out[static 1]);
 Err session_current_doc(Session session[static 1], HtmlDoc* out[static 1]);
 Err session_current_src(Session session[static 1], TextBuf* out[static 1]);
 
-static inline Str* session_msg(Session s[static 1]) { return &s->msg; }
+static inline Msg* session_msg(Session s[static 1]) { return &s->msg; }
 
 static inline UrlClient* session_url_client(Session session[static 1]) {
     return &session->url_client;
@@ -80,7 +70,7 @@ Err session_init(Session s[static 1], SessionConf sconf[static 1]);
 static inline void session_cleanup(Session s[static 1]) {
     url_client_cleanup(session_url_client(s));
     tablist_cleanup(session_tablist(s));
-    str_clean(session_msg(s));
+    msg_clean(session_msg(s));
 }
 
 void session_destroy(Session* session);
@@ -92,20 +82,12 @@ Err tablist_append_tree_from_url(
     const char* url,
     UrlClient url_client[static 1],
     Session s[static 1]
-) ;
-static inline Err tablist_append_tree(
-    TabList f[static 1], CurluOrCstr u[static 1], UrlClient url_client[static 1], Session s[static 1]
-) {
-    switch (u->tag) {
-        case cstr_tag: return tablist_append_tree_from_url(f, u->cstr, url_client, s);
-        case curlu_tag:
-        default: return "error: invalid tag for CurluOrCstr, only cstr supported";
-    }
-}
+);
+
 
 static inline Err
 session_open_url(Session s[static 1], const char* url, UrlClient url_client[static 1]) {
-    return tablist_append_tree(session_tablist(s), mk_union_cstr(url), url_client, s);
+    return tablist_append_tree_from_url(session_tablist(s), url, url_client, s);
 }
 
 Err tab_node_tree_append_ahref(
@@ -154,12 +136,6 @@ static inline Err session_consume_line(Session s[static 1], char* user_input) {
     return err;
 }
 
-static inline Err
-session_writer_write_msg(SessionMemWriter w[static 1], const char* msg, size_t len) {
-    UserOutput* uo = session_uout(w->s);
-    return uo->write_msg(msg, len, w->s);
-}
-
 
 static inline Err session_write_msg(Session s[static 1], char* msg, size_t len) {
     UserOutput* uo = session_uout(s);
@@ -174,16 +150,38 @@ static inline Err session_write_msg_ln(Session s[static 1], char* msg, size_t le
     return session_write_msg_lit__(s, "\n");
 }
 
-static inline Err
-session_writer_write_std(SessionMemWriter w[static 1], const char* msg, size_t len) {
-    UserOutput* uo = session_uout(w->s);
-    return uo->write_std(msg, len, w->s);
-}
-
 
 static inline Err session_write_unsigned_std(Session s[static 1], uintmax_t ui) {
     return ui_write_unsigned(session_conf_uout(session_conf(s))->write_std, ui, s);
 }
+
+
+/* Writer To session std (ie screen) */
+static inline Err session_write_std(Session s[static 1], char* msg, size_t len) {
+    UserOutput* uo = session_uout(s);
+    return uo->write_std(msg, len, s);
+}
+
+#define session_write_std_lit__(Ses, LitStr) session_write_std(Ses, LitStr, lit_len__(LitStr))
+
+static inline Err session_write_std_ln(Session s[static 1], char* msg, size_t len) {
+    UserOutput* uo = session_uout(s);
+    try(uo->write_std(msg, len, s));
+    return session_write_std_lit__(s, "\n");
+}
+
+static inline Err _writer_write_to_session_std_(Writer* self, const char* mem, size_t len) {
+    UserOutput* uo = session_uout(self->out);
+    return uo->write_std(mem, len, self->out);
+}
+
+static inline Err session_std_writer_init(Writer w[static 1], Session s[static 1]) {
+    // if (!s) return "error: expecting a sessions, received NULL";
+    *w = (Writer){ .self=w, .write=_writer_write_to_session_std_, .out=s };
+    return Ok;
+}
+
+// Writer To session std (screen)
 
 static inline Err session_write_unsigned_msg(Session s[static 1], uintmax_t ui) {
     return ui_write_unsigned(session_conf_uout(session_conf(s))->write_msg, ui, s);
@@ -200,21 +198,21 @@ static inline Err session_show_output(Session s[static 1]) {
 }
 
 
-/* tablist ctor */
-
-static inline Err
-tablist_init(
-    TabList f[static 1],
-    const char* url,
-    UrlClient url_client[static 1],
-    Session s[static 1]
-) {
-    return tablist_append_tree_from_url(f, url, url_client, s);
+/* Writer To session msg */
+static inline Err writer_write_to_session_msg(Writer* self, const char* mem, size_t len) {
+    UserOutput* uo = session_uout(self->out);
+    return uo->write_msg(mem, len, self->out);
 }
 
-Err session_write_range_mod(
-    SessionMemWriter w[static 1], TextBuf textbuf[static 1], Range range[static 1]
-);
+static inline Err session_msg_writer_init(Writer w[static 1], Session s[static 1]) {
+    *w = (Writer){ .self=w, .write=writer_write_to_session_msg, .out=s };
+    return Ok;
+}
+// Writer To session msg
+
+
+Err
+session_write_std_range_mod(Session s[static 1], TextBuf textbuf[static 1], Range range[static 1]);
 
 
 #endif

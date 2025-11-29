@@ -137,11 +137,11 @@ Err _cmd_doc_dbg_traversal(Session ctx[static 1], const char* fname) {
     fname = cstr_skip_space(fname);
 
     lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(d);
-    str_reset(session_msg(ctx));
+    msg_reset(session_msg(ctx));
     try( dbg_traversal_rec(lxb_dom_interface_node(lxbdoc), ctx));
     FILE* fp = fopen(fname, "w");
     if (!fp) return err_fmt("%s: could not open file: %s", __func__, fname); 
-    fwrite(items__(session_msg(ctx)), 1, len__(session_msg(ctx)), fp);
+    fwrite(msg_items(session_msg(ctx)), 1, msg_len(session_msg(ctx)), fp);
     fclose(fp);
     return Ok;
 }
