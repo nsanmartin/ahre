@@ -78,17 +78,18 @@ void session_destroy(Session* session);
 /**/
 
 Err tablist_append_tree_from_url(
-    TabList f[static 1],
-    const char* url,
+    TabList   f[static 1],
+    Request   r[static 1],
     UrlClient url_client[static 1],
-    Session s[static 1]
+    Session   s[static 1]
 );
 
 
-static inline Err
-session_open_url(Session s[static 1], const char* url, UrlClient url_client[static 1]) {
-    return tablist_append_tree_from_url(session_tablist(s), url, url_client, s);
-}
+static inline Err session_fetch_request(
+    Session     s[static 1],
+    Request     r[static 1],
+    UrlClient   url_client[static 1]
+) { return tablist_append_tree_from_url(session_tablist(s), r, url_client, s); }
 
 Err tab_node_tree_append_ahref(
     TabNode t[static 1],

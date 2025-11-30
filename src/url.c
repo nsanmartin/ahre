@@ -57,21 +57,29 @@ Err fopen_or_append_fopen(const char* fname, CURLU* cu, FILE* fp[static 1]) {
     return Ok;
 }
 
-static Err _url_from_post_request_(Request r[static 1], UrlClient uc[static 1], Url u[static 1]) {
-    CURL* curl = url_client_curl(uc);
-    CURLU* cu = url_cu(u);
-    CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, items__(request_url_str(r)), 0);
-    if (curl_code != CURLUE_OK)
-        return err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
-    
+static Err _url_fill_postfields_(
+    Request r[static 1],
+    CURL* curl,
+    const char* postfields[static 1],
+    size_t len[static 1]
+) {
     ArlOf(Str)* ks = request_query_keys(r);
     ArlOf(Str)* vs = request_query_values(r);
+
+    if ((len__(ks) || len__(vs)) && len__(request_postfields(r)))
+        return "error: request must have either postfiels or keys and values, not both";
+
+    if (len__(request_postfields(r))) {
+        *postfields = items__(request_postfields(r));
+        *len        = len__(request_postfields(r));
+        return Ok;
+    }
+
     if (len__(ks) != len__(vs))
         return "error: key/value lists must have the same len";
     if (!len__(ks))
         return "submit request must have post fields";
 
-    /* str_reset(request_postfields(r)); */
     Str* kit = arlfn(Str,begin)(ks);
     Str* vit = arlfn(Str,begin)(vs);
     Err e = Ok;
@@ -90,13 +98,29 @@ static Err _url_from_post_request_(Request r[static 1], UrlClient uc[static 1], 
             str_append(request_postfields(r), escaped, strlen(escaped)));
         curl_free(escaped);
     }
-
-    if (!len__(request_postfields(r)))
-        return "error: unexpected empty postfields";
     //TODO: write postfields in htmldoc?
     try(str_append_lit__(request_postfields(r), "\0"));
-    const char* postfields = items__(request_postfields(r)) + 1; /* ignore the first '&'! */
-    size_t      len = len__(request_postfields(r)) - 2; /* ignore first '&' and '\0' ! */
+    *postfields = items__(request_postfields(r)) + 1; /* ignore the first '&'! */
+    *len        = len__(request_postfields(r)) - 2; /* ignore first '&' and '\0' ! */
+    return Ok;
+Failure_Free_Escaped:
+    curl_free(escaped);
+    return e;
+}
+
+static Err _url_from_post_request_(Request r[static 1], UrlClient uc[static 1], Url u[static 1]) {
+    CURL* curl = url_client_curl(uc);
+    CURLU* cu = url_cu(u);
+    CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, items__(request_url_str(r)), 0);
+    if (curl_code != CURLUE_OK)
+        return err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
+    
+    const char* postfields;
+    size_t      len;
+    try (_url_fill_postfields_(r, uc, &postfields, &len));
+
+    if (!len)
+        return "error: unexpected empty postfields";
 
     CURLcode code;
     code = curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, len);
@@ -104,9 +128,6 @@ static Err _url_from_post_request_(Request r[static 1], UrlClient uc[static 1], 
     code = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postfields);
     if (CURLE_OK != code) return "error: curl postfields set failure";
     return Ok;
-Failure_Free_Escaped:
-    curl_free(escaped);
-    return e;
 }
 
 static Err _url_from_get_request_(Request r[static 1], UrlClient uc[static 1], Url u[static 1]) {
@@ -122,3 +143,23 @@ Err url_from_request(Request r[static 1], UrlClient uc[static 1], Url u[static 1
     }
 }
 
+
+Err request_from_userln(Request r[static 1], const char* userln, HttpMethod method) {
+    const char* url    = cstr_trim_space((char*)userln);
+    char* params = (char*)cstr_next_space(url);
+    if (params <= url) return "url has no length";
+    size_t url_len     = params - url;
+    size_t params_len  = 0;
+    if (isspace(params[0])) {
+        params[0] = '\0';
+        ++params;
+        params_len = strlen(params);
+    }
+
+    *r = (Request){
+        .method=method,
+        .url=(Str){.items=(char*)url, .len=url_len},
+        .postfields=(Str){.items=(char*)params, .len=params_len}
+    };
+    return Ok;
+}

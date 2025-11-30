@@ -16,18 +16,22 @@
 
 
 
-static Err _open_many_urls_(Session session[static 1], ArlOf(cstr_view) urls[static 1]) {
+static Err _open_many_urls_(
+    Session session[static 1],
+    ArlOf(cstr_view) urls[static 1],
+    const char* data
+) {
     for (cstr_view* u = arlfn(cstr_view,begin)(urls)
         ; u != arlfn(cstr_view,end)(urls)
         ; ++u
     ) {
-        Err err = session_open_url(session, *u, session_url_client(session));
-        if (err) {
-            session_write_msg(session, (char*)err, strlen(err));
-            session_write_msg_lit__(session, "\n");
-        }
+        Request r = (Request){0};
+        r.method     = data ? http_post : http_get;
+        r.url        = (Str){.items=(char*)*u, .len=strlen(*u)};
+        if (data) r.postfields = (Str){.items=(char*)data, .len=strlen(data)};
+        Err e = session_fetch_request(session, &r, session_url_client(session));
+        if (e) session_write_msg_ln(session, (char*)e, strlen(e));
     }
-    arlfn(cstr_view,clean)(urls);
     return Ok;
 }
 
@@ -56,14 +60,18 @@ int main(int argc, char **argv) {
     Err err = session_conf_from_options(argc, argv, &cparams);
     if (*cparams_help(&cparams)) { print_help(argv[0]); exit(EXIT_SUCCESS); }
     if (*cparams_version(&cparams)) { puts("ahre version " AHRE_VERSION); exit(EXIT_SUCCESS); }
+    if (len__(cparams_urls(&cparams)) > 1 && cparams_data(&cparams))
+        err = "If --data|-d i s passed then only one url is supported";
     ok_then(err, session_init(&session, cparams_sconf(&cparams)));
-    ok_then(err, _open_many_urls_(&session, cparams_urls(&cparams)));
+    ok_then(err, _open_many_urls_(&session, cparams_urls(&cparams), cparams_data(&cparams)));
 
+    int rv;
     if (err) {
         fprintf(stderr, "ahre: %s\n", err);
-        exit(EXIT_FAILURE); 
-    }
-    int rv = _loop_(&session);
+        rv = EXIT_FAILURE; 
+    } else rv = _loop_(&session);
+
+    cparams_clean(&cparams);
     curl_global_cleanup();
     return rv;
 }

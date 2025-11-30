@@ -8,17 +8,35 @@
 #define MsgLastLine EscCodePurple "%{- last line -}%" EscCodeReset
 
 /* session commands */
-Err cmd_go(CmdParams p[static 1]) {
+Err cmd_get(CmdParams p[static 1]) {
     p->ln = cstr_trim_space((char*)p->ln);
+    Request r;
     if (*p->ln == '\\') {
-        Str u = (Str){0};
-        try (get_url_alias(cstr_skip_space(p->ln + 1), &u));
-        Err err = session_open_url(p->s, u.items, session_url_client(p->s));
-        str_clean(&u);
+        r = (Request){.method=http_get};
+        try (get_url_alias(cstr_skip_space(p->ln + 1), &r.url));
+        Err err = session_fetch_request(p->s, &r, session_url_client(p->s));
+        request_clean(&r);
         return err;
     }
-    return session_open_url(p->s, p->ln, session_url_client(p->s));
+    try (request_from_userln(&r, p->ln, http_get));
+    return session_fetch_request(p->s, &r, session_url_client(p->s));
 }
+
+
+Err cmd_post(CmdParams p[static 1]) {
+    p->ln = cstr_trim_space((char*)p->ln);
+    Request r;
+    if (*p->ln == '\\') {
+        r = (Request){.method=http_post};
+        try (get_url_alias(cstr_skip_space(p->ln + 1), &r.url));
+        Err err = session_fetch_request(p->s, &r, session_url_client(p->s));
+        request_clean(&r);
+        return err;
+    }
+    try (request_from_userln(&r, p->ln, http_post));
+    return session_fetch_request(p->s, &r, session_url_client(p->s));
+}
+
 
 Err cmd_set_session_winsz(CmdParams p[static 1]) {
     size_t nrows, ncols;
