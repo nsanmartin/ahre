@@ -1,6 +1,12 @@
 #include "get-options.h"
 #include "user-out.h"
 
+static Err _read_data_opt_(CliParams cparams[static 1], const char* optopt) {
+    if (!optopt || !*optopt) return "invalid data option";
+    cparams->data = optopt;
+    return Ok;
+}
+
 static Err _read_input_opt_(SessionConf sconf[static 1], const char* optopt) {
     if (!optopt || !*optopt) return "invalid input option";
     if (!strcmp("fgets", optopt)) sconf->ui = ui_fgets();
@@ -39,6 +45,10 @@ Err session_conf_from_options(int argc, char* argv[], CliParams cparams[static 1
             const char* short_opt = arg + 1;
             const char* optopt;
             switch (*short_opt) {
+                case 'd':
+                    optopt = short_opt[1] ? &short_opt[1] : argv[++i];
+                    try(_read_data_opt_(cparams, optopt));
+                    break;
                 case 'h': *cparams_help(cparams) = true; break;
                 case 'i': // input interface
                     optopt = short_opt[1] ? &short_opt[1] : argv[++i];
@@ -57,7 +67,11 @@ Err session_conf_from_options(int argc, char* argv[], CliParams cparams[static 1
         }
 
         const char* long_opt = arg + 2;
-        if (!strcmp("help", long_opt)) *cparams_help(cparams) = true;
+        if (!strcmp("data", long_opt)) {
+            const char* optopt = argv[++i];
+            try(_read_data_opt_(cparams, optopt));
+        }
+        else if (!strcmp("help", long_opt)) *cparams_help(cparams) = true;
         else if (!strcmp("input", long_opt)) {
             const char* optopt = argv[++i];
             try(_read_input_opt_(sconf, optopt));

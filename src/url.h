@@ -33,10 +33,6 @@ typedef struct {
     };
 } CurluOrCstr;
 
-// typedef struct {
-//     ArlOf(Str) keys;
-//     ArlOf(Str) values;
-// } RequestPost;
 
 typedef struct {
     HttpMethod  method;
@@ -46,9 +42,6 @@ typedef struct {
     Str postfields; /* used for post field and quey */
 } Request;
 
-// typedef struct {
-//     Str query;
-// } RequestGet;
 
 static inline HttpMethod request_method(Request r[static 1]) { return r->method; }
 static inline Str* request_url_str(Request r[static 1]) { return &r->url; }
@@ -61,6 +54,8 @@ static inline void request_clean(Request r[static 1]) {
     arlfn(Str,clean)(request_query_keys(r));
     arlfn(Str,clean)(request_query_values(r));
 }
+
+Err request_from_userln(Request r[static 1], const char* userln, HttpMethod method);
 
 static inline Err request_query_append_key_value(
     Request req[static 1], const char*k, size_t klen, const char* v, size_t vlen

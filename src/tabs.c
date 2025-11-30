@@ -12,15 +12,15 @@ Err tab_node_init_from_request(
 );
 
 
+
 Err tablist_append_tree_from_url(
-    TabList f[static 1],
-    const char* url,
-    UrlClient url_client[static 1],
-    Session s[static 1]
+    TabList     f[static 1],
+    Request     r[static 1],
+    UrlClient   url_client[static 1],
+    Session     s[static 1]
 ) {
     TabNode tn = (TabNode){0};
-    Request r = (Request){.method=http_get,.url=(Str){.items=(char*)url,.len=strlen(url)}};
-    try( tab_node_init_from_request(&tn, NULL, NULL, url_client, &r, s));
+    try( tab_node_init_from_request(&tn, NULL, NULL, url_client, r, s));
 
     Err err = Ok;
     try_or_jump(err, Failure_Tab_Node_Cleanup, tablist_append_move_tree(f, &tn));
