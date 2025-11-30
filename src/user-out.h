@@ -6,6 +6,16 @@
 #include "utils.h"
 #include <curl/curl.h>
 
+
+typedef struct { Str s; } Msg;
+#define msg_append(Mptr, Items, Nitems) str_append((&Mptr->s), Items, Nitems)
+#define msg_append_lit__(Mptr, Lit) str_append_lit__((&Mptr->s), Lit)
+#define msg_append_ln(Mptr, Items, Nitems) str_append_ln((&Mptr->s), Items, Nitems)
+#define msg_clean(Mptr) str_clean(&Mptr->s)
+#define msg_reset(Mptr) str_reset(&Mptr->s)
+#define msg_items(Mptr) items__(&Mptr->s)
+#define msg_len(Mptr) len__(&Mptr->s)
+
 typedef struct Session Session;
 typedef struct UserOutput UserOutput;
 
@@ -17,8 +27,6 @@ typedef void (*UserOutputCleanup)(UserOutput*);
 
 typedef struct { WriteUserOutputCallback write; Session* ctx; } SessionWriteFn;
 
-typedef Err (*CurlLxbFetchCb)(SessionWriteFn wc, CURL* handle);
-
 
 struct UserOutput {
     WriteUserOutputCallback       write_msg;
@@ -27,15 +35,18 @@ struct UserOutput {
     FlushUserOutputCallback       flush_std;
     ShowSessionUserOutputCallback show_session;
     ShowErrUserOutputCallback     show_err;
-    CurlLxbFetchCb                fetch_cb;
 };
+
+/*
+ * line mode
+ */
 
 static inline Err ui_write_callback_stdout(const char* mem, size_t len, Session* s) {
     (void)s;
     return len - fwrite(mem, sizeof(const char), len, stdout) ? "error: fwrite failure": Ok;
 }
 
-/* line mode */
+
 static inline Err ui_line_flush_stdout(Session* s) {
     (void)s;
     if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
@@ -44,8 +55,14 @@ static inline Err ui_line_flush_stdout(Session* s) {
 
 Err ui_line_show_session(Session* s);
 Err ui_line_show_err(Session* s, char* err, size_t len);
-/***/
-/* vi mode */
+//
+// line mode
+
+
+/*
+ * visual mode
+ */
+
 typedef struct Session Session;
 Err ui_vi_show_session(Session* s);
 Err ui_vi_write_msg(const char* mem, size_t len, Session* s);
@@ -58,8 +75,8 @@ Err ui_vi_write_std(const char* mem, size_t len, Session* s);
 
 void _vi_cleanup_(UserOutput* uo);
 
-/***/
-Err ui_after_fetch_cb(SessionWriteFn wc, CURL* handle);
+// visual mode
+//
 
 /* ctor / factory */
 static inline UserOutput uout_line_mode(void) {
@@ -70,7 +87,6 @@ static inline UserOutput uout_line_mode(void) {
         .flush_std    = ui_line_flush_stdout,
         .show_session = ui_line_show_session,
         .show_err     = ui_line_show_err,
-        .fetch_cb     = ui_after_fetch_cb
     };
 }
 

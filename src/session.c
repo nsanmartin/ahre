@@ -56,8 +56,11 @@ _next_text_end_(TextBufMods mods[static 1], ModAt it[static 1], size_t off, size
 }
 
 
-Err session_write_range_mod(
-    SessionMemWriter writer[static 1], TextBuf textbuf[static 1], Range range[static 1]
+Err write_range_mod(
+    Writer  writer[static 1],
+    bool    monochrome,
+    TextBuf textbuf[static 1],
+    Range   range[static 1]
 ) {
     try(validate_range_for_buffer(textbuf, range));
     StrView line;
@@ -71,7 +74,7 @@ Err session_write_range_mod(
         it = mods_at_find_greater_or_eq(textbuf_mods(textbuf), it, line_off_beg);
 
         if (it >= arlfn(ModAt,end)(textbuf_mods(textbuf)) || line_off_end < it->offset) {
-            try( writer->write(writer, (char*)line.items, line.len));
+            try( writer_write(writer, (char*)line.items, line.len));
             continue;
         }
 
@@ -79,21 +82,29 @@ Err session_write_range_mod(
             size_t next = _next_text_end_(textbuf_mods(textbuf), it, off, line_off_end);
 
             if (off < next)
-                try( writer->write(writer, textbuf_items(textbuf) + off, next - off));
+                try( writer_write(writer, textbuf_items(textbuf) + off, next - off));
 
             off = next;
             while (it < arlfn(ModAt,end)(textbuf_mods(textbuf)) && next == it->offset) {
                 StrView code_str;
                 try( esc_code_to_str(textmod_to_esc_code(it->tmod), &code_str));
-                try( writer->write(writer, (char*)code_str.items, code_str.len));
+                try( writer_write(writer, (char*)code_str.items, code_str.len));
                 ++it;
             }
         }
     }
 
-    if (!session_monochrome(writer->s))
-        try( writer->write(writer, EscCodeReset, sizeof(EscCodeReset) - 1));
+    if (!monochrome)
+        try( writer_write(writer, EscCodeReset, sizeof(EscCodeReset) - 1));
     if (line.len && line.items[line.len-1] != '\n') 
-        try( writer->write(writer, "\n", 1));
+        try( writer_write(writer, "\n", 1));
     return Ok;
+}
+
+
+Err
+session_write_std_range_mod(Session s[static 1], TextBuf textbuf[static 1], Range range[static 1]) {
+    Writer w;
+    session_std_writer_init(&w, s);
+    return write_range_mod(&w, session_monochrome(s), textbuf, range);
 }

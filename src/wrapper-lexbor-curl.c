@@ -140,7 +140,7 @@ static Err _split_remote_local_(
     lxb_dom_collection_t* elems, 
     ArlOf(Str)            scripts[static 1],
     ArlOf(Str)            urls[static 1],
-    SessionWriteFn        wfnc
+    Writer                msg_writer[static 1]
 ) {
     for (size_t i = 0; i < lxb_dom_collection_length(elems); i++) {
         Err e = Ok;
@@ -158,23 +158,24 @@ static Err _split_remote_local_(
             for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
                 e = _fetch_tag_script_from_text_(it, scripts);
                if (e || it == node->last_child) break;
-               else log_warn__(wfnc, "%s\n", "script elem with more than one child??");
+               else try(writer_write_lit__(msg_writer,  "script elem with more than one child??]n"));
                //Q? can script elem have mode that one (text) child?
             }
         }
-        if (e) log_warn__(wfnc, "%s\n", e);
+        if (e) try(writer_write(msg_writer, (char*)e, strlen(e)));
     }
     return Ok;
 }
 
 
 
-static void _map_append_nullchar_(ArlOf(Str) strlist[static 1], SessionWriteFn wfnc) {
+static void _map_append_nullchar_(ArlOf(Str) strlist[static 1], Writer msg_writer[static 1]) {
     for ( Str* sp = arlfn(Str,begin)(strlist) ; sp != arlfn(Str,end)(strlist) ; ++sp) {
         Err e0 = str_append_lit__(sp, "\0");
         if (e0) {
             str_reset(sp);
-            log_warn__(wfnc, "could not append \\0 to str: %s", e0);
+            /*ignore e*/ writer_write_lit__(msg_writer, "could not append \\0 to str: ");
+            /*ignore e*/ writer_write(msg_writer, (char*)e0, strlen(e0));
         }
     }
 }
@@ -182,7 +183,7 @@ static void _map_append_nullchar_(ArlOf(Str) strlist[static 1], SessionWriteFn w
 Err curl_lexbor_fetch_scripts(
     HtmlDoc        htmldoc[static 1],
     UrlClient      url_client[static 1],
-    SessionWriteFn wfnc
+    Writer         msg_writer[static 1]
 ) {
     Err e = Ok;
     //TODO!: evaluate scripts in order
@@ -202,9 +203,9 @@ Err curl_lexbor_fetch_scripts(
     ArlOf(Str)* body_urls = &(ArlOf(Str)){0};
 
     try_or_jump(e, Lxb_Array_Body_Destroy,
-            _split_remote_local_(head_scripts, htmldoc_head_scripts(htmldoc), head_urls, wfnc));
+            _split_remote_local_(head_scripts, htmldoc_head_scripts(htmldoc), head_urls, msg_writer));
     try_or_jump(e, Clean_Head_Urls,
-            _split_remote_local_(body_scripts, htmldoc_body_scripts(htmldoc), body_urls, wfnc));
+            _split_remote_local_(body_scripts, htmldoc_body_scripts(htmldoc), body_urls, msg_writer));
 
     ArlOf(CurlPtr)*  easies = &(ArlOf(CurlPtr)){0};
     ArlOf(CurlUPtr)* curlus = &(ArlOf(CurlUPtr)){0};
@@ -212,21 +213,29 @@ Err curl_lexbor_fetch_scripts(
     CURLU*           curlu  = url_cu(htmldoc_url(htmldoc));
 
     e = w_curl_multi_add_handles(
-        multi, curlu, head_urls, htmldoc_head_scripts(htmldoc), easies, curlus, wfnc);
-    if (e) log_warn__(wfnc, "could not add head handles: %s", e);
+        multi, curlu, head_urls, htmldoc_head_scripts(htmldoc), easies, curlus, msg_writer);
+    if (e) {
+        try(writer_write_lit__(msg_writer, "could not add head handles: "));
+        try(writer_write(msg_writer, (char*)e, strlen(e)));
+    }
     e = w_curl_multi_add_handles(
-        multi, curlu, body_urls, htmldoc_body_scripts(htmldoc), easies, curlus, wfnc);
-    if (e) log_warn__(wfnc, "could not add body handles: %s", e);
+        multi, curlu, body_urls, htmldoc_body_scripts(htmldoc), easies, curlus, msg_writer);
+    if (e) {
+        try(writer_write_lit__(msg_writer, "could not add head handles: "));
+        try(writer_write(msg_writer, (char*)e, strlen(e)));
+    }
 
     e = w_curl_multi_perform_poll(multi);
 
-    w_curl_multi_remove_handles(multi, easies, wfnc);
+    for_htmldoc_size_download_append(
+        easies, msg_writer, url_client_curl(url_client), htmldoc_curlinfo_sz_download(htmldoc));
+    w_curl_multi_remove_handles(multi, easies, msg_writer);
 
     arlfn(CurlPtr,clean)(easies);
     arlfn(CurlUPtr,clean)(curlus);
 
-    _map_append_nullchar_(htmldoc_head_scripts(htmldoc), wfnc);
-    _map_append_nullchar_(htmldoc_body_scripts(htmldoc), wfnc);
+    _map_append_nullchar_(htmldoc_head_scripts(htmldoc), msg_writer);
+    _map_append_nullchar_(htmldoc_body_scripts(htmldoc), msg_writer);
 
     arlfn(Str,clean)(body_urls);
 Clean_Head_Urls:
@@ -240,11 +249,11 @@ Lxb_Array_Head_Destroy:
 }
 
 
+
 Err curl_lexbor_fetch_document(
     UrlClient      url_client[static 1],
     HtmlDoc        htmldoc[static 1],
-    SessionWriteFn wfnc,
-    CurlLxbFetchCb cb
+    Writer         msg_writer[static 1]
 ) {
     try( url_client_set_basic_options(url_client));
     try( _curl_set_write_fn_and_data_(url_client, htmldoc));
@@ -258,12 +267,13 @@ Err curl_lexbor_fetch_document(
     if (curl_code!=CURLE_OK) 
         return _curl_perform_error_(htmldoc, curl_code);
 
+    try(curlinfo_sz_download_incr(
+            msg_writer, url_client_curl(url_client), htmldoc_curlinfo_sz_download(htmldoc)));
     try( _lexbor_parse_chunk_end_(htmldoc));
     try( _set_htmldoc_url_with_effective_url_(url_client, htmldoc));
     try( htmldoc_convert_sourcebuf_to_utf8(htmldoc));
     if (htmldoc_js_is_enabled(htmldoc))
-        try(curl_lexbor_fetch_scripts(htmldoc, url_client, wfnc));
-    if (cb) try( cb(wfnc, url_client->curl));
+        try(curl_lexbor_fetch_scripts(htmldoc, url_client, msg_writer));
     return Ok;
 }
 
@@ -330,7 +340,7 @@ Err curl_save_url(UrlClient url_client[static 1], CURLU* curlu , const char* fna
 
 
 static Err
-_make_submit_get_curlu_rec( lxb_dom_node_t* node, Str buf[static 1], CURLU* out) {
+_make_submit_get_request_rec_( lxb_dom_node_t* node, Request req[static 1]) {
     if (!node) return Ok;
     else if (node->local_name == LXB_TAG_INPUT && !_lexbor_attr_has_value(node, "type", "submit")) {
 
@@ -347,35 +357,22 @@ _make_submit_get_curlu_rec( lxb_dom_node_t* node, Str buf[static 1], CURLU* out)
         if (strcasecmp("password", (char*)name) == 0)
             return "warn: passwords not allowed in get requests";
 
-        str_reset(buf);
-        try(str_append(buf, (char*)name, namelen));
-        try(str_append(buf, "=", 1));
-        try(str_append(buf, (char*)value, valuelen));
-        try(str_append(buf, "\0", 1));
-
-
-        CURLUcode curl_code = curl_url_set(
-            out, CURLUPART_QUERY, items__(buf), CURLU_APPENDQUERY | CURLU_URLENCODE
-        );
-        if (curl_code != CURLUE_OK) {
-            return err_fmt("curl url failed to appen query: %s", curl_url_strerror(curl_code));
-        }
+        try(request_query_append_key_value(req, (char*)name, namelen, (char*)value, valuelen));
     } 
 
     for(lxb_dom_node_t* it = node->first_child; ; it = it->next) {
-        try( _make_submit_get_curlu_rec(it, buf, out));
+        try( _make_submit_get_request_rec_(it, req));
         if (it == node->last_child) { break; }
     }
     return Ok;
 }
 
-static Err _append_lexbor_name_value_attrs_if_both_(
-    UrlClient url_client[static 1],
+
+static Err _request_append_lexbor_name_value_attrs_if_both_(
     lxb_dom_node_t node[static 1],
     bool is_https,
-    Str buf[static 1]
+    Request req[static 1]
 ) {
-    char* escaped;
     const lxb_char_t* value;
     size_t valuelen;
     if (!lexbor_find_lit_attr_value__(node, "value", &value, &valuelen))
@@ -388,115 +385,51 @@ static Err _append_lexbor_name_value_attrs_if_both_(
     if (strcasecmp("password", (char*)name) == 0 && !is_https)
         return "warn: passwords allowed only under https";
 
-    escaped = url_client_escape_url(url_client, (char*)value, valuelen);
-    if (!escaped) return "error: curl_escape failure";
-
-    Err e = str_append(buf, "&", 1);
-    ok_then(e, str_append(buf, (char*)name, namelen));
-    ok_then(e, str_append(buf, "=", 1));
-    ok_then(e, str_append(buf, escaped, strlen(escaped)));
-
-    url_client_curl_free_cstr(escaped);
-    return e;
+    return request_query_append_key_value(
+        req, (char*)name, namelen, (char*)value, valuelen
+    );
 }
 
-static Err _make_submit_post_curlu_rec(
-    UrlClient url_client[static 1],
+
+static Err _make_submit_post_request_rec(
     lxb_dom_node_t* node,
-    Str buf[static 1],
-    CURLU* out,
-    bool is_https
+    bool is_https,
+    Request req[static 1]
 ) {
     if (!node) return Ok;
     if (node->local_name == LXB_TAG_FORM) {
-       log_warn__( output_stdout__, NULL, "%s", "ignoring form nested inside another form"); //TODO: use a configurable log fn
+       //TODO: use a configurable log fn
+       log_warn__(output_stdout__,NULL, "%s", "ignoring form nested inside another form"); 
        return Ok;
     }
-    if (node->local_name == LXB_TAG_INPUT && !_lexbor_attr_has_value(node, "type", "submit"))
-        return _append_lexbor_name_value_attrs_if_both_(url_client, node, is_https, buf);
+    if (node->local_name == LXB_TAG_INPUT 
+            && !_lexbor_attr_has_value(node, "type", "submit"))
+        return _request_append_lexbor_name_value_attrs_if_both_(node, is_https, req);
 
     for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
-        try( _make_submit_post_curlu_rec(url_client, it, buf, out, is_https));
+        try( _make_submit_post_request_rec(it, is_https, req));
         if (it == node->last_child) { break; }
     }
     return Ok;
 }
 
-static Err _submit_url_set_action(
-    Str buf[static 1],
-    const lxb_char_t* action,
-    size_t action_len,
-    CURLU* out
-) {
-    try(str_append(buf, (char*)action, action_len));
-    try(str_append(buf, "\0", 1));
 
-    CURLUcode curl_code = curl_url_set(out, CURLUPART_URL, (const char*)buf->items, 0);
-    if (curl_code != CURLUE_OK) {
-        return err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
-    }
-    
-    str_reset(buf);
-    return Ok;
-}
-
-static Err _mk_submit_get_(lxb_dom_node_t* form, CURLU* out[static 1]) {
-    Str* buf = &(Str){0};
-    Err err =_make_submit_get_curlu_rec(form, buf, *out);
-    str_clean(buf);
-    return err;
-}
 
 static Err
-_mk_submit_post_(UrlClient url_client[static 1], lxb_dom_node_t* form, CURLU* out[static 1]) { 
-    Err err;
-    Str* buf = url_client_postdata(url_client);
-    str_reset(buf);
-    bool is_https;
-    try( curlu_scheme_is_https(*out, &is_https));
+_mk_submit_post_request_(lxb_dom_node_t* form, bool is_https, Request req[static 1]) { 
 
     for(lxb_dom_node_t* it = form->first_child; it ; it = it->next) {
-        try_or_jump(
-            err,
-            Clean_Buf,
-            _make_submit_post_curlu_rec(url_client, it, buf, *out, is_https)
-        );
+        try(_make_submit_post_request_rec(it, is_https, req));
         if (it == form->last_child) break;
     }
 
-    //TODO: move this somehow to `curl_lexbor_fetch_document`
-    if (len__(buf)) {
-    
-        CURLcode code;
-        code = curl_easy_setopt(url_client->curl, CURLOPT_POSTFIELDSIZE, len__(buf)-1);
-        if (CURLE_OK != code) {
-            err = "error: curl postfields size set failure";
-            goto Clean_Buf;
-        }
-        code = curl_easy_setopt(url_client->curl, CURLOPT_POSTFIELDS, items__(buf)+1);
-        if (CURLE_OK != code) {
-            err = "error: curl postfields set failure";
-            goto Clean_Buf;
-        }
-    } else { 
-        err = "warn: no post fields, not submiting form";
-        goto Clean_Buf;
-    }
-
     return Ok;
-Clean_Buf:
-    str_clean(buf);
-    return err;
 }
+
 
 /* external linkage */
 
-Err mk_submit_url (
-    UrlClient url_client[static 1],
-    lxb_dom_node_t* form,
-    CURLU* out[static 1],
-    HttpMethod doc_method[static 1] 
-) {
+Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request req[static 1]) {
     const lxb_char_t* action;
     size_t action_len;
     lexbor_find_lit_attr_value__(form, "action", &action, &action_len);
@@ -505,24 +438,20 @@ Err mk_submit_url (
     size_t method_len;
     lexbor_find_lit_attr_value__(form, "method", &method, &method_len);
 
-    if (action && action_len) {
-        Str* buf = &(Str){0};
-        Err err = _submit_url_set_action(buf, action, action_len, *out);
-        str_clean(buf);
-        if (err) return err;
-    }
+    if (action && action_len) 
+        try(str_append_z(request_url_str(req), (char*)action, action_len));
+
 
     if (!method_len || lexbor_str_eq("get", method, method_len)) {
-        *doc_method = http_get;
-        return _mk_submit_get_(form, out);
+        req->method = http_get;
+        return _make_submit_get_request_rec_(form, req);
     }
     if (!method_len || lexbor_str_eq("post", method, method_len)) {
-        *doc_method = http_post;
-        return _mk_submit_post_(url_client, form, out);
+        req->method = http_post;
+        return _mk_submit_post_request_(form, is_https, req);
     }
     return "not yet supported method";
 }
-
 
 
 Err lexcurl_dup_curl_from_node_and_attr(

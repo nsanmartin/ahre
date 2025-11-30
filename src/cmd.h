@@ -183,10 +183,9 @@ typedef Err (*TextBufCmdFn)
 
 
 static inline Err cmd_textbuf_print(CmdParams p[static 1]) {
-    SessionMemWriter writer = (SessionMemWriter){.s=p->s, .write=session_writer_write_std};
     Range rng;
     try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
-    return session_write_range_mod(&writer, p->tb, &rng);
+    return session_write_std_range_mod(p->s, p->tb, &rng);
 }
 
 
@@ -296,4 +295,5 @@ static inline Err _cmd_misc_tag(const char* rest, Session session[static 1]) {
     return lexbor_cp_tag(rest, htmldoc->lxbdoc, textbuf_buf(htmldoc_textbuf(htmldoc)));
 }
 
+Err cmd_fetch(Session session[static 1]);
 #endif

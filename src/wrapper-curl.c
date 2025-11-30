@@ -53,6 +53,23 @@ size_t curl_header_callback(char *buffer, size_t size, size_t nitems, void *html
 }
 
 
+Err curlinfo_sz_download_incr(
+    Writer    msg_writer[static 1],
+    CURL*     curl,
+    uintmax_t nptr[static 1]
+) {
+    curl_off_t nbytes;
+    CURLcode curl_code = curl_easy_getinfo(curl, CURLINFO_SIZE_DOWNLOAD_T, &nbytes);
+    if (curl_code!=CURLE_OK) {
+        const char* cerr = curl_easy_strerror(curl_code);
+        try(writer_write(msg_writer,(char*)cerr, strlen(cerr))); 
+    } else {
+        if (nbytes < 0) try(writer_write_lit__(msg_writer, "CURLINFO_SIZE_DOWNLOAD_T is negative"));
+        else *nptr += nbytes;
+    }
+    return Ok;
+}
+
 Err w_curl_multi_add_handles( 
     CURLM*           multi,
     CURLU*           curlu,
@@ -60,7 +77,7 @@ Err w_curl_multi_add_handles(
     ArlOf(Str)       scripts[static 1],
     ArlOf(CurlPtr)*  easies,
     ArlOf(CurlUPtr)* curlus,
-    SessionWriteFn   wfnc
+    Writer           msg_writer[static 1]
 ) {
 
     //TODO: do it in one op, of implement reserve/capacity in hotl
@@ -74,7 +91,8 @@ Err w_curl_multi_add_handles(
     for (Str* u = arlfn(Str,begin)(urls) ; u != arlfn(Str,end)(urls) ; ++u) {
         Err e = w_curl_multi_add(multi, curlu, items__(u), easies, scripts, curlus);
         if (e) {
-            log_warn__(wfnc, "couldn't get script: %s\n", e);
+            try(writer_write_lit__(msg_writer, "couldn't get script: "));
+            try(writer_write(msg_writer, (char*)e, strlen(e)));
         }
     }
     return Ok;
@@ -98,14 +116,31 @@ Err w_curl_multi_perform_poll(CURLM* multi){
     return err;
 }
 
-void
-w_curl_multi_remove_handles(CURLM* multi, ArlOf(CurlPtr)  easies[static 1], SessionWriteFn wfnc) {
+Err for_htmldoc_size_download_append(
+    ArlOf(CurlPtr) easies[static 1],
+    Writer         msg_writer[static 1],
+    CURL*          curl,
+    uintmax_t      out[static 1]
+) {
+    for (CurlPtr* cup = arlfn(CurlPtr,begin)(easies) ; cup != arlfn(CurlPtr,end)(easies) ; ++cup) {
+        try(curlinfo_sz_download_incr(msg_writer, curl, out));
+    }
+    return Ok;
+}
+
+
+void w_curl_multi_remove_handles(
+    CURLM*         multi,
+    ArlOf(CurlPtr) easies[static 1],
+    Writer         msg_writer[static 1]
+) {
     for (CurlPtr* cup = arlfn(CurlPtr,begin)(easies) ; cup != arlfn(CurlPtr,end)(easies) ; ++cup) {
         CURLMcode code = curl_multi_remove_handle(multi, *cup);
         if (code != CURLM_OK) {
-            log_warn__(
-                wfnc, "error: couldn't remove easy handle from multy %s", curl_multi_strerror(code)
-            );
+            /*ignore e*/writer_write_lit__(
+                    msg_writer, "error: couldn't remove easy handle from multy ");
+            char* msg = (char*)curl_multi_strerror(code); 
+            /*ignore e*/writer_write(msg_writer, msg, strlen(msg));
         }
         curl_easy_cleanup(*cup);
     }

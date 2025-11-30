@@ -76,31 +76,25 @@ Err cmd_set_session_input(CmdParams p[static 1]) {
 /*
  * These commands require a valid document, the caller should check this condition before
  */
-Err htmldoc_init_fetch_draw(
-    HtmlDoc     d[static 1],
-    const char* urlstr,
-    Url*        url,
-    UrlClient   url_client[static 1],
-    HttpMethod  method,
-    Session     s[static 1]
-);
 
-static Err _cmd_fetch(Session session[static 1]) {
+Err cmd_fetch(Session session[static 1]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
 
+    Request r = (Request){
+        .method=http_get,
+    };
     HtmlDoc newdoc;
-    Err err = htmldoc_init_fetch_draw(
+    try(htmldoc_init_from_request(
         &newdoc,
-        NULL,
+        &r,
         htmldoc_url(htmldoc),
         session_url_client(session),
-        http_get,
         session
-    );
+    ));
     htmldoc_cleanup(htmldoc);
     *htmldoc = newdoc;
-    return err;
+    return Ok;
 }
 
 
@@ -122,9 +116,7 @@ Err shortcut_z(Session session[static 1], const char* rest) {
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
 
 
-    SessionMemWriter writer = (SessionMemWriter){.s=session, .write=session_writer_write_std};
-    if (*rest == 'n') try( session_write_range_mod(&writer, tb, &r));
-    else try( session_write_range_mod(&writer, tb, &r));
+    try( session_write_std_range_mod(session, tb, &r));
     if (textbuf_current_line(tb) == r.end)
         puts(MsgLastLine);
     try( textbuf_get_offset_of_line(tb, r.end,textbuf_current_offset(tb)));
@@ -138,7 +130,7 @@ Err _cmd_misc(Session session[static 1], const char* line) {
     if ((rest = csubstr_match(line, "attr", 2))) { return "TODO: attr"; }
     if ((rest = csubstr_match(line, "class", 3))) { return "TODO: class"; }
     ///if ((rest = csubstr_match(line, "clear", 3))) { return cmd_clear(session); }
-    if ((rest = csubstr_match(line, "fetch", 1))) { return _cmd_fetch(session); }
+    /* if ((rest = csubstr_match(line, "fetch", 1))) { return _cmd_fetch(session); } */
     if ((rest = csubstr_match(line, "tag", 2))) { return _cmd_misc_tag(rest, session); }
     if ((rest = csubword_match(line, "z", 1))) { return shortcut_z(session, rest); }
 
@@ -172,17 +164,18 @@ Err _textbuf_print_n_(
 {
     (void)ln;
     try(validate_range_for_buffer(textbuf, range));
-    SessionMemWriter w = (SessionMemWriter){.s=s, .write=session_writer_write_std};
+    Writer w;
+    session_std_writer_init(&w, s);
     StrView line;
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
         try( session_write_unsigned_std(s, linum));
-        try( w.write(&w, "\t", 1));
-        if (line.len) try( w.write(&w, (char*)line.items, line.len));
-        else try( w.write(&w, "\n", 1));
+        try( session_write_std_lit__(s, "\t"));
+        if (line.len) try( session_write_std(s, (char*)line.items, line.len));
+        else try( session_write_std_lit__(s, "\n"));
     }
 
-    if (textbuf_line_count(textbuf) == range->end) try( w.write(&w, "\n", 1));
+    if (textbuf_line_count(textbuf) == range->end) try( session_write_std_lit__(s, "\n"));
     return Ok;
 }
 
@@ -194,14 +187,13 @@ Err dbg_print_all_lines_nums(
     cmd_assert_no_params(ln);
     size_t lnum = 1;
     StrView line;
-    SessionMemWriter w = (SessionMemWriter){.s=s, .write=session_writer_write_std};
     for (;textbuf_get_line(textbuf, lnum, &line); ++lnum) {
         try( session_write_unsigned_std(s, lnum));
-        try( w.write(&w,"\t`", 2));
+        try( session_write_std_lit__(s, "\t`"));
         if (line.len > 1) {
-            try( w.write(&w, (char*)line.items, line.len-1));
+            try( session_write_std(s, (char*)line.items, line.len-1));
         } 
-        try( w.write(&w,"'\n", 2));
+        try( session_write_std_lit__(s, "'\n"));
     }
     return Ok;
 }

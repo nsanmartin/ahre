@@ -5,6 +5,7 @@
 
 #include "utils.h"
 #include "error.h"
+#include "writer.h"
 
 size_t curl_header_callback(char *buffer, size_t size, size_t nitems, void *htmldoc);
 
@@ -83,8 +84,8 @@ Err w_curl_multi_add(
 
 
 #include "user-out.h"
-void
-w_curl_multi_remove_handles(CURLM* multi, ArlOf(CurlPtr)  easies[static 1], SessionWriteFn wfnc);
+void w_curl_multi_remove_handles(
+    CURLM* multi, ArlOf(CurlPtr)  easies[static 1], Writer msg_writer[static 1]);
 
 Err w_curl_multi_add_handles( 
     CURLM*           multi,
@@ -93,7 +94,19 @@ Err w_curl_multi_add_handles(
     ArlOf(Str)       scripts[static 1],
     ArlOf(CurlPtr)*  easies,
     ArlOf(CurlUPtr)* curlus,
-    SessionWriteFn   wfnc
+    Writer           msg_buf[static 1]
 );
 Err w_curl_multi_perform_poll(CURLM* multi);
+
+Err for_htmldoc_size_download_append(
+    ArlOf(CurlPtr) easies[static 1],
+    Writer         msg_writer[static 1],
+    CURL*          curl,
+    uintmax_t      out[static 1]
+);
+Err curlinfo_sz_download_incr(
+    Writer    msg_writer[static 1],
+    CURL*     curl,
+    uintmax_t nptr[static 1]
+);
 #endif

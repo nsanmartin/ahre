@@ -43,6 +43,7 @@ typedef struct {
     TextBuf sourcebuf;
     ArlOf(Str) head_scripts;
     ArlOf(Str) body_scripts;
+    uintmax_t  curlinfo_sz_download; /* each download will be updated */
 } DocFetchCache;
 
 
@@ -105,6 +106,9 @@ static inline ArlOf(Str)* htmldoc_body_scripts(HtmlDoc d[static 1]) {
     return &d->fetch_cache.body_scripts;
 }
 
+static inline uintmax_t*
+htmldoc_curlinfo_sz_download(HtmlDoc d[static 1]) { return &d->fetch_cache.curlinfo_sz_download; }
+
 static inline Err htmldoc_script_at(HtmlDoc d[static 1], size_t ix, Str* sptr[static 1]) {
     *sptr = arlfn(Str,at)(htmldoc_head_scripts(d), ix);
     if (*sptr) return Ok;
@@ -139,14 +143,6 @@ static inline bool htmldoc_http_content_type_text_or_undef(HtmlDoc d[static 1]) 
 Err htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[static 1]);
 
 /* ctors */
-Err htmldoc_init(
-    HtmlDoc     d[static 1],
-    const char* urlstr,
-    Url*        url,
-    HttpMethod  method,
-    unsigned    flags
-);
-
 
 
 /* dtors */
@@ -159,8 +155,7 @@ void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) ;
 
 /* external */
 Err curl_lexbor_fetch_document(
-    UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], SessionWriteFn wcb, CurlLxbFetchCb cb
-);
+    UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], Writer msg_writer[static 1]);
 
 static inline bool htmldoc_js_is_enabled(HtmlDoc d[static 1]) {
     return jse_is_enabled(htmldoc_js(d));
@@ -180,10 +175,9 @@ Err lexbor_read_doc_from_file(HtmlDoc htmldoc[static 1]) ;
 static inline Err htmldoc_fetch(
     HtmlDoc        htmldoc[static 1],
     UrlClient      url_client[static 1],
-    SessionWriteFn wfnc,
-    CurlLxbFetchCb cb
+    Writer         msg_writer[static 1]
 ) {
-    return curl_lexbor_fetch_document(url_client, htmldoc, wfnc, cb);
+    return curl_lexbor_fetch_document(url_client, htmldoc, msg_writer);
 }
 
 
@@ -245,5 +239,14 @@ static inline Err htmldoc_switch_js(HtmlDoc htmldoc[static 1], Session* s) {
 
 
 void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[static 1], Session* s);
-#endif
 
+Err htmldoc_init_from_request(
+    HtmlDoc   d[static 1],
+    Request   r[static 1],
+    Url       u[static 1],
+    UrlClient uc[static 1],
+    Session*   s
+);
+Err htmldoc_scripts_write(HtmlDoc h[static 1], RangeParse rp[static 1], Writer w[static 1]);
+Err htmldoc_init_bookmark(HtmlDoc d[static 1], const char* urlstr);
+#endif

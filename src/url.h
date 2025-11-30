@@ -9,6 +9,7 @@
 #include "utils.h"
 #include "config.h"
 #include "error.h"
+#include "url-client.h"
 
 /** CURL wrappers */
 Err curl_url_to_filename_append(CURLU* cu, Str out[static 1]);
@@ -19,6 +20,10 @@ typedef struct {
     CURLU* cu;
 } Url;
 
+/* dtor */
+static inline void url_cleanup(Url u[static 1]) { curl_url_cleanup(u->cu); }
+//
+
 typedef enum { curlu_tag, cstr_tag } CurluOrCstrTag;
 typedef struct {
     CurluOrCstrTag tag;
@@ -27,6 +32,48 @@ typedef struct {
         const char* cstr;
     };
 } CurluOrCstr;
+
+// typedef struct {
+//     ArlOf(Str) keys;
+//     ArlOf(Str) values;
+// } RequestPost;
+
+typedef struct {
+    HttpMethod  method;
+    Str url;
+    ArlOf(Str) keys;
+    ArlOf(Str) values;
+    Str postfields; /* used for post field and quey */
+} Request;
+
+// typedef struct {
+//     Str query;
+// } RequestGet;
+
+static inline HttpMethod request_method(Request r[static 1]) { return r->method; }
+static inline Str* request_url_str(Request r[static 1]) { return &r->url; }
+static inline Str* request_postfields(Request r[static 1]) { return &r->postfields; }
+static inline ArlOf(Str)* request_query_keys(Request r[static 1]) { return &r->keys; }
+static inline ArlOf(Str)* request_query_values(Request r[static 1]) { return &r->values; }
+static inline void request_clean(Request r[static 1]) {
+    str_clean(request_url_str(r));
+    str_clean(request_postfields(r));
+    arlfn(Str,clean)(request_query_keys(r));
+    arlfn(Str,clean)(request_query_values(r));
+}
+
+static inline Err request_query_append_key_value(
+    Request req[static 1], const char*k, size_t klen, const char* v, size_t vlen
+) {
+        Str* key = &(Str){0};
+        Str* value = &(Str){0};
+        try(str_append(key, (char*)k, klen));
+        try(str_append(value, (char*)v, vlen));
+        if (!arlfn(Str,append)(request_query_keys(req), key) 
+                || !arlfn(Str,append)(request_query_values(req), value))
+            return "error: arl append failure";
+        return Ok;
+}
 
 //TODO: check type with _Generic
 #define mk_union_curlu(CU) &(CurluOrCstr){.tag=curlu_tag,.curlu=CU}
@@ -65,8 +112,6 @@ static Err _prepend_file_schema_(const char* path, BufOf(char) buf[static 1]) {
     return Ok;
 }
 
-/* dtor */
-static inline void url_cleanup(Url u[static 1]) { curl_url_cleanup(u->cu); }
 
 static inline Err get_url_alias(const char* cstr, BufOf(char)* out) {
     if (cstr_starts_with("bookmarks", cstr)) {
@@ -174,4 +219,5 @@ static inline Err curlu_scheme_is_https(CURLU* cu, bool out[static 1]) {
     return Ok;
 }
 
+Err url_from_request(Request r[static 1], UrlClient uc[static 1], Url u[static 1]);
 #endif
