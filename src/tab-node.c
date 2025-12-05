@@ -65,18 +65,15 @@ Err tab_node_tree_append_submit(
 ) {
     TabNode* n;
     HtmlDoc* d;
-    try(  tab_node_current_node(t, &n));
-    try(  tab_node_current_doc(t, &d));
-
-    ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(d);
-
-    Err e = Ok;
-    LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(inputs, ix);
-    if (!nodeptr) return "link number invalid";
-    if (!_lexbor_attr_has_value(*nodeptr, "type", "submit"))
+    LxbNode  lbn;
+    try( tab_node_current_node(t, &n));
+    try( tab_node_current_doc(t, &d));
+    try( htmldoc_input_at(d, ix, &lbn));
+    if (!lexbor_lit_attr_has_lit_value(&lbn, "type", "submit"))
         return "warn: not submit input";
 
-    lxb_dom_node_t* form = _find_parent_form(*nodeptr);
+    Err e = Ok;
+    lxb_dom_node_t* form = _find_parent_form(lxbnode_node(&lbn));
     Request r = (Request){0};
     if (form) {
         try_or_jump(e, Clean_Request, mk_submit_request(form, true, &r));

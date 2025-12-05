@@ -250,7 +250,7 @@ static inline Err _cmd_anchor_asterisk(Session session[static 1], size_t linknum
 /*
  * Input commands
  */
-Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line);
+Err _cmd_input_ix_set_(Session session[static 1], const size_t ix, const char* line);
 
 
 static inline Err
@@ -277,6 +277,50 @@ static inline Err _cmd_input_print(Session session[static 1], size_t ix) {
 
 static inline Err _cmd_input_submit_ix(Session session[static 1], size_t ix) {
     return session_press_submit(session, ix);
+}
+
+static inline Err cmd_select_elem_show_options(LxbNode lbn[static 1], Session s[static 1]) {
+    if (!lxbnode_node(lbn)) return "error: expecting lexbor node, not NULL";
+    for(lxb_dom_node_t* it = lxbnode_node(lbn)->first_child; it ; it = it->next) {
+        if (it->local_name == LXB_TAG_OPTION) {
+
+            if ( lexbor_has_lit_attr__(it, "selected")) session_write_msg_lit__(s, " *\t");
+            else session_write_msg_lit__(s, "\t");
+
+            lxb_dom_node_t* opt_text = it->first_child;
+            if (opt_text->local_name == LXB_TAG__TEXT) {
+                const char* text;
+                size_t len;
+                try(lexbor_get_text(opt_text, &text, &len));
+                if (len) try( session_write_msg(s, (char*)text, len));
+            }
+
+            session_write_msg_lit__(s, " | value: "); 
+            StrView value = lexbor_get_lit_attr__(it, "value");
+            if (value.len) session_write_msg_ln(s, (char*)value.items, value.len);
+            else session_write_msg_lit__(s, "\"\"\n"); 
+
+        }
+    }
+    return Ok;
+}
+
+
+static inline Err cmd_input_default_ix(Session s[static 1], size_t ix) {
+    TabNode* tab;
+    HtmlDoc* doc;
+    LxbNode  lbn;
+    try( tablist_current_tab(session_tablist(s), &tab));
+    try( tab_node_current_doc(tab, &doc));
+    try( htmldoc_input_at(doc, ix, &lbn));
+
+    if (lexbor_node_tag_is_input(&lbn)
+    &&  lexbor_lit_attr_has_lit_value(&lbn, "type", "submit")) 
+        return tab_node_tree_append_submit(tab , ix, session_url_client(s), s);
+    else if (lexbor_node_tag_is_select(&lbn))
+        return cmd_select_elem_show_options(&lbn, s);
+    
+    return "error: invalid input node";
 }
 
 /*

@@ -33,7 +33,11 @@ static inline size_t strview_to_hide_tag(StrView s) {
     return 0x0;
 }
 
+//TODO: use always LxbNode instead?
 typedef lxb_dom_node_t* LxbNodePtr;
+#define T LxbNode
+#include <arl.h>
+
 typedef lxb_dom_element_t* LxbElemPtr;
 #define T LxbNodePtr
 #include <arl.h>
@@ -98,13 +102,11 @@ static inline ArlOf(LxbNodePtr)* htmldoc_imgs(HtmlDoc d[static 1]) { return &d->
 static inline ArlOf(LxbNodePtr)* htmldoc_inputs(HtmlDoc d[static 1]) { return &d->draw_cache.inputs; }
 static inline ArlOf(LxbNodePtr)* htmldoc_forms(HtmlDoc d[static 1]) { return &d->draw_cache.forms; }
 
-static inline ArlOf(Str)* htmldoc_head_scripts(HtmlDoc d[static 1]) {
-    return &d->fetch_cache.head_scripts;
-}
+static inline ArlOf(Str)* htmldoc_head_scripts(HtmlDoc d[static 1])
+{ return &d->fetch_cache.head_scripts; }
 
-static inline ArlOf(Str)* htmldoc_body_scripts(HtmlDoc d[static 1]) {
-    return &d->fetch_cache.body_scripts;
-}
+static inline ArlOf(Str)* htmldoc_body_scripts(HtmlDoc d[static 1])
+{ return &d->fetch_cache.body_scripts; }
 
 static inline uintmax_t*
 htmldoc_curlinfo_sz_download(HtmlDoc d[static 1]) { return &d->fetch_cache.curlinfo_sz_download; }
@@ -118,6 +120,14 @@ static inline Err htmldoc_script_at(HtmlDoc d[static 1], size_t ix, Str* sptr[st
 }
 
 static inline LxbNodePtr* htmldoc_title(HtmlDoc d[static 1]) { return &d->draw_cache.title; }
+
+static inline Err htmldoc_input_at(HtmlDoc d[static 1], size_t ix, LxbNode out[static 1]) {
+    LxbNodePtr* np = arlfn(LxbNodePtr, at)(htmldoc_inputs(d), ix);
+    if (!np) return  "link number invalid";
+    out->n = *np;
+    return Ok;
+}
+
 static inline Url* htmldoc_url(HtmlDoc d[static 1]) { return &d->url; }
 static inline HttpMethod htmldoc_method(HtmlDoc d[static 1]) { return d->method; }
 static inline JsEngine* htmldoc_js(HtmlDoc d[static 1]) { return &d->jsdoc; }

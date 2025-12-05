@@ -10,16 +10,15 @@
 #include <buf.h>
 
 
-Err lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* buf);
+typedef struct { lxb_dom_node_t* n; } LxbNode;
+static inline lxb_dom_node_t* lxbnode_node(LxbNode lbn[static 1]) { return lbn->n; }
 
-lxb_inline lxb_status_t append_to_buf_callback(const lxb_char_t *data, size_t len, void *bufptr) {
-    BufOf(char)* buf = bufptr;
-    if (buffn(char,append)(buf, (char*)data, len)) { return LXB_STATUS_ERROR; }
-    return LXB_STATUS_OK;
-}
-
-
-size_t lexbor_parse_chunk_callback(char *en, size_t size, size_t nmemb, void* outstream);
+static inline bool
+lexbor_node_tag_is_select(LxbNode n[static 1]) { return n->n->local_name == LXB_TAG_SELECT; }
+static inline bool
+lexbor_node_tag_is_input(LxbNode n[static 1]) { return n->n->local_name == LXB_TAG_INPUT; }
+static inline bool
+lexbor_node_tag_is_text(LxbNode n[static 1]) { return n->n->local_name == LXB_TAG__TEXT; }
 
 static inline bool _lexbor_element_find_attr_value_(
     lxb_dom_element_t* element,
@@ -54,17 +53,173 @@ static inline bool _lexbor_node_find_attr_value_(
         lxb_dom_node_t*   : _lexbor_node_find_attr_value_ \
     )(X, AttrName, AttrLen, OutStr, OutLen) 
 
+static inline bool lexbor_elem_attr_has_value(
+     lxb_dom_element_t* elem,
+     const char*        attr,
+     size_t             attrlen,
+     const char*        expected_value,
+     size_t             expected_valuelen
+) {
+    const lxb_char_t* value;
+    size_t valuelen;
+    return attr
+        && lexbor_find_attr_value(elem, attr, attrlen, &value, &valuelen)
+        && value
+        && valuelen == expected_valuelen
+        && !strncasecmp((const char*)value, expected_value, valuelen);
+}
+static inline bool lexbor_node_attr_has_value(
+     lxb_dom_node_t* node,
+     const char*     attr,
+     size_t          attrlen,
+     const char*     expected_value,
+     size_t          expected_valuelen
+) {
+    return lexbor_elem_attr_has_value(
+        lxb_dom_interface_element(node), attr, attrlen, expected_value, expected_valuelen
+    );
+}
+static inline bool lxbnode_attr_has_value(
+     LxbNode     node[static 1],
+     const char* attr,
+     size_t      attrlen,
+     const char* expected_value,
+     size_t      expected_valuelen
+) {
+    return lexbor_elem_attr_has_value(
+        lxb_dom_interface_element(lxbnode_node(node)),
+        attr,
+        attrlen,
+        expected_value,
+        expected_valuelen
+    );
+}
+
+
+#define lexbor_lit_attr_has_lit_value(X, Attr, Val) _Generic((X),\
+    LxbNode*          : lxbnode_attr_has_value,\
+    lxb_dom_element_t*: lexbor_elem_attr_has_value,\
+    lxb_dom_node_t*   : lexbor_node_attr_has_value\
+    )(X, Attr, lit_len__(Attr), Val, lit_len__(Val))
+
+
+// static inline bool
+// lxbnode_attr_has_value(LxbNode n[static 1], const char* attr, const char* value) {
+//          return lexbor_node_attr_has_value(lxbnode_node(n), attr, value);
+// }
+
+Err lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* buf);
+
+lxb_inline lxb_status_t append_to_buf_callback(const lxb_char_t *data, size_t len, void *bufptr) {
+    BufOf(char)* buf = bufptr;
+    if (buffn(char,append)(buf, (char*)data, len)) { return LXB_STATUS_ERROR; }
+    return LXB_STATUS_OK;
+}
+
+
+size_t lexbor_parse_chunk_callback(char *en, size_t size, size_t nmemb, void* outstream);
+
+static inline StrView
+lexbor_element_get_attr_value(lxb_dom_element_t* elem, const char* attr_name, size_t attr_len) {
+    StrView res = (StrView){0};
+    if (attr_name && attr_len) {
+        size_t len;
+        res.items = (const char*)lxb_dom_element_get_attribute(
+            elem, (const lxb_char_t*)attr_name, attr_len, &len
+        );
+        res.len   = len;
+    }
+    return res;
+}
+
+static inline StrView lexbor_node_get_attr_value(
+    lxb_dom_node_t*   node,
+    const char* attr_name,
+    size_t attr_len
+) {
+    return lexbor_element_get_attr_value(lxb_dom_interface_element(node), attr_name, attr_len);
+}
+
+#define lexbor_get_lit_attr__(NodeOrElem, Lit) _Generic((NodeOrElem),\
+    lxb_dom_element_t*: lexbor_element_get_attr_value,\
+    lxb_dom_node_t*   : lexbor_node_get_attr_value\
+    )(NodeOrElem, Lit, lit_len__(Lit))
+
+
+#define lexbor_get_attr(NodeOrElem, Attr, AttrLen) _Generic((NodeOrElem),\
+    lxb_dom_element_t*: lexbor_element_get_attr_value,\
+    lxb_dom_node_t*   : lexbor_node_get_attr_value\
+    )(NodeOrElem, Attr, AttrLen)
+
+
+static inline Err lexbor_elem_remove_attr(lxb_dom_element_t* elem, const char* attr, size_t len) {
+    lxb_status_t status = lxb_dom_element_remove_attribute(elem, (lxb_char_t*)attr, len);
+    return LXB_STATUS_OK == status ? Ok : "error: could not set element's attribte";
+}
+
+static inline Err lexbor_node_remove_attr(lxb_dom_node_t* node, const char* attr, size_t len) {
+    return lexbor_elem_remove_attr(lxb_dom_interface_element(node), attr, len);
+}
+
+#define lexbor_remove_lit_attr__(NodeOrElem, Lit) _Generic((NodeOrElem),\
+    lxb_dom_element_t*: lexbor_elem_remove_attr,\
+    lxb_dom_node_t*   : lexbor_node_remove_attr\
+    )(NodeOrElem, Lit, lit_len__(Lit))
+
+
+static inline bool lexbor_elem_has_attr(lxb_dom_element_t* elem, const char* name, size_t len) {
+    return lxb_dom_element_has_attribute(elem, (const lxb_char_t*)name, len);
+}
+
+static inline bool lexbor_node_has_attr(lxb_dom_node_t* node, const char* name, size_t len) {
+    return lexbor_elem_has_attr(lxb_dom_interface_element(node), name, len);
+}
+
+#define lexbor_has_lit_attr__(X, AttrNameLit) \
+    _Generic((X), \
+        lxb_dom_element_t*: lexbor_elem_has_attr, \
+        lxb_dom_node_t*   : lexbor_node_has_attr \
+    )(X, AttrNameLit, lit_len__(AttrNameLit))
+
+
 
 #define lexbor_find_lit_attr_value__(X, AttrName, OutPtr, LenPtr) \
     lexbor_find_attr_value(X, AttrName, lit_len__(AttrName), OutPtr, LenPtr)
 
-Err lexbor_set_attr_value( lxb_dom_node_t* node, const char* value, size_t valuelen);
+
+static inline Err lexbor_elem_set_attr(
+    lxb_dom_element_t* elem,
+    const char*        attr,
+    size_t             attrlen,
+    const char*        value,
+    size_t             valuelen
+)  {
+    if (!attr || !attrlen) return "error: attr is NULL or len is 0";
+    lxb_dom_attr_t * after = lxb_dom_element_set_attribute(
+        elem,
+        (const lxb_char_t*)attr,
+        attrlen,
+        (const lxb_char_t*)value,
+        valuelen
+    );
+    if (!after) return "error: value attr could not be set";
+    return Ok;
+}
+
+static inline Err lexbor_node_set_attr(
+    lxb_dom_node_t* node, const char* attr, size_t attrlen, const char* value, size_t valuelen
+)  { return lexbor_elem_set_attr(lxb_dom_interface_element(node), attr, attrlen, value, valuelen); }
+
+#define lexbor_set_lit_attr__(X, AttrName, Val, ValLen) \
+    _Generic((X), \
+        lxb_dom_element_t*: lexbor_elem_set_attr, \
+        lxb_dom_node_t*   : lexbor_node_set_attr \
+    )(X, AttrName, lit_len__(AttrName), Val, ValLen) 
+
+
 
 lxb_dom_node_t* _find_parent_form(lxb_dom_node_t* node) ;
 
-bool _lexbor_attr_has_value(
-    lxb_dom_node_t node[static 1], const char* attr, const char* expected_value
-) ;
 Err lexbor_node_to_str(lxb_dom_node_t* node, BufOf(char)* buf);
 
 static inline bool lexbor_str_eq(const char* s, const lxb_char_t* lxb_str, size_t len) {
@@ -88,6 +243,8 @@ lexbor_node_get_text(lxb_dom_node_t* node, const char* data[static 1], size_t le
     *len = text->char_data.data.length;
     return Ok;
 }
+
+#define lexbor_get_text lexbor_node_get_text //TODO: use _Generics and match node/elem
 
 static inline bool lexbor_inside_tag(lxb_dom_node_t* node, lxb_tag_id_enum_t tag) {
     while (node->parent) {

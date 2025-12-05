@@ -11,6 +11,8 @@
 #define INPUT_SEP_STR  "|"
 #define INPUT_CLOSE_STR  "}"
 
+#define SELECT_SEP_STR  "-:"
+
 #define IMAGE_OPEN_STR  "("
 #define IMAGE_CLOSE_STR  ")"
 
@@ -28,6 +30,8 @@
 static inline StrView input_text_open_str(void) { return strview_from_lit__(INPUT_OPEN_STR); }
 static inline StrView input_text_sep_str(void) { return strview_from_lit__(INPUT_SEP_STR); }
 static inline StrView input_text_close_str(void) { return strview_from_lit__(INPUT_CLOSE_STR); }
+
+static inline StrView input_select_sep_str(void) { return strview_from_lit__(SELECT_SEP_STR); }
 
 static inline StrView input_submit_sep_str(void) { return strview_from_lit__("|"); }
 static inline StrView input_submit_close_str(void) { return strview_from_lit__(INPUT_CLOSE_STR); }

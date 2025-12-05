@@ -25,7 +25,7 @@ Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[static 1]);
 
 static Err _hypertext_id_open_(
     DrawCtx ctx[static 1],
-    ImpureDrawProcedure visual_effect,
+    DrawEffectCb visual_effect,
     StrViewProvider open_str_provider,
     const size_t* id_num_ptr,
     StrViewProvider sep_str_provider
@@ -38,7 +38,7 @@ static Err _hypertext_id_open_(
 }
 
 static Err _hypertext_open_(
-    DrawCtx ctx[static 1], ImpureDrawProcedure visual_effect, StrViewProvider prefix_str_provider
+    DrawCtx ctx[static 1], DrawEffectCb visual_effect, StrViewProvider prefix_str_provider
 ) {
     if (visual_effect) try( visual_effect(ctx));
     if (prefix_str_provider) try( draw_ctx_buf_append(ctx, prefix_str_provider()));
@@ -48,7 +48,7 @@ static Err _hypertext_open_(
 
 static Err _hypertext_id_close_(
     DrawCtx ctx[static 1],
-    ImpureDrawProcedure visual_effect,
+    DrawEffectCb visual_effect,
     StrViewProvider close_str_provider
 ) {
     if (close_str_provider) try( draw_ctx_buf_append(ctx, close_str_provider()));
@@ -58,7 +58,7 @@ static Err _hypertext_id_close_(
 
 static Err _hypertext_close_(
     DrawCtx ctx[static 1],
-    ImpureDrawProcedure visual_effect,
+    DrawEffectCb visual_effect,
     StrViewProvider postfix_provider
 ) {
     if (visual_effect) try( visual_effect(ctx));
@@ -112,6 +112,39 @@ draw_tag_img(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     try( _hypertext_id_close_(ctx, draw_ctx_reset_color, NULL));
     return Ok;
 }
+
+
+static Err
+draw_tag_select(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+    lxb_dom_node_t* selected = node->first_child;
+    if (!selected) return Ok;
+    for(lxb_dom_node_t* it = selected; it ; it = it->next) {
+        if (it->type == LXB_DOM_NODE_TYPE_ELEMENT 
+            && it->local_name == LXB_TAG_OPTION
+            && lexbor_has_lit_attr__(it, "selected")
+        ) {
+            selected = it;
+            break;
+        }
+    }
+
+    ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(draw_ctx_htmldoc(ctx));
+    if (!arlfn(LxbNodePtr,append)(inputs, &node)) { return "error: arl set"; }
+    size_t input_id = len__(inputs)-1;
+    try( _hypertext_id_open_(
+        ctx, draw_ctx_color_red, input_text_open_str, &input_id, input_select_sep_str));
+
+    size_t len;
+    const char* text;
+    for(lxb_dom_node_t* txt = selected->first_child; txt ; txt = txt->next) {
+        try( lexbor_node_get_text(txt, &text, &len));
+        if (len) try( draw_ctx_buf_append(ctx, strview__((char*)text, len)));
+    }
+    try( _hypertext_id_close_(ctx, draw_ctx_reset_color, input_submit_close_str));
+
+    return Ok;
+}
+
 
 static Err
 draw_tag_form(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
@@ -592,7 +625,14 @@ const char* _dbg_get_tag_name_(size_t local_name) {
 
 
 
-
+/*
+ * This implementation was a quick solution to just render the text parts without caring 
+ * too much about the DOM specification, and we started using a context to be able to pass
+ * some information to the recursive calls. It should be progressively replaced by functions
+ * that instead of calling the same draw_rec_tag, resolve only the element they are made to
+ * draw.
+ * 
+ */
 Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     if (ctx->fragment
     && lexbor_element_id_cstr_match(lxb_dom_interface_element(node), ctx->fragment)) {
@@ -626,6 +666,7 @@ Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
                           Here draw only body scripts
                           */
         } 
+        case LXB_TAG_SELECT: { return draw_tag_select(node, ctx); }
         case LXB_TAG_STYLE: {
             log_todo__( draw_ctx_logfn(ctx), "%s\n", "skiping style (not implemented)");
             return Ok;
