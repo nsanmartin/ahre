@@ -91,8 +91,8 @@ draw_subctx_div_set(DrawCtx ctx[static 1]) { return ctx->sub.flags |= DRAW_SUBCT
 static inline bool
 draw_subctx_div_clear(DrawCtx ctx[static 1]) { return ctx->sub.flags &= ~DRAW_SUBCTX_FLAG_DIV; }
 /***/
-
-typedef Err (*ImpureDrawProcedure)(DrawCtx ctx[static 1]);
+static inline Session* draw_ctx_session(DrawCtx ctx[static 1]) { return ctx->session; }
+typedef Err (*DrawEffectCb)(DrawCtx ctx[static 1]);
 
 static inline HtmlDoc* draw_ctx_htmldoc(DrawCtx ctx[static 1]) { return ctx->htmldoc; }
 
@@ -301,6 +301,9 @@ draw_ctx_push_underline(DrawCtx ctx[static 1]){ return _push_esc_code__(ctx, esc
 
 static inline Err
 draw_ctx_push_blue(DrawCtx ctx[static 1]) { return _push_esc_code__(ctx, esc_code_blue); }
+
+static inline Err
+draw_ctx_push_red(DrawCtx ctx[static 1]) { return _push_esc_code__(ctx, esc_code_red); }
 
 static inline Err
 draw_ctx_textmod_blue(DrawCtx ctx[static 1]) { return draw_ctx_textmod(ctx, esc_code_blue); }

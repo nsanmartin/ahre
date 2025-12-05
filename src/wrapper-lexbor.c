@@ -95,18 +95,6 @@ size_t lexbor_parse_chunk_callback(char *in, size_t size, size_t nmemb, void* ou
 }
 
 
-Err lexbor_set_attr_value(lxb_dom_node_t* node, const char* value, size_t valuelen)  {
-    lxb_dom_element_set_attribute(
-        lxb_dom_interface_element(node),
-        (const lxb_char_t*)"value",
-        sizeof("value")-1,
-        (const lxb_char_t*)value,
-        valuelen
-    );
-    return Ok;
-}
-
-
 Err lexbor_node_to_str(lxb_dom_node_t* node, BufOf(char)* buf) {
     lxb_dom_attr_t* attr = lxb_dom_element_first_attribute(lxb_dom_interface_element(node));
     char* nullstr = "(null)";
@@ -144,15 +132,6 @@ lxb_dom_node_t* _find_parent_form(lxb_dom_node_t* node) {
     return node;
 }
 
-bool _lexbor_attr_has_value(
-     lxb_dom_node_t node[static 1], const char* attr, const char* expected_value
-) {
-    const lxb_char_t* value;
-    size_t valuelen;
-    return attr
-        && lexbor_find_attr_value(node, attr, strlen(attr), &value, &valuelen)
-        && lexbor_str_eq(expected_value, value, valuelen);
-}
 
 Err lexbor_get_title_text(lxb_dom_node_t* title, Str out[static 1]) {
     if (!title) return Ok;

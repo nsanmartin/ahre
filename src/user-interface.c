@@ -160,19 +160,20 @@ static SessionCmd _cmd_anchor_[] =
 /* input commands ({) */
 
 static Err cmd_input_info(CmdParams p[static 1]) { return _cmd_input_print(p->s, p->ix); }
+static Err cmd_input_default(CmdParams p[static 1]) { return cmd_input_default_ix(p->s, p->ix); }
 static Err cmd_input_submit(CmdParams p[static 1]) { return _cmd_input_submit_ix(p->s, p->ix); }
 #define CMD_INPUT_SET \
     "{= [VALUE]\n\n"\
     "If VALUE is given, sets the value of an input element.\n"\
     "If not, user's input is hidden (useful for passwords).\n"
-static Err cmd_input_set(CmdParams p[static 1]) { return _cmd_input_ix(p->s, p->ix, p->ln); }
+static Err cmd_input_set(CmdParams p[static 1]) { return _cmd_input_ix_set_(p->s, p->ix, p->ln); }
 
 
 static SessionCmd _cmd_input_[] =
-    { {.name="\"", .fn=cmd_input_info,   .help=NULL, .flags=CMD_CHAR}
-    , {.name="",   .fn=cmd_input_submit, .help=NULL, .flags=CMD_EMPTY}
-    , {.name="*",  .fn=cmd_input_submit, .help=NULL, .flags=CMD_CHAR}
-    , {.name="=",  .fn=cmd_input_set,   .help=CMD_INPUT_SET, .flags=CMD_CHAR}
+    { {.name="\"", .fn=cmd_input_info,    .help=NULL,          .flags=CMD_CHAR}
+    , {.name="",   .fn=cmd_input_default, .help=NULL,          .flags=CMD_EMPTY}
+    , {.name="*",  .fn=cmd_input_submit,  .help=NULL,          .flags=CMD_CHAR}
+    , {.name="=",  .fn=cmd_input_set,     .help=CMD_INPUT_SET, .flags=CMD_CHAR}
     , {0}
     };
 

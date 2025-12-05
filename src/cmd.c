@@ -249,26 +249,69 @@ Err cmd_textbuf_global(CmdParams p[static 1]) {
 /* input commands */
 
 
-Err _cmd_input_ix(Session session[static 1], const size_t ix, const char* line) {
-    lxb_dom_node_t* node;
-    try( _get_input_by_ix(session, ix, &node));
-
+Err _cmd_input_text_set_(Session session[static 1], LxbNode n[static 1], const char* line) {
     UserOutput* out = session_uout(session);
     Err err = Ok;
     if (!*line) {
         try( out->write_std("> ", 1, session));
         ArlOf(char) masked = (ArlOf(char)){0};
         err = readpass_term(&masked, true);
-        ok_then(err, lexbor_set_attr_value(node, masked.items, masked.len));
+        ok_then(err, lexbor_set_lit_attr__(lxbnode_node(n), "value", masked.items, masked.len));
         arlfn(char, clean)(&masked);
     } else {
         if (*line == ' ' || *line == '=') ++line;
         size_t len = strlen(line);
         if (len && line[len-1] == '\n') --len;
-        err = lexbor_set_attr_value(node, line, len);
+        err = lexbor_set_lit_attr__(lxbnode_node(n), "value", line, len);
     }
     ok_then(err, session_doc_draw(session));
     return err;
+}
+
+Err _cmd_input_select_set_(Session session[static 1], LxbNode n[static 1], const char* line) {
+    ArlOf(LxbNodePtr)* matches = &(ArlOf(LxbNodePtr)){0};
+    Err e = Ok;
+
+    lxb_dom_node_t* first = lxbnode_node(n)->first_child;
+    for(lxb_dom_node_t* it = first; it ; it = it->next) {
+        if (it->type == LXB_DOM_NODE_TYPE_ELEMENT && it->local_name == LXB_TAG_OPTION) {
+            StrView value = lexbor_get_lit_attr__(it, "value");
+            size_t linelen = strlen(line);
+            if (linelen <= value.len && value.items && !strncmp(line, value.items, linelen)) {
+                if (!arlfn(LxbNodePtr, append)(matches, &it)) {
+                    e = "error: arl append failure";
+                    goto Clean_Matches;
+                }
+            }
+
+            try_or_jump(e, Clean_Matches, lexbor_remove_lit_attr__(it, "selected"));
+        }
+    }
+
+    if (len__(matches) == 0) e = "no matches";
+    else if (len__(matches) == 1) {
+        e = Ok;
+        LxbNodePtr* selected = arlfn(LxbNodePtr,at)(matches,0);
+        if (!selected) return "error: arlfn failure";
+        e = lexbor_set_lit_attr__(*selected, "selected", "", 0);
+        ok_then(e, session_doc_draw(session));
+    } else e = "amiguous input";
+
+Clean_Matches:
+    arlfn(LxbNodePtr, clean)(matches);
+    return e;
+}
+
+
+Err _cmd_input_ix_set_(Session session[static 1], const size_t ix, const char* ln) {
+    LxbNode n = (LxbNode){0};
+    try( _get_input_by_ix(session, ix, &n.n));
+
+    if (lexbor_lit_attr_has_lit_value(&n, "type", "text"))
+        return _cmd_input_text_set_(session, &n, ln);
+    else if (lexbor_node_tag_is_select(&n)) return _cmd_input_select_set_(session, &n, ln);
+
+    return "input set not supported for element";
 }
 
 /* image commands */

@@ -342,7 +342,8 @@ Err curl_save_url(UrlClient url_client[static 1], CURLU* curlu , const char* fna
 static Err
 _make_submit_get_request_rec_( lxb_dom_node_t* node, Request req[static 1]) {
     if (!node) return Ok;
-    else if (node->local_name == LXB_TAG_INPUT && !_lexbor_attr_has_value(node, "type", "submit")) {
+    else if (node->local_name == LXB_TAG_INPUT
+            && !lexbor_lit_attr_has_lit_value(node, "type", "submit")) {
 
         const lxb_char_t* value;
         size_t valuelen;
@@ -367,6 +368,25 @@ _make_submit_get_request_rec_( lxb_dom_node_t* node, Request req[static 1]) {
     return Ok;
 }
 
+
+static Err _request_append_select_(lxb_dom_node_t node[static 1], Request req[static 1]) {
+    StrView key = lexbor_get_lit_attr__(node, "name");
+    if (!key.len) return Ok;
+
+    lxb_dom_node_t* selected = NULL;
+    for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
+        if (it->local_name == LXB_TAG_OPTION && lexbor_has_lit_attr__(it, "selected")) {
+            selected = it;
+        }
+    }
+    if (selected) {
+        StrView value = lexbor_get_lit_attr__(selected, "value");
+        if (value.len) {
+            try(request_query_append_key_value(req, key.items, key.len, value.items, value.len));
+        }
+    }
+    return Ok;
+}
 
 static Err _request_append_lexbor_name_value_attrs_if_both_(
     lxb_dom_node_t node[static 1],
@@ -402,14 +422,17 @@ static Err _make_submit_post_request_rec(
        log_warn__(output_stdout__,NULL, "%s", "ignoring form nested inside another form"); 
        return Ok;
     }
-    if (node->local_name == LXB_TAG_INPUT 
-            && !_lexbor_attr_has_value(node, "type", "submit"))
-        return _request_append_lexbor_name_value_attrs_if_both_(node, is_https, req);
 
-    for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
-        try( _make_submit_post_request_rec(it, is_https, req));
-        if (it == node->last_child) { break; }
+    if (node->local_name == LXB_TAG_INPUT 
+        && !lexbor_lit_attr_has_lit_value(node, "type", "submit"))
+        return _request_append_lexbor_name_value_attrs_if_both_(node, is_https, req);
+    else if (node->local_name == LXB_TAG_SELECT) {
+        return _request_append_select_(node, req);
     }
+
+    /* recursive case */
+    for(lxb_dom_node_t* it = node->first_child; it ; it = it->next)
+        try( _make_submit_post_request_rec(it, is_https, req));
     return Ok;
 }
 
@@ -459,15 +482,15 @@ Err lexcurl_dup_curl_from_node_and_attr(
 )
 {
     Err e = Ok;
-    const lxb_char_t* data;
-    size_t data_len;
-    if (!lexbor_find_attr_value(node, attr, attr_len, &data, &data_len))
+
+    StrView data = lexbor_get_attr(node, attr, attr_len);
+    if (!data.items || !data.len)
         return "lexbor node does not have attr";
 
     CURLU* dup = curl_url_dup(*u);
     if (!dup) return "error: memory failure (curl_url_dup)";
     Str* buf = &(Str){0};
-    try_or_jump(e, failure, null_terminated_str_from_mem((char*)data, data_len, buf));
+    try_or_jump(e, failure, null_terminated_str_from_mem((char*)data.items, data.len, buf));
     try_or_jump(e, failure, curlu_set_url_or_fragment(dup, buf->items));
     str_clean(buf);
     *u = dup;
