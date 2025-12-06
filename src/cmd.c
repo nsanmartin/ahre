@@ -309,6 +309,10 @@ Err _cmd_input_ix_set_(Session session[static 1], const size_t ix, const char* l
 
     if (lexbor_lit_attr_has_lit_value(&n, "type", "text"))
         return _cmd_input_text_set_(session, &n, ln);
+    else if (lexbor_lit_attr_has_lit_value(&n, "type", "search"))
+        return _cmd_input_text_set_(session, &n, ln); //TODO: implement it properly
+    else if (lexbor_lit_attr_has_lit_value(&n, "type", "password"))
+        return _cmd_input_text_set_(session, &n, ln);
     else if (lexbor_node_tag_is_select(&n)) return _cmd_input_select_set_(session, &n, ln);
 
     return "input set not supported for element";
@@ -329,10 +333,10 @@ Err _get_image_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outno
 Err _cmd_image_print(Session session[static 1], size_t ix) {
     lxb_dom_node_t* node;
     try( _get_image_by_ix(session, ix, &node));
-    BufOf(char)* buf = &(BufOf(char)){0};
+    Str* buf = &(Str){0};
     Err err = lexbor_node_to_str(node, buf);
     ok_then(err, session_write_msg(session, items__(buf), len__(buf)));
-    buffn(char, clean)(buf);
+    str_clean(buf);
     return err;
 }
 
@@ -366,11 +370,11 @@ Err _cmd_anchor_print(Session session[static 1], size_t linknum) {
     lxb_dom_node_t* a;
     try( _get_anchor_by_ix(session, linknum, &a));
     
-    BufOf(char)* buf = &(BufOf(char)){0};
+    Str* buf = &(Str){0};
     try( lexbor_node_to_str(a, buf));
 
     Err err = session_write_msg(session, items__(buf), len__(buf));
-    buffn(char, clean)(buf);
+    str_clean(buf);
     return err;
 }
 

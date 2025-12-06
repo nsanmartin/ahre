@@ -18,6 +18,8 @@ lexbor_node_tag_is_select(LxbNode n[static 1]) { return n->n->local_name == LXB_
 static inline bool
 lexbor_node_tag_is_input(LxbNode n[static 1]) { return n->n->local_name == LXB_TAG_INPUT; }
 static inline bool
+lexbor_node_tag_is_button(LxbNode n[static 1]) { return n->n->local_name == LXB_TAG_BUTTON; }
+static inline bool
 lexbor_node_tag_is_text(LxbNode n[static 1]) { return n->n->local_name == LXB_TAG__TEXT; }
 
 static inline bool _lexbor_element_find_attr_value_(
@@ -175,10 +177,15 @@ static inline bool lexbor_node_has_attr(lxb_dom_node_t* node, const char* name, 
     return lexbor_elem_has_attr(lxb_dom_interface_element(node), name, len);
 }
 
+static inline bool lxbnode_has_lit_attr(LxbNode lbn[static 1], const char* name, size_t len) {
+    return lexbor_node_has_attr(lxbnode_node(lbn), name, len);
+}
+
 #define lexbor_has_lit_attr__(X, AttrNameLit) \
     _Generic((X), \
         lxb_dom_element_t*: lexbor_elem_has_attr, \
-        lxb_dom_node_t*   : lexbor_node_has_attr \
+        lxb_dom_node_t*   : lexbor_node_has_attr ,\
+        LxbNode*          : lxbnode_has_lit_attr \
     )(X, AttrNameLit, lit_len__(AttrNameLit))
 
 
@@ -220,7 +227,7 @@ static inline Err lexbor_node_set_attr(
 
 lxb_dom_node_t* _find_parent_form(lxb_dom_node_t* node) ;
 
-Err lexbor_node_to_str(lxb_dom_node_t* node, BufOf(char)* buf);
+Err lexbor_node_to_str(lxb_dom_node_t* node, Str buf[static 1]);
 
 static inline bool lexbor_str_eq(const char* s, const lxb_char_t* lxb_str, size_t len) {
     return lxb_str && !strncasecmp(s, (const char*)lxb_str, len);
@@ -228,12 +235,6 @@ static inline bool lexbor_str_eq(const char* s, const lxb_char_t* lxb_str, size_
 
 Err dbg_print_title(lxb_dom_node_t* title) ;
 Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request req[static 1]);
-Err mk_submit_url (
-    UrlClient url_client[static 1],
-    lxb_dom_node_t* form,
-    CURLU* out[static 1],
-    HttpMethod doc_method[static 1] 
-);
 
 static inline Err
 lexbor_node_get_text(lxb_dom_node_t* node, const char* data[static 1], size_t len[static 1]) {

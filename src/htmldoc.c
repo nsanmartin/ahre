@@ -182,7 +182,7 @@ draw_tag_button(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     size_t input_id =len__(inputs)-1;
 
     try( _hypertext_id_open_(
-        ctx, draw_ctx_color_red, button_open_str, &input_id, elem_id_sep_default));
+        ctx, draw_ctx_color_red, button_open_str, &input_id, button_sep_str));
     
 
     try (draw_list(node->first_child, node->last_child, ctx));
@@ -210,7 +210,7 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
         lexbor_find_lit_attr_value__(node, "value", &s, &slen);
 
-        StrViewProvider sep = slen ? input_text_sep_str : NULL;
+        StrViewProvider sep = slen ? input_submit_sep_str : NULL;
         try( _hypertext_id_open_(ctx, draw_ctx_color_red, input_text_open_str, &input_id, sep));
         if (slen) try( draw_ctx_buf_append(ctx, strview__((char*)s, slen)));
         try( _hypertext_id_close_(ctx, draw_ctx_reset_color, input_submit_close_str));
@@ -223,14 +223,14 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         ctx, draw_ctx_color_red, input_text_open_str, &input_id, NULL));
 
     if (_input_is_text_type_(s, slen)) {
+        try( draw_ctx_buf_append_lit__(ctx, "="));
         if (lexbor_find_lit_attr_value__(node, "value", &s, &slen)) {
-            try( draw_ctx_buf_append_lit__(ctx, "="));
             try( draw_ctx_buf_append(ctx, strview__((char*)s, slen)));
         }
     } else if (lexbor_str_eq("password", s, slen)) {
         if (lexbor_find_lit_attr_value__(node, "value", &s, &slen)) {
             try( draw_ctx_buf_append_lit__(ctx, "=********"));
-        }
+        } else try( draw_ctx_buf_append_lit__(ctx, "=________"));
     } else {
         try( draw_ctx_buf_append_lit__(ctx, "[input not supported yet]"));
     }

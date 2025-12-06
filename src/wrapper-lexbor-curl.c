@@ -338,7 +338,6 @@ Err curl_save_url(UrlClient url_client[static 1], CURLU* curlu , const char* fna
 }
 
 
-
 static Err
 _make_submit_get_request_rec_( lxb_dom_node_t* node, Request req[static 1]) {
     if (!node) return Ok;
@@ -469,7 +468,7 @@ Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request req[static 1
         req->method = http_get;
         return _make_submit_get_request_rec_(form, req);
     }
-    if (!method_len || lexbor_str_eq("post", method, method_len)) {
+    if (method_len && lexbor_str_eq("post", method, method_len)) {
         req->method = http_post;
         return _mk_submit_post_request_(form, is_https, req);
     }

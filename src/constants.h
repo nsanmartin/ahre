@@ -17,6 +17,7 @@
 #define IMAGE_CLOSE_STR  ")"
 
 #define BUTTON_OPEN_STR  "{"
+#define BUTTON_SEP_STR  "^"
 #define BUTTON_CLOSE_STR  "}"
 
 #define FORM_OPEN_STR  "\u231C" //[form "
@@ -33,7 +34,7 @@ static inline StrView input_text_close_str(void) { return strview_from_lit__(INP
 
 static inline StrView input_select_sep_str(void) { return strview_from_lit__(SELECT_SEP_STR); }
 
-static inline StrView input_submit_sep_str(void) { return strview_from_lit__("|"); }
+static inline StrView input_submit_sep_str(void) { return strview_from_lit__("/"); }
 static inline StrView input_submit_close_str(void) { return strview_from_lit__(INPUT_CLOSE_STR); }
 
 static inline StrView anchor_open_str(void) { return strview_from_lit__(ANCHOR_OPEN_STR); }
@@ -44,6 +45,7 @@ static inline StrView image_open_str(void) { return strview_from_lit__(IMAGE_OPE
 static inline StrView image_close_str(void) { return strview_from_lit__(IMAGE_CLOSE_STR); }
 
 static inline StrView button_open_str(void) { return strview_from_lit__(BUTTON_OPEN_STR); }
+static inline StrView button_sep_str(void) { return strview_from_lit__(BUTTON_SEP_STR); }
 static inline StrView button_close_str(void) { return strview_from_lit__(BUTTON_CLOSE_STR); }
 
 static inline StrView form_open_str(void) { return strview_from_lit__(FORM_OPEN_STR); }

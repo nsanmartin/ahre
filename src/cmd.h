@@ -267,11 +267,11 @@ _get_input_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outnode[s
 static inline Err _cmd_input_print(Session session[static 1], size_t ix) {
     lxb_dom_node_t* node;
     try( _get_input_by_ix(session, ix, &node));
-    BufOf(char)* buf = &(BufOf(char)){0};
+    Str* buf = &(Str){0};
     Err err = lexbor_node_to_str(node, buf);
 
     ok_then(err,  session_write_msg(session, items__(buf), len__(buf)));
-    buffn(char, clean)(buf);
+    str_clean(buf);
     return err;
 }
 
@@ -316,6 +316,10 @@ static inline Err cmd_input_default_ix(Session s[static 1], size_t ix) {
 
     if (lexbor_node_tag_is_input(&lbn)
     &&  lexbor_lit_attr_has_lit_value(&lbn, "type", "submit")) 
+        return tab_node_tree_append_submit(tab , ix, session_url_client(s), s);
+    else if (lexbor_node_tag_is_button(&lbn)
+    &&  (lexbor_lit_attr_has_lit_value(&lbn, "type", "submit") 
+        || !lexbor_has_lit_attr__(&lbn, "type")))
         return tab_node_tree_append_submit(tab , ix, session_url_client(s), s);
     else if (lexbor_node_tag_is_select(&lbn))
         return cmd_select_elem_show_options(&lbn, s);
