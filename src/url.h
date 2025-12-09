@@ -21,7 +21,10 @@ typedef struct {
 } Url;
 
 /* dtor */
-static inline void url_cleanup(Url u[static 1]) { curl_url_cleanup(u->cu); }
+static inline void url_cleanup(Url u[static 1]) {
+    if (u->cu) curl_url_cleanup(u->cu);
+    u->cu = NULL;
+}
 //
 
 typedef enum { curlu_tag, cstr_tag } CurluOrCstrTag;

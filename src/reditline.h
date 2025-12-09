@@ -5,7 +5,12 @@
 
 #include "str.h"
 
-void reditline_history_cleanup(void) ;
+void reditline_history_cleanup(ArlOf(const_cstr) history[static 1]);
+char* reditline(const char* prompt, char* line, ArlOf(const_cstr) history[static 1]);
+bool reditline_error(char* res);
+int redit_history_add(ArlOf(const_cstr) history[static 1], const char* line);
+Err switch_tty_to_raw_mode(struct termios prev_termios[static 1]);
+
 
 typedef enum {
 	KeyNull      = 0,
@@ -30,25 +35,4 @@ typedef enum {
 	KeyBackSpace = 127
 } KeyStroke;
 
-
-static inline Err switch_tty_to_raw_mode(struct termios prev_termios[static 1]) {
-
-    if (!isatty(STDIN_FILENO)) return "error: not a tty";
-    if (tcgetattr(STDIN_FILENO, prev_termios) == -1) return "error: tcgetattr falure";
-
-    struct termios new_termios = *prev_termios;
-    new_termios.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
-    new_termios.c_oflag &= ~(OPOST);
-    new_termios.c_cflag |= (CS8);
-    new_termios.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
-    new_termios.c_cc[VMIN] = 1;
-    new_termios.c_cc[VTIME] = 0;
-    if (tcsetattr(STDIN_FILENO,TCSAFLUSH, &new_termios) < 0) return "error: tcsetattr failure";
-    return Ok;
-}
-
-
-char* reditline(const char* prompt, char* line);
-bool reditline_error(char* res);
-int redit_history_add(const char* line);
 #endif

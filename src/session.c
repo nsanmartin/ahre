@@ -1,7 +1,10 @@
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include "generic.h"
 #include "session.h"
 #include "user-interface.h"
-
+#include "reditline.h"
 
 
 Err session_current_doc(Session session[static 1], HtmlDoc* out[static 1]) {
@@ -11,7 +14,6 @@ Err session_current_doc(Session session[static 1], HtmlDoc* out[static 1]) {
     *out = d;
     return Ok;
 }
-
 
 
 Err session_current_buf(Session session[static 1], TextBuf* out[static 1]) {
@@ -34,6 +36,7 @@ Err session_init(Session s[static 1], SessionConf sconf[static 1]) {
         .conf         = *sconf
     };
     try( url_client_init(session_url_client(s)));
+    try( str_append_datetime_now(session_dt_now_str(s)));
 
     return Ok;
 }
@@ -107,4 +110,68 @@ session_write_std_range_mod(Session s[static 1], TextBuf textbuf[static 1], Rang
     Writer w;
     session_std_writer_init(&w, s);
     return write_range_mod(&w, session_monochrome(s), textbuf, range);
+}
+
+
+Err session_write_fetch_history(Session s[static 1]) {
+    int fd;
+    FILE* fp;
+    Str fetch_history_fname = (Str){0};
+    try(get_fetch_history_filename(&fetch_history_fname));
+
+    if (-1 != (fd = open(fetch_history_fname.items, O_WRONLY | O_CREAT | O_EXCL, 0666))) {
+        ssize_t nbytes = write(fd, FETCH_HISTORY_HEADER, lit_len__(FETCH_HISTORY_HEADER)) == -1;
+        close(fd);
+        if(nbytes == -1)
+            return err_fmt("error: could not write fetch history header: %s", strerror(errno));
+    } else if (errno == ENOENT) {
+        return err_fmt("error: could not write fetch history header: %s", strerror(errno));
+    }
+
+
+    try(file_open(fetch_history_fname.items, "a", &fp));
+    ArlOf(FetchHistoryEntry)* history = session_fetch_history(s);
+    Err e = Ok;
+    for (FetchHistoryEntry* it = arlfn(FetchHistoryEntry,begin)(history)
+        ; it != arlfn(FetchHistoryEntry,end)(history)
+        ; ++it
+    ) {
+        try_or_jump(e, Clean, fetch_history_write_to_file(it, fp));
+    }
+Clean:
+    str_clean(&fetch_history_fname);
+    file_close(fp);
+    return Ok;
+}
+
+
+Err session_write_input_history(Session s[static 1]) {
+    Str history_fname = (Str){0};
+    FILE* fp;
+    try(get_input_history_filename(&history_fname));
+    try(file_open(history_fname.items, "a", &fp));
+    ArlOf(const_cstr)* history = session_input_history(s);
+    Err e = Ok;
+    Str* dt = session_dt_now_str(s);
+    try_or_jump(e, Clean, file_write_or_close(items__(dt), len__(dt), fp));
+    try_or_jump(e, Clean, file_write_or_close("\n", 1, fp));
+    for (const_cstr* it = arlfn(const_cstr,begin)(history)
+        ; it != arlfn(const_cstr,end)(history)
+        ; ++it
+    ) {
+        try_or_jump(e, Clean, file_write(*it, strlen(*it), fp));
+        try_or_jump(e, Clean, file_write("\n", 1, fp));
+    }
+
+Clean:
+    file_close(fp);
+    str_clean(&history_fname);
+    return Ok;
+}
+
+
+Err session_close(Session s[static 1]) {
+    session_write_input_history(s);
+    session_write_fetch_history(s);
+    return Ok;
 }

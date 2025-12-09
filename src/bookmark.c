@@ -1,5 +1,4 @@
 #include "draw.h" 
-#include "debug.h"
 #include "bookmark.h"
 #include "cmd.h"
 

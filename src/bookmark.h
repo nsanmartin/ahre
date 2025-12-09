@@ -3,10 +3,10 @@
 
 #include <errno.h>
 
-#include "debug.h"
 #include "utils.h"
 #include "htmldoc.h"
 #include "error.h"
+#include "fetch-history.h"
 
 Err bookmark_sections_body(HtmlDoc bookmark[static 1], lxb_dom_node_t* out[static 1]);
 
@@ -147,7 +147,9 @@ _get_bookmarks_doc_(
 ) {
     try( get_bookmark_filename_if_it_exists(bmfile));
     try(htmldoc_init_bookmark(out, bmfile->items));
-    Err err = _htmldoc_fetch_bookmark_(out, url_client, msg_writer);
+    FetchHistoryEntry e;
+    Err err = _htmldoc_fetch_bookmark_(out, url_client, msg_writer, &e);
+    fetch_history_entry_clean(&e);
     if (err) {
         htmldoc_cleanup(out);
         return err;

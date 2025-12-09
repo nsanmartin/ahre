@@ -1,5 +1,4 @@
 #include "constants.h"
-#include "debug.h"
 #include "draw.h"
 #include "error.h"
 #include "generic.h"
@@ -150,15 +149,22 @@ static Err
 draw_tag_form(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     ArlOf(LxbNodePtr)* forms = htmldoc_forms(draw_ctx_htmldoc(ctx));
     if (!arlfn(LxbNodePtr,append)(forms, &node)) return "error: lip set";
-    //size_t form_id = len__(forms)-1;
-    try( _hypertext_id_open_(ctx, draw_ctx_color_purple, form_open_str, NULL, NULL));
+    const size_t form_count = len__(forms);
 
-    try( draw_ctx_reset_color(ctx));
+    bool show = session_conf_show_forms(session_conf(draw_ctx_session(ctx)));
+    if (show) {
+        try( _hypertext_id_open_(
+                ctx, draw_ctx_color_purple, form_open_str, &form_count, form_sep_str));
+
+        try( draw_ctx_reset_color(ctx));
+    }
 
     try (draw_list_block(node->first_child, node->last_child, ctx));
 
-    try( draw_ctx_buf_append_color_(ctx, esc_code_purple));
-    try( _hypertext_id_close_(ctx, draw_ctx_reset_color, form_close_str));
+    if (show) {
+        try( draw_ctx_buf_append_color_(ctx, esc_code_purple));
+        try( _hypertext_id_close_(ctx, draw_ctx_reset_color, form_close_str));
+    }
     return Ok;
 }
 
@@ -182,7 +188,7 @@ draw_tag_button(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     size_t input_id =len__(inputs)-1;
 
     try( _hypertext_id_open_(
-        ctx, draw_ctx_color_red, button_open_str, &input_id, elem_id_sep_default));
+        ctx, draw_ctx_color_red, button_open_str, &input_id, button_sep_str));
     
 
     try (draw_list(node->first_child, node->last_child, ctx));
@@ -210,7 +216,7 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
         lexbor_find_lit_attr_value__(node, "value", &s, &slen);
 
-        StrViewProvider sep = slen ? input_text_sep_str : NULL;
+        StrViewProvider sep = slen ? input_submit_sep_str : NULL;
         try( _hypertext_id_open_(ctx, draw_ctx_color_red, input_text_open_str, &input_id, sep));
         if (slen) try( draw_ctx_buf_append(ctx, strview__((char*)s, slen)));
         try( _hypertext_id_close_(ctx, draw_ctx_reset_color, input_submit_close_str));
@@ -223,14 +229,14 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         ctx, draw_ctx_color_red, input_text_open_str, &input_id, NULL));
 
     if (_input_is_text_type_(s, slen)) {
+        try( draw_ctx_buf_append_lit__(ctx, "="));
         if (lexbor_find_lit_attr_value__(node, "value", &s, &slen)) {
-            try( draw_ctx_buf_append_lit__(ctx, "="));
             try( draw_ctx_buf_append(ctx, strview__((char*)s, slen)));
         }
     } else if (lexbor_str_eq("password", s, slen)) {
         if (lexbor_find_lit_attr_value__(node, "value", &s, &slen)) {
             try( draw_ctx_buf_append_lit__(ctx, "=********"));
-        }
+        } else try( draw_ctx_buf_append_lit__(ctx, "=________"));
     } else {
         try( draw_ctx_buf_append_lit__(ctx, "[input not supported yet]"));
     }
@@ -668,7 +674,7 @@ Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         } 
         case LXB_TAG_SELECT: { return draw_tag_select(node, ctx); }
         case LXB_TAG_STYLE: {
-            log_todo__( draw_ctx_logfn(ctx), "%s\n", "skiping style (not implemented)");
+            /* Does it make any sense that wo dosomething with this in ahre? */
             return Ok;
         } 
         case LXB_TAG_TITLE: { return draw_tag_title(node, ctx); } 
@@ -676,17 +682,11 @@ Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
         case LXB_TAG_TT: { return draw_tag_code(node, ctx); }
         case LXB_TAG_UL: { return draw_tag_ul(node, ctx); }
         default: {
-            if (node->local_name >= LXB_TAG__LAST_ENTRY)
-                log_debug__(
-                    draw_ctx_logfn(ctx),
-                    "node local name (TAG) greater than last entry: %lx\n",
-                    node->local_name
-                );
-            else log_todo__(
-                draw_ctx_logfn(ctx),
-                "TAG 'NOT' IMPLEMENTED: %s",
-                _dbg_tags_[node->local_name]
-            );
+            /* if (node->local_name >= LXB_TAG__LAST_ENTRY) */
+            /*     return err_fmt( */
+            /*         "error: node local name (TAG) greater than last entry: %lx\n", node->local_name */
+            /*     ); */
+            /* else TODO: "TAG 'NOT' IMPLEMENTED: %s", node->local_name */
             return draw_list(node->first_child, node->last_child, ctx);
         }
     }
@@ -710,11 +710,7 @@ Err draw_text(lxb_dom_node_t* node,  DrawCtx ctx[static 1]) {
     } 
 
     if (node->first_child || node->last_child)
-        log_warn__(
-            draw_ctx_logfn(ctx),
-            "%s\n",
-            "LXB_DOM_NODE_TYPE_TEXT with actual childs"
-        );
+        return "error: unexpected text elem with childs";
     return Ok;
 }
 
@@ -730,16 +726,9 @@ Err draw_rec(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
                 return draw_list(node->first_child, node->last_child, ctx);
             default: {
                 if (node->type >= LXB_DOM_NODE_TYPE_LAST_ENTRY)
-                    log_warn__(
-                        draw_ctx_logfn(ctx),
-                        "lexbor node type greater than last entry: %lx\n",
-                        node->type
+                    return err_fmt("error:""lexbor node type greater than last entry: %lx\n", node->type
                     );
-                else log_warn__(
-                    draw_ctx_logfn(ctx),
-                    "Ignored Node Type: %s\n",
-                    _dbg_node_types_[node->type]
-                );
+                /* else TODO: "Ignored Node Type: %s\n", _dbg_node_types_[node->type]*/
                 return Ok;
             }
         }
@@ -819,23 +808,26 @@ Err htmldoc_init_from_request(
     };
     if (!d->lxbdoc) return "error: lxb failed to create html document";
     if (flags & HTMLDOC_FLAG_JS) 
-        try_or_jump(e, Failure_Lxb_Html_Document_Destroy, jse_init(d));
-    try_or_jump(e, Failure_Jse_Clean, _dup_url_from_request_(r, u, htmldoc_url(d)));
-    try_or_jump(e, Failure_Url_Cleanup, url_from_request(r, uc, htmldoc_url(d)));
+        try_or_jump(e, Failure, jse_init(d));
+    try_or_jump(e, Failure, _dup_url_from_request_(r, u, htmldoc_url(d)));
+    try_or_jump(e, Failure, url_from_request(r, uc, htmldoc_url(d)));
 
-    try_or_jump(e, Failure_Url_Cleanup, htmldoc_fetch(d, uc, &w));
+    ArlOf(FetchHistoryEntry)* hist = session_fetch_history(s);
+     if (!arlfn(FetchHistoryEntry,append)(hist, &(FetchHistoryEntry){0}))
+     { e = "error: arl append to fetch history failure"; goto Failure; }
+
+    try_or_jump(e, Failure, htmldoc_fetch(d, uc, &w, arlfn(FetchHistoryEntry,back)(hist)));
 
     htmldoc_eval_js_scripts_or_continue(d, s);
-    try_or_jump( e, Failure_Url_Cleanup, _htmldoc_draw_(d, s));
+    try_or_jump( e, Failure, _htmldoc_draw_(d, s));
+    try_or_jump( e, Failure,
+        fetch_history_entry_update_title(arlfn(FetchHistoryEntry,back)(hist),htmldoc_title(d)));
+
 
     return Ok;
 
-Failure_Url_Cleanup:
-    url_cleanup(htmldoc_url(d));
-Failure_Jse_Clean:
-    jse_clean(htmldoc_js(d));
-Failure_Lxb_Html_Document_Destroy:
-    lxb_html_document_destroy(d->lxbdoc);
+Failure:
+    htmldoc_cleanup(d);
 
     return e;
 }
@@ -1160,9 +1152,9 @@ Err htmldoc_scripts_write(HtmlDoc h[static 1], RangeParse rp[static 1], Writer w
     Range r;
     try(_htmldoc_scripts_range_from_parsed_range_(h, rp, &r));
     for (size_t it = r.beg; it <= r.end; ++it) {
-        char buf[SIZE_T_TO_STR_BUFSZ] = {0};
+        char buf[UINT_TO_STR_BUFSZ] = {0};
         size_t len;
-        try( unsigned_to_str(it, buf, SIZE_T_TO_STR_BUFSZ, &len));
+        try( unsigned_to_str(it, buf, UINT_TO_STR_BUFSZ, &len));
         Str* sc;
         try( htmldoc_script_at(h, it, &sc));
         try(writer_write_lit__(w, "// script: "));
