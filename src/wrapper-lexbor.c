@@ -95,10 +95,18 @@ size_t lexbor_parse_chunk_callback(char *in, size_t size, size_t nmemb, void* ou
 }
 
 
-Err lexbor_node_to_str(lxb_dom_node_t* node, BufOf(char)* buf) {
+static inline Err _lexbor_node_to_str_(lxb_dom_node_t* node, Str buf[static 1], size_t level) {
+    if (node->type != LXB_DOM_NODE_TYPE_ELEMENT) return Ok;
+    size_t len;
+    char* tag = (char*)lxb_dom_element_qualified_name(lxb_dom_interface_element(node), &len);
+    if (len && tag) {
+        for (size_t i = 0; i < level; ++i) try( str_append_lit__(buf, "    "));
+        try( str_append_lit__(buf, "<"));
+        try( str_append(buf, tag, len));
+        try( str_append_lit__(buf, ">\n"));
+    }
+
     lxb_dom_attr_t* attr = lxb_dom_element_first_attribute(lxb_dom_interface_element(node));
-    char* nullstr = "(null)";
-    char* indentstr = "    ";
     for (;attr;  attr = lxb_dom_element_next_attribute(attr)) {
         size_t namelen;
         const lxb_char_t* name = lxb_dom_attr_qualified_name(attr, &namelen);
@@ -108,22 +116,32 @@ Err lexbor_node_to_str(lxb_dom_node_t* node, BufOf(char)* buf) {
         size_t valuelen;
         const lxb_char_t* value = lxb_dom_attr_value(attr, &valuelen);
 
-        if (!buffn(char, append)(buf, indentstr, sizeof(indentstr)-1))
-            return "error: mem failure (BufOf.append)";
-        if (!buffn(char, append)(buf, (char*)name, namelen))
-            return "error: mem failure (BufOf.append)";
-        if (!buffn(char, append)(buf, "=", 1)) return "error: mem failure (BufOf.append)";
-        if (valuelen && valuelen) {
-            if (!buffn(char, append)(buf, (char*)value, valuelen))
-                return "error: mem failure (BufOf.append)";
-        } else {
-            if (!buffn(char, append)(buf, nullstr, sizeof(nullstr)-1))
-                return "error: mem failure (BufOf.append)";
-        }
-        if (!buffn(char, append)(buf, "\n", 1)) return "error: mem failure (BufOf.append)";
+        for (size_t i = 0; i <= level; ++i) try( str_append_lit__(buf, "    "));
+        try( str_append(buf, (char*)name, namelen));
+        try( str_append_lit__(buf, "="));
+        if (valuelen && valuelen) try( str_append(buf, (char*)value, valuelen));
+        else try( str_append_lit__(buf, "(null)"));
+        try( str_append_lit__(buf, "\n"));
+    }
+
+    for (lxb_dom_node_t* it = node->first_child; it; it = it->next) {
+        _lexbor_node_to_str_(it, buf, level + 1);
+        if (it == node->last_child) break;
+    }
+    if (len && tag) {
+        for (size_t i = 0; i < level; ++i) try( str_append_lit__(buf, "    "));
+        try( str_append_lit__(buf, "<"));
+        try( str_append(buf, tag, len));
+        try( str_append_lit__(buf, "/>\n"));
     }
     return Ok;
 }
+
+
+Err lexbor_node_to_str(lxb_dom_node_t* node, Str buf[static 1]) {
+    return _lexbor_node_to_str_(node, buf, 0);
+}
+
 
 lxb_dom_node_t* _find_parent_form(lxb_dom_node_t* node) {
     for (;node; node = node->parent) {

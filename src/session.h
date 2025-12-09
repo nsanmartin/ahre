@@ -7,14 +7,18 @@
 #include "user-out.h"
 #include "utils.h"
 #include "writer.h"
-
+#include "reditline.h"
+#include "fetch-history.h"
 
 typedef struct Session {
-    UrlClient url_client;
-    TabList tablist;
-    SessionConf conf;
-    /* accidental data */
-    Msg msg; //TODO: add one msg buffer per htmldoc
+    UrlClient          url_client;
+    TabList            tablist;
+    SessionConf        conf;
+
+    Msg                      msg; //TODO: add one msg buffer per htmldoc?
+    ArlOf(const_cstr)        input_history;
+    Str                      dt_now_str;
+    ArlOf(FetchHistoryEntry) fetch_history;
 } Session;
 
 
@@ -25,6 +29,7 @@ Err session_current_buf(Session session[static 1], TextBuf* out[static 1]);
 Err session_current_doc(Session session[static 1], HtmlDoc* out[static 1]);
 Err session_current_src(Session session[static 1], TextBuf* out[static 1]);
 
+static inline Str* session_dt_now_str(Session s[static 1]) { return &s->dt_now_str; }
 static inline Msg* session_msg(Session s[static 1]) { return &s->msg; }
 
 static inline UrlClient* session_url_client(Session session[static 1]) {
@@ -62,6 +67,10 @@ session_doc_msg_fn(Session s[static 1], HtmlDoc d[static 1]) {
     return (SessionWriteFn) {.write=session_uout(s)->write_msg, .ctx=s};
 }
 static inline bool session_js(Session s[static 1]) { return session_conf_js(session_conf(s)); }
+static inline ArlOf(const_cstr)* session_input_history(Session s[static 1]) { return &s->input_history; }
+static inline ArlOf(FetchHistoryEntry)* session_fetch_history(Session s[static 1]) {
+    return &s->fetch_history;
+}
 
 /* ctor */
 Err session_init(Session s[static 1], SessionConf sconf[static 1]);
@@ -71,11 +80,17 @@ static inline void session_cleanup(Session s[static 1]) {
     url_client_cleanup(session_url_client(s));
     tablist_cleanup(session_tablist(s));
     msg_clean(session_msg(s));
+    reditline_history_cleanup(session_input_history(s));
+    str_clean(session_dt_now_str(s));
+    arlfn(FetchHistoryEntry,clean)(session_fetch_history(s));
 }
 
 void session_destroy(Session* session);
 
 /**/
+
+Err session_close(Session s[static 1]);
+
 
 Err tablist_append_tree_from_url(
     TabList   f[static 1],
@@ -214,6 +229,5 @@ static inline Err session_msg_writer_init(Writer w[static 1], Session s[static 1
 
 Err
 session_write_std_range_mod(Session s[static 1], TextBuf textbuf[static 1], Range range[static 1]);
-
-
+Err session_write_input_history(Session s[static 1]);
 #endif

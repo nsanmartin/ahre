@@ -7,7 +7,6 @@
 #include "wrapper-lexbor.h"
 #include "wrapper-curl.h"
 
-#include "debug.h"
 
 
 /* internal linkage */
@@ -251,9 +250,10 @@ Lxb_Array_Head_Destroy:
 
 
 Err curl_lexbor_fetch_document(
-    UrlClient      url_client[static 1],
-    HtmlDoc        htmldoc[static 1],
-    Writer         msg_writer[static 1]
+    UrlClient         url_client[static 1],
+    HtmlDoc           htmldoc[static 1],
+    Writer            msg_writer[static 1],
+    FetchHistoryEntry histentry[static 1]
 ) {
     try( url_client_set_basic_options(url_client));
     try( _curl_set_write_fn_and_data_(url_client, htmldoc));
@@ -261,14 +261,17 @@ Err curl_lexbor_fetch_document(
     try( _curl_set_http_method_(url_client, htmldoc));
     try( _curl_set_curlu_(url_client, htmldoc));
 
+    try( fetch_history_entry_init(histentry));
     CURLcode curl_code = curl_easy_perform(url_client->curl);
-
+    fetch_history_entry_update_curl(histentry, url_client->curl, msg_writer);
     str_reset(url_client_postdata(url_client));
     if (curl_code!=CURLE_OK) 
         return _curl_perform_error_(htmldoc, curl_code);
 
-    try(curlinfo_sz_download_incr(
-            msg_writer, url_client_curl(url_client), htmldoc_curlinfo_sz_download(htmldoc)));
+    if (histentry->size_download_t < 0)
+        try(writer_write_lit__(msg_writer, "CURLINFO_SIZE_DOWNLOAD_T is negative"));
+    else *htmldoc_curlinfo_sz_download(htmldoc) = histentry->size_download_t;
+
     try( _lexbor_parse_chunk_end_(htmldoc));
     try( _set_htmldoc_url_with_effective_url_(url_client, htmldoc));
     try( htmldoc_convert_sourcebuf_to_utf8(htmldoc));
@@ -336,7 +339,6 @@ Err curl_save_url(UrlClient url_client[static 1], CURLU* curlu , const char* fna
     try( url_client_reset(url_client));
     return Ok;
 }
-
 
 
 static Err
@@ -418,8 +420,8 @@ static Err _make_submit_post_request_rec(
 ) {
     if (!node) return Ok;
     if (node->local_name == LXB_TAG_FORM) {
-       //TODO: use a configurable log fn
-       log_warn__(output_stdout__,NULL, "%s", "ignoring form nested inside another form"); 
+       /* ignoring form nested inside another form */
+       //TODO: receive a msg callback to notify user
        return Ok;
     }
 
@@ -469,7 +471,7 @@ Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request req[static 1
         req->method = http_get;
         return _make_submit_get_request_rec_(form, req);
     }
-    if (!method_len || lexbor_str_eq("post", method, method_len)) {
+    if (method_len && lexbor_str_eq("post", method, method_len)) {
         req->method = http_post;
         return _mk_submit_post_request_(form, is_https, req);
     }

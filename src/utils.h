@@ -12,7 +12,8 @@
 #include "mem.h"
 #include "error.h"
 
-#define SIZE_T_TO_STR_BUFSZ 64
+#define UINT_TO_STR_BUFSZ 64
+#define INT_TO_STR_BUFSZ    64
 
 static inline size_t size_t_min(size_t x, size_t y) { return x > y ? x : y; }
 inline static bool file_exists(const char* filename) { return !access(filename, F_OK); }
@@ -100,6 +101,15 @@ unsigned_to_str(uintmax_t ui, char* buf, size_t size , size_t len[static 1]) {
 }
 
 static inline  Err
+int_to_str(intmax_t i, char* buf, size_t size , size_t len[static 1]) {
+    if ((*len = snprintf(buf, size, "%ld", i)) > size) {
+        return "error: number too large for string buffer";
+    }
+    return Ok;
+}
+
+
+static inline  Err
 append_unsigned_to_str(uintmax_t ui, char* str, size_t size, size_t len[static 1]) {
     size_t numlen;
     if ((numlen = snprintf(str + *len, size, "%lu", ui)) > (size - *len)) {
@@ -142,8 +152,20 @@ Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) ;
 
 
 #define file_write_or_close(Mem, Len, Fp) _file_write_or_close_(Mem, Len, Fp, __FILE__)
+#define file_write(Mem, Len, Fp) _file_write_(Mem, Len, Fp, __FILE__)
+#define file_write_lit_sep(Mem, Len, LitSep, Fp) \
+    _file_write_sep_(Mem, Len, LitSep, lit_len__(LitSep), Fp, __FILE__)
+
+#define file_write_int_lit_sep(Int, LitSep, Fp) \
+    _file_write_int_sep_(Int, LitSep, lit_len__(LitSep), Fp, __FILE__)
+
+Err _file_write_int_sep_(intmax_t i, const char* sep, size_t seplen, FILE* fp, const char* caller);
+
 Err _file_write_or_close_(const char* mem, size_t len, FILE* fp, const char* caller);
 Err file_open(const char* filename, const char* mode, FILE* fpp[static 1]);
 Err _file_write_(const char* mem, size_t len, FILE* fp, const char* caller);
 Err file_close(FILE* fp);
+Err _file_write_sep_(
+    const char* mem, size_t len, const char* sep, size_t seplen, FILE* fp, const char* caller
+);
 #endif

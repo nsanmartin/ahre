@@ -26,6 +26,7 @@ bool _is_cmd_char_(char c) {
         || c == '{'
         || c == '('
         || c == '<'
+        || c == '='
         || c == '\\'
         ;
 }
@@ -79,6 +80,7 @@ Err _ui_vi_read_vi_mode_keys_(Session s[static 1], KeyCmd cmd[static 1]) {
             case '{':
             case '(':
             case '<':
+            case '=':
             case '\\': *cmd = (KeyCmd)c; break;
             default: continue;
         }
@@ -86,11 +88,11 @@ Err _ui_vi_read_vi_mode_keys_(Session s[static 1], KeyCmd cmd[static 1]) {
     return Ok;
 }
 
-static inline Err _raw_readline_(char first, char* out[static 1]) {
+static inline Err _raw_reditline_(char first, ArlOf(const_cstr) history[static 1], char* out[static 1]) {
     char buf[] = { first, '\0' };
-    *out = reditline(NULL, buf);
+    *out = reditline(NULL, buf, history);
     if (reditline_error(*out)) return *out;
-    if (*out && redit_history_add(*out)) return "error: reditline_history failure";
+    if (*out && redit_history_add(history, *out)) return "error: reditline_history failure";
     return Ok;
 }
 
@@ -107,7 +109,7 @@ Err ui_vi_mode_read_input(Session* s, const char* prompt, char* out[static 1]) {
     while (!*out) {
         KeyCmd cmd = keycmd_null;
         while (!cmd) { err = _ui_vi_read_vi_mode_keys_(s, &cmd); }
-        if (_is_cmd_char_(cmd)) ok_then(err,_raw_readline_(cmd, out));
+        if (_is_cmd_char_(cmd)) ok_then(err,_raw_reditline_(cmd, session_input_history(s), out));
         else break;
     }
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &prev_termios) == -1) return "error: tcsetattr failure";

@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 
+#include "str.h"
 #include "url.h"
 
 
@@ -111,9 +112,11 @@ Failure_Free_Escaped:
 static Err _url_from_post_request_(Request r[static 1], UrlClient uc[static 1], Url u[static 1]) {
     CURL* curl = url_client_curl(uc);
     CURLU* cu = url_cu(u);
-    CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, items__(request_url_str(r)), 0);
-    if (curl_code != CURLUE_OK)
-        return err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
+    if (len__(request_url_str(r))) {
+        CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, items__(request_url_str(r)), 0);
+        if (curl_code != CURLUE_OK)
+            return err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
+    }
     
     const char* postfields;
     size_t      len;
@@ -131,7 +134,39 @@ static Err _url_from_post_request_(Request r[static 1], UrlClient uc[static 1], 
 }
 
 static Err _url_from_get_request_(Request r[static 1], UrlClient uc[static 1], Url u[static 1]) {
-    (void)r; (void)uc; (void)u;
+    (void)uc;
+    CURLU* cu = url_cu(u);
+    if (len__(request_url_str(r))) {
+        CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, items__(request_url_str(r)), 0);
+        if (curl_code != CURLUE_OK)
+            return err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
+    }
+
+
+    ArlOf(Str)* ks = request_query_keys(r);
+    ArlOf(Str)* vs = request_query_values(r);
+    if (len__(ks) != len__(vs))
+        return "error: key/value lists must have the same len";
+
+    Str* kit = arlfn(Str,begin)(ks);
+    Str* vit = arlfn(Str,begin)(vs);
+    for ( ; kit != arlfn(Str,end)(ks) && vit != arlfn(Str,end)(vs) ; ++kit, ++vit) {
+        str_reset(request_postfields(r));
+        try(str_append_str(request_postfields(r), kit));
+        try(str_append_lit__(request_postfields(r), "="));
+        try(str_append_str(request_postfields(r), vit));
+        try(str_append_lit__(request_postfields(r), "\0"));
+        CURLUcode curl_code = curl_url_set(
+            cu,
+            CURLUPART_QUERY,
+            items__(request_postfields(r)),
+            CURLU_APPENDQUERY | CURLU_URLENCODE
+        );
+        if (curl_code != CURLUE_OK)
+            return err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
+    }
+    str_reset(request_postfields(r));
+
     return Ok;
 }
 

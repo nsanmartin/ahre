@@ -1,5 +1,6 @@
-#include <iconv.h>
 #include <errno.h>
+#include <iconv.h>
+#include <stdio.h>
 
 #include "error.h"
 #include "generic.h"
@@ -199,6 +200,26 @@ Err _convert_to_utf8_(
     if (iconv_close(cd)) return "error: iconv_close failure";
     *outlen = allocated - outleft;
     return Ok;
+}
+
+
+Err str_append_timespec(Str out[static 1], struct timespec ts[static 1]) {
+#define DT_BUFLEN 128
+    char buff[DT_BUFLEN];
+    if (!strftime(buff, sizeof buff, "%F %T", gmtime(&ts->tv_sec)))
+        return "error: strftime output did not fit the DT_BUFLEN";
+    try( str_append(out, buff, strlen(buff)));
+    const size_t len = snprintf(buff, DT_BUFLEN, ".%09ld UTC", ts->tv_nsec);
+    if (DT_BUFLEN <= len)
+        return "error: snprintf output did not fit the DT_BUFLEN";
+    return str_append(out, buff, len);
+}
+
+Err str_append_datetime_now(Str out[static 1]) {
+
+    struct timespec ts;
+    timespec_get(&ts, TIME_UTC);
+    return str_append_timespec(out, &ts);
 }
 
 

@@ -17,6 +17,25 @@ Err _file_write_(const char* mem, size_t len, FILE* fp, const char* caller) {
     return Ok;
 } 
 
+Err _file_write_sep_(
+    const char* mem, size_t len, const char* sep, size_t seplen, FILE* fp, const char* caller
+) {
+    if (len && fwrite(mem, 1, len, fp) != len)
+        return err_fmt("(%s) error writing to file: %s", caller, strerror(errno));
+    if (seplen && fwrite(sep, 1, seplen, fp) != seplen)
+        return err_fmt("(%s) error writing to file: %s", caller, strerror(errno));
+    return Ok;
+} 
+
+
+Err _file_write_int_sep_(intmax_t i, const char* sep, size_t seplen, FILE* fp, const char* caller) {
+    char buf [INT_TO_STR_BUFSZ];
+    size_t len;
+    try( int_to_str(i, buf, sizeof buf, &len));
+    return _file_write_sep_(buf, len, sep, seplen, fp, caller);
+}
+                
+
 Err _file_write_or_close_(const char* mem, size_t len, FILE* fp, const char* caller) {
     if (len && fwrite(mem, 1, len, fp) != len) {
         const char* fwrite_strerr = strerror(errno);

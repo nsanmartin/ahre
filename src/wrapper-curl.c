@@ -1,4 +1,3 @@
-#include "debug.h"
 #include "str.h"
 #include "htmldoc.h"
 #include "wrapper-curl.h"
