@@ -24,6 +24,23 @@ typedef enum {
 #define rl_try(Expr) do{\
     RlError rl_err_=validate_rl_err((Expr));if (rl_err_) return rl_err_;}while(0) 
 
+Err switch_tty_to_raw_mode(struct termios prev_termios[static 1]) {
+
+    if (!isatty(STDIN_FILENO)) return "error: not a tty";
+    if (tcgetattr(STDIN_FILENO, prev_termios) == -1) return "error: tcgetattr falure";
+
+    struct termios new_termios = *prev_termios;
+    new_termios.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+    new_termios.c_oflag &= ~(OPOST);
+    new_termios.c_cflag |= (CS8);
+    new_termios.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+    new_termios.c_cc[VMIN] = 1;
+    new_termios.c_cc[VTIME] = 0;
+    if (tcsetattr(STDIN_FILENO,TCSAFLUSH, &new_termios) < 0) return "error: tcsetattr failure";
+    return Ok;
+}
+
+
 static inline void rlbuf_reset(RLBuf b[static 1]) { b->len = b->pos = 0; }
 static inline RlError rlbuf_ensure_extra_capacity_(RLBuf b[static 1], size_t size) {
     if (b->capacity < b->len + size) {
@@ -175,14 +192,11 @@ static RlError rl_edit(ReditLine rl[static 1]) {
     }
 }
 
-//TODO:
-// This is a global history, maybe we can have one per document or per command type.
-static ArlOf(const_cstr)* _history_    = &(ArlOf(const_cstr)){0};
 
-int redit_history_add(const char* line) {
+int redit_history_add(ArlOf(const_cstr) history[static 1], const char* line) {
     line = std_strdup(line);
     if (!line) return RlErrorStrdup;
-    if (!arlfn(const_cstr,append)(_history_, &line)) {
+    if (!arlfn(const_cstr,append)(history, &line)) {
         std_free((char*)line);
         return RlErrorArlAppend;
     }
@@ -193,12 +207,12 @@ static char* _reditline_error_ = "error: reditline failure";
 bool reditline_error(char* res) { return res == _reditline_error_; }
 
  
-char* reditline(const char* prompt, char* line) {
+char* reditline(const char* prompt, char* line, ArlOf(const_cstr) history[static 1]) {
     fwrite(EscCodeSaveCursor, 1, lit_len__(EscCodeSaveCursor), stdout);
     if (prompt && *prompt) fwrite(prompt, 1, strlen(prompt), stdout);
         
     ReditLine rl;
-    if (rl_init(&rl, _history_, line) != ReditlineOk) return _reditline_error_;
+    if (rl_init(&rl, history, line) != ReditlineOk) return _reditline_error_;
     if (rl_buf_write(&rl) != ReditlineOk) {
         rl_cleanup(&rl);
         return _reditline_error_;
@@ -212,4 +226,6 @@ char* reditline(const char* prompt, char* line) {
 }
 
 //TODO: consider whether exporting or using atexit
-void reditline_history_cleanup(void) { arlfn(const_cstr, clean)(_history_); }
+void reditline_history_cleanup(ArlOf(const_cstr) history[static 1]) {
+    arlfn(const_cstr, clean)(history);
+}

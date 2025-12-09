@@ -1,4 +1,3 @@
-#include "debug.h"
 #include "user-out.h"
 #include "session.h"
 

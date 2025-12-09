@@ -76,6 +76,14 @@ Err cmd_set_session_js(CmdParams p[static 1]) {
     return Ok;
 }
 
+Err cmd_set_session_forms(CmdParams p[static 1]) {
+    p->ln = cstr_skip_space(p->ln);
+    char c = p->ln[0]; 
+    if (c != '0' && c != '1') return "js option should be '0' or '1'";
+    session_conf_show_forms_set(session_conf(p->s), c == '1');
+    return Ok;
+}
+
 Err cmd_set_session_input(CmdParams p[static 1]) {
     p->ln = cstr_skip_space(p->ln);
     UserInterface ui;
@@ -304,8 +312,10 @@ Clean_Matches:
 
 
 Err _cmd_input_ix_set_(Session session[static 1], const size_t ix, const char* ln) {
+    HtmlDoc* d;
     LxbNode n = (LxbNode){0};
-    try( _get_input_by_ix(session, ix, &n.n));
+    try( session_current_doc(session, &d));
+    try( _get_lexbor_node_ptr_by_ix(htmldoc_inputs(d), ix, &n.n));
 
     if (lexbor_lit_attr_has_lit_value(&n, "type", "text"))
         return _cmd_input_text_set_(session, &n, ln);

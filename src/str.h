@@ -15,6 +15,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 
 #include "error.h"
 #include "generic.h"
@@ -222,4 +223,6 @@ Err _convert_to_utf8_(
     const char* outbuf[static 1],
     size_t outlen[static 1]
 );
+Err str_append_timespec(Str out[static 1], struct timespec ts[static 1]);
+Err str_append_datetime_now(Str [static 1]);
 #endif

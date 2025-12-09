@@ -46,8 +46,8 @@ static int _loop_(Session s[static 1]) {
         if (session_quit(s)) break;
         if (err) if (session_show_error(s, err)) exit(EXIT_FAILURE); 
     }
+    session_close(s);
     session_cleanup(s);
-    reditline_history_cleanup();//TODO move from here
     return EXIT_SUCCESS;
 }
 

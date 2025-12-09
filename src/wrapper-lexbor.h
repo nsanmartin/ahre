@@ -5,6 +5,7 @@
 #include <lexbor/html/html.h>
 
 #include "textbuf.h"
+#include "url.h"
 
 #define T lxb_char_t
 #include <buf.h>
@@ -12,6 +13,15 @@
 
 typedef struct { lxb_dom_node_t* n; } LxbNode;
 static inline lxb_dom_node_t* lxbnode_node(LxbNode lbn[static 1]) { return lbn->n; }
+
+//TODO: use always LxbNode instead?
+typedef lxb_dom_node_t* LxbNodePtr;
+#define T LxbNode
+#include <arl.h>
+
+typedef lxb_dom_element_t* LxbElemPtr;
+#define T LxbNodePtr
+#include <arl.h>
 
 static inline bool
 lexbor_node_tag_is_select(LxbNode n[static 1]) { return n->n->local_name == LXB_TAG_SELECT; }

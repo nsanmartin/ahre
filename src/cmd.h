@@ -254,25 +254,39 @@ Err _cmd_input_ix_set_(Session session[static 1], const size_t ix, const char* l
 
 
 static inline Err
-_get_input_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outnode[static 1]) {
-    HtmlDoc* htmldoc;
-    try( session_current_doc(session, &htmldoc));
-    ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(htmldoc);
-    LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(inputs, ix);
+_get_lexbor_node_ptr_by_ix(ArlOf(LxbNodePtr) node_arl[static 1], size_t ix, lxb_dom_node_t* outnode[static 1]) {
+    LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(node_arl, ix);
     if (!nodeptr) return "input element number invalid";
     *outnode = *nodeptr;
     return Ok;
 }
 
-static inline Err _cmd_input_print(Session session[static 1], size_t ix) {
+
+static inline Err _cmd_lexbor_node_print_(
+    Session           session[static 1],
+    ArlOf(LxbNodePtr) node_arl[static 1],
+    size_t            ix
+) {
     lxb_dom_node_t* node;
-    try( _get_input_by_ix(session, ix, &node));
+    try( _get_lexbor_node_ptr_by_ix(node_arl, ix, &node));
     Str* buf = &(Str){0};
     Err err = lexbor_node_to_str(node, buf);
 
     ok_then(err,  session_write_msg(session, items__(buf), len__(buf)));
     str_clean(buf);
     return err;
+}
+
+static inline Err _cmd_form_print(Session s[static 1], size_t ix) {
+    HtmlDoc* d;
+    try( session_current_doc(s, &d));
+    return _cmd_lexbor_node_print_(s, htmldoc_forms(d), ix);
+}
+
+static inline Err _cmd_input_print(Session s[static 1], size_t ix) {
+    HtmlDoc* d;
+    try( session_current_doc(s, &d));
+    return _cmd_lexbor_node_print_(s, htmldoc_inputs(d), ix);
 }
 
 static inline Err _cmd_input_submit_ix(Session session[static 1], size_t ix) {
@@ -350,4 +364,5 @@ static inline Err _cmd_misc_tag(const char* rest, Session session[static 1]) {
 }
 
 Err cmd_fetch(Session session[static 1]);
+Err cmd_set_session_forms(CmdParams p[static 1]);
 #endif

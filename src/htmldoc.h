@@ -19,6 +19,7 @@
 #include "wrapper-lexbor-curl.h"
 #include "wrapper-lexbor.h"
 #include "js-engine.h"
+#include "fetch-history.h"
 
 #define HIDE_OL 0x1u
 #define HIDE_UL 0x2u
@@ -32,15 +33,6 @@ static inline size_t strview_to_hide_tag(StrView s) {
     if (strncmp("ul", s.items, s.len) == 0) return HIDE_UL;
     return 0x0;
 }
-
-//TODO: use always LxbNode instead?
-typedef lxb_dom_node_t* LxbNodePtr;
-#define T LxbNode
-#include <arl.h>
-
-typedef lxb_dom_element_t* LxbElemPtr;
-#define T LxbNodePtr
-#include <arl.h>
 
 
 typedef struct {
@@ -165,7 +157,11 @@ void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) ;
 
 /* external */
 Err curl_lexbor_fetch_document(
-    UrlClient url_client[static 1], HtmlDoc htmldoc[static 1], Writer msg_writer[static 1]);
+    UrlClient         url_client[static 1],
+    HtmlDoc           htmldoc[static 1],
+    Writer            msg_writer[static 1],
+    FetchHistoryEntry histentry[static 1]
+);
 
 static inline bool htmldoc_js_is_enabled(HtmlDoc d[static 1]) {
     return jse_is_enabled(htmldoc_js(d));
@@ -183,11 +179,12 @@ Err lexbor_read_doc_from_file(HtmlDoc htmldoc[static 1]) ;
 
 
 static inline Err htmldoc_fetch(
-    HtmlDoc        htmldoc[static 1],
-    UrlClient      url_client[static 1],
-    Writer         msg_writer[static 1]
+    HtmlDoc           htmldoc[static 1],
+    UrlClient         url_client[static 1],
+    Writer            msg_writer[static 1],
+    FetchHistoryEntry he[static 1]
 ) {
-    return curl_lexbor_fetch_document(url_client, htmldoc, msg_writer);
+    return curl_lexbor_fetch_document(url_client, htmldoc, msg_writer, he);
 }
 
 

@@ -134,8 +134,7 @@ static Err _url_from_post_request_(Request r[static 1], UrlClient uc[static 1], 
 }
 
 static Err _url_from_get_request_(Request r[static 1], UrlClient uc[static 1], Url u[static 1]) {
-    (void)r; (void)uc; (void)u;
-    /* CURL* curl = url_client_curl(uc); */
+    (void)uc;
     CURLU* cu = url_cu(u);
     if (len__(request_url_str(r))) {
         CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, items__(request_url_str(r)), 0);

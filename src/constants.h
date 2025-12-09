@@ -20,7 +20,8 @@
 #define BUTTON_SEP_STR  "^"
 #define BUTTON_CLOSE_STR  "}"
 
-#define FORM_OPEN_STR  "\u231C" //[form "
+#define FORM_OPEN_STR  "="
+#define FORM_SEP_STR  ":" //"\u231C"
 #define FORM_CLOSE_STR  "\u231F"
 
 #define ELEM_ID_SEP "_"
@@ -49,6 +50,7 @@ static inline StrView button_sep_str(void) { return strview_from_lit__(BUTTON_SE
 static inline StrView button_close_str(void) { return strview_from_lit__(BUTTON_CLOSE_STR); }
 
 static inline StrView form_open_str(void) { return strview_from_lit__(FORM_OPEN_STR); }
+static inline StrView form_sep_str(void) { return strview_from_lit__(FORM_SEP_STR); }
 static inline StrView form_close_str(void) { return strview_from_lit__(FORM_CLOSE_STR); }
 
 static inline StrView elem_id_sep_default(void) { return strview_from_lit__(ELEM_ID_SEP); }
