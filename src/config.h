@@ -47,8 +47,11 @@ static inline Err get_fetch_history_filename(Str out[static 1]) {
 
 
 static inline Err get_bookmark_filename_if_it_exists(Str out[static 1]) {
+#define FILE_SCHEMA "file://"
     try( get_bookmark_filename(out));
-    if (file_exists(items__(out))) return Ok;
+    if ((str_startswith_lit(out, FILE_SCHEMA) && file_exists(items__(out) + lit_len__(FILE_SCHEMA)))
+        || file_exists(items__(out))
+    ) return Ok;
     Err err = err_fmt("No bookmarks file: '%s' cannot be accesed", items__(out));
     str_clean(out);
     return err;

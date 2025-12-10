@@ -767,31 +767,11 @@ static Err _htmldoc_draw_(HtmlDoc htmldoc[static 1], Session s[static 1]) {
 
 #define HTMLDOC_FLAG_JS 0x1u
 
-Err _dup_url_from_request_(Request r[static 1], Url* u, Url out[static 1]) {
-    Err e = Ok;
-    if (u && len__(request_url_str(r))) {
-        try(url_dup(u, out));
-        try_or_jump(e, Failure_Url_Cleanup,
-            curlu_set_url_or_fragment(url_cu(out), items__(request_url_str(r))));
-    } else if (len__(request_url_str(r))) {
-        try(url_init_from_cstr(out, items__(request_url_str(r))));
-    } else if (u) {
-        try(url_dup(u, out));
-    } else
-        return "error: cannot initialize htmldoc with nonurl nor urlstr";
-
-    return Ok;
-
-Failure_Url_Cleanup:
-    url_cleanup(out);
-    return e;
-}
-
 
 Err htmldoc_init_from_request(
     HtmlDoc   d[static 1],
     Request   r[static 1],
-    Url       u[static 1],
+    Url*      u,
     UrlClient uc[static 1],
     Session*  s
 ) {
@@ -809,8 +789,7 @@ Err htmldoc_init_from_request(
     if (!d->lxbdoc) return "error: lxb failed to create html document";
     if (flags & HTMLDOC_FLAG_JS) 
         try_or_jump(e, Failure, jse_init(d));
-    try_or_jump(e, Failure, _dup_url_from_request_(r, u, htmldoc_url(d)));
-    try_or_jump(e, Failure, url_from_request(r, uc, htmldoc_url(d)));
+    try_or_jump(e, Failure, url_from_request(htmldoc_url(d), r, uc, u));
 
     ArlOf(FetchHistoryEntry)* hist = session_fetch_history(s);
      if (!arlfn(FetchHistoryEntry,append)(hist, &(FetchHistoryEntry){0}))
@@ -836,15 +815,13 @@ Failure:
 Err htmldoc_init_bookmark(HtmlDoc d[static 1], const char* urlstr) {
     Err e = Ok;
 
-    *d = (HtmlDoc){ .lxbdoc = lxb_html_document_create() };
+    *d = (HtmlDoc){ .method = http_get, .lxbdoc = lxb_html_document_create() };
     if (!d->lxbdoc) return "error: lxb failed to create html document";
-    Url dup;
     if (!urlstr) return "error: cannot initialize bookmark with not path";
-    try_or_jump(e, Failure_Lxb_Html_Document_Destroy, url_init_from_cstr(&dup, urlstr));
-
-    d->url    = dup;
-    d->method = http_get;
-
+    Request r = (Request){
+        .method = http_get, .url=(Str){.items=(char*)urlstr, .len=strlen(urlstr)}
+    };
+    try_or_jump(e, Failure_Lxb_Html_Document_Destroy, url_from_get_request(&d->url, &r, NULL));
     return Ok;
 
 Failure_Lxb_Html_Document_Destroy:

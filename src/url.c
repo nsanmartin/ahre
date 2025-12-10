@@ -109,7 +109,10 @@ Failure_Free_Escaped:
     return e;
 }
 
-static Err _url_from_post_request_(Request r[static 1], UrlClient uc[static 1], Url u[static 1]) {
+static Err _url_from_post_request_(
+    Url u[static 1], Request r[static 1], UrlClient uc[static 1], Url* other
+) {
+    try(url_init(u, other));
     CURL* curl = url_client_curl(uc);
     CURLU* cu = url_cu(u);
     if (len__(request_url_str(r))) {
@@ -133,47 +136,84 @@ static Err _url_from_post_request_(Request r[static 1], UrlClient uc[static 1], 
     return Ok;
 }
 
-static Err _url_from_get_request_(Request r[static 1], UrlClient uc[static 1], Url u[static 1]) {
-    (void)uc;
+Err _prepend_file_schema_if_file_exists_(Str url[static 1], Str out[static 1]) {
+    if (!len__(url)) return Ok;
+    try(str_append_lit__(out, FILE_SCHEMA));
+
+    const char* path = items__(url);
+    if (path[0] != '/') {
+         char cwdbuf[4000];
+         if(!getcwd(cwdbuf, 4000)) { return "error: gwtcwd failed"; }
+         try(str_append(out, cwdbuf, strlen(cwdbuf)));
+         if (*path == '.' && path[1] == '/') ++path;
+         else try(str_append_lit__(out, "/"));
+    }
+    try( str_append_z(out, (char*)path, strlen(path)));
+
+    if (!file_exists(items__(out) + lit_len__(FILE_SCHEMA)))
+        str_reset(out);
+    return Ok;
+}
+
+Err url_from_get_request(Url u[static 1], Request r[static 1], Url* other) {
+    try(url_init(u, other));
     CURLU* cu = url_cu(u);
+    Err err = Ok;
+    Str file = (Str){0};
     if (len__(request_url_str(r))) {
-        CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, items__(request_url_str(r)), 0);
-        if (curl_code != CURLUE_OK)
-            return err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
+        try_or_jump(err, Failure_Clean_File_Url,
+                _prepend_file_schema_if_file_exists_(request_url_str(r), &file));
+        const char* url_str = file.len ? file.items : items__(request_url_str(r));
+        CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, url_str, CURLU_DEFAULT_SCHEME);
+        if (curl_code != CURLUE_OK) {
+            err = err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
+            goto Failure_Clean_File_Url;
+        }
     }
 
 
     ArlOf(Str)* ks = request_query_keys(r);
     ArlOf(Str)* vs = request_query_values(r);
-    if (len__(ks) != len__(vs))
-        return "error: key/value lists must have the same len";
+    if (len__(ks) != len__(vs)) {
+        err = "error: key/value lists must have the same len";
+        goto Failure_Clean_File_Url;
+    }
 
     Str* kit = arlfn(Str,begin)(ks);
     Str* vit = arlfn(Str,begin)(vs);
     for ( ; kit != arlfn(Str,end)(ks) && vit != arlfn(Str,end)(vs) ; ++kit, ++vit) {
         str_reset(request_postfields(r));
-        try(str_append_str(request_postfields(r), kit));
-        try(str_append_lit__(request_postfields(r), "="));
-        try(str_append_str(request_postfields(r), vit));
-        try(str_append_lit__(request_postfields(r), "\0"));
+        try_or_jump(err, Failure_Clean_File_Url, str_append_str(request_postfields(r), kit));
+        try_or_jump(err, Failure_Clean_File_Url, str_append_lit__(request_postfields(r), "="));
+        try_or_jump(err, Failure_Clean_File_Url, str_append_str(request_postfields(r), vit));
+        try_or_jump(err, Failure_Clean_File_Url, str_append_lit__(request_postfields(r), "\0"));
         CURLUcode curl_code = curl_url_set(
             cu,
             CURLUPART_QUERY,
             items__(request_postfields(r)),
             CURLU_APPENDQUERY | CURLU_URLENCODE
         );
-        if (curl_code != CURLUE_OK)
-            return err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
+        if (curl_code != CURLUE_OK) {
+            err = err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
+            goto Failure_Clean_File_Url;
+        }
     }
     str_reset(request_postfields(r));
+    str_clean(&file);
 
-    return Ok;
+    return err;
+Failure_Clean_File_Url:
+    str_clean(&file);
+/* Failure_Clean_Curlu: */
+    url_cleanup(u);
+    return err;
 }
 
-Err url_from_request(Request r[static 1], UrlClient uc[static 1], Url u[static 1]) {
+
+Err url_from_request(Url u[static 1], Request r[static 1], UrlClient uc[static 1], Url* other) {
     switch (r->method) {
-        case http_post: return _url_from_post_request_(r, uc, u);
-        case http_get: return _url_from_get_request_(r, uc, u);
+        case http_post: return _url_from_post_request_(u, r, uc, other);
+        case http_get: return url_from_get_request(u, r, other);
         default: return "error: could not initialize htmldoc, unsupported http method";
     }
 }

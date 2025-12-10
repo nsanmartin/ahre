@@ -250,7 +250,7 @@ void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[static 1], Session* s);
 Err htmldoc_init_from_request(
     HtmlDoc   d[static 1],
     Request   r[static 1],
-    Url       u[static 1],
+    Url*      u,
     UrlClient uc[static 1],
     Session*   s
 );

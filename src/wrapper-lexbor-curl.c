@@ -281,41 +281,6 @@ Err curl_lexbor_fetch_document(
 }
 
 
-Err url_client_curlu_to_str(
-    UrlClient url_client[static 1], CURLU* curlu , Str out[static 1]
-) {
-    Err e = Ok;
-    /* try( url_client_reset(url_client)); */
-    char* url_str = NULL;
-    /* try( w_curl_url_get_malloc(curlu, CURLUPART_URL, &url_str)); */
-    if (curl_easy_setopt(url_client->curl, CURLOPT_URL, url_str)) {
-        e = "error: curl failed to set url";
-        goto cleanup;
-    }
-
-    if (
-       curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, str_append_flip)
-    || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, out)
-    || curl_easy_setopt(url_client->curl, CURLOPT_CURLU, curlu)
-    ) {
-        e = "error configuring curl write fn/data";
-        goto cleanup;
-    }
-
-    CURLcode curl_code = curl_easy_perform(url_client->curl);
-
-    curl_easy_reset(url_client->curl);
-    if (curl_code!=CURLE_OK)  {
-        e = err_fmt("curl failed to perform curl: %s", curl_easy_strerror(curl_code));
-        goto cleanup;
-    }
-    e = str_append_lit__(out, "\0");
-    if (e) str_clean(out);
-
-cleanup:
-    curl_free(url_str);
-    return e;
-}
 
 
 /*TODO: rename to `url_client_curlu_to_file`*/

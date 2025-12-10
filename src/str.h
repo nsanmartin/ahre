@@ -153,6 +153,11 @@ static inline Err str_append_str(Str s[static 1], Str t[static 1]) {
     return str_append(s, items__(t), len__(t));
 }
 
+static inline bool str_startswith_mem(Str s[static 1], const char* mem, size_t len) {
+    return len__(s) >= len && !strncmp(items__(s), mem, len);
+}
+
+#define str_startswith_lit(S, Lit) str_startswith_mem(S, Lit, lit_len__(Lit))
 
 static inline size_t str_append_flip(
     const char* mem,
