@@ -141,7 +141,7 @@ fail:
     return 1;
 }
 
-Err _append_fopen(const char* dirname, CURLU* cu, FILE* fp[static 1]);
+Err _append_fopen(const char* dirname, CURLU* cu, FILE* fp[_1_]);
 
 int test__append_fopen(void) {
     const char* dirname = "foo";

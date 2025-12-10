@@ -16,7 +16,7 @@ static size_t _compute_required_newlines_in_line_(size_t linelen, size_t maxlen)
         return (linelen / maxlen) + (bool) (linelen % maxlen != 0);
 }
 
-size_t _compute_required_newlines_(TextBuf tb[static 1], size_t maxlen) {
+size_t _compute_required_newlines_(TextBuf tb[_1_], size_t maxlen) {
     size_t res = 0;
     size_t n = 1;
     StrView line;
@@ -26,7 +26,7 @@ size_t _compute_required_newlines_(TextBuf tb[static 1], size_t maxlen) {
     return res;
 }
 
-static size_t _estimate_missing_newlines_(TextBuf tb[static 1], size_t maxlen) {
+static size_t _estimate_missing_newlines_(TextBuf tb[_1_], size_t maxlen) {
     size_t res = _compute_required_newlines_(tb, maxlen) - textbuf_eol_count(tb);
     return res + res / 12;
 }
@@ -35,7 +35,7 @@ static bool _char_is_point_of_break_(char c) {
     return isspace(c) || c == '\033';
 }
 
-//static Err _insert_line_splitting_with_esc_codes_(StrView line[static 1], BufOf(char) buf[static 1], size_t maxlen) {
+//static Err _insert_line_splitting_with_esc_codes_(StrView line[_1_], BufOf(char) buf[_1_], size_t maxlen) {
 //    size_t off = 0;
 //    size_t len = 0;
 //    for (off = 0; off < strview_len(line); ) {
@@ -64,10 +64,10 @@ static bool _char_is_point_of_break_(char c) {
 //}
 
 static Err _insert_line_splitting_(
-    StrView line[static 1],
-    BufOf(char) buf[static 1],
+    StrView line[_1_],
+    BufOf(char) buf[_1_],
     size_t maxlen,
-    ArlOf(size_t) insertions[static 1]
+    ArlOf(size_t) insertions[_1_]
 ) {
     size_t off = 0;
     size_t len = 0;
@@ -95,7 +95,7 @@ static Err _insert_line_splitting_(
 }
 
 static Err
-_insert_missing_newlines_(TextBuf tb[static 1], size_t maxlen, ArlOf(size_t) insertions[static 1]) {
+_insert_missing_newlines_(TextBuf tb[_1_], size_t maxlen, ArlOf(size_t) insertions[_1_]) {
     size_t missing_newlines = _estimate_missing_newlines_(tb, maxlen);
     if (!missing_newlines) return Ok;
     if (!buffn(char, __ensure_extra_capacity)(textbuf_buf(tb), missing_newlines))
@@ -124,14 +124,14 @@ _insert_missing_newlines_(TextBuf tb[static 1], size_t maxlen, ArlOf(size_t) ins
 
 /* external linkage  */
 
-void textbuf_cleanup(TextBuf b[static 1]) {
+void textbuf_cleanup(TextBuf b[_1_]) {
     buffn(char, clean)(&b->buf);
     arlfn(size_t, clean)(&b->eols);
     arlfn(ModAt, clean)(textbuf_mods(b));
     *b = (TextBuf){0};
 }
 
-void textbuf_reset(TextBuf b[static 1]) {
+void textbuf_reset(TextBuf b[_1_]) {
     buffn(char, reset)(&b->buf);
     //TODO: use reset once avalable
     arlfn(size_t, clean)(&b->eols);
@@ -145,12 +145,12 @@ inline void textbuf_destroy(TextBuf* b) {
 }
 
 
-size_t* textbuf_eol_at(TextBuf tb[static 1], size_t i) {
+size_t* textbuf_eol_at(TextBuf tb[_1_], size_t i) {
     return arlfn(size_t, at)(&tb->eols, i);
 }
 
 
-Err textbuf_append_part(TextBuf textbuf[static 1], char* data, size_t len) {
+Err textbuf_append_part(TextBuf textbuf[_1_], char* data, size_t len) {
     return !buffn(char,append)(&textbuf->buf, (char*)data, len)
         ?  "buffn failed to append"
         : Ok
@@ -158,7 +158,7 @@ Err textbuf_append_part(TextBuf textbuf[static 1], char* data, size_t len) {
 }
 
 
-Err textbuf_get_line_of_offset(TextBuf tb[static 1], size_t off, size_t* out) {
+Err textbuf_get_line_of_offset(TextBuf tb[_1_], size_t off, size_t* out) {
     size_t tb_len = textbuf_len(tb);
     if (off > tb_len) return "error: offset out of range";
     ArlOf(size_t)* eols = textbuf_eols(tb);
@@ -173,7 +173,7 @@ Err textbuf_get_line_of_offset(TextBuf tb[static 1], size_t off, size_t* out) {
     return Ok;
 }
 
-Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) {
+Err textbuf_get_line_of(TextBuf tb[_1_], const char* ch, size_t* out) {
     char* bufbeg = textbuf_items(tb);
     if (ch < bufbeg) return "error: invalid char offset in textbuf";
     size_t off = ch - bufbeg;
@@ -192,13 +192,13 @@ Err textbuf_get_line_of(TextBuf tb[static 1], const char* ch, size_t* out) {
 
 
 static ModAt*
-_skip_mods_at_the_left_(ModAt it[static 1], ModAt end[static 1], size_t offset, size_t increase) {
+_skip_mods_at_the_left_(ModAt it[_1_], ModAt end[_1_], size_t offset, size_t increase) {
     for ( ; it < end && it->offset + increase < offset ; ++it)
         ;
     return it;
 }
 
-static ModAt* _move_mods_(ModAt it[static 1], ModAt end[static 1], size_t max_off, size_t increase) {
+static ModAt* _move_mods_(ModAt it[_1_], ModAt end[_1_], size_t max_off, size_t increase) {
     for (;;) {
         if  (it == end || it->offset + increase >= max_off) break;
         it->offset += increase;
@@ -207,7 +207,7 @@ static ModAt* _move_mods_(ModAt it[static 1], ModAt end[static 1], size_t max_of
     return it;
 }
 
-Err textbuf_fit_lines(TextBuf tb[static 1], size_t maxlen) {
+Err textbuf_fit_lines(TextBuf tb[_1_], size_t maxlen) {
     if (!textbuf_len(tb)) return Ok;
     ArlOf(size_t) insertions = (ArlOf(size_t)){0};
     try( _insert_missing_newlines_(tb, maxlen, &insertions));
@@ -240,7 +240,7 @@ Err textbuf_fit_lines(TextBuf tb[static 1], size_t maxlen) {
     return Ok;
 }
 
-Err textbuf_append_line_indexes(TextBuf tb[static 1]) {
+Err textbuf_append_line_indexes(TextBuf tb[_1_]) {
     char* it = textbuf_items(tb);
     char* end = it + textbuf_len(tb);
     arlfn(size_t, clean)(&tb->eols);
@@ -256,7 +256,7 @@ Err textbuf_append_line_indexes(TextBuf tb[static 1]) {
 }
 
 /* The retrieved line includes newline (if present: the last one may not have it) */
-bool textbuf_get_line(TextBuf tb[static 1], size_t n, StrView out[static 1]) {
+bool textbuf_get_line(TextBuf tb[_1_], size_t n, StrView out[_1_]) {
     if (n == 0) return false; /* lines indexes are 1-based! */
     size_t nlines = textbuf_line_count(tb);
     if (nlines == 0 || nlines < n) return false;
@@ -290,7 +290,7 @@ bool textbuf_get_line(TextBuf tb[static 1], size_t n, StrView out[static 1]) {
 }
 
 Err _regex_search_pattern_in_buf_(
-    StrView pattern[static 1], const char* buf, size_t match_offset[static 1]
+    StrView pattern[_1_], const char* buf, size_t match_offset[_1_]
 ) {
     const char* lastptr = items__(pattern) + len__(pattern) - 1;
     char last           = *lastptr;
@@ -306,10 +306,10 @@ Err _regex_search_pattern_in_buf_(
 }
 
 Err _textbuf_regex_search_linenum(
-    TextBuf tb[static 1],
-    StrView pattern[static 1],
-    size_t  outln[static 1],
-    size_t  match_offset[static 1]
+    TextBuf tb[_1_],
+    StrView pattern[_1_],
+    size_t  outln[_1_],
+    size_t  match_offset[_1_]
 ) {
     size_t current_offset = *textbuf_current_offset(tb);
     const char* buf = textbuf_items(tb) + current_offset;
@@ -318,10 +318,10 @@ Err _textbuf_regex_search_linenum(
 }
 
 Err _textbuf_range_parse_to_range_(
-    TextBuf          tb[static 1],
-    RangeParse parse[static 1],
-    Range            range_out[static 1],
-    size_t           match_offset[static 1]
+    TextBuf          tb[_1_],
+    RangeParse parse[_1_],
+    Range            range_out[_1_],
+    size_t           match_offset[_1_]
 ) {
     *range_out             = (Range){0};
     size_t current_offset  = *textbuf_current_offset(tb);
@@ -377,7 +377,7 @@ Err _textbuf_range_parse_to_range_(
     return Ok;
 }
 
-static inline Err _textbuf_range_validate_(TextBuf tb[static 1], Range r[static 1]) {
+static inline Err _textbuf_range_validate_(TextBuf tb[_1_], Range r[_1_]) {
     if (r->end < r->beg) return "Backward r given";
     if (r->end == 0) return "error: unexpected r with end == 0";
     if (r->end > textbuf_line_count(tb)) return "r end too large";
@@ -386,9 +386,9 @@ static inline Err _textbuf_range_validate_(TextBuf tb[static 1], Range r[static 
 
 
 Err textbuf_range_from_parsed_range(
-    TextBuf          textbuf[static 1],
-    RangeParse rres[static 1],
-    Range            range[static 1]
+    TextBuf          textbuf[_1_],
+    RangeParse rres[_1_],
+    Range            range[_1_]
 ) {
     size_t match_offset = textbuf_len(textbuf); /* we use this value to indicate None value */
     try(_textbuf_range_parse_to_range_(textbuf, rres, range, &match_offset));
@@ -401,7 +401,7 @@ Err textbuf_range_from_parsed_range(
     return Ok;
 }
 
-Err textbuf_to_file(TextBuf textbuf[static 1], const char* filename, const char* mode) {
+Err textbuf_to_file(TextBuf textbuf[_1_], const char* filename, const char* mode) {
     if (!filename || !*filename) { return "cannot write without file arg"; }
     filename = cstr_trim_space((char*)filename);
     if (!*filename) return "invalid url name";

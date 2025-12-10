@@ -17,7 +17,7 @@
 typedef struct Session Session;
 
 typedef Err (*InitUserInputCallback)(void);
-typedef Err (*ReadUserInputCallback)(Session* s, const char* prompt, char* line[static 1]);
+typedef Err (*ReadUserInputCallback)(Session* s, const char* prompt, char* line[_1_]);
 
 typedef struct {
     InitUserInputCallback init;
@@ -32,14 +32,14 @@ static inline Err init_user_input_history(void) {
     return Ok; //TODO: check errors
 }
 
-static inline Err ui_isocline_readline(Session* s, const char* prompt, char* out[static 1]) {
+static inline Err ui_isocline_readline(Session* s, const char* prompt, char* out[_1_]) {
     (void)s;
     *out = ic_readline(prompt);
     return Ok;
 }
 
 /* fgets */
-static inline Err ui_fgets_readline(Session* s, const char* prompt, char* out[static 1]) {
+static inline Err ui_fgets_readline(Session* s, const char* prompt, char* out[_1_]) {
     (void)s;
     if (prompt) fwrite(prompt, 1, strlen(prompt), stdout);
     const size_t DEFAULT_FGETS_SIZE = 256;
@@ -71,7 +71,7 @@ static inline UserInput uinput_fgets(void) {
     return (UserInput){.init=err_skip, .read=ui_fgets_readline};
 }
 
-Err ui_vi_mode_read_input(Session* s, const char* prompt, char* out[static 1]);
+Err ui_vi_mode_read_input(Session* s, const char* prompt, char* out[_1_]);
 
 static inline UserInput uinput_vi_mode(void) {
     return (UserInput){.init=err_skip, .read=ui_vi_mode_read_input};

@@ -12,18 +12,18 @@ typedef struct UrlClient {
     Str   postdata;
 } UrlClient;
 
-static inline CURL* url_client_curl(UrlClient url_client[static 1]) { return url_client->curl; }
-static inline CURLM* url_client_multi(UrlClient url_client[static 1]) { return url_client->curlm; }
+static inline CURL* url_client_curl(UrlClient url_client[_1_]) { return url_client->curl; }
+static inline CURLM* url_client_multi(UrlClient url_client[_1_]) { return url_client->curlm; }
 
-static inline Str* url_client_postdata(UrlClient uc[static 1]) { return &uc->postdata; }
+static inline Str* url_client_postdata(UrlClient uc[_1_]) { return &uc->postdata; }
 /* ctor */
-Err url_client_init(UrlClient url_client[static 1]);
+Err url_client_init(UrlClient url_client[_1_]);
 /* dtor */
 
 
 /* curl easy escape */
 static inline char* url_client_escape_url(
-    UrlClient url_client[static 1], const char* u, size_t len
+    UrlClient url_client[_1_], const char* u, size_t len
 ) {
     return curl_easy_escape(url_client->curl, u, len);
 }
@@ -36,9 +36,9 @@ static inline void url_client_cleanup(UrlClient* url_client) {
 
 typedef struct Session Session;
 static inline void url_client_curl_free_cstr(char* s) { curl_free(s); }
-Err url_client_print_cookies(Session* s, UrlClient uc[static 1]) ;
-Err url_client_reset(UrlClient url_client[static 1]);
-Err url_client_set_basic_options(UrlClient url_client[static 1]);
-Err url_client_curlu_to_file(UrlClient url_client[static 1], CURLU* curlu , const char* fname);
+Err url_client_print_cookies(Session* s, UrlClient uc[_1_]) ;
+Err url_client_reset(UrlClient url_client[_1_]);
+Err url_client_set_basic_options(UrlClient url_client[_1_]);
+Err url_client_curlu_to_file(UrlClient url_client[_1_], CURLU* curlu , const char* fname);
 
 #endif

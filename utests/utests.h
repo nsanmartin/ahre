@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "../src/utils.h"
 #include "../src/error.h"
 
 #define RESET   "\033[0m"
@@ -54,7 +55,7 @@ static inline FILE* mock_fopen(const char *restrict pathname, const char *restri
 
 static inline int mock_fclose(FILE *stream) { (void)stream; return 0; }
 
-static inline Err mock_file_open(const char* filename, const char* mode, FILE* fpp[static 1]) {
+static inline Err mock_file_open(const char* filename, const char* mode, FILE* fpp[_1_]) {
     (void)filename; (void)mode; (void)fpp; return Ok;
 }
 

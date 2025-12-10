@@ -12,8 +12,8 @@
 #include "url-client.h"
 
 /** CURL wrappers */
-Err curl_url_to_filename_append(CURLU* cu, Str out[static 1]);
-Err fopen_or_append_fopen(const char* fname, CURLU* cu, FILE* fp[static 1]);
+Err curl_url_to_filename_append(CURLU* cu, Str out[_1_]);
+Err fopen_or_append_fopen(const char* fname, CURLU* cu, FILE* fp[_1_]);
 /* CURL wrappers **/
 
 typedef struct {
@@ -21,10 +21,10 @@ typedef struct {
 } Url;
 
 /* getters */
-static inline CURLU* url_cu(Url u[static 1]) { return u->cu; }
+static inline CURLU* url_cu(Url u[_1_]) { return u->cu; }
 
 /* dtor */
-static inline void url_cleanup(Url u[static 1]) {
+static inline void url_cleanup(Url u[_1_]) {
     if (u->cu) curl_url_cleanup(u->cu);
     u->cu = NULL;
 }
@@ -41,22 +41,22 @@ typedef struct {
 } Request;
 
 
-static inline HttpMethod request_method(Request r[static 1]) { return r->method; }
-static inline Str* request_url_str(Request r[static 1]) { return &r->url; }
-static inline Str* request_postfields(Request r[static 1]) { return &r->postfields; }
-static inline ArlOf(Str)* request_query_keys(Request r[static 1]) { return &r->keys; }
-static inline ArlOf(Str)* request_query_values(Request r[static 1]) { return &r->values; }
-static inline void request_clean(Request r[static 1]) {
+static inline HttpMethod request_method(Request r[_1_]) { return r->method; }
+static inline Str* request_url_str(Request r[_1_]) { return &r->url; }
+static inline Str* request_postfields(Request r[_1_]) { return &r->postfields; }
+static inline ArlOf(Str)* request_query_keys(Request r[_1_]) { return &r->keys; }
+static inline ArlOf(Str)* request_query_values(Request r[_1_]) { return &r->values; }
+static inline void request_clean(Request r[_1_]) {
     str_clean(request_url_str(r));
     str_clean(request_postfields(r));
     arlfn(Str,clean)(request_query_keys(r));
     arlfn(Str,clean)(request_query_values(r));
 }
 
-Err request_from_userln(Request r[static 1], const char* userln, HttpMethod method);
+Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method);
 
 static inline Err request_query_append_key_value(
-    Request req[static 1], const char*k, size_t klen, const char* v, size_t vlen
+    Request req[_1_], const char*k, size_t klen, const char* v, size_t vlen
 ) {
         Str* key = &(Str){0};
         Str* value = &(Str){0};
@@ -70,11 +70,11 @@ static inline Err request_query_append_key_value(
 
 
 
-static inline Err url_cstr_malloc(Url u[static 1], char* out[static 1]) {
+static inline Err url_cstr_malloc(Url u[_1_], char* out[_1_]) {
     return w_curl_url_get_malloc(u->cu, CURLUPART_URL, out);
 }
 
-static inline Err url_fragment(Url u[static 1], char* out[static 1]) {
+static inline Err url_fragment(Url u[_1_], char* out[_1_]) {
     CURLUcode code = curl_url_get(u->cu, CURLUPART_FRAGMENT, out, 0);
     if (code == CURLUE_OK || code == CURLUE_NO_FRAGMENT)
         return Ok;
@@ -93,7 +93,7 @@ static inline Err get_url_alias(const char* cstr, BufOf(char)* out) {
 
 /* ctor */
 
-static inline Err url_dup(Url u[static 1], Url out[static 1]) {
+static inline Err url_dup(Url u[_1_], Url out[_1_]) {
 /*
  * Duplicates in place. In case of failure it has no effect.
  */
@@ -104,7 +104,7 @@ static inline Err url_dup(Url u[static 1], Url out[static 1]) {
 }
 
 
-static inline Err url_init(Url u[static 1], Url* from) {
+static inline Err url_init(Url u[_1_], Url* from) {
     if (from) return url_dup(from, u);
     *u = (Url){.cu=curl_url()};
     if (!u->cu) return "error initializing CURLU";
@@ -127,7 +127,7 @@ static inline Err curlu_set_url_or_fragment(CURLU* u,  const char* cstr) {
     }
 }
 
-static inline Err curlu_scheme_is_https(CURLU* cu, bool out[static 1]) {
+static inline Err curlu_scheme_is_https(CURLU* cu, bool out[_1_]) {
     char *scheme;
     CURLUcode rc = curl_url_get(cu, CURLUPART_SCHEME, &scheme, 0);
     if(rc != CURLUE_OK)
@@ -138,6 +138,6 @@ static inline Err curlu_scheme_is_https(CURLU* cu, bool out[static 1]) {
     return Ok;
 }
 
-Err url_from_request(Url u[static 1], Request r[static 1], UrlClient uc[static 1], Url* other);
-Err url_from_get_request(Url u[static 1], Request r[static 1], Url* other);
+Err url_from_request(Url u[_1_], Request r[_1_], UrlClient uc[_1_], Url* other);
+Err url_from_get_request(Url u[_1_], Request r[_1_], Url* other);
 #endif

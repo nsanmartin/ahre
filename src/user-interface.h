@@ -45,9 +45,9 @@ static inline UserInterface ui_vi_mode(void) {
 
 /* * */
 
-static inline void ui_switch(UserInterface old_ui[static 1], UserInterface new_ui[static 1]) {
+static inline void ui_switch(UserInterface old_ui[_1_], UserInterface new_ui[_1_]) {
     *old_ui = *new_ui;
 }
 
-Err ui_get_win_size(size_t nrows[static 1], size_t ncols[static 1]) ;
+Err ui_get_win_size(size_t nrows[_1_], size_t ncols[_1_]) ;
 #endif

@@ -95,7 +95,7 @@ size_t lexbor_parse_chunk_callback(char *in, size_t size, size_t nmemb, void* ou
 }
 
 
-static inline Err _lexbor_node_to_str_(lxb_dom_node_t* node, Str buf[static 1], size_t level) {
+static inline Err _lexbor_node_to_str_(lxb_dom_node_t* node, Str buf[_1_], size_t level) {
     if (node->type != LXB_DOM_NODE_TYPE_ELEMENT) return Ok;
     size_t len;
     char* tag = (char*)lxb_dom_element_qualified_name(lxb_dom_interface_element(node), &len);
@@ -138,7 +138,7 @@ static inline Err _lexbor_node_to_str_(lxb_dom_node_t* node, Str buf[static 1], 
 }
 
 
-Err lexbor_node_to_str(lxb_dom_node_t* node, Str buf[static 1]) {
+Err lexbor_node_to_str(lxb_dom_node_t* node, Str buf[_1_]) {
     return _lexbor_node_to_str_(node, buf, 0);
 }
 
@@ -151,7 +151,7 @@ lxb_dom_node_t* _find_parent_form(lxb_dom_node_t* node) {
 }
 
 
-Err lexbor_get_title_text(lxb_dom_node_t* title, Str out[static 1]) {
+Err lexbor_get_title_text(lxb_dom_node_t* title, Str out[_1_]) {
     if (!title) return Ok;
     lxb_dom_node_t* node = title->first_child; 
     lxb_dom_text_t* text = lxb_dom_interface_text(node);

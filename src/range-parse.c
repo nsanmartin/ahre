@@ -28,7 +28,7 @@ _Static_assert(sizeof(size_t) <= sizeof(uintmax_t), "range parser requires this 
 
 
 static Err
-_parse_range_addr_delta_(const char* tk, RangeAddr out[static 1], const char* endptr[static 1]) {
+_parse_range_addr_delta_(const char* tk, RangeAddr out[_1_], const char* endptr[_1_]) {
     tk = cstr_skip_space(tk);
     if (*tk == '+' || *tk == '-') {
         //TODO: what if "+  7778"?
@@ -48,7 +48,7 @@ _parse_range_addr_delta_(const char* tk, RangeAddr out[static 1], const char* en
 
 
 static Err
-_parse_range_addr_(const char* tk, RangeAddr out[static 1], const char* endptr[static 1]) {
+_parse_range_addr_(const char* tk, RangeAddr out[_1_], const char* endptr[_1_]) {
     if (!tk) return "error: cannot parse NULL";
     *endptr = tk;
     *out = (RangeAddr){.tag=range_addr_none_tag};
@@ -102,8 +102,8 @@ _parse_range_addr_(const char* tk, RangeAddr out[static 1], const char* endptr[s
 
 Err parse_range(
     const char*      tk,
-    RangeParse res[static 1],
-    const char*      endptr[static 1]
+    RangeParse res[_1_],
+    const char*      endptr[_1_]
 ) {
     if (!tk) return "Error: cannot parse NULL, invalid input";
 

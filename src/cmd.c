@@ -8,7 +8,7 @@
 #define MsgLastLine EscCodePurple "%{- last line -}%" EscCodeReset
 
 /* session commands */
-Err cmd_get(CmdParams p[static 1]) {
+Err cmd_get(CmdParams p[_1_]) {
     p->ln = cstr_trim_space((char*)p->ln);
     Request r;
     if (*p->ln == '\\') {
@@ -23,7 +23,7 @@ Err cmd_get(CmdParams p[static 1]) {
 }
 
 
-Err cmd_post(CmdParams p[static 1]) {
+Err cmd_post(CmdParams p[_1_]) {
     p->ln = cstr_trim_space((char*)p->ln);
     Request r;
     if (*p->ln == '\\') {
@@ -38,7 +38,7 @@ Err cmd_post(CmdParams p[static 1]) {
 }
 
 
-Err cmd_set_session_winsz(CmdParams p[static 1]) {
+Err cmd_set_session_winsz(CmdParams p[_1_]) {
     size_t nrows, ncols;
     try( ui_get_win_size(&nrows, &ncols));
     *session_nrows(p->s) = nrows;
@@ -52,7 +52,7 @@ Err cmd_set_session_winsz(CmdParams p[static 1]) {
     return Ok;
 }
 
-Err cmd_set_session_ncols(CmdParams p[static 1]) {
+Err cmd_set_session_ncols(CmdParams p[_1_]) {
     size_t ncols;
     try( parse_size_t_or_throw(&p->ln, &ncols, 10));
     if (*cstr_skip_space(p->ln)) return "invalid argument";
@@ -60,7 +60,7 @@ Err cmd_set_session_ncols(CmdParams p[static 1]) {
     return Ok;
 }
 
-Err cmd_set_session_monochrome(CmdParams p[static 1]) {
+Err cmd_set_session_monochrome(CmdParams p[_1_]) {
     p->ln = cstr_skip_space(p->ln);
     if (*p->ln == '0') session_monochrome_set(p->s, false);
     else if (*p->ln == '1') session_monochrome_set(p->s, true);
@@ -68,7 +68,7 @@ Err cmd_set_session_monochrome(CmdParams p[static 1]) {
     return Ok;
 }
 
-Err cmd_set_session_js(CmdParams p[static 1]) {
+Err cmd_set_session_js(CmdParams p[_1_]) {
     p->ln = cstr_skip_space(p->ln);
     if (*p->ln == '0') session_js_set(p->s, false);
     else if (*p->ln == '1') session_js_set(p->s, true);
@@ -76,7 +76,7 @@ Err cmd_set_session_js(CmdParams p[static 1]) {
     return Ok;
 }
 
-Err cmd_set_session_forms(CmdParams p[static 1]) {
+Err cmd_set_session_forms(CmdParams p[_1_]) {
     p->ln = cstr_skip_space(p->ln);
     char c = p->ln[0]; 
     if (c != '0' && c != '1') return "js option should be '0' or '1'";
@@ -84,7 +84,7 @@ Err cmd_set_session_forms(CmdParams p[static 1]) {
     return Ok;
 }
 
-Err cmd_set_session_input(CmdParams p[static 1]) {
+Err cmd_set_session_input(CmdParams p[_1_]) {
     p->ln = cstr_skip_space(p->ln);
     UserInterface ui;
     const char* rest;
@@ -103,7 +103,7 @@ Err cmd_set_session_input(CmdParams p[static 1]) {
  * These commands require a valid document, the caller should check this condition before
  */
 
-Err cmd_fetch(Session session[static 1]) {
+Err cmd_fetch(Session session[_1_]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
 
@@ -124,7 +124,7 @@ Err cmd_fetch(Session session[static 1]) {
 }
 
 
-Err shortcut_z(Session session[static 1], const char* rest) {
+Err shortcut_z(Session session[_1_], const char* rest) {
     TextBuf* tb;
     try( session_current_buf(session, &tb));
     if(textbuf_current_line(tb) > textbuf_line_count(tb)) return "No more lines in buffer";
@@ -150,7 +150,7 @@ Err shortcut_z(Session session[static 1], const char* rest) {
 }
 
 //TODO: use it or delete it
-Err _cmd_misc(Session session[static 1], const char* line) {
+Err _cmd_misc(Session session[_1_], const char* line) {
     const char* rest = 0x0;
     line = cstr_skip_space(line);
     if ((rest = csubstr_match(line, "attr", 2))) { return "TODO: attr"; }
@@ -186,7 +186,7 @@ StrView parse_pattern(const char* tk) {
 //
 //TODO: apply mods to text
 Err _textbuf_print_n_(
-    Session s[static 1], TextBuf textbuf[static 1], Range range[static 1], const char* ln)
+    Session s[_1_], TextBuf textbuf[_1_], Range range[_1_], const char* ln)
 {
     (void)ln;
     try(validate_range_for_buffer(textbuf, range));
@@ -207,7 +207,7 @@ Err _textbuf_print_n_(
 
 
 Err dbg_print_all_lines_nums(
-    Session s[static 1], TextBuf textbuf[static 1], Range r[static 1], const char* ln)
+    Session s[_1_], TextBuf textbuf[_1_], Range r[_1_], const char* ln)
 {
     (void)r;
     cmd_assert_no_params(ln);
@@ -226,7 +226,7 @@ Err dbg_print_all_lines_nums(
 
 
 Err _cmd_textbuf_write_impl(
-    Session s[static 1], TextBuf textbuf[static 1], Range r[static 1], const char* rest
+    Session s[_1_], TextBuf textbuf[_1_], Range r[_1_], const char* rest
 ) {
     if (!rest || !*rest) { return "cannot write without file arg"; }
     rest = cstr_trim_space((char*)rest);
@@ -246,7 +246,7 @@ Err _cmd_textbuf_write_impl(
     return session_write_msg_lit__(s, "file written. ");
 }
 
-Err cmd_textbuf_global(CmdParams p[static 1]) {
+Err cmd_textbuf_global(CmdParams p[_1_]) {
     StrView pattern = parse_pattern(p->ln);
     if (!pattern.items || !pattern.len) { return "Could not read pattern"; }
     printf("pattern: %s\n", pattern.items);
@@ -257,7 +257,7 @@ Err cmd_textbuf_global(CmdParams p[static 1]) {
 /* input commands */
 
 
-Err _cmd_input_text_set_(Session session[static 1], LxbNode n[static 1], const char* line) {
+Err _cmd_input_text_set_(Session session[_1_], LxbNode n[_1_], const char* line) {
     UserOutput* out = session_uout(session);
     Err err = Ok;
     if (!*line) {
@@ -276,7 +276,7 @@ Err _cmd_input_text_set_(Session session[static 1], LxbNode n[static 1], const c
     return err;
 }
 
-Err _cmd_input_select_set_(Session session[static 1], LxbNode n[static 1], const char* line) {
+Err _cmd_input_select_set_(Session session[_1_], LxbNode n[_1_], const char* line) {
     ArlOf(LxbNodePtr)* matches = &(ArlOf(LxbNodePtr)){0};
     Err e = Ok;
 
@@ -311,7 +311,7 @@ Clean_Matches:
 }
 
 
-Err _cmd_input_ix_set_(Session session[static 1], const size_t ix, const char* ln) {
+Err _cmd_input_ix_set_(Session session[_1_], const size_t ix, const char* ln) {
     HtmlDoc* d;
     LxbNode n = (LxbNode){0};
     try( session_current_doc(session, &d));
@@ -330,7 +330,7 @@ Err _cmd_input_ix_set_(Session session[static 1], const size_t ix, const char* l
 
 /* image commands */
 
-Err _get_image_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outnode[static 1]) {
+Err _get_image_by_ix(Session session[_1_], size_t ix, lxb_dom_node_t* outnode[_1_]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
     ArlOf(LxbNodePtr)* images = htmldoc_imgs(htmldoc);
@@ -340,7 +340,7 @@ Err _get_image_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outno
     return Ok;
 }
 
-Err _cmd_image_print(Session session[static 1], size_t ix) {
+Err _cmd_image_print(Session session[_1_], size_t ix) {
     lxb_dom_node_t* node;
     try( _get_image_by_ix(session, ix, &node));
     Str* buf = &(Str){0};
@@ -350,7 +350,7 @@ Err _cmd_image_print(Session session[static 1], size_t ix) {
     return err;
 }
 
-Err _cmd_image_save(Session session[static 1], size_t ix, const char* fname) {
+Err _cmd_image_save(Session session[_1_], size_t ix, const char* fname) {
     lxb_dom_node_t* node;
     try( _get_image_by_ix(session, ix, &node));
     HtmlDoc* htmldoc;
@@ -366,7 +366,7 @@ Err _cmd_image_save(Session session[static 1], size_t ix, const char* fname) {
 
 /* anchor commands */
 
-Err _get_anchor_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outnode[static 1]) {
+Err _get_anchor_by_ix(Session session[_1_], size_t ix, lxb_dom_node_t* outnode[_1_]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
     ArlOf(LxbNodePtr)* anchors = htmldoc_anchors(htmldoc);
@@ -376,7 +376,7 @@ Err _get_anchor_by_ix(Session session[static 1], size_t ix, lxb_dom_node_t* outn
     return Ok;
 }
 
-Err _cmd_anchor_print(Session session[static 1], size_t linknum) {
+Err _cmd_anchor_print(Session session[_1_], size_t linknum) {
     lxb_dom_node_t* a;
     try( _get_anchor_by_ix(session, linknum, &a));
     
@@ -389,7 +389,7 @@ Err _cmd_anchor_print(Session session[static 1], size_t linknum) {
 }
 
 
-Err _cmd_anchor_save(Session session[static 1], size_t ix, const char* fname) {
+Err _cmd_anchor_save(Session session[_1_], size_t ix, const char* fname) {
     lxb_dom_node_t* node;
     try( _get_anchor_by_ix(session, ix, &node));
     HtmlDoc* htmldoc;

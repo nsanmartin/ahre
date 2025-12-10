@@ -32,7 +32,7 @@ static inline Err err_from_curlm(CURLMcode code) {
 }
 
 
-static inline Err w_curl_easy_init(CURL* cup[static 1]) {
+static inline Err w_curl_easy_init(CURL* cup[_1_]) {
     *cup = curl_easy_init();
     return *cup ? Ok : "error: curl_esy_init failure";
 }
@@ -56,12 +56,12 @@ static inline Err w_curl_url_set(CURLU* u,  CURLUPart part, const char* cstr, un
 }
 
 
-static inline Err w_curl_url_dup(CURLU* u, CURLU* dup[static 1]) {
+static inline Err w_curl_url_dup(CURLU* u, CURLU* dup[_1_]) {
     return (*dup = curl_url_dup(u)) ? Ok : "error: curl_url_dup failure";
 }
 
 
-static inline Err w_curl_url_get_malloc(CURLU* cu, CURLUPart part, char* out[static 1]) {
+static inline Err w_curl_url_get_malloc(CURLU* cu, CURLUPart part, char* out[_1_]) {
 /*
  * Get cu's part. The caller should curl_free out.
  */
@@ -76,37 +76,37 @@ Err w_curl_multi_add(
     CURLM*         multi,
     CURLU*         baseurl,
     const char*    urlstr,
-    ArlOf(CurlPtr) easies[static 1],
-    ArlOf(Str)     destlist[static 1],
-    ArlOf(CurlUPtr) curlus[static 1]
+    ArlOf(CurlPtr) easies[_1_],
+    ArlOf(Str)     destlist[_1_],
+    ArlOf(CurlUPtr) curlus[_1_]
 
 );
 
 
 #include "user-out.h"
 void w_curl_multi_remove_handles(
-    CURLM* multi, ArlOf(CurlPtr)  easies[static 1], Writer msg_writer[static 1]);
+    CURLM* multi, ArlOf(CurlPtr)  easies[_1_], Writer msg_writer[_1_]);
 
 Err w_curl_multi_add_handles( 
     CURLM*           multi,
     CURLU*           curlu,
-    ArlOf(Str)       urls[static 1],
-    ArlOf(Str)       scripts[static 1],
+    ArlOf(Str)       urls[_1_],
+    ArlOf(Str)       scripts[_1_],
     ArlOf(CurlPtr)*  easies,
     ArlOf(CurlUPtr)* curlus,
-    Writer           msg_buf[static 1]
+    Writer           msg_buf[_1_]
 );
 Err w_curl_multi_perform_poll(CURLM* multi);
 
 Err for_htmldoc_size_download_append(
-    ArlOf(CurlPtr) easies[static 1],
-    Writer         msg_writer[static 1],
+    ArlOf(CurlPtr) easies[_1_],
+    Writer         msg_writer[_1_],
     CURL*          curl,
-    uintmax_t      out[static 1]
+    uintmax_t      out[_1_]
 );
 Err curlinfo_sz_download_incr(
-    Writer    msg_writer[static 1],
+    Writer    msg_writer[_1_],
     CURL*     curl,
-    uintmax_t nptr[static 1]
+    uintmax_t nptr[_1_]
 );
 #endif

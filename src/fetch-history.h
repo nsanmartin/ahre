@@ -31,7 +31,7 @@ typedef struct {
 } FetchHistoryEntry;
 
 
-static inline void fetch_history_entry_clean(FetchHistoryEntry e[static 1]) {
+static inline void fetch_history_entry_clean(FetchHistoryEntry e[_1_]) {
     str_clean(&e->title);
     str_clean(&e->effective_url);
     str_clean(&e->local_ip);
@@ -43,7 +43,7 @@ static inline void fetch_history_entry_clean(FetchHistoryEntry e[static 1]) {
 #include <arl.h>
 
 
-static inline Err fetch_history_entry_init(FetchHistoryEntry e[static 1]) {
+static inline Err fetch_history_entry_init(FetchHistoryEntry e[_1_]) {
     *e = (FetchHistoryEntry){0};
     if (TIME_UTC != timespec_get(&e->ts, TIME_UTC))
         return "error: timespec_get failure";
@@ -51,14 +51,14 @@ static inline Err fetch_history_entry_init(FetchHistoryEntry e[static 1]) {
 }
 
 Err fetch_history_entry_update_curl(
-    FetchHistoryEntry e[static 1],
+    FetchHistoryEntry e[_1_],
     CURL*             curl,
-    Writer            msg_writer[static 1]
+    Writer            msg_writer[_1_]
 );
 
-Err fetch_history_write_to_file(FetchHistoryEntry e[static 1], FILE* fp);
+Err fetch_history_write_to_file(FetchHistoryEntry e[_1_], FILE* fp);
 
-static inline Err fetch_history_entry_update_title(FetchHistoryEntry e[static 1], LxbNodePtr np[static 1]) {
+static inline Err fetch_history_entry_update_title(FetchHistoryEntry e[_1_], LxbNodePtr np[_1_]) {
     try(lexbor_get_title_text(*np, &e->title));
     if (e->title.len) {
         char* rest = e->title.items;

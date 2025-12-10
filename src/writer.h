@@ -10,7 +10,7 @@ typedef struct Writer {
 } Writer;
 
 
-static inline Err writer_write(Writer w[static 1], const char* src, size_t size) {
+static inline Err writer_write(Writer w[_1_], const char* src, size_t size) {
     return w->write(w, src, size);
 }
 
@@ -26,7 +26,7 @@ static inline Err writer_write_to_file(Writer* self, const char* mem, size_t len
     return Ok;
 }
 
-static inline Err file_writer_init(Writer w[static 1], FILE* f) {
+static inline Err file_writer_init(Writer w[_1_], FILE* f) {
     if (!f) return "error: failed to initialide Writer with NULL FILE";
     *w = (Writer){ .self=w, .write=writer_write_to_file, .out=f };
     return Ok;

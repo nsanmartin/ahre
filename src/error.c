@@ -48,9 +48,9 @@ Err _err_fmt_vsnprinf_(Err fmt, ...) {
 
 static Err _msg_buf_append(
     char*  errmsgbuf,
-    size_t errmsgbuflen[static 1],
+    size_t errmsgbuflen[_1_],
     size_t errmsgbufmaxlen,
-    char*  bufptr[static 1],
+    char*  bufptr[_1_],
     const  char* s,
     size_t sz
 ) {
@@ -64,9 +64,9 @@ static Err _msg_buf_append(
 
 static Err _msg_buf_append_num_(
     char*  errmsgbuf,
-    size_t errmsgbuflen[static 1],
+    size_t errmsgbuflen[_1_],
     size_t errmsgbufmaxlen,
-    char*  bufptr[static 1],
+    char*  bufptr[_1_],
     int    n
 ) {
     if (*errmsgbuflen >= errmsgbufmaxlen) return "error: err_fmt too large.";

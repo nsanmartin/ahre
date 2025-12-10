@@ -1,6 +1,6 @@
 #include "reditline.h"
 
-Err readpass_term(ArlOf(char) passw[static 1], bool write) {
+Err readpass_term(ArlOf(char) passw[_1_], bool write) {
     Err err = Ok;
     struct termios prev_termios;
     try( switch_tty_to_raw_mode(&prev_termios));

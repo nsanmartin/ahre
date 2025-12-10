@@ -28,7 +28,7 @@ typedef struct { size_t offset; TextMod tmod; } ModAt;
 typedef ArlOf(ModAt) TextBufMods;
 
 static inline ModAt*
-mods_at_find_greater_or_eq(TextBufMods* mods, ModAt it[static 1], size_t offset) {
+mods_at_find_greater_or_eq(TextBufMods* mods, ModAt it[_1_], size_t offset) {
     //TODO: use binsearch
     for (; it < arlfn(ModAt,end)(mods) ; ++it) {
         if (offset <= it->offset) return it;
@@ -45,7 +45,7 @@ static inline TextMod esc_code_to_text_mod(EscCode code) { return (TextMod)code;
 static inline EscCode textmod_to_esc_code(TextMod tm) { return (EscCode)tm; }
 
 static inline Err
-textmod_concatenate(TextBufMods base[static 1], size_t offset, TextBufMods consumed[static 1]) {
+textmod_concatenate(TextBufMods base[_1_], size_t offset, TextBufMods consumed[_1_]) {
     for (ModAt* it = arlfn(ModAt, begin)(consumed)
         ; it != arlfn(ModAt, end)(consumed)
         ; ++it

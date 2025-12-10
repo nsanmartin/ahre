@@ -123,7 +123,7 @@ const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen) {
     return buf;
 }
 
-StrView str_split_line(StrView text[static 1]) {
+StrView str_split_line(StrView text[_1_]) {
     StrView line = *text;
     const char* nl = memchr(line.items, '\n', line.len);
     if (nl) {
@@ -144,8 +144,8 @@ Err _convert_to_utf8_(
     const char* inbuf,
     const size_t inlen,
     const char* charset,
-    const char* outbuf[static 1],
-    size_t outlen[static 1]
+    const char* outbuf[_1_],
+    size_t outlen[_1_]
 ) {
     if (!inlen || !inbuf || !*inbuf) {
         *outlen = 0;
@@ -203,7 +203,7 @@ Err _convert_to_utf8_(
 }
 
 
-Err str_append_timespec(Str out[static 1], struct timespec ts[static 1]) {
+Err str_append_timespec(Str out[_1_], struct timespec ts[_1_]) {
 #define DT_BUFLEN 128
     char buff[DT_BUFLEN];
     if (!strftime(buff, sizeof buff, "%F %T", gmtime(&ts->tv_sec)))
@@ -215,7 +215,7 @@ Err str_append_timespec(Str out[static 1], struct timespec ts[static 1]) {
     return str_append(out, buff, len);
 }
 
-Err str_append_datetime_now(Str out[static 1]) {
+Err str_append_datetime_now(Str out[_1_]) {
 
     struct timespec ts;
     timespec_get(&ts, TIME_UTC);

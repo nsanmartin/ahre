@@ -12,7 +12,7 @@
 /* internal linkage */
 
 
-Err _lexbor_parse_chunk_begin_(HtmlDoc htmldoc[static 1]) {
+Err _lexbor_parse_chunk_begin_(HtmlDoc htmldoc[_1_]) {
     lxb_html_document_t* lxbdoc = htmldoc->lxbdoc;
     if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(lxbdoc)) 
         return "error: lex failed to init html document";
@@ -21,7 +21,7 @@ Err _lexbor_parse_chunk_begin_(HtmlDoc htmldoc[static 1]) {
 }
 
 
-Err _lexbor_parse_chunk_end_(HtmlDoc htmldoc[static 1]) {
+Err _lexbor_parse_chunk_end_(HtmlDoc htmldoc[_1_]) {
     lxb_html_document_t* lxbdoc = htmldoc->lxbdoc;
     lexbor_status_t lxb_status = lxb_html_document_parse_chunk_end(lxbdoc);
     if (LXB_STATUS_OK != lxb_status) 
@@ -32,7 +32,7 @@ Err _lexbor_parse_chunk_end_(HtmlDoc htmldoc[static 1]) {
 }
 
 
-CURLoption _curlopt_method_from_htmldoc_(HtmlDoc htmldoc[static 1]) {
+CURLoption _curlopt_method_from_htmldoc_(HtmlDoc htmldoc[_1_]) {
     return htmldoc_method(htmldoc) == http_post 
                ? CURLOPT_POST
                : CURLOPT_HTTPGET
@@ -40,7 +40,7 @@ CURLoption _curlopt_method_from_htmldoc_(HtmlDoc htmldoc[static 1]) {
 }
 
 
-Err _curl_set_write_fn_and_data_(UrlClient url_client[static 1], HtmlDoc htmldoc[static 1]) {
+Err _curl_set_write_fn_and_data_(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]) {
     if (
        curl_easy_setopt(url_client->curl, CURLOPT_HEADERDATA, htmldoc)
     || curl_easy_setopt(url_client->curl, CURLOPT_HEADERFUNCTION, curl_header_callback)
@@ -52,7 +52,7 @@ Err _curl_set_write_fn_and_data_(UrlClient url_client[static 1], HtmlDoc htmldoc
 }
 
 
-Err _curl_set_http_method_(UrlClient url_client[static 1], HtmlDoc htmldoc[static 1]) {
+Err _curl_set_http_method_(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]) {
     CURLoption method = _curlopt_method_from_htmldoc_(htmldoc);
     if (curl_easy_setopt(url_client->curl, method, 1L)) 
         return "error: curl failed to set method";
@@ -60,7 +60,7 @@ Err _curl_set_http_method_(UrlClient url_client[static 1], HtmlDoc htmldoc[stati
 }
 
 
-Err _curl_set_curlu_(UrlClient url_client[static 1], HtmlDoc htmldoc[static 1]) {
+Err _curl_set_curlu_(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]) {
     char* url_str = NULL;
     try( url_cstr_malloc(htmldoc_url(htmldoc), &url_str));
     CURLcode code = curl_easy_setopt(url_client->curl, CURLOPT_URL, url_str);
@@ -78,7 +78,7 @@ Err _curl_set_curlu_(UrlClient url_client[static 1], HtmlDoc htmldoc[static 1]) 
 }
 
 
-Err _curl_perform_error_( HtmlDoc htmldoc[static 1], CURLcode curl_code) {
+Err _curl_perform_error_( HtmlDoc htmldoc[_1_], CURLcode curl_code) {
     Url* url = htmldoc_url(htmldoc);
     char* u;
     Err e = url_cstr_malloc(url, &u);
@@ -92,7 +92,7 @@ Err _curl_perform_error_( HtmlDoc htmldoc[static 1], CURLcode curl_code) {
 
 
 static Err _set_htmldoc_url_with_effective_url_(
-    UrlClient url_client[static 1], HtmlDoc htmldoc[static 1]
+    UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]
 ) {
     char* effective_url = NULL;
     if (CURLE_OK != curl_easy_getinfo(url_client->curl, CURLINFO_EFFECTIVE_URL, &effective_url)) {
@@ -103,7 +103,7 @@ static Err _set_htmldoc_url_with_effective_url_(
 
 
 Err
-_fetch_tag_script_from_text_(lxb_dom_node_t node[static 1], ArlOf(Str) out[static 1]) {
+_fetch_tag_script_from_text_(lxb_dom_node_t node[_1_], ArlOf(Str) out[_1_]) {
 
     const char* data;
     size_t len;
@@ -121,9 +121,9 @@ _fetch_tag_script_from_text_(lxb_dom_node_t node[static 1], ArlOf(Str) out[stati
 
 
 static Err _get_scripts_collection_(
-    lxb_html_document_t     doc[static 1],
-    lxb_dom_element_t       elem[static 1],
-    lxb_dom_collection_t*   arr_ptr[static 1]
+    lxb_html_document_t     doc[_1_],
+    lxb_dom_element_t       elem[_1_],
+    lxb_dom_collection_t*   arr_ptr[_1_]
 ) {
     *arr_ptr = lxb_dom_collection_make(&doc->dom_document, 32);
     if (*arr_ptr == NULL)
@@ -137,9 +137,9 @@ static Err _get_scripts_collection_(
 
 static Err _split_remote_local_(
     lxb_dom_collection_t* elems, 
-    ArlOf(Str)            scripts[static 1],
-    ArlOf(Str)            urls[static 1],
-    Writer                msg_writer[static 1]
+    ArlOf(Str)            scripts[_1_],
+    ArlOf(Str)            urls[_1_],
+    Writer                msg_writer[_1_]
 ) {
     for (size_t i = 0; i < lxb_dom_collection_length(elems); i++) {
         Err e = Ok;
@@ -168,7 +168,7 @@ static Err _split_remote_local_(
 
 
 
-static void _map_append_nullchar_(ArlOf(Str) strlist[static 1], Writer msg_writer[static 1]) {
+static void _map_append_nullchar_(ArlOf(Str) strlist[_1_], Writer msg_writer[_1_]) {
     for ( Str* sp = arlfn(Str,begin)(strlist) ; sp != arlfn(Str,end)(strlist) ; ++sp) {
         Err e0 = str_append_lit__(sp, "\0");
         if (e0) {
@@ -180,9 +180,9 @@ static void _map_append_nullchar_(ArlOf(Str) strlist[static 1], Writer msg_write
 }
 
 Err curl_lexbor_fetch_scripts(
-    HtmlDoc        htmldoc[static 1],
-    UrlClient      url_client[static 1],
-    Writer         msg_writer[static 1]
+    HtmlDoc        htmldoc[_1_],
+    UrlClient      url_client[_1_],
+    Writer         msg_writer[_1_]
 ) {
     Err e = Ok;
     //TODO!: evaluate scripts in order
@@ -250,10 +250,10 @@ Lxb_Array_Head_Destroy:
 
 
 Err curl_lexbor_fetch_document(
-    UrlClient         url_client[static 1],
-    HtmlDoc           htmldoc[static 1],
-    Writer            msg_writer[static 1],
-    FetchHistoryEntry histentry[static 1]
+    UrlClient         url_client[_1_],
+    HtmlDoc           htmldoc[_1_],
+    Writer            msg_writer[_1_],
+    FetchHistoryEntry histentry[_1_]
 ) {
     try( url_client_set_basic_options(url_client));
     try( _curl_set_write_fn_and_data_(url_client, htmldoc));
@@ -284,7 +284,7 @@ Err curl_lexbor_fetch_document(
 
 
 /*TODO: rename to `url_client_curlu_to_file`*/
-Err curl_save_url(UrlClient url_client[static 1], CURLU* curlu , const char* fname) {
+Err curl_save_url(UrlClient url_client[_1_], CURLU* curlu , const char* fname) {
     try( url_client_reset(url_client));
     FILE* fp;
     try(fopen_or_append_fopen(fname, curlu, &fp));
@@ -307,7 +307,7 @@ Err curl_save_url(UrlClient url_client[static 1], CURLU* curlu , const char* fna
 
 
 static Err
-_make_submit_get_request_rec_( lxb_dom_node_t* node, Request req[static 1]) {
+_make_submit_get_request_rec_( lxb_dom_node_t* node, Request req[_1_]) {
     if (!node) return Ok;
     else if (node->local_name == LXB_TAG_INPUT
             && !lexbor_lit_attr_has_lit_value(node, "type", "submit")) {
@@ -336,7 +336,7 @@ _make_submit_get_request_rec_( lxb_dom_node_t* node, Request req[static 1]) {
 }
 
 
-static Err _request_append_select_(lxb_dom_node_t node[static 1], Request req[static 1]) {
+static Err _request_append_select_(lxb_dom_node_t node[_1_], Request req[_1_]) {
     StrView key = lexbor_get_lit_attr__(node, "name");
     if (!key.len) return Ok;
 
@@ -356,9 +356,9 @@ static Err _request_append_select_(lxb_dom_node_t node[static 1], Request req[st
 }
 
 static Err _request_append_lexbor_name_value_attrs_if_both_(
-    lxb_dom_node_t node[static 1],
+    lxb_dom_node_t node[_1_],
     bool is_https,
-    Request req[static 1]
+    Request req[_1_]
 ) {
     const lxb_char_t* value;
     size_t valuelen;
@@ -381,7 +381,7 @@ static Err _request_append_lexbor_name_value_attrs_if_both_(
 static Err _make_submit_post_request_rec(
     lxb_dom_node_t* node,
     bool is_https,
-    Request req[static 1]
+    Request req[_1_]
 ) {
     if (!node) return Ok;
     if (node->local_name == LXB_TAG_FORM) {
@@ -406,7 +406,7 @@ static Err _make_submit_post_request_rec(
 
 
 static Err
-_mk_submit_post_request_(lxb_dom_node_t* form, bool is_https, Request req[static 1]) { 
+_mk_submit_post_request_(lxb_dom_node_t* form, bool is_https, Request req[_1_]) { 
 
     for(lxb_dom_node_t* it = form->first_child; it ; it = it->next) {
         try(_make_submit_post_request_rec(it, is_https, req));
@@ -419,7 +419,7 @@ _mk_submit_post_request_(lxb_dom_node_t* form, bool is_https, Request req[static
 
 /* external linkage */
 
-Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request req[static 1]) {
+Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request req[_1_]) {
     const lxb_char_t* action;
     size_t action_len;
     lexbor_find_lit_attr_value__(form, "action", &action, &action_len);
@@ -445,7 +445,7 @@ Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request req[static 1
 
 
 Err lexcurl_dup_curl_from_node_and_attr(
-    lxb_dom_node_t* node, const char* attr, size_t attr_len, CURLU* u[static 1]
+    lxb_dom_node_t* node, const char* attr, size_t attr_len, CURLU* u[_1_]
 )
 {
     Err e = Ok;

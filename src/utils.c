@@ -4,7 +4,7 @@
 
 /* file utils */
 
-Err file_open(const char* filename, const char* mode, FILE* fpp[static 1]) {
+Err file_open(const char* filename, const char* mode, FILE* fpp[_1_]) {
     *fpp = fopen(filename, mode);
     if (!*fpp)
         return err_fmt("error opening file '%s': %s", filename, strerror(errno));
@@ -62,7 +62,7 @@ Err file_close(FILE* fp) {
 const char _base36digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 /* note that if something like "   -1" is received, 2^NBits -1 is returned */
-Err parse_ull_err(const char* tk, uintmax_t ullp[static 1], const char* endptr[static 1]) {
+Err parse_ull_err(const char* tk, uintmax_t ullp[_1_], const char* endptr[_1_]) {
     if (!tk) return "error parsing ull: NULL received";
     if (!*tk) return "error parsing ull: \"\\0\" received";
     *ullp = strtoull(tk, (char**)endptr, 10);
@@ -71,7 +71,7 @@ Err parse_ull_err(const char* tk, uintmax_t ullp[static 1], const char* endptr[s
 }
 
 
-Err parse_ll_err(const char* tk, intmax_t llp[static 1], const char* endptr[static 1]) {
+Err parse_ll_err(const char* tk, intmax_t llp[_1_], const char* endptr[_1_]) {
     if (!tk) return "error parsing ll: NULL received";
     if (!*tk) return "error parsing ll: \"\\0\" received";
     *llp = strtoll(tk, (char**)endptr, 10);
@@ -97,7 +97,7 @@ const char* parse_ll(const char* tk, intmax_t* llp) {
     return endptr == tk ? NULL: endptr;
 }
 
-const char* parse_l(const char* tk, long lptr[static 1]) {
+const char* parse_l(const char* tk, long lptr[_1_]) {
     if (!tk || !*tk) { return NULL; }
     char* endptr = 0x0;
     *lptr = strtol(tk, &endptr, 10);
@@ -105,7 +105,7 @@ const char* parse_l(const char* tk, long lptr[static 1]) {
     return endptr == tk ? NULL: endptr;
 }
 
-Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[static 1]) {
+Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[_1_]) {
     if (buf_sz == 0) return "error: not enough size to convert num to base36 str.";
     *len = 0;
     do {

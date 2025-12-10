@@ -10,8 +10,8 @@
 #include "session.h"
 #include "writer.h"
 
-Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]);
-Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[static 1]);
+Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[_1_]);
+Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[_1_]);
 
 /* internal linkage */
 #define MAX_URL_LEN 2048u
@@ -23,7 +23,7 @@ Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[static 1]);
 
 
 static Err _hypertext_id_open_(
-    DrawCtx ctx[static 1],
+    DrawCtx ctx[_1_],
     DrawEffectCb visual_effect,
     StrViewProvider open_str_provider,
     const size_t* id_num_ptr,
@@ -37,7 +37,7 @@ static Err _hypertext_id_open_(
 }
 
 static Err _hypertext_open_(
-    DrawCtx ctx[static 1], DrawEffectCb visual_effect, StrViewProvider prefix_str_provider
+    DrawCtx ctx[_1_], DrawEffectCb visual_effect, StrViewProvider prefix_str_provider
 ) {
     if (visual_effect) try( visual_effect(ctx));
     if (prefix_str_provider) try( draw_ctx_buf_append(ctx, prefix_str_provider()));
@@ -46,7 +46,7 @@ static Err _hypertext_open_(
 
 
 static Err _hypertext_id_close_(
-    DrawCtx ctx[static 1],
+    DrawCtx ctx[_1_],
     DrawEffectCb visual_effect,
     StrViewProvider close_str_provider
 ) {
@@ -56,7 +56,7 @@ static Err _hypertext_id_close_(
 }
 
 static Err _hypertext_close_(
-    DrawCtx ctx[static 1],
+    DrawCtx ctx[_1_],
     DrawEffectCb visual_effect,
     StrViewProvider postfix_provider
 ) {
@@ -68,13 +68,13 @@ static Err _hypertext_close_(
 
 
 static Err
-draw_tag_br(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+draw_tag_br(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     try( draw_ctx_buf_append_lit__(ctx, "\n"));
     return draw_list(node->first_child, node->last_child, ctx);
 }
 
 static Err
-draw_tag_center(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+draw_tag_center(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     //TODO: store center boundaries (start = len on enter, end = len on ret) and then
     // when fitting to width center those lines image.
 
@@ -85,7 +85,7 @@ draw_tag_center(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 }
 
 static Err
-browse_ctx_append_img_alt_(lxb_dom_node_t* img, DrawCtx ctx[static 1]) {
+browse_ctx_append_img_alt_(lxb_dom_node_t* img, DrawCtx ctx[_1_]) {
 
     const lxb_char_t* alt;
     size_t alt_len;
@@ -96,7 +96,7 @@ browse_ctx_append_img_alt_(lxb_dom_node_t* img, DrawCtx ctx[static 1]) {
 }
 
 static Err
-draw_tag_img(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+draw_tag_img(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     HtmlDoc* d = draw_ctx_htmldoc(ctx);
     ArlOf(LxbNodePtr)* imgs = htmldoc_imgs(d);
     const size_t img_count = len__(imgs);
@@ -114,7 +114,7 @@ draw_tag_img(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
 
 static Err
-draw_tag_select(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+draw_tag_select(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     lxb_dom_node_t* selected = node->first_child;
     if (!selected) return Ok;
     for(lxb_dom_node_t* it = selected; it ; it = it->next) {
@@ -146,7 +146,7 @@ draw_tag_select(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 
 
 static Err
-draw_tag_form(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+draw_tag_form(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     ArlOf(LxbNodePtr)* forms = htmldoc_forms(draw_ctx_htmldoc(ctx));
     if (!arlfn(LxbNodePtr,append)(forms, &node)) return "error: lip set";
     const size_t form_count = len__(forms);
@@ -181,7 +181,7 @@ static bool _input_is_submit_type_(const lxb_char_t* name, size_t len) {
 }
 
 static Err
-draw_tag_button(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+draw_tag_button(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     HtmlDoc* d = draw_ctx_htmldoc(ctx);
     ArlOf(LxbNodePtr)* inputs = htmldoc_inputs(d);
     if (!arlfn(LxbNodePtr,append)(inputs, &node)) return "error: lip set";
@@ -198,7 +198,7 @@ draw_tag_button(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 }
 
 
-static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     const lxb_char_t* s;
     size_t slen;
 
@@ -245,7 +245,7 @@ static Err draw_tag_input(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 }
 
 
-static Err draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+static Err draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     draw_subctx_div_set(ctx);
     DrawSubCtx sub = (DrawSubCtx){0};
     draw_ctx_swap_sub(ctx, &sub);
@@ -267,25 +267,25 @@ static Err draw_tag_div(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 }
 
 static Err
-draw_tag_p(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+draw_tag_p(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     return draw_list_block(node->first_child, node->last_child, ctx);
 }
 
 static Err
-draw_tag_tr(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+draw_tag_tr(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     try( draw_ctx_buf_append_lit__(ctx, "\n"));
     try( draw_list(node->first_child, node->last_child, ctx));
     return Ok;
 }
 
 static Err
-draw_tag_ul(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+draw_tag_ul(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     if(draw_ctx_hide_tags(ctx, HIDE_UL)) return Ok;
     return draw_list_block(node->first_child, node->last_child, ctx);
 }
 
 static Err
-draw_tag_li(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+draw_tag_li(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     DrawSubCtx sub = (DrawSubCtx){0};
     draw_ctx_swap_sub(ctx, &sub);
 
@@ -307,7 +307,7 @@ draw_tag_li(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 }
 
 
-static Err draw_tag_h(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+static Err draw_tag_h(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     DrawSubCtx sub = (DrawSubCtx){0};
     draw_ctx_swap_sub(ctx, &sub);
 
@@ -327,7 +327,7 @@ static Err draw_tag_h(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 }
 
 static Err
-draw_tag_code(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+draw_tag_code(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     try( draw_ctx_buf_append_lit__(ctx, " `"));
     try (draw_list(node->first_child, node->last_child, ctx));
     try( draw_ctx_buf_append_lit__(ctx, "` "));
@@ -335,7 +335,7 @@ draw_tag_code(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 }
 
 static Err
-draw_tag_b(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+draw_tag_b(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     if (node->prev && draw_ctx_buf_last_isgraph(ctx)) try( draw_ctx_buf_append_lit__(ctx, " "));
     try(_hypertext_open_(ctx, draw_ctx_push_bold, space_str));
     try (draw_list(node->first_child, node->last_child, ctx));
@@ -343,7 +343,7 @@ draw_tag_b(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     return Ok;
 }
 
-static Err draw_tag_em(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+static Err draw_tag_em(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     if (node->prev && draw_ctx_buf_last_isgraph(ctx)) try( draw_ctx_buf_append_lit__(ctx, " "));
     try(_hypertext_open_(ctx, draw_ctx_push_underline, space_str));
     try (draw_list(node->first_child, node->last_child, ctx));
@@ -352,7 +352,7 @@ static Err draw_tag_em(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 }
 
 static Err
-draw_tag_i(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+draw_tag_i(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     try(_hypertext_open_(ctx, draw_ctx_push_italic, space_str));
     //try( draw_ctx_buf_append_lit__(ctx, " "));
     //try( draw_ctx_buf_append_color_(ctx, esc_code_italic));
@@ -364,14 +364,14 @@ draw_tag_i(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 }
 
 static Err
-draw_tag_blockquote(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+draw_tag_blockquote(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     try( draw_ctx_buf_append_lit__(ctx, "``"));
     try (draw_list_block(node->first_child, node->last_child, ctx));
     try( draw_ctx_buf_append_lit__(ctx, "''"));
     return Ok;
 }
 
-static Err draw_tag_title(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+static Err draw_tag_title(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     HtmlDoc* d = draw_ctx_htmldoc(ctx);
     *htmldoc_title(d) = node;
     if (!(ctx->flags & DRAW_CTX_FLAG_TITLE)) return Ok;
@@ -384,7 +384,7 @@ static Err draw_tag_title(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
 }
 
 static Err draw_mem_skipping_space(
-    const char* data, size_t len, DrawCtx ctx[static 1], lxb_dom_node_t* prev
+    const char* data, size_t len, DrawCtx ctx[_1_], lxb_dom_node_t* prev
 ) {
     StrView s = strview_from_mem(data, len);
     /* if it starts with a punctiayion mark we undo the space added in draw space */
@@ -639,7 +639,7 @@ const char* _dbg_get_tag_name_(size_t local_name) {
  * draw.
  * 
  */
-Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     if (ctx->fragment
     && lexbor_element_id_cstr_match(lxb_dom_interface_element(node), ctx->fragment)) {
         *draw_ctx_fragment_offset(ctx) = len__(draw_ctx_buf(ctx));
@@ -692,7 +692,7 @@ Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     }
 }
 
-Err draw_text(lxb_dom_node_t* node,  DrawCtx ctx[static 1]) {
+Err draw_text(lxb_dom_node_t* node,  DrawCtx ctx[_1_]) {
     const char* data;
     size_t len;
     try( lexbor_node_get_text(node, &data, &len));
@@ -714,7 +714,7 @@ Err draw_text(lxb_dom_node_t* node,  DrawCtx ctx[static 1]) {
     return Ok;
 }
 
-Err draw_rec(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+Err draw_rec(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     if (node) {
         switch(node->type) {
             case LXB_DOM_NODE_TYPE_ELEMENT: return draw_rec_tag(node, ctx);
@@ -736,14 +736,14 @@ Err draw_rec(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     return Ok;
 }
 
-Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+Err draw_tag_pre(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     draw_ctx_pre_set(ctx, true);
     try( draw_list_block(node->first_child, node->last_child, ctx));
     draw_ctx_pre_set(ctx, false);
     return Ok;
 }
 
-static Err _htmldoc_draw_with_flags_(HtmlDoc htmldoc[static 1], Session s[static 1], unsigned flags) {
+static Err _htmldoc_draw_with_flags_(HtmlDoc htmldoc[_1_], Session s[_1_], unsigned flags) {
     lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(htmldoc);
     DrawCtx ctx;
     Err err = draw_ctx_init(&ctx, htmldoc, s, flags);
@@ -759,7 +759,7 @@ static Err _htmldoc_draw_with_flags_(HtmlDoc htmldoc[static 1], Session s[static
 }
 
 
-static Err _htmldoc_draw_(HtmlDoc htmldoc[static 1], Session s[static 1]) {
+static Err _htmldoc_draw_(HtmlDoc htmldoc[_1_], Session s[_1_]) {
     unsigned flags = draw_ctx_flags_from_session(s) | DRAW_CTX_FLAG_TITLE;
     return _htmldoc_draw_with_flags_(htmldoc, s, flags);
 }
@@ -769,10 +769,10 @@ static Err _htmldoc_draw_(HtmlDoc htmldoc[static 1], Session s[static 1]) {
 
 
 Err htmldoc_init_from_request(
-    HtmlDoc   d[static 1],
-    Request   r[static 1],
+    HtmlDoc   d[_1_],
+    Request   r[_1_],
     Url*      u,
-    UrlClient uc[static 1],
+    UrlClient uc[_1_],
     Session*  s
 ) {
     if (!s) return "error: expecting a session, recived NULL";
@@ -812,7 +812,7 @@ Failure:
 }
 
 
-Err htmldoc_init_bookmark(HtmlDoc d[static 1], const char* urlstr) {
+Err htmldoc_init_bookmark(HtmlDoc d[_1_], const char* urlstr) {
     Err e = Ok;
 
     *d = (HtmlDoc){ .method = http_get, .lxbdoc = lxb_html_document_create() };
@@ -833,7 +833,7 @@ Failure_Lxb_Html_Document_Destroy:
 /* external linkage */
 
 
-void htmldoc_reset_draw(HtmlDoc htmldoc[static 1]) {
+void htmldoc_reset_draw(HtmlDoc htmldoc[_1_]) {
     textbuf_reset(htmldoc_textbuf(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_anchors(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_imgs(htmldoc));
@@ -842,14 +842,14 @@ void htmldoc_reset_draw(HtmlDoc htmldoc[static 1]) {
 }
 
 
-void htmldoc_fetchcache_cleanup(HtmlDoc htmldoc[static 1]) {
+void htmldoc_fetchcache_cleanup(HtmlDoc htmldoc[_1_]) {
     textbuf_cleanup(htmldoc_sourcebuf(htmldoc));
     arlfn(Str,clean)(htmldoc_head_scripts(htmldoc));
     arlfn(Str,clean)(htmldoc_body_scripts(htmldoc));
     htmldoc->fetch_cache = (DocFetchCache){0};
 }
 
-void htmldoc_drawcache_cleanup(HtmlDoc htmldoc[static 1]) {
+void htmldoc_drawcache_cleanup(HtmlDoc htmldoc[_1_]) {
     textbuf_cleanup(htmldoc_textbuf(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_anchors(htmldoc));
     arlfn(LxbNodePtr,clean)(htmldoc_imgs(htmldoc));
@@ -860,14 +860,14 @@ void htmldoc_drawcache_cleanup(HtmlDoc htmldoc[static 1]) {
     htmldoc->draw_cache = (DocDrawCache){0};
 }
 
-void htmldoc_cache_cleanup(HtmlDoc htmldoc[static 1]) {
+void htmldoc_cache_cleanup(HtmlDoc htmldoc[_1_]) {
     htmldoc_drawcache_cleanup(htmldoc);
     htmldoc_fetchcache_cleanup(htmldoc);
 }
 
 
 
-void htmldoc_cleanup(HtmlDoc htmldoc[static 1]) {
+void htmldoc_cleanup(HtmlDoc htmldoc[_1_]) {
     http_header_clean(htmldoc_http_header(htmldoc));
     htmldoc_cache_cleanup(htmldoc);
     lxb_html_document_destroy(htmldoc_lxbdoc(htmldoc));
@@ -884,13 +884,13 @@ inline void htmldoc_destroy(HtmlDoc* htmldoc) {
 
 
 
-Err htmldoc_redraw(HtmlDoc htmldoc[static 1], Session s[static 1]) {
+Err htmldoc_redraw(HtmlDoc htmldoc[_1_], Session s[_1_]) {
     htmldoc_reset_draw(htmldoc);
     unsigned flags = draw_ctx_flags_from_session(s);
     return _htmldoc_draw_with_flags_(htmldoc, s, flags);
 }
 
-Err htmldoc_A(Session* s, HtmlDoc d[static 1]) {
+Err htmldoc_A(Session* s, HtmlDoc d[_1_]) {
     if (!s) return "error: no session";
     Str* buf = &(Str){0};
     str_append_lit__(buf, "<li><a href=\"");
@@ -911,7 +911,7 @@ Err htmldoc_A(Session* s, HtmlDoc d[static 1]) {
     return Ok;
 }
 
-Err htmldoc_print_info(Session* s, HtmlDoc d[static 1]) {
+Err htmldoc_print_info(Session* s, HtmlDoc d[_1_]) {
     Err err = Ok;
     LxbNodePtr* title = htmldoc_title(d);
     try (session_write_msg_lit__(s, "DOWNLOAD SIZE: "));
@@ -958,13 +958,13 @@ static bool _node_has_href(lxb_dom_node_t* node) {
     return lexbor_find_lit_attr_value__(node, "href", &data, &data_len);
 }
 
-static bool _prev_is_separable_(lxb_dom_node_t n[static 1]) {
+static bool _prev_is_separable_(lxb_dom_node_t n[_1_]) {
     return n->prev  && 
         n->prev->local_name != LXB_TAG_LI
         ;
 }
 
-Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
+Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     /* https://html.spec.whatwg.org/multipage/links.html#attr-hyperlink-href
      * The href attribute on a and area elements is not required; when those
      * elements do not have href attributes they do not create hyperlinks. */
@@ -1012,7 +1012,7 @@ Err draw_tag_a(lxb_dom_node_t* node, DrawCtx ctx[static 1]) {
     return Ok;
 }
 
-Err htmldoc_reparse_source(HtmlDoc d[static 1]) {
+Err htmldoc_reparse_source(HtmlDoc d[_1_]) {
     lxb_html_document_t* document = htmldoc_lxbdoc(d);
     lxb_html_document_clean(document);
     Str* html = textbuf_buf(htmldoc_sourcebuf(d));
@@ -1024,7 +1024,7 @@ Err htmldoc_reparse_source(HtmlDoc d[static 1]) {
 
 //TODO: 
 //  liblexbor supports encoding convertion (https://github.com/lexbor/lexbor/issues/271)
-Err htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[static 1]) {
+Err htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[_1_]) {
     if (!htmldoc_http_content_type_text_or_undef(d)) return Ok;
     const char* utf8s;
     size_t utf8slen;
@@ -1041,12 +1041,12 @@ Err htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[static 1]) {
     return Ok;
 }
 
-Err htmldoc_console(HtmlDoc d[static 1], Session* s, const char* line) {
+Err htmldoc_console(HtmlDoc d[_1_], Session* s, const char* line) {
     if (!s) return "error: no session";
     return jse_eval(htmldoc_js(d), s, line);
 }
 
-static Err jse_eval_doc_scripts(Session* s, HtmlDoc d[static 1]) {
+static Err jse_eval_doc_scripts(Session* s, HtmlDoc d[_1_]) {
 
     for ( Str* it = arlfn(Str,begin)(htmldoc_head_scripts(d))
         ; it != arlfn(Str,end)(htmldoc_head_scripts(d))
@@ -1066,14 +1066,14 @@ static Err jse_eval_doc_scripts(Session* s, HtmlDoc d[static 1]) {
 }
 
 //TODO: make this fn not Err and rename it
-Err htmldoc_js_enable(HtmlDoc d[static 1], Session* s) {
+Err htmldoc_js_enable(HtmlDoc d[_1_], Session* s) {
     try( jse_init(d));
     Err e = jse_eval_doc_scripts(s, d);
     if (e) session_write_msg(s, (char*)e, strlen(e));
     return Ok;
 }
 
-void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[static 1], Session* s) {
+void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[_1_], Session* s) {
     if (htmldoc_js_is_enabled(d)) {
         Err e = jse_eval_doc_scripts(s, d);
         if (e) session_write_msg(s, (char*)e, strlen(e));
@@ -1081,9 +1081,9 @@ void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[static 1], Session* s) {
 }
 
 Err _htmldoc_scripts_range_from_parsed_range_(
-    HtmlDoc          h[static 1],
-    RangeParse p[static 1],
-    Range            r[static 1]
+    HtmlDoc          h[_1_],
+    RangeParse p[_1_],
+    Range            r[_1_]
 ) {
     *r = (Range){0};
     size_t head_script_count = len__(htmldoc_head_scripts(h));
@@ -1123,7 +1123,7 @@ Err _htmldoc_scripts_range_from_parsed_range_(
 }
 
 
-Err htmldoc_scripts_write(HtmlDoc h[static 1], RangeParse rp[static 1], Writer w[static 1]) {
+Err htmldoc_scripts_write(HtmlDoc h[_1_], RangeParse rp[_1_], Writer w[_1_]) {
     if (!htmldoc_js_is_enabled(h)) return "enable js to get the scripts";
 
     Range r;

@@ -34,7 +34,7 @@ Err ui_line_show_err(Session* s, char* err, size_t len) {
 
 #define _vi_write_std_to_screen_lit__(Ses, Lit) _vi_write_std_to_screen_(Ses, Lit, lit_len__(Lit))
 
-// static inline Err _vi_write_unsigned_std_screen_(Session s[static 1], uintmax_t ui) {
+// static inline Err _vi_write_unsigned_std_screen_(Session s[_1_], uintmax_t ui) {
 //     return ui_write_unsigned(session_conf_uout(session_conf(s))->write_std, ui, s);
 // }
 
@@ -47,12 +47,12 @@ Err ui_vi_write_std(const char* mem, size_t len, Session* s) {
 }
 
 
-static Err _vi_print_range_std_mod_(TextBuf textbuf[static 1], Range range[static 1], Session* s) {
+static Err _vi_print_range_std_mod_(TextBuf textbuf[_1_], Range range[_1_], Session* s) {
     return session_write_std_range_mod(s, textbuf, range);
 }
 
 
-static void _update_if_smaller_(size_t value[static 1], size_t new_value) {
+static void _update_if_smaller_(size_t value[_1_], size_t new_value) {
     if (*value > new_value) *value = new_value;
 }
 

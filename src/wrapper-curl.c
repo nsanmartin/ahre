@@ -53,9 +53,9 @@ size_t curl_header_callback(char *buffer, size_t size, size_t nitems, void *html
 
 
 Err curlinfo_sz_download_incr(
-    Writer    msg_writer[static 1],
+    Writer    msg_writer[_1_],
     CURL*     curl,
-    uintmax_t nptr[static 1]
+    uintmax_t nptr[_1_]
 ) {
     curl_off_t nbytes;
     CURLcode curl_code = curl_easy_getinfo(curl, CURLINFO_SIZE_DOWNLOAD_T, &nbytes);
@@ -72,11 +72,11 @@ Err curlinfo_sz_download_incr(
 Err w_curl_multi_add_handles( 
     CURLM*           multi,
     CURLU*           curlu,
-    ArlOf(Str)       urls[static 1],
-    ArlOf(Str)       scripts[static 1],
+    ArlOf(Str)       urls[_1_],
+    ArlOf(Str)       scripts[_1_],
     ArlOf(CurlPtr)*  easies,
     ArlOf(CurlUPtr)* curlus,
-    Writer           msg_writer[static 1]
+    Writer           msg_writer[_1_]
 ) {
 
     //TODO: do it in one op, of implement reserve/capacity in hotl
@@ -116,10 +116,10 @@ Err w_curl_multi_perform_poll(CURLM* multi){
 }
 
 Err for_htmldoc_size_download_append(
-    ArlOf(CurlPtr) easies[static 1],
-    Writer         msg_writer[static 1],
+    ArlOf(CurlPtr) easies[_1_],
+    Writer         msg_writer[_1_],
     CURL*          curl,
-    uintmax_t      out[static 1]
+    uintmax_t      out[_1_]
 ) {
     for (CurlPtr* cup = arlfn(CurlPtr,begin)(easies) ; cup != arlfn(CurlPtr,end)(easies) ; ++cup) {
         try(curlinfo_sz_download_incr(msg_writer, curl, out));
@@ -130,8 +130,8 @@ Err for_htmldoc_size_download_append(
 
 void w_curl_multi_remove_handles(
     CURLM*         multi,
-    ArlOf(CurlPtr) easies[static 1],
-    Writer         msg_writer[static 1]
+    ArlOf(CurlPtr) easies[_1_],
+    Writer         msg_writer[_1_]
 ) {
     for (CurlPtr* cup = arlfn(CurlPtr,begin)(easies) ; cup != arlfn(CurlPtr,end)(easies) ; ++cup) {
         CURLMcode code = curl_multi_remove_handle(multi, *cup);
@@ -149,9 +149,9 @@ Err w_curl_multi_add(
     CURLM*          multi,
     CURLU*          baseurl,
     const char*     urlstr,
-    ArlOf(CurlPtr)  easies[static 1],
-    ArlOf(Str)      destlist[static 1],
-    ArlOf(CurlUPtr) curlus[static 1]
+    ArlOf(CurlPtr)  easies[_1_],
+    ArlOf(Str)      destlist[_1_],
+    ArlOf(CurlUPtr) curlus[_1_]
 ) {
     Err    e    = Ok;
     CURLU* dup;

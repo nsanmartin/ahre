@@ -3,21 +3,21 @@
 #include "session.h"
 
 Err tab_node_init_from_request(
-    TabNode     n[static 1],
+    TabNode     n[_1_],
     TabNode*    parent,
     Url*        url,
-    UrlClient   url_client[static 1],
-    Request     r[static 1],
-    Session     s[static 1]
+    UrlClient   url_client[_1_],
+    Request     r[_1_],
+    Session     s[_1_]
 );
 
 
 
 Err tablist_append_tree_from_url(
-    TabList     f[static 1],
-    Request     r[static 1],
-    UrlClient   url_client[static 1],
-    Session     s[static 1]
+    TabList     f[_1_],
+    Request     r[_1_],
+    UrlClient   url_client[_1_],
+    Session     s[_1_]
 ) {
     TabNode tn = (TabNode){0};
     try( tab_node_init_from_request(&tn, NULL, NULL, url_client, r, s));
@@ -36,7 +36,7 @@ Failure_Tab_Node_Cleanup:
 }
 
 
-Err tablist_info(Session* s, TabList f[static 1]) {
+Err tablist_info(Session* s, TabList f[_1_]) {
     ArlOf(size_t)* stack = &(ArlOf(size_t)){0};
 
     TabNode* current_node;

@@ -15,21 +15,21 @@ typedef struct {
 } JsEngine;
 
 /* getters */
-static inline JSRuntime* jse_runtime(JsEngine js[static 1]) { return js->rt; }
-static inline JSContext* jse_context(JsEngine js[static 1]) { return js->ctx; }
-static inline Str* jse_consolebuf(JsEngine js[static 1]) { return &js->consolebuf; }
+static inline JSRuntime* jse_runtime(JsEngine js[_1_]) { return js->rt; }
+static inline JSContext* jse_context(JsEngine js[_1_]) { return js->ctx; }
+static inline Str* jse_consolebuf(JsEngine js[_1_]) { return &js->consolebuf; }
 
-static inline bool jse_is_enabled(JsEngine js[static 1]) { return js->rt; }
+static inline bool jse_is_enabled(JsEngine js[_1_]) { return js->rt; }
 
-Err jse_eval(JsEngine js[static 1], Session* s, const char* script);
+Err jse_eval(JsEngine js[_1_], Session* s, const char* script);
 
-static inline JSRuntime* jse_rt(JsEngine js[static 1]) { return js->rt; }
-static inline JSContext* jse_ctx(JsEngine js[static 1]) { return js->ctx; }
+static inline JSRuntime* jse_rt(JsEngine js[_1_]) { return js->rt; }
+static inline JSContext* jse_ctx(JsEngine js[_1_]) { return js->ctx; }
 
 //TODO: pass htmldoc and evaluate scripts
 Err jse_init(HtmlDoc* d);
 
-void jse_clean(JsEngine js[static 1]);
+void jse_clean(JsEngine js[_1_]);
 
 #else /* quickjs disabled: */
 
@@ -42,19 +42,19 @@ typedef int JsEngine;
 
 /* getters */
 
-static inline bool jse_is_enabled(JsEngine js[static 1]) { (void)js; return 0; }
+static inline bool jse_is_enabled(JsEngine js[_1_]) { (void)js; return 0; }
 
-static inline Err jse_eval(JsEngine js[static 1], Session* s, const char* script) {
+static inline Err jse_eval(JsEngine js[_1_], Session* s, const char* script) {
     (void)js; (void)s; (void)script; return AHRE_QUICKJS_DISABLED_MSG;
 }
 
-static inline JSRuntime* jse_rt(JsEngine js[static 1]) { (void)js; return 0; }
-static inline JSContext* jse_ctx(JsEngine js[static 1]) { (void)js; return 0; }
+static inline JSRuntime* jse_rt(JsEngine js[_1_]) { (void)js; return 0; }
+static inline JSContext* jse_ctx(JsEngine js[_1_]) { (void)js; return 0; }
 
 //TODO: pass htmldoc and evaluate scripts
 static inline Err jse_init(HtmlDoc* d) { (void)d; return AHRE_QUICKJS_DISABLED_MSG; }
 
-static inline void jse_clean(JsEngine js[static 1]){ (void)js; }
+static inline void jse_clean(JsEngine js[_1_]){ (void)js; }
 
 #endif /* AHRE_QUICKJS_DISABLED */
 #endif /* __AHRE_JS_ENGINE_H__ */

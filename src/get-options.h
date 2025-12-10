@@ -14,17 +14,17 @@ typedef struct {
     const char* data;
 } CliParams;
 
-static inline bool* cparams_version(CliParams cparams[static 1]) { return &cparams->version; }
-static inline bool* cparams_help(CliParams cparams[static 1]) { return &cparams->help; }
-static inline SessionConf* cparams_sconf(CliParams cparams[static 1]) { return &cparams->sconf; }
+static inline bool* cparams_version(CliParams cparams[_1_]) { return &cparams->version; }
+static inline bool* cparams_help(CliParams cparams[_1_]) { return &cparams->help; }
+static inline SessionConf* cparams_sconf(CliParams cparams[_1_]) { return &cparams->sconf; }
 static inline ArlOf(cstr_view)*
-cparams_urls(CliParams cparams[static 1]) { return &cparams->urls; }
-static inline const char* cparams_data(CliParams cparams[static 1]) { return cparams->data; } 
+cparams_urls(CliParams cparams[_1_]) { return &cparams->urls; }
+static inline const char* cparams_data(CliParams cparams[_1_]) { return cparams->data; } 
 
-static inline void cparams_clean(CliParams cparams[static 1]) {
+static inline void cparams_clean(CliParams cparams[_1_]) {
     arlfn(cstr_view,clean)(cparams_urls(cparams));
 } 
 
-Err session_conf_from_options(int argc, char* argv[], CliParams cparams[static 1]);
+Err session_conf_from_options(int argc, char* argv[], CliParams cparams[_1_]);
 
 #endif

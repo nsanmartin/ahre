@@ -7,7 +7,7 @@
 #include "reditline.h"
 
 
-Err session_current_doc(Session session[static 1], HtmlDoc* out[static 1]) {
+Err session_current_doc(Session session[_1_], HtmlDoc* out[_1_]) {
     TabList* f = session_tablist(session);
     HtmlDoc* d;
     try( tablist_current_doc(f, &d));
@@ -16,14 +16,14 @@ Err session_current_doc(Session session[static 1], HtmlDoc* out[static 1]) {
 }
 
 
-Err session_current_buf(Session session[static 1], TextBuf* out[static 1]) {
+Err session_current_buf(Session session[_1_], TextBuf* out[_1_]) {
     HtmlDoc* d;
     try( session_current_doc(session, &d));
     *out = htmldoc_textbuf(d);
     return Ok;
 }
 
-Err session_current_src(Session session[static 1], TextBuf* out[static 1]) {
+Err session_current_src(Session session[_1_], TextBuf* out[_1_]) {
     HtmlDoc* d;
     try( session_current_doc(session, &d));
     *out = htmldoc_sourcebuf(d);
@@ -31,7 +31,7 @@ Err session_current_src(Session session[static 1], TextBuf* out[static 1]) {
 }
 
 
-Err session_init(Session s[static 1], SessionConf sconf[static 1]) {
+Err session_init(Session s[_1_], SessionConf sconf[_1_]) {
     *s = (Session) {
         .conf         = *sconf
     };
@@ -50,7 +50,7 @@ void session_destroy(Session* session) {
 /* * */
 
 static size_t
-_next_text_end_(TextBufMods mods[static 1], ModAt it[static 1], size_t off, size_t line_end) {
+_next_text_end_(TextBufMods mods[_1_], ModAt it[_1_], size_t off, size_t line_end) {
     return (it < arlfn(ModAt,end)(mods)
                && off <= it->offset
                && it->offset < line_end)
@@ -60,10 +60,10 @@ _next_text_end_(TextBufMods mods[static 1], ModAt it[static 1], size_t off, size
 
 
 Err write_range_mod(
-    Writer  writer[static 1],
+    Writer  writer[_1_],
     bool    monochrome,
-    TextBuf textbuf[static 1],
-    Range   range[static 1]
+    TextBuf textbuf[_1_],
+    Range   range[_1_]
 ) {
     try(validate_range_for_buffer(textbuf, range));
     StrView line;
@@ -106,14 +106,14 @@ Err write_range_mod(
 
 
 Err
-session_write_std_range_mod(Session s[static 1], TextBuf textbuf[static 1], Range range[static 1]) {
+session_write_std_range_mod(Session s[_1_], TextBuf textbuf[_1_], Range range[_1_]) {
     Writer w;
     session_std_writer_init(&w, s);
     return write_range_mod(&w, session_monochrome(s), textbuf, range);
 }
 
 
-Err session_write_fetch_history(Session s[static 1]) {
+Err session_write_fetch_history(Session s[_1_]) {
     int fd;
     FILE* fp;
     Str fetch_history_fname = (Str){0};
@@ -145,7 +145,7 @@ Clean:
 }
 
 
-Err session_write_input_history(Session s[static 1]) {
+Err session_write_input_history(Session s[_1_]) {
     Str history_fname = (Str){0};
     FILE* fp;
     try(get_input_history_filename(&history_fname));
@@ -170,7 +170,7 @@ Clean:
 }
 
 
-Err session_close(Session s[static 1]) {
+Err session_close(Session s[_1_]) {
     session_write_input_history(s);
     session_write_fetch_history(s);
     return Ok;

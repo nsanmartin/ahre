@@ -3,12 +3,12 @@
 
 
 Err tab_node_init_from_request(
-    TabNode     n[static 1],
+    TabNode     n[_1_],
     TabNode*    parent,
     Url*        url,
-    UrlClient   url_client[static 1],
-    Request     r[static 1],
-    Session     s[static 1]
+    UrlClient   url_client[_1_],
+    Request     r[_1_],
+    Session     s[_1_]
 ) {
     try(_tab_node_init_base_(n, parent));
     Err err = htmldoc_init_from_request(tab_node_doc(n), r, url, url_client, s);
@@ -25,10 +25,10 @@ Err tab_node_init_from_request(
 
 
 Err tab_node_tree_append_ahref(
-    TabNode   t[static 1],
+    TabNode   t[_1_],
     size_t    linknum,
-    UrlClient url_client[static 1],
-    Session   s[static 1]
+    UrlClient url_client[_1_],
+    Session   s[_1_]
 ) {
     TabNode* n;
     HtmlDoc* d;
@@ -58,10 +58,10 @@ Clean_Url_Str:
 
 
 Err tab_node_tree_append_submit(
-    TabNode t[static 1],
+    TabNode t[_1_],
     size_t ix,
-    UrlClient url_client[static 1],
-    Session s[static 1]
+    UrlClient url_client[_1_],
+    Session s[_1_]
 ) {
     TabNode* n;
     HtmlDoc* d;
@@ -104,14 +104,14 @@ void arl_of_tab_node_clean(ArlOf(TabNode)* f) {
 }
 
 
-void tab_node_cleanup(TabNode n[static 1]) {
+void tab_node_cleanup(TabNode n[_1_]) {
     htmldoc_cleanup(&n->doc);
     //arlfn(TabNode, clean)(n->childs);
     arl_of_tab_node_clean(n->childs);
     std_free(n->childs);
 }
 
-void _set_parent_to_all_(TabNode parent[static 1], ArlOf(TabNode) childs[static 1]) {
+void _set_parent_to_all_(TabNode parent[_1_], ArlOf(TabNode) childs[_1_]) {
     for (TabNode* it = arlfn(TabNode,begin)(childs); it != arlfn(TabNode,end)(childs); ++it) {
         it->parent = parent;
     }
@@ -123,7 +123,7 @@ void _fix_childs_parents_(ArlOf(TabNode)* list) {
     }
 }
 
-TabNode* arl_of_tab_node_append(ArlOf(TabNode)* list, TabNode tn[static 1]) {
+TabNode* arl_of_tab_node_append(ArlOf(TabNode)* list, TabNode tn[_1_]) {
     TabNode* res = NULL;
     TabNode* mem_location = list->items;
     res = arlfn(TabNode, append)(list, tn);
@@ -134,9 +134,9 @@ TabNode* arl_of_tab_node_append(ArlOf(TabNode)* list, TabNode tn[static 1]) {
 
 Err session_tab_node_print(
     Session* s,
-    TabNode n[static 1],
+    TabNode n[_1_],
     size_t ix,
-    ArlOf(size_t) stack[static 1],
+    ArlOf(size_t) stack[_1_],
     TabNode* current_node
 ) {
     if (!arlfn(size_t, append)(stack, &ix)) return "error: arl append failure";

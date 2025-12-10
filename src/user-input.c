@@ -31,14 +31,14 @@ bool _is_cmd_char_(char c) {
         ;
 }
 
-Err _ui_keystroke_ctrl_gg_(Session s[static 1]) {
+Err _ui_keystroke_ctrl_gg_(Session s[_1_]) {
     TextBuf* tb;
     try( session_current_buf(s, &tb));
     *textbuf_current_offset(tb) = 0;
     return Ok;
 }
 
-Err _ui_keystroke_ctrl_f_(Session s[static 1]) {
+Err _ui_keystroke_ctrl_f_(Session s[_1_]) {
     TextBuf* tb;
     try( session_current_buf(s, &tb));
     size_t line = textbuf_current_line(tb) + *session_nrows(s);
@@ -50,7 +50,7 @@ Err _ui_keystroke_ctrl_f_(Session s[static 1]) {
     return Ok;
 }
 
-Err _ui_keystroke_ctrl_b_(Session s[static 1]) {
+Err _ui_keystroke_ctrl_b_(Session s[_1_]) {
     TextBuf* tb;
     try( session_current_buf(s, &tb));
     size_t line = textbuf_current_line(tb);
@@ -62,7 +62,7 @@ Err _ui_keystroke_ctrl_b_(Session s[static 1]) {
 }
 
 
-Err _ui_vi_read_vi_mode_keys_(Session s[static 1], KeyCmd cmd[static 1]) {
+Err _ui_vi_read_vi_mode_keys_(Session s[_1_], KeyCmd cmd[_1_]) {
     while (!*cmd) {
         int c = fgetc(stdin);
         switch(c) {
@@ -88,7 +88,7 @@ Err _ui_vi_read_vi_mode_keys_(Session s[static 1], KeyCmd cmd[static 1]) {
     return Ok;
 }
 
-static inline Err _raw_reditline_(char first, ArlOf(const_cstr) history[static 1], char* out[static 1]) {
+static inline Err _raw_reditline_(char first, ArlOf(const_cstr) history[_1_], char* out[_1_]) {
     char buf[] = { first, '\0' };
     *out = reditline(NULL, buf, history);
     if (reditline_error(*out)) return *out;
@@ -97,7 +97,7 @@ static inline Err _raw_reditline_(char first, ArlOf(const_cstr) history[static 1
 }
 
 
-Err ui_vi_mode_read_input(Session* s, const char* prompt, char* out[static 1]) {
+Err ui_vi_mode_read_input(Session* s, const char* prompt, char* out[_1_]) {
     (void)prompt;
     
     Err err = Ok;

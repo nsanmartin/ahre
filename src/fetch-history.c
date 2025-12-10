@@ -1,9 +1,9 @@
 #include "fetch-history.h"
 
 Err fetch_history_entry_update_curl(
-    FetchHistoryEntry e[static 1],
+    FetchHistoryEntry e[_1_],
     CURL*             curl,
-    Writer            msg_writer[static 1]
+    Writer            msg_writer[_1_]
 ) {
     const char* effective_url;
     const char* local_ip;
@@ -39,7 +39,7 @@ Err fetch_history_entry_update_curl(
 }
 
 
-Err fetch_history_write_to_file(FetchHistoryEntry e[static 1], FILE* fp) {
+Err fetch_history_write_to_file(FetchHistoryEntry e[_1_], FILE* fp) {
     Str* dt = &(Str){0};
     Err err = str_append_timespec(dt, &e->ts);
     if (err) {

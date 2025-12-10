@@ -16,11 +16,7 @@
 
 
 
-static Err _open_many_urls_(
-    Session session[static 1],
-    ArlOf(cstr_view) urls[static 1],
-    const char* data
-) {
+static Err _open_many_urls_(Session session[_1_], ArlOf(cstr_view) urls[_1_], const char* data) {
     for (cstr_view* u = arlfn(cstr_view,begin)(urls)
         ; u != arlfn(cstr_view,end)(urls)
         ; ++u
@@ -36,7 +32,7 @@ static Err _open_many_urls_(
 }
 
 
-static int _loop_(Session s[static 1]) {
+static int _loop_(Session s[_1_]) {
     init_user_input_history();
     while (1) {
         Err err = session_show_output(s);

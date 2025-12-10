@@ -39,7 +39,7 @@ static inline const char* mem_to_dup_str(const char* data, size_t len) {
 }
 
 static inline bool
-mem_skip_space_inplace(const char* data[static 1], size_t len[static 1]) {
+mem_skip_space_inplace(const char* data[_1_], size_t len[_1_]) {
     for(; *len && isspace(**data); --(*len), ++(*data))
         ;
     return *len != 0;
@@ -56,7 +56,7 @@ static inline int memstr_cmp(const char* mem, size_t len, const char* cstr) {
     return strncmp(mem, cstr, cmplen);
 }
 
-static inline Err mem_to_cstr(char* mem[static 1], size_t len) {
+static inline Err mem_to_cstr(char* mem[_1_], size_t len) {
     *mem = std_realloc(*mem, len + 1);
     if (!*mem) {
         return err_fmt("realloc failure: %s", strerror(errno));
@@ -90,34 +90,34 @@ typedef struct {
 
 typedef StrView (*StrViewProvider)(void);
 
-static inline const char* strview_beg(const StrView s[static 1]) { return s->items; }
-static inline const char* strview_end(const StrView s[static 1]) { return s->items + s->len; }
-static inline size_t strview_len(const StrView s[static 1]) { return s->len; }
-static inline bool strview_is_empty(const StrView s[static 1]) { return !s->items || s->len == 0; }
+static inline const char* strview_beg(const StrView s[_1_]) { return s->items; }
+static inline const char* strview_end(const StrView s[_1_]) { return s->items + s->len; }
+static inline size_t strview_len(const StrView s[_1_]) { return s->len; }
+static inline bool strview_is_empty(const StrView s[_1_]) { return !s->items || s->len == 0; }
 inline static StrView strview_from_mem(const char* s, size_t len) {
     return (StrView){.items=s, .len=len};
 }
 
-inline static StrView strview_from_strview(StrView s[static 1]) {
+inline static StrView strview_from_strview(StrView s[_1_]) {
     return (StrView){.items=items__(s), .len=len__(s)};
 }
 
-inline static void strview_trim_space_left(StrView s[static 1]) {
+inline static void strview_trim_space_left(StrView s[_1_]) {
     while(s->len && isspace(*(items__(s)))) { ++s->items; --s->len; }
 }
 
-inline static void strview_trim_space_in_place(StrView s[static 1]) {
+inline static void strview_trim_space_in_place(StrView s[_1_]) {
     while(s->len && isspace(*(s->items))) { ++s->items; --s->len; }
     while(s->len > 1 && isspace(s->items[s->len-1])) { --s->len; }
 }
 
-inline static StrView strview_split_word(StrView s[static 1]) {
+inline static StrView strview_split_word(StrView s[_1_]) {
     StrView word = (StrView){.items=items__(s)};
     while(s->len && !isspace(*(items__(s)))) { ++word.len; ++s->items; --s->len; }
     return word;
 }
 
-inline static StrView cstr_split_word(const char* s[static 1]) {
+inline static StrView cstr_split_word(const char* s[_1_]) {
     StrView word = (StrView){.items=*s};
     while(**s && !isspace(**s)) { ++(*s); ++word.len; }
     while(**s && isspace(**s)) { ++(*s); }
@@ -149,11 +149,11 @@ inline static StrView strview_from_mem_trim(const char* s, size_t len) {
     ((!buffn(char,append)(StrPtr, Items, NItems) || !buffn(char,append)(StrPtr, "\n", 1))\
      ? "error: str_append_ln failure" : Ok)
 
-static inline Err str_append_str(Str s[static 1], Str t[static 1]) {
+static inline Err str_append_str(Str s[_1_], Str t[_1_]) {
     return str_append(s, items__(t), len__(t));
 }
 
-static inline bool str_startswith_mem(Str s[static 1], const char* mem, size_t len) {
+static inline bool str_startswith_mem(Str s[_1_], const char* mem, size_t len) {
     return len__(s) >= len && !strncmp(items__(s), mem, len);
 }
 
@@ -163,7 +163,7 @@ static inline size_t str_append_flip(
     const char* mem,
     size_t      size,
     size_t      nmemb,
-    Str         out[static 1]
+    Str         out[_1_]
 ) 
 {
     size_t len = size * nmemb;
@@ -173,14 +173,14 @@ static inline size_t str_append_flip(
     return 0;
 }
 
-static inline char* str_beg(Str s[static 1]) { return items__(s); }
-static inline char* str_end(Str s[static 1]) {
+static inline char* str_beg(Str s[_1_]) { return items__(s); }
+static inline char* str_end(Str s[_1_]) {
     return len__(s) ? items__(s) + len__(s) : items__(s);
 }
 static inline Err null_terminated_str_from_mem(
     const char* mem,
     size_t      len,
-    Str         out[static 1]
+    Str         out[_1_]
 )
 {
     str_reset(out); 
@@ -196,16 +196,16 @@ static inline Err null_terminated_str_from_mem(
 
 #define strview_from_lit__(LitStr) strview_from_mem(LitStr, sizeof(LitStr)-1)
 static inline StrView strview_from_str__(Str s) {return strview_from_mem(s.items, s.len); }
-static inline StrView strview_from_strptr__(Str s[static 1]) {return strview_from_mem(s->items, s->len); }
+static inline StrView strview_from_strptr__(Str s[_1_]) {return strview_from_mem(s->items, s->len); }
 #define strview_from_strptr__(S) strview_from_mem((S)->items, (S)->len)
 #define strview__(...) GET_MACRO__(NULL,__VA_ARGS__,strview_from_mem,strview_from_lit__,skip__)(__VA_ARGS__)
 
-const char* parse_l(const char* tk, long lptr[static 1]);
+const char* parse_l(const char* tk, long lptr[_1_]);
 
-StrView str_split_line(StrView text[static 1]);
+StrView str_split_line(StrView text[_1_]);
 
 static inline Err
-bufofchar_append_ui_as_str(BufOf(char) buf[static 1], uintmax_t ui) {
+bufofchar_append_ui_as_str(BufOf(char) buf[_1_], uintmax_t ui) {
     char numbuf[3 * sizeof ui] = {0};
     size_t len = 0;
     if ((len = snprintf(numbuf, (3 * sizeof ui), "%lu", ui)) > (3 * sizeof ui)) {
@@ -225,9 +225,9 @@ Err _convert_to_utf8_(
     const char* inbuf,
     const size_t inlen,
     const char* charset,
-    const char* outbuf[static 1],
-    size_t outlen[static 1]
+    const char* outbuf[_1_],
+    size_t outlen[_1_]
 );
-Err str_append_timespec(Str out[static 1], struct timespec ts[static 1]);
-Err str_append_datetime_now(Str [static 1]);
+Err str_append_timespec(Str out[_1_], struct timespec ts[_1_]);
+Err str_append_datetime_now(Str [_1_]);
 #endif

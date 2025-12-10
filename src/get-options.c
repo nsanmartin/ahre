@@ -1,13 +1,13 @@
 #include "get-options.h"
 #include "user-out.h"
 
-static Err _read_data_opt_(CliParams cparams[static 1], const char* optopt) {
+static Err _read_data_opt_(CliParams cparams[_1_], const char* optopt) {
     if (!optopt || !*optopt) return "invalid data option";
     cparams->data = optopt;
     return Ok;
 }
 
-static Err _read_input_opt_(SessionConf sconf[static 1], const char* optopt) {
+static Err _read_input_opt_(SessionConf sconf[_1_], const char* optopt) {
     if (!optopt || !*optopt) return "invalid input option";
     if (!strcmp("fgets", optopt)) sconf->ui = ui_fgets();
     else if (!strcmp("isocline", optopt)) sconf->ui = ui_isocline();
@@ -16,7 +16,7 @@ static Err _read_input_opt_(SessionConf sconf[static 1], const char* optopt) {
     return Ok;
 }
 
-Err session_conf_from_options(int argc, char* argv[], CliParams cparams[static 1]) {
+Err session_conf_from_options(int argc, char* argv[], CliParams cparams[_1_]) {
 
     SessionConf* sconf = cparams_sconf(cparams);
     size_t nrows, ncols;

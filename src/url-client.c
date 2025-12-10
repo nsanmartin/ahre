@@ -18,7 +18,7 @@
 #define _AHRE_USER_AGENT_ "ahre/" AHRE_VERSION
 #define USER_AGENT_USED_ _AHRE_USER_AGENT_
 
-Err url_client_setopt_long(UrlClient url_client[static 1], CURLoption opt, long value) {
+Err url_client_setopt_long(UrlClient url_client[_1_], CURLoption opt, long value) {
     CURLcode code = curl_easy_setopt(url_client->curl, opt, value);
     if (code != CURLE_OK)
         return err_fmt("error: could not set long CURLOPT: %s", curl_easy_strerror(code));
@@ -27,7 +27,7 @@ Err url_client_setopt_long(UrlClient url_client[static 1], CURLoption opt, long 
 
 
 
-Err url_client_setopt_cstr(UrlClient url_client[static 1], CURLoption opt, char* value) {
+Err url_client_setopt_cstr(UrlClient url_client[_1_], CURLoption opt, char* value) {
     CURLcode code = curl_easy_setopt(url_client->curl, opt, value);
     if (code != CURLE_OK)
         return err_fmt("error: could not set cstr CURLOPT: %s", curl_easy_strerror(code));
@@ -35,7 +35,7 @@ Err url_client_setopt_cstr(UrlClient url_client[static 1], CURLoption opt, char*
 }
 
 
-Err url_client_set_cookies(UrlClient url_client[static 1]) {
+Err url_client_set_cookies(UrlClient url_client[_1_]) {
     Err e = Ok;
     Str* buf = &(Str){0};
     char* cookiefile = "";
@@ -49,7 +49,7 @@ cleanup:
     return e;
 }
 
-Err url_client_set_basic_options(UrlClient url_client[static 1]) {
+Err url_client_set_basic_options(UrlClient url_client[_1_]) {
     if ( 0
         || curl_easy_setopt(url_client->curl, CURLOPT_NOPROGRESS, 1L)
         || curl_easy_setopt(url_client->curl, CURLOPT_FOLLOWLOCATION, 1)
@@ -62,7 +62,7 @@ Err url_client_set_basic_options(UrlClient url_client[static 1]) {
 }
 
 
-Err url_client_reset(UrlClient url_client[static 1]) {
+Err url_client_reset(UrlClient url_client[_1_]) {
  
     curl_easy_reset(url_client->curl);
     if (curl_easy_setopt(url_client->curl, CURLOPT_ERRORBUFFER, url_client->errbuf))
@@ -71,7 +71,7 @@ Err url_client_reset(UrlClient url_client[static 1]) {
 }
 
 
-Err url_client_init(UrlClient url_client[static 1]) {
+Err url_client_init(UrlClient url_client[_1_]) {
     Err e = Ok;
 
     *url_client = (UrlClient){0};
@@ -97,7 +97,7 @@ Failure_Curl_Easy_Cleanup:
 }
 
 
-Err url_client_print_cookies(Session* s, UrlClient uc[static 1]) {
+Err url_client_print_cookies(Session* s, UrlClient uc[_1_]) {
     if (!s) return "error: session is null";
     struct curl_slist* cookies = NULL;
     CURLcode curl_code = curl_easy_getinfo(uc->curl, CURLINFO_COOKIELIST, &cookies);
@@ -114,7 +114,7 @@ Err url_client_print_cookies(Session* s, UrlClient uc[static 1]) {
 }
 
 
-const char* _parse_opt(const char* line, CURLoption opt[static 1]) {
+const char* _parse_opt(const char* line, CURLoption opt[_1_]) {
 
     const char* rest;
     if ((rest = csubstr_match(line, "noprogress", 1))) { *opt=CURLOPT_NOPROGRESS; return rest; }
@@ -148,7 +148,7 @@ static Err _curl_setopt_cstr_(CURL* handle, CURLoption opt, const char* rest) {
 }
 
 
-Err cmd_curl_set(CmdParams p[static 1]) {
+Err cmd_curl_set(CmdParams p[_1_]) {
     CURLoption opt;
     const char* rest = _parse_opt(p->ln, &opt);
     if (!rest) return "invalid curl opt";
@@ -165,7 +165,7 @@ Err cmd_curl_set(CmdParams p[static 1]) {
     return Ok;
 }
 
-Err url_client_curlu_to_file(UrlClient url_client[static 1], CURLU* curlu , const char* fname) {
+Err url_client_curlu_to_file(UrlClient url_client[_1_], CURLU* curlu , const char* fname) {
     try( url_client_reset(url_client));
     FILE* fp;
     try(fopen_or_append_fopen(fname, curlu, &fp));

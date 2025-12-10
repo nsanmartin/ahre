@@ -5,7 +5,7 @@
 #include "url.h"
 
 
-Err curl_url_to_filename_append(CURLU* cu, Str out[static 1]) {
+Err curl_url_to_filename_append(CURLU* cu, Str out[_1_]) {
     char* url = NULL;
     char* schema = NULL;
     try( w_curl_url_get_malloc(cu, CURLUPART_URL, &url));
@@ -24,7 +24,7 @@ Err curl_url_to_filename_append(CURLU* cu, Str out[static 1]) {
     return err;
 }
 
-Err _append_fopen(const char* dirname, CURLU* cu, FILE* fp[static 1]) {
+Err _append_fopen(const char* dirname, CURLU* cu, FILE* fp[_1_]) {
 /*
  * Append cu modified to dirname and open it in write mode.
  */
@@ -44,7 +44,7 @@ Err _append_fopen(const char* dirname, CURLU* cu, FILE* fp[static 1]) {
     return err;
 }
 
-Err fopen_or_append_fopen(const char* fname, CURLU* cu, FILE* fp[static 1]) {
+Err fopen_or_append_fopen(const char* fname, CURLU* cu, FILE* fp[_1_]) {
 /*
  * If fname is the path of an existing dir, then modify cu to modcu and open fname/modcu.
  * Otherwise, open fname.
@@ -59,10 +59,10 @@ Err fopen_or_append_fopen(const char* fname, CURLU* cu, FILE* fp[static 1]) {
 }
 
 static Err _url_fill_postfields_(
-    Request r[static 1],
+    Request r[_1_],
     CURL* curl,
-    const char* postfields[static 1],
-    size_t len[static 1]
+    const char* postfields[_1_],
+    size_t len[_1_]
 ) {
     ArlOf(Str)* ks = request_query_keys(r);
     ArlOf(Str)* vs = request_query_values(r);
@@ -110,7 +110,7 @@ Failure_Free_Escaped:
 }
 
 static Err _url_from_post_request_(
-    Url u[static 1], Request r[static 1], UrlClient uc[static 1], Url* other
+    Url u[_1_], Request r[_1_], UrlClient uc[_1_], Url* other
 ) {
     try(url_init(u, other));
     CURL* curl = url_client_curl(uc);
@@ -136,7 +136,7 @@ static Err _url_from_post_request_(
     return Ok;
 }
 
-Err _prepend_file_schema_if_file_exists_(Str url[static 1], Str out[static 1]) {
+Err _prepend_file_schema_if_file_exists_(Str url[_1_], Str out[_1_]) {
     if (!len__(url)) return Ok;
     try(str_append_lit__(out, FILE_SCHEMA));
 
@@ -155,7 +155,7 @@ Err _prepend_file_schema_if_file_exists_(Str url[static 1], Str out[static 1]) {
     return Ok;
 }
 
-Err url_from_get_request(Url u[static 1], Request r[static 1], Url* other) {
+Err url_from_get_request(Url u[_1_], Request r[_1_], Url* other) {
     try(url_init(u, other));
     CURLU* cu = url_cu(u);
     Err err = Ok;
@@ -210,7 +210,7 @@ Failure_Clean_File_Url:
 }
 
 
-Err url_from_request(Url u[static 1], Request r[static 1], UrlClient uc[static 1], Url* other) {
+Err url_from_request(Url u[_1_], Request r[_1_], UrlClient uc[_1_], Url* other) {
     switch (r->method) {
         case http_post: return _url_from_post_request_(u, r, uc, other);
         case http_get: return url_from_get_request(u, r, other);
@@ -219,7 +219,7 @@ Err url_from_request(Url u[static 1], Request r[static 1], UrlClient uc[static 1
 }
 
 
-Err request_from_userln(Request r[static 1], const char* userln, HttpMethod method) {
+Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method) {
     const char* url    = cstr_trim_space((char*)userln);
     char* params = (char*)cstr_next_space(url);
     if (params <= url) return "url has no length";

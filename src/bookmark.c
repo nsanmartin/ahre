@@ -4,7 +4,7 @@
 
 /* internal linkage */
 /* external linkage */
-Err bookmark_sections_body(HtmlDoc bookmark[static 1], lxb_dom_node_t* out[static 1]) {
+Err bookmark_sections_body(HtmlDoc bookmark[_1_], lxb_dom_node_t* out[_1_]) {
     lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(bookmark);
     lxb_dom_node_t* node = lxb_dom_interface_node(lxbdoc);
     if (!node) return "error: no document";
@@ -45,7 +45,7 @@ Err draw_bookmark_rec(lxb_dom_node_t* node) {
     return Ok;
 }
 
-Err cmd_bookmarks(CmdParams p[static 1]) {
+Err cmd_bookmarks(CmdParams p[_1_]) {
     Session* session = p->s;
     const char* url = p->ln;
     HtmlDoc* htmldoc;
@@ -79,7 +79,7 @@ Err cmd_bookmarks(CmdParams p[static 1]) {
     return err;
 }
 
-Err bookmark_add_to_section(Session s[static 1], const char* line, UrlClient url_client[static 1]) {
+Err bookmark_add_to_section(Session s[_1_], const char* line, UrlClient url_client[_1_]) {
     HtmlDoc* d;
     try( session_current_doc(s, &d));
 

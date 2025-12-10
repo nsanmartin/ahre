@@ -16,21 +16,21 @@ typedef struct {
 
 /* getter */
 
-static inline ArlOf(TabNode)* _tablist_tabs_(TabList f[static 1]) {
+static inline ArlOf(TabNode)* _tablist_tabs_(TabList f[_1_]) {
     return &f->tabs;
 }
 
-static inline size_t _tablist_tab_count_(TabList f[static 1]) {
+static inline size_t _tablist_tab_count_(TabList f[_1_]) {
     return _tablist_tabs_(f)->len;
 }
 
-static inline bool tablist_is_empty(TabList f[static 1]) {
+static inline bool tablist_is_empty(TabList f[_1_]) {
     return _tablist_tab_count_(f) == 0;
 }
 
-static inline size_t* _tablist_current_tab_ix_(TabList f[static 1]) { return &f->current_tab; }
+static inline size_t* _tablist_current_tab_ix_(TabList f[_1_]) { return &f->current_tab; }
 static inline Err
-tablist_current_tab(TabList f[static 1], TabNode* out[static 1]) {
+tablist_current_tab(TabList f[_1_], TabNode* out[_1_]) {
     TabNode* current_tab = arlfn(TabNode, at)(&f->tabs, f->current_tab);
     if (!current_tab) return "no tabs in session";
     if (tablist_is_empty(f)) return "error: current tab has no nodes";
@@ -39,7 +39,7 @@ tablist_current_tab(TabList f[static 1], TabNode* out[static 1]) {
 }
 
 static inline Err
-tablist_current_node(TabList f[static 1], TabNode* out[static 1]) {
+tablist_current_node(TabList f[_1_], TabNode* out[_1_]) {
     TabNode* root;
     try( tablist_current_tab(f, &root));
     if (!root) { 
@@ -50,7 +50,7 @@ tablist_current_node(TabList f[static 1], TabNode* out[static 1]) {
     return tab_node_current_node(root, out);
 }
 
-static inline Err tablist_current_doc(TabList f[static 1], HtmlDoc* out[static 1]) {
+static inline Err tablist_current_doc(TabList f[_1_], HtmlDoc* out[_1_]) {
     TabNode* t;
     try( tablist_current_tab(f, &t));
     if (!t) { 
@@ -64,7 +64,7 @@ static inline Err tablist_current_doc(TabList f[static 1], HtmlDoc* out[static 1
 }
 
 static inline Err
-tablist_append_move_tree(TabList f[static 1], TabNode t[static 1]) {
+tablist_append_move_tree(TabList f[_1_], TabNode t[_1_]) {
     if (!arl_of_tab_node_append(&f->tabs, t))  return "error: arl append failure";
     return Ok;
 }
@@ -72,13 +72,13 @@ tablist_append_move_tree(TabList f[static 1], TabNode t[static 1]) {
 
 
 /* dtor */
-static inline void tablist_cleanup(TabList f[static 1]) {
+static inline void tablist_cleanup(TabList f[_1_]) {
     arl_of_tab_node_clean(&f->tabs);
 }
 
-Err tablist_info(Session* s,TabList f[static 1]);
+Err tablist_info(Session* s,TabList f[_1_]);
 
-static inline Err tablist_back(TabList tl[static 1]) {
+static inline Err tablist_back(TabList tl[_1_]) {
     TabNode* cn;
     try( tablist_current_node(tl, &cn));
     if (!cn) return "can't go back with no current node";
@@ -87,7 +87,7 @@ static inline Err tablist_back(TabList tl[static 1]) {
     return Ok;
 }
 
-static inline Err tablist_move_to_node(TabList tl[static 1], const char* line) {
+static inline Err tablist_move_to_node(TabList tl[_1_], const char* line) {
     size_t ix;
     try( parse_size_t_or_throw(&line, &ix, 10));
     TabNode* tn = arlfn(TabNode,at)(_tablist_tabs_(tl), ix);

@@ -16,25 +16,25 @@ typedef struct TabNode {
     size_t current_ix; /* if ix == childs.len => current == doc */
 } TabNode;
 
-void tab_node_cleanup(TabNode n[static 1]);
+void tab_node_cleanup(TabNode n[_1_]);
 
 #define T TabNode
 // #define TClean tab_node_cleanup //TODO: uncomment
 #include <arl.h>
 
-TabNode* arl_of_tab_node_append(ArlOf(TabNode)* list, TabNode tn[static 1]);
+TabNode* arl_of_tab_node_append(ArlOf(TabNode)* list, TabNode tn[_1_]);
 
 /* Node */
 /* getters */
-static inline ArlOf(TabNode)* tab_node_childs(TabNode dn[static 1]) { return dn->childs; }
-static inline size_t tab_node_child_count(TabNode dn[static 1]) { return dn->childs->len; }
-static inline HtmlDoc* tab_node_doc(TabNode n[static 1]) { return &n->doc; }
+static inline ArlOf(TabNode)* tab_node_childs(TabNode dn[_1_]) { return dn->childs; }
+static inline size_t tab_node_child_count(TabNode dn[_1_]) { return dn->childs->len; }
+static inline HtmlDoc* tab_node_doc(TabNode n[_1_]) { return &n->doc; }
 static inline bool
-tab_node_have_current_child(TabNode n[static 1]) {return n->current_ix != tab_node_child_count(n);}
+tab_node_have_current_child(TabNode n[_1_]) {return n->current_ix != tab_node_child_count(n);}
 static inline TabNode*
-tab_node_current_child(TabNode n[static 1]) {return arlfn(TabNode, at)(n->childs, n->current_ix);}
+tab_node_current_child(TabNode n[_1_]) {return arlfn(TabNode, at)(n->childs, n->current_ix);}
 
-static inline bool tab_node_is_current_in_tab(TabNode n[static 1]) {
+static inline bool tab_node_is_current_in_tab(TabNode n[_1_]) {
     if (tab_node_have_current_child(n)) return false;
     if (!n->parent) return true;
     while (n && n->parent && n == tab_node_current_child(n->parent)) {
@@ -44,7 +44,7 @@ static inline bool tab_node_is_current_in_tab(TabNode n[static 1]) {
 }
 
 
-static inline Err tab_node_current_node(TabNode n[static 1], TabNode* out[static 1]) {
+static inline Err tab_node_current_node(TabNode n[_1_], TabNode* out[_1_]) {
     TabNode* prev = NULL;
     while (n) {
         prev = n;
@@ -55,7 +55,7 @@ static inline Err tab_node_current_node(TabNode n[static 1], TabNode* out[static
     return Ok;
 }
 
-static inline Err tab_node_current_doc(TabNode n[static 1], HtmlDoc* out[static 1] ) {
+static inline Err tab_node_current_doc(TabNode n[_1_], HtmlDoc* out[_1_] ) {
     TabNode* cn;
     try( tab_node_current_node(n, &cn));
     if (!cn) return "error: current node in NULL";
@@ -64,7 +64,7 @@ static inline Err tab_node_current_doc(TabNode n[static 1], HtmlDoc* out[static 
 }
 
 static inline Err
-tab_node_append_move_child(TabNode n[static 1], TabNode newnode[static 1]) {
+tab_node_append_move_child(TabNode n[_1_], TabNode newnode[_1_]) {
     if (!arl_of_tab_node_append(tab_node_childs(n), newnode))
         return "error: mem failure arl";
     n->current_ix = tab_node_child_count(n);
@@ -75,7 +75,7 @@ tab_node_append_move_child(TabNode n[static 1], TabNode newnode[static 1]) {
 
 /* ctor */
 static inline Err
-_tab_node_init_base_(TabNode n[static 1], TabNode* parent) {
+_tab_node_init_base_(TabNode n[_1_], TabNode* parent) {
     *n = (TabNode){0};
     n->childs = std_malloc(sizeof *n->childs);
     if (!n->childs) return "error: tab_node_init_from_cstr mem failure";
@@ -89,15 +89,15 @@ _tab_node_init_base_(TabNode n[static 1], TabNode* parent) {
 
 Err session_tab_node_print(
     Session* s,
-    TabNode n[static 1],
+    TabNode n[_1_],
     size_t ix,
-    ArlOf(size_t) stack[static 1],
+    ArlOf(size_t) stack[_1_],
     TabNode* current_node
 );
 
 
 static inline Err
-tab_node_get_child_index_of(TabNode n[static 1], TabNode child[static 1], size_t out[static 1]) {
+tab_node_get_child_index_of(TabNode n[_1_], TabNode child[_1_], size_t out[_1_]) {
     TabNode* beg = arlfn(TabNode, begin)(tab_node_childs(n));
     TabNode* end = arlfn(TabNode, end)(tab_node_childs(n));
     if (child < beg || end <= child) return "error: pointer not in range (tabnode not a child of)";
@@ -105,7 +105,7 @@ tab_node_get_child_index_of(TabNode n[static 1], TabNode child[static 1], size_t
     return Ok;
 }
 
-static inline Err tab_node_set_as_current(TabNode n[static 1]) {
+static inline Err tab_node_set_as_current(TabNode n[_1_]) {
     n->current_ix = tab_node_child_count(n);
     TabNode* it = n->parent;
     while(it) {
@@ -119,7 +119,7 @@ static inline Err tab_node_set_as_current(TabNode n[static 1]) {
 }
 
 static inline Err
-tab_node_find_node(TabNode tn[static 1], const char* line, TabNode* out[static 1]) {
+tab_node_find_node(TabNode tn[_1_], const char* line, TabNode* out[_1_]) {
     line = cstr_skip_space(line);
     if (!*line) {
         *out = tn;

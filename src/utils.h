@@ -12,6 +12,7 @@
 #include "mem.h"
 #include "error.h"
 
+#define _1_ 1
 #define UINT_TO_STR_BUFSZ 64
 #define INT_TO_STR_BUFSZ    64
 
@@ -79,11 +80,11 @@ static inline int buf_append_hexp(void* p, BufOf(char)*buf) {
 }
 
 
-Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[static 1]);
+Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[_1_]);
 
 
 static inline  Err
-bufofchar_append_ui_base36_as_str(BufOf(char) buf[static 1], uintmax_t ui) {
+bufofchar_append_ui_base36_as_str(BufOf(char) buf[_1_], uintmax_t ui) {
     char numbf[3 * sizeof ui] = {0};
     size_t len = 0;
     try( uint_to_base36_str(numbf, 3 * sizeof ui, ui, &len));
@@ -93,7 +94,7 @@ bufofchar_append_ui_base36_as_str(BufOf(char) buf[static 1], uintmax_t ui) {
 
 
 static inline  Err
-unsigned_to_str(uintmax_t ui, char* buf, size_t size , size_t len[static 1]) {
+unsigned_to_str(uintmax_t ui, char* buf, size_t size , size_t len[_1_]) {
     if ((*len = snprintf(buf, size, "%lu", ui)) > size) {
         return "error: number too large for string buffer";
     }
@@ -101,7 +102,7 @@ unsigned_to_str(uintmax_t ui, char* buf, size_t size , size_t len[static 1]) {
 }
 
 static inline  Err
-int_to_str(intmax_t i, char* buf, size_t size , size_t len[static 1]) {
+int_to_str(intmax_t i, char* buf, size_t size , size_t len[_1_]) {
     if ((*len = snprintf(buf, size, "%ld", i)) > size) {
         return "error: number too large for string buffer";
     }
@@ -110,7 +111,7 @@ int_to_str(intmax_t i, char* buf, size_t size , size_t len[static 1]) {
 
 
 static inline  Err
-append_unsigned_to_str(uintmax_t ui, char* str, size_t size, size_t len[static 1]) {
+append_unsigned_to_str(uintmax_t ui, char* str, size_t size, size_t len[_1_]) {
     size_t numlen;
     if ((numlen = snprintf(str + *len, size, "%lu", ui)) > (size - *len)) {
         return "error: number too large for string buffer";
@@ -130,12 +131,12 @@ void str_reverse(char* s, size_t n) {
 }
 
 
-Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[static 1]);
+Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[_1_]);
 const char* parse_ull(const char* tk, uintmax_t* ullp);
-Err parse_ull_err(const char* tk, uintmax_t ullp[static 1], const char* endptr[static 1]);
-Err parse_ll_err(const char* tk, intmax_t llp[static 1], const char* endptr[static 1]);
+Err parse_ull_err(const char* tk, uintmax_t ullp[_1_], const char* endptr[_1_]);
+Err parse_ll_err(const char* tk, intmax_t llp[_1_], const char* endptr[_1_]);
 
-static inline Err bufofchar_append(BufOf(char) buf[static 1], char* s, size_t len) {
+static inline Err bufofchar_append(BufOf(char) buf[_1_], char* s, size_t len) {
     if (buffn(char, append)(buf, s, len)) return Ok;
     buffn(char,clean)(buf);
     return "error: BufOf(char) failed to append.";
@@ -162,7 +163,7 @@ Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) ;
 Err _file_write_int_sep_(intmax_t i, const char* sep, size_t seplen, FILE* fp, const char* caller);
 
 Err _file_write_or_close_(const char* mem, size_t len, FILE* fp, const char* caller);
-Err file_open(const char* filename, const char* mode, FILE* fpp[static 1]);
+Err file_open(const char* filename, const char* mode, FILE* fpp[_1_]);
 Err _file_write_(const char* mem, size_t len, FILE* fp, const char* caller);
 Err file_close(FILE* fp);
 Err _file_write_sep_(

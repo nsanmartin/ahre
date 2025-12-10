@@ -28,9 +28,9 @@ typedef struct {
 
 typedef struct { RangeAddr beg, end; } RangeParse;
 
-inline static void range_end_set_beg(Range r[static 1]) { r->end = r->beg; }
+inline static void range_end_set_beg(Range r[_1_]) { r->end = r->beg; }
 
-inline static bool range_parse_is_none(RangeParse rp[static 1]) {
+inline static bool range_parse_is_none(RangeParse rp[_1_]) {
     return rp->beg.tag == range_addr_none_tag && rp->end.tag == range_addr_none_tag;
 }
 #endif

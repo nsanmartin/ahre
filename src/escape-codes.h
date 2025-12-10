@@ -44,7 +44,7 @@ typedef enum {
 
 #define _set_ptr_(Ptr, Code) { *Ptr = (StrView){.items=Code, .len=sizeof(Code)-1}; break; }
 
-static inline Err esc_code_to_str(EscCode code, StrView out[static 1]) {
+static inline Err esc_code_to_str(EscCode code, StrView out[_1_]) {
     switch(code) {
         case esc_code_blue: _set_ptr_(out, EscCodeBlue);
         case esc_code_green: _set_ptr_(out, EscCodeGreen);

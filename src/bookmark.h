@@ -8,7 +8,7 @@
 #include "error.h"
 #include "fetch-history.h"
 
-Err bookmark_sections_body(HtmlDoc bookmark[static 1], lxb_dom_node_t* out[static 1]);
+Err bookmark_sections_body(HtmlDoc bookmark[_1_], lxb_dom_node_t* out[_1_]);
 
 static inline Err bookmark_sections(lxb_dom_node_t* body, ArlOf(BufOf(char))* out) {
     for (lxb_dom_node_t* it = body->first_child; it != body->last_child; it = it->next) {
@@ -56,7 +56,7 @@ static inline Err bookmark_section_insert(
 
 
 static inline Err
-bookmark_section_get(lxb_dom_node_t* body, const char* q, lxb_dom_node_t* out[static 1]) {
+bookmark_section_get(lxb_dom_node_t* body, const char* q, lxb_dom_node_t* out[_1_]) {
     lxb_dom_node_t* res = NULL;
     for (lxb_dom_node_t* it = body->first_child; it != body->last_child; it = it->next) {
         if (it->local_name == LXB_TAG_H2) {
@@ -80,7 +80,7 @@ bookmark_section_get(lxb_dom_node_t* body, const char* q, lxb_dom_node_t* out[st
 }
 
 static inline Err
-bookmark_section_ul_get(lxb_dom_node_t* body, const char* q, lxb_dom_node_t* out[static 1]) {
+bookmark_section_ul_get(lxb_dom_node_t* body, const char* q, lxb_dom_node_t* out[_1_]) {
     *out = NULL;
     lxb_dom_node_t* section;
     try( bookmark_section_get(body, q, &section));
@@ -96,7 +96,7 @@ bookmark_section_ul_get(lxb_dom_node_t* body, const char* q, lxb_dom_node_t* out
 }
 
 static inline Err bookmark_mk_anchor (
-    lxb_dom_document_t *domdoc, char* href, BufOf(char)* text, lxb_dom_element_t* out[static 1]
+    lxb_dom_document_t *domdoc, char* href, BufOf(char)* text, lxb_dom_element_t* out[_1_]
  ) {
     *out = lxb_dom_document_create_element(domdoc, (const lxb_char_t*)"a", 1, NULL);
     if (!*out) return "error: lxb elem create failure";
@@ -119,7 +119,7 @@ bookmark_mk_entry(
     lxb_html_document_t *document,
     char* href,
     BufOf(char)* text,
-    lxb_dom_element_t* out[static 1]
+    lxb_dom_element_t* out[_1_]
 ) {
     lxb_dom_document_t *domdoc = &document->dom_document;
     *out = lxb_dom_document_create_element(domdoc, (const lxb_char_t*)"li", 2, NULL);
@@ -140,10 +140,10 @@ bookmark_mk_entry(
 #define _htmldoc_fetch_bookmark_ htmldoc_fetch /* bookmark does not have js so it's simpler */
 static inline Err
 _get_bookmarks_doc_(
-    UrlClient url_client[static 1],
+    UrlClient url_client[_1_],
     Str*      bm_file,
-    Writer    msg_writer[static 1],
-    HtmlDoc   out[static 1]
+    Writer    msg_writer[_1_],
+    HtmlDoc   out[_1_]
 ) {
     try( get_bookmark_filename_if_it_exists(bm_file));
     Str* bm_url = &(Str){0};
@@ -160,9 +160,9 @@ Clean_Bm_Url:
     return err;
 }
 
-static inline Err _bm_to_source_rec_(lxb_dom_node_t* node, Str out[static 1]) ;
+static inline Err _bm_to_source_rec_(lxb_dom_node_t* node, Str out[_1_]) ;
 
-static inline Err _bm_to_source_rec_childs_(lxb_dom_node_t* node, Str out[static 1]) {
+static inline Err _bm_to_source_rec_childs_(lxb_dom_node_t* node, Str out[_1_]) {
     for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
         try( _bm_to_source_rec_(it, out));
         if (it == node->last_child) break;
@@ -171,7 +171,7 @@ static inline Err _bm_to_source_rec_childs_(lxb_dom_node_t* node, Str out[static
 }
 
 
-static inline Err _bm_to_source_rec_childs_no_text_(lxb_dom_node_t* node, Str out[static 1]) {
+static inline Err _bm_to_source_rec_childs_no_text_(lxb_dom_node_t* node, Str out[_1_]) {
     for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
         if (it->type == LXB_DOM_NODE_TYPE_TEXT) continue; 
         try( _bm_to_source_rec_(it, out));
@@ -181,7 +181,7 @@ static inline Err _bm_to_source_rec_childs_no_text_(lxb_dom_node_t* node, Str ou
 }
 
 
-static inline Err _bm_to_source_rec_tag_a_(lxb_dom_node_t* node, Str out[static 1]) {
+static inline Err _bm_to_source_rec_tag_a_(lxb_dom_node_t* node, Str out[_1_]) {
     try( str_append(out, "<a", 2));
     lxb_dom_attr_t* attr;
     attr = lxb_dom_element_first_attribute(lxb_dom_interface_element(node));
@@ -206,7 +206,7 @@ static inline Err _bm_to_source_rec_tag_a_(lxb_dom_node_t* node, Str out[static 
     return Ok;
 }
 
-static inline Err _bm_to_source_rec_tag_ul_(lxb_dom_node_t* node, Str out[static 1]) {
+static inline Err _bm_to_source_rec_tag_ul_(lxb_dom_node_t* node, Str out[_1_]) {
     try( str_append(out, "<ul>\n", 5));
     try( _bm_to_source_rec_childs_no_text_(node, out));
     char* end = "<!--End of section (do not delete this comment)-->\n</ul>\n";
@@ -214,28 +214,28 @@ static inline Err _bm_to_source_rec_tag_ul_(lxb_dom_node_t* node, Str out[static
     return Ok;
 }
 
-static inline Err _bm_to_source_rec_tag_li_(lxb_dom_node_t* node, Str out[static 1]) {
+static inline Err _bm_to_source_rec_tag_li_(lxb_dom_node_t* node, Str out[_1_]) {
     try( str_append(out, "<li>", 4));
     try( _bm_to_source_rec_childs_no_text_(node, out));
     try( str_append(out, "\n", 1));
     return Ok;
 }
 
-static inline Err _bm_to_source_rec_tag_h1_(lxb_dom_node_t* node, Str out[static 1]) {
+static inline Err _bm_to_source_rec_tag_h1_(lxb_dom_node_t* node, Str out[_1_]) {
     try( str_append(out, "<h1>", 4));
     try( _bm_to_source_rec_childs_(node, out));
     try( str_append(out, "</h1>\n", 6));
     return Ok;
 }
 
-static inline Err _bm_to_source_rec_tag_h2_(lxb_dom_node_t* node, Str out[static 1]) {
+static inline Err _bm_to_source_rec_tag_h2_(lxb_dom_node_t* node, Str out[_1_]) {
     try( str_append(out, "<h2>", 4));
     try( _bm_to_source_rec_childs_(node, out));
     try( str_append(out, "</h2>\n", 6));
     return Ok;
 }
 
-static inline Err _bm_to_source_rec_tag_(lxb_dom_node_t* node, Str out[static 1]) {
+static inline Err _bm_to_source_rec_tag_(lxb_dom_node_t* node, Str out[_1_]) {
     switch(node->local_name) {
         case LXB_TAG_A: return _bm_to_source_rec_tag_a_(node, out);
         case LXB_TAG_H1: return _bm_to_source_rec_tag_h1_(node, out);
@@ -247,14 +247,14 @@ static inline Err _bm_to_source_rec_tag_(lxb_dom_node_t* node, Str out[static 1]
     return Ok;
 }
 
-static inline Err _bm_to_source_append_text_(lxb_dom_node_t* node, Str out[static 1]) {
+static inline Err _bm_to_source_append_text_(lxb_dom_node_t* node, Str out[_1_]) {
     const char* data;
     size_t len;
     try( lexbor_node_get_text(node, &data, &len));
     return str_append(out, (char*)data, len);
 }
 
-static inline Err _bm_to_source_rec_(lxb_dom_node_t* node, Str out[static 1]) {
+static inline Err _bm_to_source_rec_(lxb_dom_node_t* node, Str out[_1_]) {
     if (node) {
         switch(node->type) {
             case LXB_DOM_NODE_TYPE_ELEMENT: return _bm_to_source_rec_tag_(node, out);
@@ -272,7 +272,7 @@ static inline Err _bm_to_source_rec_(lxb_dom_node_t* node, Str out[static 1]) {
     return Ok;
 }
 
-static inline Err bookmark_to_source(HtmlDoc bm[static 1], Str out[static 1]) {
+static inline Err bookmark_to_source(HtmlDoc bm[_1_], Str out[_1_]) {
     lxb_dom_node_t* body;
     try( bookmark_sections_body(bm, &body));
 
@@ -291,7 +291,7 @@ static inline Err bookmark_to_source(HtmlDoc bm[static 1], Str out[static 1]) {
 }
 
 static inline Err
-bookmarks_save_to_disc(HtmlDoc bm[static 1], Str bmfile[static 1]) {
+bookmarks_save_to_disc(HtmlDoc bm[_1_], Str bmfile[_1_]) {
     Str source = (Str){0};
     try( bookmark_to_source(bm, &source));
 

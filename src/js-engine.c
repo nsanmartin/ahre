@@ -10,7 +10,7 @@
 #include "htmldoc.h"
 
 
-void jse_clean(JsEngine js[static 1]) {
+void jse_clean(JsEngine js[_1_]) {
     if (!js->rt) return;
     JS_RunGC(js->rt);
     JS_FreeContext(js->ctx);
@@ -21,7 +21,7 @@ void jse_clean(JsEngine js[static 1]) {
 
 
 static inline Err
-_jse_set_global_property_str_(JSContext* ctx,const char* name, JSValue value[static 1]) {
+_jse_set_global_property_str_(JSContext* ctx,const char* name, JSValue value[_1_]) {
     JSValue global = JS_GetGlobalObject(ctx);
     int rv = JS_SetPropertyStr(ctx, global, name, *value);
     JS_FreeValue(ctx, global);
@@ -57,7 +57,7 @@ static JSValue _console_log(JSContext *ctx, JSValueConst self, int argc, JSValue
     return JS_NULL;
 }
 
-static Err jse_add_console(JSContext* ctx, HtmlDoc d[static 1]) {
+static Err jse_add_console(JSContext* ctx, HtmlDoc d[_1_]) {
 
     if (init_console_class(ctx)) return "error: could not initialize console class";
 
@@ -91,7 +91,7 @@ static int init_element_class(JSContext *ctx) {
 }
 
 
-static Err jse_add_document(JSContext* ctx, HtmlDoc d[static 1]) ;
+static Err jse_add_document(JSContext* ctx, HtmlDoc d[_1_]) ;
 static JSValue
 _document_getElementById(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv);
 
@@ -127,7 +127,7 @@ Err jse_init(HtmlDoc* htmldoc) {
 }
 
 
-static Err jse_add_document(JSContext* ctx, HtmlDoc d[static 1]) {
+static Err jse_add_document(JSContext* ctx, HtmlDoc d[_1_]) {
 
     if (init_element_class(ctx)) return "error: could not initialize element class";
 
@@ -151,7 +151,7 @@ static Err jse_add_document(JSContext* ctx, HtmlDoc d[static 1]) {
     return Ok;
 }
 
-Err jse_eval(JsEngine js[static 1], Session* s, const char* script) {
+Err jse_eval(JsEngine js[_1_], Session* s, const char* script) {
     if (!script) return "error: jse_eval cannot evaluate nullptr";
 
     JSContext *ctx = jse_context(js);

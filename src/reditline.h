@@ -5,11 +5,11 @@
 
 #include "str.h"
 
-void reditline_history_cleanup(ArlOf(const_cstr) history[static 1]);
-char* reditline(const char* prompt, char* line, ArlOf(const_cstr) history[static 1]);
+void reditline_history_cleanup(ArlOf(const_cstr) history[_1_]);
+char* reditline(const char* prompt, char* line, ArlOf(const_cstr) history[_1_]);
 bool reditline_error(char* res);
-int redit_history_add(ArlOf(const_cstr) history[static 1], const char* line);
-Err switch_tty_to_raw_mode(struct termios prev_termios[static 1]);
+int redit_history_add(ArlOf(const_cstr) history[_1_], const char* line);
+Err switch_tty_to_raw_mode(struct termios prev_termios[_1_]);
 
 
 typedef enum {

@@ -12,7 +12,7 @@
 
 
 typedef struct { lxb_dom_node_t* n; } LxbNode;
-static inline lxb_dom_node_t* lxbnode_node(LxbNode lbn[static 1]) { return lbn->n; }
+static inline lxb_dom_node_t* lxbnode_node(LxbNode lbn[_1_]) { return lbn->n; }
 
 //TODO: use always LxbNode instead?
 typedef lxb_dom_node_t* LxbNodePtr;
@@ -24,19 +24,19 @@ typedef lxb_dom_element_t* LxbElemPtr;
 #include <arl.h>
 
 static inline bool
-lexbor_node_tag_is_select(LxbNode n[static 1]) { return n->n->local_name == LXB_TAG_SELECT; }
+lexbor_node_tag_is_select(LxbNode n[_1_]) { return n->n->local_name == LXB_TAG_SELECT; }
 static inline bool
-lexbor_node_tag_is_input(LxbNode n[static 1]) { return n->n->local_name == LXB_TAG_INPUT; }
+lexbor_node_tag_is_input(LxbNode n[_1_]) { return n->n->local_name == LXB_TAG_INPUT; }
 static inline bool
-lexbor_node_tag_is_button(LxbNode n[static 1]) { return n->n->local_name == LXB_TAG_BUTTON; }
+lexbor_node_tag_is_button(LxbNode n[_1_]) { return n->n->local_name == LXB_TAG_BUTTON; }
 static inline bool
-lexbor_node_tag_is_text(LxbNode n[static 1]) { return n->n->local_name == LXB_TAG__TEXT; }
+lexbor_node_tag_is_text(LxbNode n[_1_]) { return n->n->local_name == LXB_TAG__TEXT; }
 
 static inline bool _lexbor_element_find_attr_value_(
     lxb_dom_element_t* element,
     const char* attr_name,
     size_t attr_len,
-    const lxb_char_t* out[static 1],
+    const lxb_char_t* out[_1_],
     size_t* len
 ) 
 {
@@ -52,7 +52,7 @@ static inline bool _lexbor_node_find_attr_value_(
     lxb_dom_node_t*   node,
     const char*       attr_name,
     size_t            attr_len,
-    const lxb_char_t* out[static 1],
+    const lxb_char_t* out[_1_],
     size_t*           len
 ) {
     return _lexbor_element_find_attr_value_(
@@ -92,7 +92,7 @@ static inline bool lexbor_node_attr_has_value(
     );
 }
 static inline bool lxbnode_attr_has_value(
-     LxbNode     node[static 1],
+     LxbNode     node[_1_],
      const char* attr,
      size_t      attrlen,
      const char* expected_value,
@@ -116,7 +116,7 @@ static inline bool lxbnode_attr_has_value(
 
 
 // static inline bool
-// lxbnode_attr_has_value(LxbNode n[static 1], const char* attr, const char* value) {
+// lxbnode_attr_has_value(LxbNode n[_1_], const char* attr, const char* value) {
 //          return lexbor_node_attr_has_value(lxbnode_node(n), attr, value);
 // }
 
@@ -187,7 +187,7 @@ static inline bool lexbor_node_has_attr(lxb_dom_node_t* node, const char* name, 
     return lexbor_elem_has_attr(lxb_dom_interface_element(node), name, len);
 }
 
-static inline bool lxbnode_has_lit_attr(LxbNode lbn[static 1], const char* name, size_t len) {
+static inline bool lxbnode_has_lit_attr(LxbNode lbn[_1_], const char* name, size_t len) {
     return lexbor_node_has_attr(lxbnode_node(lbn), name, len);
 }
 
@@ -237,17 +237,17 @@ static inline Err lexbor_node_set_attr(
 
 lxb_dom_node_t* _find_parent_form(lxb_dom_node_t* node) ;
 
-Err lexbor_node_to_str(lxb_dom_node_t* node, Str buf[static 1]);
+Err lexbor_node_to_str(lxb_dom_node_t* node, Str buf[_1_]);
 
 static inline bool lexbor_str_eq(const char* s, const lxb_char_t* lxb_str, size_t len) {
     return lxb_str && !strncasecmp(s, (const char*)lxb_str, len);
 }
 
 Err dbg_print_title(lxb_dom_node_t* title) ;
-Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request req[static 1]);
+Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request req[_1_]);
 
 static inline Err
-lexbor_node_get_text(lxb_dom_node_t* node, const char* data[static 1], size_t len[static 1]) {
+lexbor_node_get_text(lxb_dom_node_t* node, const char* data[_1_], size_t len[_1_]) {
     lxb_dom_text_t* text = lxb_dom_interface_text(node);
     if(!text) return "error: expecting not null lxb_dom_interface_text(node)";
     *data = (const char*)text->char_data.data.data;
@@ -322,7 +322,7 @@ static inline bool lexbor_tag_is_block(lxb_dom_node_t* node) {
 Err lexbor_get_title_text_line(lxb_dom_node_t* node, BufOf(char)* out) ;
 
 static inline void
-_search_title_rec_(lxb_dom_node_t* node, lxb_dom_node_t* title[static 1]) {
+_search_title_rec_(lxb_dom_node_t* node, lxb_dom_node_t* title[_1_]) {
     if (!node) return;
     else if (node->local_name == LXB_TAG_TITLE) *title = node; 
     else {
@@ -335,7 +335,7 @@ _search_title_rec_(lxb_dom_node_t* node, lxb_dom_node_t* title[static 1]) {
 }
 
 static inline Err
-lexbor_get_title_node(lxb_html_document_t* lxbdoc, lxb_dom_node_t* title[static 1]) {
+lexbor_get_title_node(lxb_html_document_t* lxbdoc, lxb_dom_node_t* title[_1_]) {
     lxb_dom_node_t* node = lxb_dom_interface_node(lxbdoc);
     if (!node) return "error: no document";
     *title = NULL;
@@ -393,10 +393,10 @@ lexbor_doc_get_element_by_id (lxb_html_document_t* lxbdoc, const char* id, size_
     return lxb_dom_interface_element(node);
 }
 
-Err lexbor_get_title_text(lxb_dom_node_t* title, Str out[static 1]);
+Err lexbor_get_title_text(lxb_dom_node_t* title, Str out[_1_]);
 
 static inline Err lexbor_append_null_terminated_attr(
-    lxb_dom_node_t* node, const char* attr, size_t attr_len, Str s[static 1]
+    lxb_dom_node_t* node, const char* attr, size_t attr_len, Str s[_1_]
 ) {
     const lxb_char_t* data;
     size_t data_len;
