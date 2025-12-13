@@ -24,11 +24,6 @@ static inline Err get_cookies_filename(Str out[_1_]) {
     return Ok;
 }
 
-static inline Err get_bookmark_filename(Str out[_1_]) {
-    try( get_config_dir(out));
-    return str_append_lit__(out, "/bookmark.html\0");
-}
-
 
 static inline Err get_input_history_filename(Str out[_1_]) {
 #define INPUT_HISTORY_FILENAME "input-history"
@@ -45,10 +40,19 @@ static inline Err get_fetch_history_filename(Str out[_1_]) {
     return Ok;
 }
 
+static inline Err get_bookmark_filename(const char* fname, Str out[_1_]) {
+    if (fname) {
+        if (!*fname) return "invalid file name for bookmark (\"\")";
+        return str_append_z(out, (char*)fname, strlen(fname));
+    }
 
-static inline Err get_bookmark_filename_if_it_exists(Str out[_1_]) {
+    try( get_config_dir(out));
+    return str_append_lit__(out, "/bookmark.html\0");
+}
+
+static inline Err get_bookmark_filename_if_it_exists(const char* fname, Str out[_1_]) {
 #define FILE_SCHEMA "file://"
-    try( get_bookmark_filename(out));
+    try( get_bookmark_filename(fname, out));
     if ((str_startswith_lit(out, FILE_SCHEMA) && file_exists(items__(out) + lit_len__(FILE_SCHEMA)))
         || file_exists(items__(out))
     ) return Ok;
@@ -56,4 +60,5 @@ static inline Err get_bookmark_filename_if_it_exists(Str out[_1_]) {
     str_clean(out);
     return err;
 }
+Err resolve_bookmarks_file(const char* path, Str out[_1_]);
 #endif

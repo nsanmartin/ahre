@@ -11,6 +11,9 @@
 #include "error.h"
 #include "url-client.h"
 
+
+typedef struct Session Session;
+
 /** CURL wrappers */
 Err curl_url_to_filename_append(CURLU* cu, Str out[_1_]);
 Err fopen_or_append_fopen(const char* fname, CURLU* cu, FILE* fp[_1_]);
@@ -82,13 +85,7 @@ static inline Err url_fragment(Url u[_1_], char* out[_1_]) {
 }
 
 
-static inline Err get_url_alias(const char* cstr, BufOf(char)* out) {
-    if (cstr_starts_with("bookmarks", cstr)) {
-        try(str_append_lit__(out, "file://"));
-        return get_bookmark_filename_if_it_exists(out);
-    }
-    return err_fmt("not a url alias: %s", cstr);
-}
+Err get_url_alias(Session* s, const char* cstr, BufOf(char)* out);
 
 
 /* ctor */

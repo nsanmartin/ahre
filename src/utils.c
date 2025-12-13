@@ -1,4 +1,5 @@
 #include <errno.h>
+
 #include "utils.h"
 
 
@@ -138,4 +139,5 @@ Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) {
     *strptr = endptr;
     return Ok;
 }
+
 

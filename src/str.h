@@ -230,4 +230,5 @@ Err _convert_to_utf8_(
 );
 Err str_append_timespec(Str out[_1_], struct timespec ts[_1_]);
 Err str_append_datetime_now(Str [_1_]);
+Err resolve_path(const char *path, bool file_exists[_1_], Str out[_1_]);
 #endif

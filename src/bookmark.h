@@ -137,28 +137,6 @@ bookmark_mk_entry(
 }
 
 
-#define _htmldoc_fetch_bookmark_ htmldoc_fetch /* bookmark does not have js so it's simpler */
-static inline Err
-_get_bookmarks_doc_(
-    UrlClient url_client[_1_],
-    Str*      bm_file,
-    Writer    msg_writer[_1_],
-    HtmlDoc   out[_1_]
-) {
-    try( get_bookmark_filename_if_it_exists(bm_file));
-    Str* bm_url = &(Str){0};
-    Err err = str_append_lit__(bm_url, "file://");
-    try(err);
-    try_or_jump(err, Clean_Bm_Url, str_append_str(bm_url, bm_file));
-    try_or_jump(err, Clean_Bm_Url, htmldoc_init_bookmark(out, items__(bm_url)));
-    FetchHistoryEntry e;
-    err = _htmldoc_fetch_bookmark_(out, url_client, msg_writer, &e);
-    fetch_history_entry_clean(&e);
-    if (err) htmldoc_cleanup(out);
-Clean_Bm_Url:
-    str_clean(bm_url);
-    return err;
-}
 
 static inline Err _bm_to_source_rec_(lxb_dom_node_t* node, Str out[_1_]) ;
 

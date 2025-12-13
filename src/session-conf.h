@@ -12,9 +12,10 @@
 
 typedef struct {
     UserInterface ui;
-    size_t ncols;
-    size_t nrows;
-    unsigned flags;
+    size_t        ncols;
+    size_t        nrows;
+    unsigned      flags;
+    Str           bookmarks_fname;
 } SessionConf ;
 
 static inline
@@ -55,4 +56,5 @@ static inline UserInterface* session_conf_ui(SessionConf sc[_1_]) { return &sc->
 static inline UserInput* session_conf_uinput(SessionConf sc[_1_]) { return &sc->ui.uin; }
 static inline UserOutput* session_conf_uout(SessionConf sc[_1_]) { return &sc->ui.uout; }
 
+static inline void session_conf_cleanup(SessionConf sc[_1_]) { str_clean(&sc->bookmarks_fname); }
 #endif

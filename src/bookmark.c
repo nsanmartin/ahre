@@ -1,8 +1,37 @@
 #include "draw.h" 
 #include "bookmark.h"
 #include "cmd.h"
+#include "session.h"
 
 /* internal linkage */
+
+
+#define _htmldoc_fetch_bookmark_ htmldoc_fetch /* bookmark does not have js so it's simpler */
+static Err
+_get_bookmarks_doc_(
+    UrlClient   url_client[_1_],
+    const char* session_bm,
+    Str         bm_file[_1_],
+    Writer      msg_writer[_1_],
+    HtmlDoc     out[_1_]
+) {
+    try( get_bookmark_filename_if_it_exists(session_bm, bm_file));
+    Str* bm_url = &(Str){0};
+    Err err = str_append_lit__(bm_url, "file://");
+    try(err);
+    try_or_jump(err, Clean_Bm_Url, str_append_str(bm_url, bm_file));
+    try_or_jump(err, Clean_Bm_Url, htmldoc_init_bookmark(out, items__(bm_url)));
+    FetchHistoryEntry e;
+    err = _htmldoc_fetch_bookmark_(out, url_client, msg_writer, &e);
+    fetch_history_entry_clean(&e);
+    if (err) htmldoc_cleanup(out);
+Clean_Bm_Url:
+    str_clean(bm_url);
+    return err;
+}
+
+
+
 /* external linkage */
 Err bookmark_sections_body(HtmlDoc bookmark[_1_], lxb_dom_node_t* out[_1_]) {
     lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(bookmark);
@@ -94,13 +123,16 @@ Err bookmark_add_to_section(Session s[_1_], const char* line, UrlClient url_clie
     Err err = Ok; 
     
     HtmlDoc bm;
-    Str bmfile = (Str){0};
+    Str bmfname_out = (Str){0};
     Writer w;
     try(session_msg_writer_init(&w, s));
-    try(_get_bookmarks_doc_(url_client, &bmfile, &w,  &bm));
+    try(_get_bookmarks_doc_(
+            url_client, items__(session_bookmarks_fname(s)), &bmfname_out, &w,  &bm
+        )
+    );
 
     char* url;
-    if ((err = url_cstr_malloc(htmldoc_url(d), &url))) goto clean_bmfile_and_bmdoc;
+    if ((err = url_cstr_malloc(htmldoc_url(d), &url))) goto clean_bmfname_out_and_bmdoc;
 
     lxb_dom_node_t* body;
     if ((err = bookmark_sections_body(&bm, &body))) goto free_curl_url;
@@ -122,15 +154,15 @@ Err bookmark_add_to_section(Session s[_1_], const char* line, UrlClient url_clie
         err = bookmark_section_insert(&(bm.lxbdoc->dom_document), body, line, bm_entry);
     } else err = "section not found in bookmarks file";
 
-    ok_then(err, bookmarks_save_to_disc(&bm, &bmfile));
+    ok_then(err, bookmarks_save_to_disc(&bm, &bmfname_out));
     ok_then(err, session_write_msg_lit__(s, "bookmark added\n"));
 
 clean_title:
     str_clean(title);
 free_curl_url:
     curl_free(url);
-clean_bmfile_and_bmdoc:
-    str_clean(&bmfile);
+clean_bmfname_out_and_bmdoc:
+    str_clean(&bmfname_out);
     htmldoc_cleanup(&bm);
     return err;
 }

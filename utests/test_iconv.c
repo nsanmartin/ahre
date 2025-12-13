@@ -1,5 +1,5 @@
-#include <stdio.h>
 #include <utests.h>
+#include <stdio.h>
 
 #include "../src/str.c"
 

@@ -7,11 +7,11 @@
 #include "utils.h"
 
 typedef struct {
-    bool version;
-    bool help;
-    SessionConf sconf;
+    bool             version;
+    bool             help;
+    SessionConf      sconf;
     ArlOf(cstr_view) urls;
-    const char* data;
+    const char*      data;
 } CliParams;
 
 static inline bool* cparams_version(CliParams cparams[_1_]) { return &cparams->version; }

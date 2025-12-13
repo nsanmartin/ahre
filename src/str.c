@@ -1,6 +1,10 @@
+#define _XOPEN_SOURCE 500
 #include <errno.h>
 #include <iconv.h>
+#include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <wordexp.h>
 
 #include "error.h"
 #include "generic.h"
@@ -220,6 +224,41 @@ Err str_append_datetime_now(Str out[_1_]) {
     struct timespec ts;
     timespec_get(&ts, TIME_UTC);
     return str_append_timespec(out, &ts);
+}
+
+Err expand_path(const char *path, Str out[_1_]) {
+    wordexp_t result = {0};
+
+    switch (wordexp (path, &result, WRDE_NOCMD | WRDE_UNDEF)) {
+        case 0: break;
+        case WRDE_BADVAL: 
+            wordfree (&result);
+            return "undefined enviroment variable in path";
+        case WRDE_NOSPACE:
+            wordfree (&result);
+            return "out of memory parsing path";
+        default: return "invalid path, wordexp could not parse";
+    }
+
+    if (result.we_wordc == 0) { wordfree(&result); return "invalid path: cannot be empty"; }
+    const char* expanded = result.we_wordv[0];
+    if (!strlen(expanded)) return "invalid path with no length";
+    Err err = str_append_z(out, (char*)expanded, strlen(expanded)); wordfree(&result);
+
+    return err;
+}
+
+Err resolve_path(const char *path, bool file_exists[_1_], Str out[_1_]) {
+    try(expand_path(path, out));
+    char buf[PATH_MAX];
+    char *real = realpath(items__(out), buf);
+    if (!real && errno != ENOENT) {
+        str_clean(out);
+        return err_fmt("could not resolve path: %s", strerror(errno));
+    }
+    *file_exists =  real && errno != ENOENT;
+    str_reset(out);
+    return str_append(out, buf, strlen(buf) +1 );
 }
 
 

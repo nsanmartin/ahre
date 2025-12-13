@@ -1,11 +1,21 @@
 #include "get-options.h"
 #include "user-out.h"
+#include "config.h"
+
+
+static Err _read_bm_opt_(CliParams cparams[_1_], const char* optopt) {
+    if (!optopt || !*optopt) return "invalid data option";
+    try(resolve_bookmarks_file(optopt, &cparams->sconf.bookmarks_fname));
+    return Ok;
+}
+
 
 static Err _read_data_opt_(CliParams cparams[_1_], const char* optopt) {
     if (!optopt || !*optopt) return "invalid data option";
     cparams->data = optopt;
     return Ok;
 }
+
 
 static Err _read_input_opt_(SessionConf sconf[_1_], const char* optopt) {
     if (!optopt || !*optopt) return "invalid input option";
@@ -45,6 +55,10 @@ Err session_conf_from_options(int argc, char* argv[], CliParams cparams[_1_]) {
             const char* short_opt = arg + 1;
             const char* optopt;
             switch (*short_opt) {
+                case 'b':
+                    optopt = short_opt[1] ? &short_opt[1] : argv[++i];
+                    try(_read_bm_opt_(cparams, optopt));
+                    break;
                 case 'd':
                     optopt = short_opt[1] ? &short_opt[1] : argv[++i];
                     try(_read_data_opt_(cparams, optopt));
@@ -67,6 +81,10 @@ Err session_conf_from_options(int argc, char* argv[], CliParams cparams[_1_]) {
         }
 
         const char* long_opt = arg + 2;
+        if (!strcmp("bookmark", long_opt)) {
+            const char* optopt = argv[++i];
+            try(_read_bm_opt_(cparams, optopt));
+        }
         if (!strcmp("data", long_opt)) {
             const char* optopt = argv[++i];
             try(_read_data_opt_(cparams, optopt));

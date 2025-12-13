@@ -1,8 +1,14 @@
 #ifndef __HASHI_UTESTS_H__
 #define __HASHI_UTESTS_H__
 
-#include <string.h>
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 500
+#endif
+
+#include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "../src/utils.h"
 #include "../src/error.h"

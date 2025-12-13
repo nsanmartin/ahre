@@ -23,6 +23,7 @@ test_range: $(AHRE_UTESTS)/test_range.c $(AHRE_BUILD)/isocline.o \
 	$(AHRE_BUILD)/user-input.o $(AHRE_BUILD)/user-out.o \
 	$(AHRE_BUILD)/tabs.o $(AHRE_BUILD)/bookmark.o $(AHRE_BUILD)/cmd.o $(AHRE_BUILD)/url.o \
 	$(AHRE_BUILD)/js-engine.o $(AHRE_BUILD)/wrapper-curl.o \
+	$(AHRE_BUILD)/config.o \
 	$(QUICKJS_LIB)
 	$(CC) $(CFLAGS) $(SANITIZE_FLAGS) -I. -I$(INCLUDE) -I$(AHRE_UTESTS) \
 		-o $(AHRE_BUILD)/$@ \
@@ -48,6 +49,7 @@ test_ed_write: $(AHRE_UTESTS)/test_ed_write.c \
 	$(AHRE_BUILD)/user-out.o $(AHRE_BUILD)/user-input.o \
 	$(AHRE_BUILD)/tabs.o $(AHRE_BUILD)/bookmark.o $(AHRE_BUILD)/js-engine.o \
 	$(AHRE_BUILD)/wrapper-curl.o $(AHRE_BUILD)/fetch-history.o \
+	$(AHRE_BUILD)/config.o \
 	$(QUICKJS_LIB)
 
 	$(CC) $(CFLAGS) $(SANITIZE_FLAGS) -I. -I$(INCLUDE) -I$(AHRE_UTESTS) \

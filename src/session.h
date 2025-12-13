@@ -71,6 +71,9 @@ static inline ArlOf(const_cstr)* session_input_history(Session s[_1_]) { return 
 static inline ArlOf(FetchHistoryEntry)* session_fetch_history(Session s[_1_]) {
     return &s->fetch_history;
 }
+static inline Str* session_bookmarks_fname(Session s[_1_]) {
+    return &session_conf(s)->bookmarks_fname;
+}
 
 /* ctor */
 Err session_init(Session s[_1_], SessionConf sconf[_1_]);
@@ -83,6 +86,7 @@ static inline void session_cleanup(Session s[_1_]) {
     reditline_history_cleanup(session_input_history(s));
     str_clean(session_dt_now_str(s));
     arlfn(FetchHistoryEntry,clean)(session_fetch_history(s));
+    session_conf_cleanup(session_conf(s));
 }
 
 void session_destroy(Session* session);

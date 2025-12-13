@@ -3,6 +3,7 @@
 
 #include "str.h"
 #include "url.h"
+#include "session.h"
 
 
 Err curl_url_to_filename_append(CURLU* cu, Str out[_1_]) {
@@ -238,3 +239,13 @@ Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method) {
     };
     return Ok;
 }
+
+
+Err get_url_alias(Session* s, const char* cstr, BufOf(char)* out) {
+    if (cstr_starts_with("bookmarks", cstr)) {
+        try(str_append_lit__(out, "file://"));
+        return get_bookmark_filename_if_it_exists(items__(session_bookmarks_fname(s)), out);
+    }
+    return err_fmt("not a url alias: %s", cstr);
+}
+

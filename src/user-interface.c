@@ -178,6 +178,7 @@ static SessionCmd _cmd_input_[] =
 
 /* set session comands */
 
+Err cmd_set_session_bookmark(CmdParams p[_1_]);
 Err cmd_set_session_input(CmdParams p[_1_]);
 Err cmd_set_session_winsz(CmdParams p[_1_]);
 Err cmd_set_session_ncols(CmdParams p[_1_]);
@@ -186,7 +187,8 @@ Err cmd_set_session_js(CmdParams p[_1_]);
 
 
 static SessionCmd _cmd_session_set_[] = 
-    { {.name="forms",        .match=1, .fn=cmd_set_session_forms,      .help=NULL}
+    { {.name="bookmark",     .match=1, .fn=cmd_set_session_bookmark,   .help=NULL}
+    , {.name="forms",        .match=1, .fn=cmd_set_session_forms,      .help=NULL}
     , {.name="input",        .match=1, .fn=cmd_set_session_input,      .help=NULL}
     , {.name="js",           .match=1, .fn=cmd_set_session_js,         .help=NULL}
     , {.name="monochrome",   .match=1, .fn=cmd_set_session_monochrome, .help=NULL}
@@ -199,10 +201,6 @@ static SessionCmd _cmd_session_set_[] =
 #define SESSION_SET_DOC "Sets a session conf\n"
 Err cmd_session_set(CmdParams p[_1_]) { return run_cmd__(p, _cmd_session_set_); }
 
-/* static SessionCmd _cmd_set_[] = */ 
-/*     { {.name="session", .match=1, .fn=cmd_session_set, .help=NULL,.subcmds=_cmd_session_set_} */
-/*     , {0} */
-/*     }; */
 
 /* tab commands (|) */
 
@@ -362,8 +360,6 @@ static Err cmd_help(CmdParams p[_1_]);
 #define CMD_QUIT_DOC "Quits ahre.\n"
 static Err cmd_quit (CmdParams p[_1_]) { session_quit_set(p->s); return Ok;}
 
-/* #define CMD_SET_DOC "Sets an option.\n" */
-/* Err cmd_set(CmdParams p[_1_]) { return run_cmd__(p, _cmd_set_); } */
 
 #define CMD_TABS_DOC "ahre tabs are tres of the visited urls.\n"
 Err cmd_tabs(CmdParams p[_1_]) { return run_cmd__(p, _cmd_tabs_); }
