@@ -17,7 +17,8 @@ typedef enum {
     RlErrorFwrite,
     RlErrorStrdup,
     RlErrorArlAppend,
-    RlErrorHistoryIndexOutOfRange
+    RlErrorHistoryIndexOutOfRange,
+    RlErrorReadingInput
 } RlError;
 
 #define validate_rl_err(Value) _Generic((Value), RlError: Value)
@@ -153,6 +154,7 @@ static RlError rl_edit(ReditLine rl[_1_]) {
     while (1) {
         int c = fgetc(stdin);
         switch (c) {
+            case KeyCtrl_H:
             case KeyBackSpace: {
                if (*rl_pos(rl) > 1) {
                    --(*rl_pos(rl)); 
@@ -182,6 +184,10 @@ static RlError rl_edit(ReditLine rl[_1_]) {
                    rl_try(rl_buf_write(rl));
                    continue;
             case KeyEnter: return rlbuf_append(rl_buf(rl), "\0", 1);
+            case '\033':
+                           c = fgetc(stdin);
+                           if (c == '[') c = fgetc(stdin);
+                           continue;
             default: {
                 if (!isprint(c)) continue;
                 rl_try(rl_insert_char(rl, c));
