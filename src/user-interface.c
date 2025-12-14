@@ -144,15 +144,39 @@ static Err run_cmd_on_ix__(CmdParams p[_1_], SessionCmd cmdlist[]) {
 
 /* anchor commands */
 
-Err cmd_anchor_print(CmdParams p[_1_]) { return _cmd_anchor_print(p->s, p->ix); }
-Err cmd_anchor_asterisk(CmdParams p[_1_]) { return _cmd_anchor_asterisk(p->s, p->ix); }
-Err cmd_anchor_save(CmdParams p[_1_]) { return _cmd_anchor_save(p->s, p->ix, p->ln); }
+#define CMD_ANCHOR_PRINT_DOC "Print anchor range info"
+Err cmd_anchor_print(CmdParams p[_1_]) {
+    Range r;
+    HtmlDoc* h;
+    try(session_current_doc(p->s, &h));
+    try(basic_range_from_parse(&p->rp, 0, len__(htmldoc_anchors(h)), &r));
+    for (size_t i = r.beg; i < r.end; ++i)
+        try( _cmd_anchor_print(p->s, i));
+
+    return Ok;
+}
+Err cmd_anchor_asterisk(CmdParams p[_1_]) {
+    Range r;
+    HtmlDoc* h;
+    try(session_current_doc(p->s, &h));
+    try(basic_range_from_parse(&p->rp, 0, len__(htmldoc_anchors(h)), &r));
+    if (r.beg != r.end) return "TODO: implement anchor * for ranges";
+    return _cmd_anchor_asterisk(p->s, r.beg);
+}
+Err cmd_anchor_save(CmdParams p[_1_]) {
+    Range r;
+    HtmlDoc* h;
+    try(session_current_doc(p->s, &h));
+    try(basic_range_from_parse(&p->rp, 0, len__(htmldoc_anchors(h)), &r));
+    if (r.beg != r.end) return "TODO: implement anchor > for ranges";
+    return _cmd_anchor_save(p->s, r.beg, p->ln);
+}
 
 static SessionCmd _cmd_anchor_[] =
-    { {.name="\"", .fn=cmd_anchor_print,    .help=NULL, .flags=CMD_CHAR}
-    , {.name="",   .fn=cmd_anchor_asterisk, .help=NULL, .flags=CMD_EMPTY}
-    , {.name="*",  .fn=cmd_anchor_asterisk, .help=NULL, .flags=CMD_CHAR}
-    , {.name=">",  .fn=cmd_anchor_save,     .help=NULL, .flags=CMD_CHAR}
+    { {.name="\"", .fn=cmd_anchor_print,    .help=CMD_ANCHOR_PRINT_DOC, .flags=CMD_CHAR}
+    , {.name="",   .fn=cmd_anchor_asterisk, .help=NULL,                 .flags=CMD_EMPTY}
+    , {.name="*",  .fn=cmd_anchor_asterisk, .help=NULL,                 .flags=CMD_CHAR}
+    , {.name=">",  .fn=cmd_anchor_save,     .help=NULL,                 .flags=CMD_CHAR}
     , {0}
     };
 
@@ -347,7 +371,7 @@ static Err cmd_echo (CmdParams p[_1_]) {
 #define CMD_ANCHOR_DOC \
     "[ LINK_ID [SUB_COMMAND]\n\n"\
     "'[' commands are applied to the links present in the document.\n"
-Err cmd_anchor(CmdParams p[_1_]) { return run_cmd_on_ix__(p, _cmd_anchor_); }
+Err cmd_anchor(CmdParams p[_1_]) { return run_cmd_on_range__(p, _cmd_anchor_); }
 
 #define CMD_HELP_DOC \
     "Ahre has char commands and word commands.\n" \

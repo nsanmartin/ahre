@@ -10,10 +10,10 @@
 // typedef enum { cmd_base_tag, cmd_textbuf_tag } CmdTag;
 typedef struct {
     const char* ln;
-    Session*               s;
-    TextBuf*               tb; /* in order to reuse buf cmds for source & buf, we pass it */
-    RangeParse       rp;
-    size_t                 ix; /* TODO: deprecate this and use only range */
+    Session*    s;
+    TextBuf*    tb; /* in order to reuse buf cmds for source & buf, we pass it */
+    RangeParse  rp;
+    size_t      ix; /* TODO: deprecate this and use only range */
 } CmdParams;
 
 typedef Err (*SessionCmdFn)(CmdParams p[_1_]);

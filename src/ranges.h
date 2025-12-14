@@ -33,4 +33,26 @@ inline static void range_end_set_beg(Range r[_1_]) { r->end = r->beg; }
 inline static bool range_parse_is_none(RangeParse rp[_1_]) {
     return rp->beg.tag == range_addr_none_tag && rp->end.tag == range_addr_none_tag;
 }
+
+static inline Err basic_size_t_from_addr(
+    RangeAddr addr[_1_],
+    size_t min,
+    size_t bound,
+    size_t const* optional_none_default,
+    size_t out[_1_]
+) {
+    switch(addr->tag) {
+        case range_addr_beg_tag: *out=min; return Ok;
+        case range_addr_end_tag: *out=bound; return Ok;
+        case range_addr_num_tag: *out=addr->n; return Ok;
+        case range_addr_none_tag: if (optional_none_default) *out=*optional_none_default; return Ok;
+        default: return "error parsing addr";
+    }
+}
+
+static inline Err
+basic_range_from_parse(RangeParse rp[_1_], size_t min, size_t bound, Range out[_1_]) {
+    try(basic_size_t_from_addr(&rp->beg, min, bound, NULL, &out->beg));
+    return basic_size_t_from_addr(&rp->end, min, bound, &out->beg, &out->end);
+}
 #endif
