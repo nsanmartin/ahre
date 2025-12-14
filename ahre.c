@@ -16,58 +16,77 @@
 
 
 
-static Err _open_many_urls_(Session session[_1_], ArlOf(cstr_view) urls[_1_], const char* data) {
-    for (cstr_view* u = arlfn(cstr_view,begin)(urls)
-        ; u != arlfn(cstr_view,end)(urls)
-        ; ++u
-    ) {
-        Request r = (Request){0};
-        r.method     = data ? http_post : http_get;
-        r.url        = (Str){.items=(char*)*u, .len=strlen(*u)};
-        if (data) r.postfields = (Str){.items=(char*)data, .len=strlen(data)};
-        Err e = session_fetch_request(session, &r, session_url_client(session));
-        if (e) session_write_msg_ln(session, (char*)e, strlen(e));
-    }
+static Err _fetch_many_urls_(Session session[_1_], ArlOf(Request) urls[_1_]) {
+    for (Request* r = arlfn(Request,begin)(urls)
+        ; r != arlfn(Request,end)(urls)
+        ; ++r
+    ) try( session_fetch_request(session, r, session_url_client(session)));
     return Ok;
 }
 
 
-static int _loop_(Session s[_1_]) {
+static Err _loop_(Session s[_1_], UserLine userln[_1_]) {
     init_user_input_history();
-    while (1) {
-        Err err = session_show_output(s);
-        char* line = NULL;
-        ok_then(err, session_read_user_input(s, &line));
-        if (line) ok_then(err, session_consume_line(s, line));
-        if (session_quit(s)) break;
-        if (err) if (session_show_error(s, err)) exit(EXIT_FAILURE); 
+    Err err    = Ok;
+
+    while (!session_quit(s)) {
+        try_or_jump(err, Error, session_show_output(s));
+        try_or_jump(err, Error, session_read_user_input(s, userln));
+        if (!user_line_empty(userln))
+            try_or_jump(err, Error, session_consume_line(s, userln));
+Error:
+        if (err) if (session_show_error(s, err)) return "error trying to show previous error"; 
     }
-    session_close(s);
-    session_cleanup(s);
-    return EXIT_SUCCESS;
+    return Ok;
+}
+
+static Err run_cmds(Session s[_1_], UserLine userln[_1_]) {
+    Err err = Ok;
+    Str errors = (Str){0};
+    while (!user_line_empty(userln) && !session_quit(s)) {
+        if (!user_line_empty(userln)) err = session_consume_line(s, userln);
+        if (err) try_or_jump(err, Clean_Errors, str_append_ln(&errors, (char*)err, strlen(err)));
+    }
+    if (errors.len) session_write_msg(s, errors.items, errors.len);
+Clean_Errors:
+    str_clean(&errors);
+    return err;
 }
 
 
 int main(int argc, char **argv) {
     curl_global_init(CURL_GLOBAL_DEFAULT);
     CliParams cparams = (CliParams){0};
+    UserLine userln = (UserLine){0};
     Session session;
+    Err err = Ok;
 
-    Err err = session_conf_from_options(argc, argv, &cparams);
-    if (*cparams_help(&cparams)) { print_help(argv[0]); exit(EXIT_SUCCESS); }
-    if (*cparams_version(&cparams)) { puts("ahre version " AHRE_VERSION); exit(EXIT_SUCCESS); }
-    if (len__(cparams_urls(&cparams)) > 1 && cparams_data(&cparams))
-        err = "If --data|-d i s passed then only one url is supported";
-    ok_then(err, session_init(&session, cparams_sconf(&cparams)));
-    ok_then(err, _open_many_urls_(&session, cparams_urls(&cparams), cparams_data(&cparams)));
+    try_or_jump(err, Clean_Curl, session_conf_from_options(argc, argv, &cparams));
+    if (*cparams_help(&cparams)) { print_help(argv[0]); goto Clean_Cparams; }
+    if (*cparams_version(&cparams)) { puts("ahre version " AHRE_VERSION); goto Clean_Cparams; }
+    try_or_jump(err, Clean_Cparams, session_init(&session, cparams_sconf(&cparams)));
+    if (cparams.cmd) {
+        cparams.cmd = std_strdup(cparams.cmd);
+        if (!cparams.cmd) {
+            err = "error: strdup failure";
+            goto Clean_Session;
+        }
+        try_or_jump(err, Clean_Session, user_line_init_take_ownership(&userln, cparams.cmd));
+        try_or_jump(err, Clean_Session, run_cmds(&session, &userln));
+        user_line_cleanup(&userln);
+    }
+    try_or_jump(err, Clean_Session, _fetch_many_urls_(&session, cparams_requests(&cparams)));
 
-    int rv;
-    if (err) {
-        fprintf(stderr, "ahre: %s\n", err);
-        rv = EXIT_FAILURE; 
-    } else rv = _loop_(&session);
+    err = _loop_(&session, &userln);
 
+Clean_Session:
+    session_close(&session);
+    session_cleanup(&session);
+Clean_Cparams:
     cparams_clean(&cparams);
+Clean_Curl:
     curl_global_cleanup();
-    return rv;
+
+    if (err) fprintf(stderr, "ahre: %s\n", err);
+    return err ? EXIT_FAILURE : EXIT_SUCCESS;
 }

@@ -145,14 +145,24 @@ int edcmd_print(Session session[_1_]);
 
 Err dbg_session_summary(Session session[_1_]);
 
-static inline Err session_read_user_input(Session s[_1_], char* line[_1_]) {
-    return session_uinput(s)->read(s, NULL, line);
+static inline Err session_read_user_input(Session s[_1_], UserLine ul[_1_]) {
+    if (!user_line_empty(ul)) return Ok;
+    char* line = NULL;
+    try(session_uinput(s)->read(s, NULL, &line));
+    return user_line_init_take_ownership(ul, line);
 }
 
 
-static inline Err session_consume_line(Session s[_1_], char* user_input) {
-    Err err = session_ui(s)->process_line(s, user_input);
-    std_free(user_input);
+static inline Err session_consume_line(Session s[_1_], UserLine userln[_1_]) {
+    const char* cmd = *user_line_remaining(userln);
+    char* rest = strchr(cmd, ';');
+    if (rest) {
+        *user_line_remaining(userln) = rest + 1;
+        rest[0] = '\0';
+    } 
+
+    Err err = session_ui(s)->process_line(s, cmd);
+    if (!rest) user_line_cleanup(userln);
     return err;
 }
 

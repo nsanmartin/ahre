@@ -10,9 +10,24 @@ static Err _read_bm_opt_(CliParams cparams[_1_], const char* optopt) {
 }
 
 
-static Err _read_data_opt_(CliParams cparams[_1_], const char* optopt) {
+static Err _read_cmd_opt_(CliParams cparams[_1_], const char* optopt) {
     if (!optopt || !*optopt) return "invalid data option";
-    cparams->data = optopt;
+    cparams->cmd = optopt;
+    return Ok;
+}
+
+
+static Err _read_data_opt_(CliParams cparams[_1_], const char* data, const char* url) {
+    if (!data || !*data) return "invalid -d data optopt";
+    if (!url || !*url) return "invalid -d url optopt";
+    Request r = (Request) {
+        .method=http_post,
+        .url=(Str){.items=(char*)url, .len=strlen(url)},
+        .postfields=(Str){.items=(char*)data, .len=strlen(data)}
+    };
+    if (!arlfn(Request,append)(cparams_requests(cparams), &r))
+        return "error: arl append failure";
+
     return Ok;
 }
 
@@ -26,7 +41,7 @@ static Err _read_input_opt_(SessionConf sconf[_1_], const char* optopt) {
     return Ok;
 }
 
-Err session_conf_from_options(int argc, char* argv[], CliParams cparams[_1_]) {
+Err _session_conf_from_options_(int argc, char* argv[], CliParams cparams[_1_]) {
 
     SessionConf* sconf = cparams_sconf(cparams);
     size_t nrows, ncols;
@@ -43,7 +58,10 @@ Err session_conf_from_options(int argc, char* argv[], CliParams cparams[_1_]) {
 
         // read positional parameter
         if (*arg != '-') {
-            if (!arlfn(cstr_view,append)(cparams_urls(cparams), &arg))
+            Request r = (Request) {
+                .method=http_get, .url=(Str){.items=(char*)arg, .len=strlen(arg)}
+            };
+            if (!arlfn(Request,append)(cparams_requests(cparams), &r))
                 return "error: arl append failure";
             continue;
         }
@@ -54,14 +72,20 @@ Err session_conf_from_options(int argc, char* argv[], CliParams cparams[_1_]) {
         if (arg[1] != '-') {
             const char* short_opt = arg + 1;
             const char* optopt;
+            const char* optopt2;
             switch (*short_opt) {
                 case 'b':
                     optopt = short_opt[1] ? &short_opt[1] : argv[++i];
                     try(_read_bm_opt_(cparams, optopt));
                     break;
-                case 'd':
+                case 'c':
                     optopt = short_opt[1] ? &short_opt[1] : argv[++i];
-                    try(_read_data_opt_(cparams, optopt));
+                    try(_read_cmd_opt_(cparams, optopt));
+                    break;
+                case 'd':
+                    optopt  = short_opt[1] ? &short_opt[1] : argv[++i];
+                    optopt2 = argv[++i];
+                    try(_read_data_opt_(cparams, optopt, optopt2));
                     break;
                 case 'h': *cparams_help(cparams) = true; break;
                 case 'i': // input interface
@@ -85,9 +109,14 @@ Err session_conf_from_options(int argc, char* argv[], CliParams cparams[_1_]) {
             const char* optopt = argv[++i];
             try(_read_bm_opt_(cparams, optopt));
         }
-        if (!strcmp("data", long_opt)) {
+        else if (!strcmp("cmd", long_opt)) {
             const char* optopt = argv[++i];
-            try(_read_data_opt_(cparams, optopt));
+            try(_read_cmd_opt_(cparams, optopt));
+        }
+        else if (!strcmp("data", long_opt)) {
+            const char* data = argv[++i];
+            const char* url  = argv[++i];
+            try(_read_data_opt_(cparams, data, url));
         }
         else if (!strcmp("help", long_opt)) *cparams_help(cparams) = true;
         else if (!strcmp("input", long_opt)) {
@@ -102,3 +131,8 @@ Err session_conf_from_options(int argc, char* argv[], CliParams cparams[_1_]) {
     return Ok;
 }
 
+Err session_conf_from_options(int argc, char* argv[], CliParams cparams[_1_]) {
+    Err e = _session_conf_from_options_(argc, argv, cparams);
+    if (e) cparams_clean(cparams);
+    return e;
+}

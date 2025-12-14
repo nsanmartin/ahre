@@ -14,6 +14,23 @@
 #include "error.h"
 #include "isocline.h"
 
+typedef struct {
+    const char* full;
+    const char* remaining;
+} UserLine ;
+
+static inline const char** user_line_remaining(UserLine ul[_1_]) { return &ul->remaining; }
+static inline Err user_line_init_take_ownership(UserLine ul[_1_], const char* line) {
+    *ul = (UserLine){.full=line, .remaining=line};
+    return Ok;
+}
+
+static inline void user_line_cleanup(UserLine ul[_1_]) {
+    std_free((char*)ul->full);
+    *ul = (UserLine){0};
+}
+static inline bool user_line_empty(UserLine ul[_1_]) { return !ul->full; }
+
 typedef struct Session Session;
 
 typedef Err (*InitUserInputCallback)(void);
