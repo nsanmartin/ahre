@@ -10,6 +10,7 @@ CFLAGS+=-g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition \
 		-I$(REPO_DIR)/isocline/include \
 		-I$(QUICKJS_INCLUDE)
 
+AM_LDFLAGS+=-lcurl -llexbor -lm
 
 AHRE_OBJDIR=$(REPO_DIR)/build
 AHRE_BUILD=$(REPO_DIR)/build
@@ -22,11 +23,11 @@ AHRE_OBJ=$(AHRE_SRCS:$(AHRE_SRCDIR)/%.c=$(AHRE_OBJDIR)/%.o)
 all: $(AHRE_BUILD)/ahre
 
 $(AHRE_BUILD)/ahre: $(AHRE_OBJ) $(AHRE_BUILD)/isocline.o $(QUICKJS_LIB)
-	$(CC) $(CFLAGS) -I$(HOME)/test/local/include/curl \
+	$(CC) $(CFLAGS) \
 		$(REPO_DIR)/ahre.c -o $@ \
 		$^ \
-		-L$(QUICKJS_BUILD) -L$(HOME)/test/local/lib/libcurl.a \
-		-lcurl -llexbor -lm
+		-L$(QUICKJS_BUILD) \
+		$(AM_LDFLAGS) $(LDFLAGS)
 
 
 $(AHRE_OBJDIR)/%.o: $(AHRE_SRCDIR)/%.c $(AHRE_HEADERS)

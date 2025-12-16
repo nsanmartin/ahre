@@ -1,4 +1,5 @@
 #define _XOPEN_SOURCE 500
+#include <ctype.h>
 #include <errno.h>
 #include <iconv.h>
 #include <limits.h>
@@ -43,17 +44,17 @@ Err mem_get_indexes(char* data, size_t len, size_t offset, char c, ArlOf(size_t)
 }
 
 
-inline const char* cstr_skip_space(const char* s) {
+const char* cstr_skip_space(const char* s) {
     for (; *s && isspace(*s); ++s);
     return s;
 }
 
-inline const char* cstr_next_space(const char* l) {
+const char* cstr_next_space(const char* l) {
     while (*l && !isspace(*l)) { ++l; }
     return l;
 }
 
-inline void str_trim_space(StrView* l) {
+void str_trim_space(StrView* l) {
     l->items = cstr_skip_space(items__(l));
     l->len = cstr_next_space(items__(l)) - items__(l);
 }

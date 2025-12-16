@@ -20,6 +20,7 @@ tags: $(wildcard $(AHRE_SRCDIR)/*.c) clean-tags
 		--exclude=tmp \
 		--exclude=build \
 		--exclude=quickjs/tests \
+		--exclude=quickjs/test262 \
 		--exclude=quickjs/examples  .
 
 cscope.files: $(AHRE_HEADERS) $(AHRE_SRCS)

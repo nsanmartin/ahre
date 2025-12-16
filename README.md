@@ -15,26 +15,45 @@ A hypertext reference www navigator or text web browser for linux.
 + [libcutl](https://curl.se/libcurl/) https://github.com/curl/curl
 + [lexbor](https://lexbor.com/) https://github.com/lexbor/lexbor
 
+## Install Dependencies
+### Termux
+```bash
+pkg install libandroid-wordexp
+pkg install libiconv
+export LDFLAGS="-landroid-wordexp -liconv"
+```
+
+### Debian/Ubuntu
+```bash
+sudo apt install libcurl4-openssl-dev
+```
+or
+
+```bash
+sudo apt install libcurl4-gnutls-dev
+```
 
 ## Git submodules:
 + hotl     (repo: https://codeberg.org/nsm/hotl)
 + isocline (repo: https://github.com/daanx/isocline)
 + quickjs  (repo: https://github.com/quickjs-ng/quickjs)
 
+## Clone Repo
 
-## Build
-
-```
+```bash
 git clone
 git submodule update --init
 ```
 
 (to update: `git submodule update --recursive --remote`)
 
-```
+
+## Build
+```bash
 mkdir build
 make
 ```
+
 
 To build using tcc the `NO_REGEX` flag must be passed:
 
