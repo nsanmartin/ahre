@@ -199,3 +199,11 @@ Err dbg_print_title(lxb_dom_node_t* title) {
     return Ok;
 }
 
+Err lexbor_node_get_text(lxb_dom_node_t* node, const char* data[_1_], size_t len[_1_]) {
+    lxb_dom_text_t* text = lxb_dom_interface_text(node);
+    if(!text) return "error: expecting not null lxb_dom_interface_text(node)";
+    *data = (const char*)text->char_data.data.data;
+    *len = text->char_data.data.length;
+    return Ok;
+}
+

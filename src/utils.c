@@ -62,14 +62,14 @@ Err file_close(FILE* fp) {
 
 const char _base36digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-/* note that if something like "   -1" is received, 2^NBits -1 is returned */
-Err parse_ull_err(const char* tk, uintmax_t ullp[_1_], const char* endptr[_1_]) {
-    if (!tk) return "error parsing ull: NULL received";
-    if (!*tk) return "error parsing ull: \"\\0\" received";
-    *ullp = strtoull(tk, (char**)endptr, 10);
-    if (ERANGE == errno && ULLONG_MAX == *ullp) { return err_fmt("error: %s", strerror(errno)); }
-    return Ok;
-}
+/* /1* note that if something like "   -1" is received, 2^NBits -1 is returned *1/ */
+/* Err parse_ull_err(const char* tk, uintmax_t ullp[_1_], const char* endptr[_1_]) { */
+/*     if (!tk) return "error parsing ull: NULL received"; */
+/*     if (!*tk) return "error parsing ull: \"\\0\" received"; */
+/*     *ullp = strtoull(tk, (char**)endptr, 10); */
+/*     if (ERANGE == errno && ULLONG_MAX == *ullp) { return err_fmt("error: %s", strerror(errno)); } */
+/*     return Ok; */
+/* } */
 
 
 const char* parse_ull(const char* tk, uintmax_t* ullp) {

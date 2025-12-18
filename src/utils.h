@@ -133,7 +133,7 @@ void str_reverse(char* s, size_t n) {
 
 Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[_1_]);
 const char* parse_ull(const char* tk, uintmax_t* ullp);
-Err parse_ull_err(const char* tk, uintmax_t ullp[_1_], const char* endptr[_1_]);
+/* Err parse_ull_err(const char* tk, uintmax_t ullp[_1_], const char* endptr[_1_]); */
 Err parse_ll_err(const char* tk, intmax_t llp[_1_], const char* endptr[_1_]);
 
 static inline Err bufofchar_append(BufOf(char) buf[_1_], char* s, size_t len) {

@@ -246,15 +246,7 @@ static inline bool lexbor_str_eq(const char* s, const lxb_char_t* lxb_str, size_
 Err dbg_print_title(lxb_dom_node_t* title) ;
 Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request req[_1_]);
 
-static inline Err
-lexbor_node_get_text(lxb_dom_node_t* node, const char* data[_1_], size_t len[_1_]) {
-    lxb_dom_text_t* text = lxb_dom_interface_text(node);
-    if(!text) return "error: expecting not null lxb_dom_interface_text(node)";
-    *data = (const char*)text->char_data.data.data;
-    *len = text->char_data.data.length;
-    return Ok;
-}
-
+Err lexbor_node_get_text(lxb_dom_node_t* node, const char* data[_1_], size_t len[_1_]);
 #define lexbor_get_text lexbor_node_get_text //TODO: use _Generics and match node/elem
 
 static inline bool lexbor_inside_tag(lxb_dom_node_t* node, lxb_tag_id_enum_t tag) {
