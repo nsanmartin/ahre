@@ -146,6 +146,7 @@ static inline Err bufofchar_append(BufOf(char) buf[_1_], char* s, size_t len) {
     bufofchar_append(Buffer, LitStr, sizeof(LitStr)-1)
 
 Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) ;
+Err parse_size_t_err(const char* tk, size_t out[_1_], const char* endptr[_1_], int base);
 
 
 #define foreach__(T,It,Col) \

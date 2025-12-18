@@ -17,15 +17,16 @@ Err fetch_history_entry_update_curl(
     if(c==CURLE_OK) c=curl_easy_getinfo(curl, CURLINFO_PRIMARY_PORT, &e->primary_port);
     if(c==CURLE_OK) c=curl_easy_getinfo(curl, CURLINFO_SIZE_DOWNLOAD_T, &e->size_download_t);
     if(c==CURLE_OK) c=curl_easy_getinfo(curl, CURLINFO_SPEED_DOWNLOAD_T, &e->speed_download_t);
-    if(c==CURLE_OK) c=curl_easy_getinfo(curl, CURLINFO_QUEUE_TIME_T, &e->queue_time_t);
-    if(c==CURLE_OK) c=curl_easy_getinfo(curl, CURLINFO_NAMELOOKUP_TIME_T, &e->namelookup_time_t);
-    if(c==CURLE_OK) c=curl_easy_getinfo(curl, CURLINFO_CONNECT_TIME_T, &e->connect_time_t);
-    if(c==CURLE_OK) c=curl_easy_getinfo(curl, CURLINFO_APPCONNECT_TIME_T, &e->appconnect_time_t);
-    if(c==CURLE_OK) c=curl_easy_getinfo(curl, CURLINFO_PRETRANSFER_TIME_T, &e->pretransfer_time_t);
-    if(c==CURLE_OK) c=curl_easy_getinfo(curl, CURLINFO_POSTTRANSFER_TIME_T, &e->posttransfer_time_t);
-    if(c==CURLE_OK)c=curl_easy_getinfo(curl,CURLINFO_STARTTRANSFER_TIME_T, &e->starttransfer_time_t);
-    if(c==CURLE_OK) c=curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME_T, &e->total_time_t);
-    if(c==CURLE_OK) c=curl_easy_getinfo(curl, CURLINFO_REDIRECT_TIME_T, &e->redirect_time_t);
+    /* this metrics are not available in older versions of libcurl */
+    /* if(c==CURLE_OK) c=curl_easy_getinfo(curl, CURLINFO_QUEUE_TIME_T, &e->queue_time_t); */
+    /* if(c==CURLE_OK) c=curl_easy_getinfo(curl, CURLINFO_NAMELOOKUP_TIME_T, &e->namelookup_time_t); */
+    /* if(c==CURLE_OK) c=curl_easy_getinfo(curl, CURLINFO_CONNECT_TIME_T, &e->connect_time_t); */
+    /* if(c==CURLE_OK) c=curl_easy_getinfo(curl, CURLINFO_APPCONNECT_TIME_T, &e->appconnect_time_t); */
+    /* if(c==CURLE_OK) c=curl_easy_getinfo(curl, CURLINFO_PRETRANSFER_TIME_T, &e->pretransfer_time_t); */
+    /* if(c==CURLE_OK) c=curl_easy_getinfo(curl, CURLINFO_POSTTRANSFER_TIME_T, &e->posttransfer_time_t); */
+    /* if(c==CURLE_OK)c=curl_easy_getinfo(curl,CURLINFO_STARTTRANSFER_TIME_T, &e->starttransfer_time_t); */
+    /* if(c==CURLE_OK) c=curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME_T, &e->total_time_t); */
+    /* if(c==CURLE_OK) c=curl_easy_getinfo(curl, CURLINFO_REDIRECT_TIME_T, &e->redirect_time_t); */
 
     if (c !=CURLE_OK ) {
         const char* cerr = curl_easy_strerror(c);

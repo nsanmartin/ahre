@@ -1109,13 +1109,13 @@ Err _htmldoc_scripts_range_from_parsed_range_(
         case range_addr_prev_tag: 
         case range_addr_search_tag:
              return "invalid range.end address for scripts";
-        case range_addr_beg_tag: r->end = 0 + p->end.delta;
+        case range_addr_beg_tag: r->end = 1 + p->end.delta;
             break;
-        case range_addr_none_tag: r->end = r->beg;
+        case range_addr_none_tag: r->end = 1 + r->beg;
             break;
-        case range_addr_end_tag: r->end = script_max + p->end.delta;
+        case range_addr_end_tag: r->end = 1 + script_max + p->end.delta;
             break;
-        case range_addr_num_tag: r->end = p->end.n + p->end.delta;
+        case range_addr_num_tag: r->end = 1 + p->end.n + p->end.delta;
             break;
         default: return "error: invalid RangeParse end tag";
     }
@@ -1128,7 +1128,7 @@ Err htmldoc_scripts_write(HtmlDoc h[_1_], RangeParse rp[_1_], Writer w[_1_]) {
 
     Range r;
     try(_htmldoc_scripts_range_from_parsed_range_(h, rp, &r));
-    for (size_t it = r.beg; it <= r.end; ++it) {
+    for (size_t it = r.beg; it < r.end; ++it) {
         char buf[UINT_TO_STR_BUFSZ] = {0};
         size_t len;
         try( unsigned_to_str(it, buf, UINT_TO_STR_BUFSZ, &len));

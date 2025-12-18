@@ -123,10 +123,10 @@ static Err run_cmd__(CmdParams p[_1_], SessionCmd cmdlist[]) {
 }
 
 
-static Err run_cmd_on_range__(CmdParams p[_1_], SessionCmd cmdlist[]) {
+static Err run_cmd_on_range__(CmdParams p[_1_], SessionCmd cmdlist[], int base) {
     p->ln = cstr_skip_space(p->ln);
     const char* endptr;
-    try(parse_range(p->ln, &p->rp, &endptr));
+    try(parse_range(p->ln, &p->rp, &endptr, base));
     p->ln = endptr;
 
     p->ln = cstr_skip_space(p->ln);
@@ -150,6 +150,7 @@ Err cmd_anchor_print(CmdParams p[_1_]) {
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
     try(basic_range_from_parse(&p->rp, 0, len__(htmldoc_anchors(h)), &r));
+    if (r.end <= r.beg) return "error: bad range";
     for (size_t i = r.beg; i < r.end; ++i)
         try( _cmd_anchor_print(p->s, i));
 
@@ -160,7 +161,7 @@ Err cmd_anchor_asterisk(CmdParams p[_1_]) {
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
     try(basic_range_from_parse(&p->rp, 0, len__(htmldoc_anchors(h)), &r));
-    if (r.beg != r.end) return "TODO: implement anchor * for ranges";
+    if (r.beg + 1 != r.end) return "TODO: implement anchor * for ranges";
     return _cmd_anchor_asterisk(p->s, r.beg);
 }
 Err cmd_anchor_save(CmdParams p[_1_]) {
@@ -168,7 +169,7 @@ Err cmd_anchor_save(CmdParams p[_1_]) {
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
     try(basic_range_from_parse(&p->rp, 0, len__(htmldoc_anchors(h)), &r));
-    if (r.beg != r.end) return "TODO: implement anchor > for ranges";
+    if (r.beg + 1 != r.end) return "TODO: implement anchor > for ranges";
     return _cmd_anchor_save(p->s, r.beg, p->ln);
 }
 
@@ -274,7 +275,7 @@ static Err cmd_doc_scripts_show(CmdParams p[_1_]) {
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
     Writer w;
-    try(session_std_writer_init(&w, p->s));
+    try(session_msg_writer_init(&w, p->s));
     return htmldoc_scripts_write(h, &p->rp, &w);
 }
 
@@ -303,7 +304,7 @@ Err cmd_curl(CmdParams p[_1_]) { return run_cmd__(p, _cmd_curl_); }
 
 #define CMD_DOC_SCRIPTS_DOC "Doc's scripts cmd (only if js is enabled)"
 static inline Err cmd_doc_scripts_cmd(CmdParams p[_1_]) {
-    return run_cmd_on_range__(p, _cmd_doc_scripts_);
+    return run_cmd_on_range__(p, _cmd_doc_scripts_, 10);
 }
 
 #define CMD_DOC_FETCh \
@@ -371,7 +372,7 @@ static Err cmd_echo (CmdParams p[_1_]) {
 #define CMD_ANCHOR_DOC \
     "[ LINK_ID [SUB_COMMAND]\n\n"\
     "'[' commands are applied to the links present in the document.\n"
-Err cmd_anchor(CmdParams p[_1_]) { return run_cmd_on_range__(p, _cmd_anchor_); }
+Err cmd_anchor(CmdParams p[_1_]) { return run_cmd_on_range__(p, _cmd_anchor_, 36); }
 
 #define CMD_HELP_DOC \
     "Ahre has char commands and word commands.\n" \
@@ -393,12 +394,12 @@ Err cmd_doc(CmdParams p[_1_]) { return run_cmd__(p, _cmd_doc_); }
 
 Err cmd_textbuf(CmdParams p[_1_]) {
     try( session_current_buf(p->s, &p->tb));
-    return run_cmd_on_range__(p, _cmd_textbuf_);
+    return run_cmd_on_range__(p, _cmd_textbuf_, 10);
 }
 
 Err cmd_sourcebuf(CmdParams p[_1_]) {
     try( session_current_src(p->s, &p->tb));
-    return run_cmd_on_range__(p, _cmd_textbuf_);
+    return run_cmd_on_range__(p, _cmd_textbuf_, 10);
 }
 
 

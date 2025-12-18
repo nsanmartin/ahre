@@ -48,7 +48,8 @@ _parse_range_addr_delta_(const char* tk, RangeAddr out[_1_], const char* endptr[
 
 
 static Err
-_parse_range_addr_(const char* tk, RangeAddr out[_1_], const char* endptr[_1_]) {
+_parse_range_addr_(const char* tk, RangeAddr out[_1_], const char* endptr[_1_], int base) {
+    if (base != 10 && base != 36) return "error: onle base 10 and base 36 supported";
     if (!tk) return "error: cannot parse NULL";
     *endptr = tk;
     *out = (RangeAddr){.tag=range_addr_none_tag};
@@ -78,10 +79,10 @@ _parse_range_addr_(const char* tk, RangeAddr out[_1_], const char* endptr[_1_]) 
         *out = (RangeAddr) { .tag = range_addr_end_tag };
         *endptr = *endptr + 1;
         return _parse_range_addr_delta_(*endptr, out, endptr);
-    } else if (isdigit(**endptr)) {
+    } else if ((base == 10 && isdigit(**endptr)) || (base == 36 && isalnum(**endptr))) {
         /* *endptr does not start neither with - nor + */
         *out = (RangeAddr) { .tag = range_addr_num_tag };
-        try( parse_ull_err(*endptr, &out->n, endptr)); //no need to check tk != endptr
+        try( parse_size_t_err(*endptr, &out->n, endptr, base)); //no need to check tk != endptr
         *endptr = cstr_skip_space(*endptr);
         if (**endptr == '+' || **endptr == '-')
             return _parse_range_addr_delta_(*endptr, out, endptr);
@@ -101,9 +102,10 @@ _parse_range_addr_(const char* tk, RangeAddr out[_1_], const char* endptr[_1_]) 
 
 
 Err parse_range(
-    const char*      tk,
-    RangeParse res[_1_],
-    const char*      endptr[_1_]
+    const char* tk,
+    RangeParse  res[_1_],
+    const char* endptr[_1_],
+    int         base
 ) {
     if (!tk) return "Error: cannot parse NULL, invalid input";
 
@@ -140,11 +142,11 @@ Err parse_range(
     if (*tk == ',') {
         ++tk;
         *res = (RangeParse) { .beg={.tag=range_addr_curr_tag, .n=1}, };
-        return _parse_range_addr_(tk, &res->end, endptr);
+        return _parse_range_addr_(tk, &res->end, endptr, base);
     }
 
     *res = (RangeParse) {0};
-    try (_parse_range_addr_(tk, &res->beg, endptr));
+    try (_parse_range_addr_(tk, &res->beg, endptr, base));
     if (tk == *endptr /* no_parse */) {
         /* No range was giving so defaulting to current line.
          * This is the case of e.g. 'p' that prints current line.
@@ -161,7 +163,7 @@ Err parse_range(
     if (*tk == ',') {
         ++tk;
         /* Addr,... */
-        return _parse_range_addr_(tk, &res->end, endptr);
+        return _parse_range_addr_(tk, &res->end, endptr, base);
     } else {
         /* AddrEORange */
         res->end = (RangeAddr){.tag=range_addr_none_tag};

@@ -72,15 +72,6 @@ Err parse_ull_err(const char* tk, uintmax_t ullp[_1_], const char* endptr[_1_]) 
 }
 
 
-Err parse_ll_err(const char* tk, intmax_t llp[_1_], const char* endptr[_1_]) {
-    if (!tk) return "error parsing ll: NULL received";
-    if (!*tk) return "error parsing ll: \"\\0\" received";
-    *llp = strtoll(tk, (char**)endptr, 10);
-    if (ERANGE == errno && (LLONG_MAX == *llp || LLONG_MIN == *llp))
-       return err_fmt("error: %s", strerror(errno));
-    return Ok;
-}
-
 const char* parse_ull(const char* tk, uintmax_t* ullp) {
     if (!tk || !*tk) { return NULL; }
     char* endptr = 0x0;
@@ -125,9 +116,8 @@ Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[_1_]) {
 Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) {
     if (!strptr || !*strptr) return "error: unexpected NULL ptr";
     const char* str = cstr_skip_space(*strptr);
-    while(*str && isspace(*str)) ++str;
     if (!*str) return "number not given";
-    if (!isalnum(*str)) return "number must consist in digits";
+    if (!isalnum(*str)) return "number must consist in alnum chars";
     char* endptr = NULL;
     *num = strtoull(str, &endptr, base);
     if (errno == ERANGE)
@@ -141,3 +131,22 @@ Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) {
 }
 
 
+Err parse_ll_err(const char* tk, intmax_t llp[_1_], const char* endptr[_1_]) {
+    if (!tk) return "error parsing ll: NULL received";
+    if (!*tk) return "error parsing ll: \"\\0\" received";
+    *llp = strtoll(tk, (char**)endptr, 10);
+    if (ERANGE == errno && (LLONG_MAX == *llp || LLONG_MIN == *llp))
+       return err_fmt("error: %s", strerror(errno));
+    return Ok;
+}
+
+
+Err parse_size_t_err(const char* tk, size_t out[_1_], const char* endptr[_1_], int base) {
+    if (!tk) return "error parsing size_t: NULL received";
+    if (!*tk) return "error parsing size_t: \"\\0\" received";
+    long long unsigned llu = strtoull(tk, (char**)endptr, base);
+    if (ERANGE == errno) return err_fmt("error: %s", strerror(errno));
+    if (llu > SIZE_MAX) return "error: size_t too small for num";
+    *out = (size_t)llu;
+    return Ok;
+}
