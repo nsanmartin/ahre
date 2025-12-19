@@ -13,7 +13,6 @@
 #define AHRE_STR_H__
 
 #include <ctype.h>
-#include <string.h>
 #include <errno.h>
 #include <time.h>
 

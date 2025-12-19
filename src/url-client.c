@@ -1,4 +1,3 @@
-#include <string.h>
 
 #include "ahre.h"
 #include "generic.h"

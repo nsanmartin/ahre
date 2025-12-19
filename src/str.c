@@ -1,4 +1,5 @@
-#define _XOPEN_SOURCE 500
+#include "mem.h"
+
 #include <ctype.h>
 #include <errno.h>
 #include <iconv.h>
@@ -9,7 +10,6 @@
 
 #include "error.h"
 #include "generic.h"
-#include "mem.h"
 #include "str.h"
 
 

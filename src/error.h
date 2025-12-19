@@ -1,8 +1,9 @@
 #ifndef __STATUS_AHRE_H__
 #define __STATUS_AHRE_H__
 
+#include "mem.h"
+
 #include <stdio.h>
-#include <string.h>
 #include <stdbool.h>
 
 

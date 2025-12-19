@@ -128,9 +128,10 @@ Err _err_fmt_while_(Err fmt, ...) {
             beg = end + 1;
         } else if (beg == end) { ++beg; }
 
+        const char* s = NULL;
         switch(*beg) {
             case 's':
-                const char* s = va_arg(ap, const char *);
+                s = va_arg(ap, const char *);
                 if (s == MSGBUF)
                     return "error: err_fmt can't receive as parameter an err_fmt return value";
                 if (s == NULL) s = "(null)";
