@@ -284,26 +284,26 @@ Err curl_lexbor_fetch_document(
 
 
 /*TODO: rename to `url_client_curlu_to_file`*/
-Err curl_save_url(UrlClient url_client[_1_], CURLU* curlu , const char* fname) {
-    try( url_client_reset(url_client));
-    FILE* fp;
-    try(fopen_or_append_fopen(fname, curlu, &fp));
-    if (!fp) return err_fmt("error opening file '%s': %s\n", fname, strerror(errno));
-    if (
-       curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, fwrite)
-    || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, fp)
-    || curl_easy_setopt(url_client->curl, CURLOPT_CURLU, curlu)
-    ) return "error configuring curl write fn/data";
+/* Err curl_save_url(UrlClient url_client[_1_], CURLU* curlu , const char* fname) { */
+/*     try( url_client_reset(url_client)); */
+/*     FILE* fp; */
+/*     try(fopen_or_append_fopen(fname, curlu, &fp)); */
+/*     if (!fp) return err_fmt("error opening file '%s': %s\n", fname, strerror(errno)); */
+/*     if ( */
+/*        curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, fwrite) */
+/*     || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, fp) */
+/*     || curl_easy_setopt(url_client->curl, CURLOPT_CURLU, curlu) */
+/*     ) return "error configuring curl write fn/data"; */
 
-    CURLcode curl_code = curl_easy_perform(url_client->curl);
-    fclose(fp);
+/*     CURLcode curl_code = curl_easy_perform(url_client->curl); */
+/*     fclose(fp); */
 
-    curl_easy_reset(url_client->curl);
-    if (curl_code!=CURLE_OK) 
-        return err_fmt("curl failed to perform curl: %s", curl_easy_strerror(curl_code));
-    try( url_client_reset(url_client));
-    return Ok;
-}
+/*     curl_easy_reset(url_client->curl); */
+/*     if (curl_code!=CURLE_OK) */ 
+/*         return err_fmt("curl failed to perform curl: %s", curl_easy_strerror(curl_code)); */
+/*     try( url_client_reset(url_client)); */
+/*     return Ok; */
+/* } */
 
 
 static Err
@@ -429,7 +429,7 @@ Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request req[_1_]) {
     lexbor_find_lit_attr_value__(form, "method", &method, &method_len);
 
     if (action && action_len) 
-        try(str_append_z(request_url_str(req), (char*)action, action_len));
+        try(str_append_z(request_urlstr(req), (char*)action, action_len));
 
 
     if (!method_len || lexbor_str_eq("get", method, method_len)) {

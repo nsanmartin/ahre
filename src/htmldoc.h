@@ -67,6 +67,7 @@ static inline void http_header_clean(HttpHeader hh[_1_]) {
 
 
 typedef struct HtmlDoc {
+    /* Request              req; */
     Url                  url;
     HttpMethod           method;
     lxb_html_document_t* lxbdoc;

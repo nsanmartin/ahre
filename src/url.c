@@ -116,8 +116,8 @@ static Err _url_from_post_request_(
     try(url_init(u, other));
     CURL* curl = url_client_curl(uc);
     CURLU* cu = url_cu(u);
-    if (len__(request_url_str(r))) {
-        CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, items__(request_url_str(r)), 0);
+    if (len__(request_urlstr(r))) {
+        CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, items__(request_urlstr(r)), 0);
         if (curl_code != CURLUE_OK)
             return err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
     }
@@ -161,10 +161,10 @@ Err url_from_get_request(Url u[_1_], Request r[_1_], Url* other) {
     CURLU* cu = url_cu(u);
     Err err = Ok;
     Str file = (Str){0};
-    if (len__(request_url_str(r))) {
+    if (len__(request_urlstr(r))) {
         try_or_jump(err, Failure_Clean_File_Url,
-                _prepend_file_schema_if_file_exists_(request_url_str(r), &file));
-        const char* url_str = file.len ? file.items : items__(request_url_str(r));
+                _prepend_file_schema_if_file_exists_(request_urlstr(r), &file));
+        const char* url_str = file.len ? file.items : items__(request_urlstr(r));
         CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, url_str, CURLU_DEFAULT_SCHEME);
         if (curl_code != CURLUE_OK) {
             err = err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
@@ -234,7 +234,7 @@ Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method) {
 
     *r = (Request){
         .method=method,
-        .url=(Str){.items=(char*)url, .len=url_len},
+        .urlstr=(Str){.items=(char*)url, .len=url_len},
         .postfields=(Str){.items=(char*)params, .len=params_len}
     };
     return Ok;

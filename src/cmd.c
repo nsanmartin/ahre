@@ -13,7 +13,7 @@ Err cmd_get(CmdParams p[_1_]) {
     Request r;
     if (*p->ln == '\\') {
         r = (Request){.method=http_get};
-        try (get_url_alias(p->s, cstr_skip_space(p->ln + 1), &r.url));
+        try (get_url_alias(p->s, cstr_skip_space(p->ln + 1), request_urlstr(&r)));
         Err err = session_fetch_request(p->s, &r, session_url_client(p->s));
         request_clean(&r);
         return err;
@@ -28,7 +28,7 @@ Err cmd_post(CmdParams p[_1_]) {
     Request r;
     if (*p->ln == '\\') {
         r = (Request){.method=http_post};
-        try (get_url_alias(p->s, cstr_skip_space(p->ln + 1), &r.url));
+        try (get_url_alias(p->s, cstr_skip_space(p->ln + 1), request_urlstr(&r)));
         Err err = session_fetch_request(p->s, &r, session_url_client(p->s));
         request_clean(&r);
         return err;

@@ -22,7 +22,7 @@ static Err _read_data_opt_(CliParams cparams[_1_], const char* data, const char*
     if (!url || !*url) return "invalid -d url optopt";
     Request r = (Request) {
         .method=http_post,
-        .url=(Str){.items=(char*)url, .len=strlen(url)},
+        .urlstr=(Str){.items=(char*)url, .len=strlen(url)},
         .postfields=(Str){.items=(char*)data, .len=strlen(data)}
     };
     if (!arlfn(Request,append)(cparams_requests(cparams), &r))
@@ -59,7 +59,7 @@ Err _session_conf_from_options_(int argc, char* argv[], CliParams cparams[_1_]) 
         // read positional parameter
         if (*arg != '-') {
             Request r = (Request) {
-                .method=http_get, .url=(Str){.items=(char*)arg, .len=strlen(arg)}
+                .method=http_get, .urlstr=(Str){.items=(char*)arg, .len=strlen(arg)}
             };
             if (!arlfn(Request,append)(cparams_requests(cparams), &r))
                 return "error: arl append failure";

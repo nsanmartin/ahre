@@ -41,7 +41,7 @@ Err tab_node_tree_append_ahref(
     if (!a) return "link number invalid";
 
     Request r = (Request){.method=http_get};
-    try (lexbor_append_null_terminated_attr(*a, "href", 4, &r.url));
+    try (lexbor_append_null_terminated_attr(*a, "href", 4, request_urlstr(&r)));
 
     TabNode newnode;
     Err e = Ok;

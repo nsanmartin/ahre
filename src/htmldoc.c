@@ -819,7 +819,7 @@ Err htmldoc_init_bookmark(HtmlDoc d[_1_], const char* urlstr) {
     if (!d->lxbdoc) return "error: lxb failed to create html document";
     if (!urlstr) return "error: cannot initialize bookmark with not path";
     Request r = (Request){
-        .method = http_get, .url=(Str){.items=(char*)urlstr, .len=strlen(urlstr)}
+        .method = http_get, .urlstr=(Str){.items=(char*)urlstr, .len=strlen(urlstr)}
     };
     try_or_jump(e, Failure_Lxb_Html_Document_Destroy, url_from_get_request(&d->url, &r, NULL));
     return Ok;

@@ -165,7 +165,7 @@ Err cmd_curl_set(CmdParams p[_1_]) {
 }
 
 Err url_client_curlu_to_file(UrlClient url_client[_1_], CURLU* curlu , const char* fname) {
-    try( url_client_reset(url_client));
+    /* try( url_client_reset(url_client)); */
     FILE* fp;
     try(fopen_or_append_fopen(fname, curlu, &fp));
     if (!fp) return err_fmt("error opening file '%s': %s\n", fname, strerror(errno));
@@ -181,7 +181,7 @@ Err url_client_curlu_to_file(UrlClient url_client[_1_], CURLU* curlu , const cha
     curl_easy_reset(url_client->curl);
     if (curl_code!=CURLE_OK) 
         return err_fmt("curl failed to perform curl: %s", curl_easy_strerror(curl_code));
-    try( url_client_reset(url_client));
+    /* try( url_client_reset(url_client)); */
     return Ok;
 }
 
