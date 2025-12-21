@@ -12,9 +12,10 @@ Err cmd_get(CmdParams p[_1_]) {
     p->ln = cstr_trim_space((char*)p->ln);
     Request r;
     if (*p->ln == '\\') {
-        r = (Request){.method=http_get};
-        try (get_url_alias(p->s, cstr_skip_space(p->ln + 1), request_urlstr(&r)));
-        Err err = session_fetch_request(p->s, &r, session_url_client(p->s));
+        Str u = (Str){0};
+        try (get_url_alias(p->s, cstr_skip_space(p->ln + 1), &u));
+        Err err = request_init_move_urlstr(&r, http_get, &u, NULL);
+        ok_then(err, session_fetch_request(p->s, &r, session_url_client(p->s)));
         request_clean(&r);
         return err;
     }
@@ -27,9 +28,10 @@ Err cmd_post(CmdParams p[_1_]) {
     p->ln = cstr_trim_space((char*)p->ln);
     Request r;
     if (*p->ln == '\\') {
-        r = (Request){.method=http_post};
-        try (get_url_alias(p->s, cstr_skip_space(p->ln + 1), request_urlstr(&r)));
-        Err err = session_fetch_request(p->s, &r, session_url_client(p->s));
+        Str u = (Str){0};
+        try (get_url_alias(p->s, cstr_skip_space(p->ln + 1), &u));
+        Err err = request_init_move_urlstr(&r, http_get, &u, NULL);
+        ok_then(err, session_fetch_request(p->s, &r, session_url_client(p->s)));
         request_clean(&r);
         return err;
     }
@@ -117,14 +119,10 @@ Err cmd_fetch(Session session[_1_]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
 
-    Request r = (Request){
-        .method=http_get,
-    };
     HtmlDoc newdoc;
-    try(htmldoc_init_from_request(
+    try(htmldoc_init_move_request(
         &newdoc,
-        &r,
-        htmldoc_url(htmldoc),
+        htmldoc_request(htmldoc),
         session_url_client(session),
         session
     ));

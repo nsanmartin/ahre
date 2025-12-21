@@ -255,6 +255,7 @@ Err curl_lexbor_fetch_document(
     Writer            msg_writer[_1_],
     FetchHistoryEntry histentry[_1_]
 ) {
+    try( url_from_request(htmldoc_request(htmldoc), url_client));
     try( url_client_set_basic_options(url_client));
     try( _curl_set_write_fn_and_data_(url_client, htmldoc));
     try( _lexbor_parse_chunk_begin_(htmldoc));
@@ -307,7 +308,7 @@ Err curl_lexbor_fetch_document(
 
 
 static Err
-_make_submit_get_request_rec_( lxb_dom_node_t* node, Request req[_1_]) {
+_make_submit_get_request_rec_( lxb_dom_node_t* node, Request r[_1_]) {
     if (!node) return Ok;
     else if (node->local_name == LXB_TAG_INPUT
             && !lexbor_lit_attr_has_lit_value(node, "type", "submit")) {
@@ -325,18 +326,18 @@ _make_submit_get_request_rec_( lxb_dom_node_t* node, Request req[_1_]) {
         if (strcasecmp("password", (char*)name) == 0)
             return "warn: passwords not allowed in get requests";
 
-        try(request_query_append_key_value(req, (char*)name, namelen, (char*)value, valuelen));
+        try(request_query_append_key_value(r, (char*)name, namelen, (char*)value, valuelen));
     } 
 
     for(lxb_dom_node_t* it = node->first_child; ; it = it->next) {
-        try( _make_submit_get_request_rec_(it, req));
+        try( _make_submit_get_request_rec_(it, r));
         if (it == node->last_child) { break; }
     }
     return Ok;
 }
 
 
-static Err _request_append_select_(lxb_dom_node_t node[_1_], Request req[_1_]) {
+static Err _request_append_select_(lxb_dom_node_t node[_1_], Request r[_1_]) {
     StrView key = lexbor_get_lit_attr__(node, "name");
     if (!key.len) return Ok;
 
@@ -349,7 +350,7 @@ static Err _request_append_select_(lxb_dom_node_t node[_1_], Request req[_1_]) {
     if (selected) {
         StrView value = lexbor_get_lit_attr__(selected, "value");
         if (value.len) {
-            try(request_query_append_key_value(req, key.items, key.len, value.items, value.len));
+            try(request_query_append_key_value(r, key.items, key.len, value.items, value.len));
         }
     }
     return Ok;
@@ -358,7 +359,7 @@ static Err _request_append_select_(lxb_dom_node_t node[_1_], Request req[_1_]) {
 static Err _request_append_lexbor_name_value_attrs_if_both_(
     lxb_dom_node_t node[_1_],
     bool is_https,
-    Request req[_1_]
+    Request r[_1_]
 ) {
     const lxb_char_t* value;
     size_t valuelen;
@@ -372,16 +373,14 @@ static Err _request_append_lexbor_name_value_attrs_if_both_(
     if (strcasecmp("password", (char*)name) == 0 && !is_https)
         return "warn: passwords allowed only under https";
 
-    return request_query_append_key_value(
-        req, (char*)name, namelen, (char*)value, valuelen
-    );
+    return request_query_append_key_value(r, (char*)name, namelen, (char*)value, valuelen);
 }
 
 
 static Err _make_submit_post_request_rec(
     lxb_dom_node_t* node,
     bool is_https,
-    Request req[_1_]
+    Request r[_1_]
 ) {
     if (!node) return Ok;
     if (node->local_name == LXB_TAG_FORM) {
@@ -392,24 +391,24 @@ static Err _make_submit_post_request_rec(
 
     if (node->local_name == LXB_TAG_INPUT 
         && !lexbor_lit_attr_has_lit_value(node, "type", "submit"))
-        return _request_append_lexbor_name_value_attrs_if_both_(node, is_https, req);
+        return _request_append_lexbor_name_value_attrs_if_both_(node, is_https, r);
     else if (node->local_name == LXB_TAG_SELECT) {
-        return _request_append_select_(node, req);
+        return _request_append_select_(node, r);
     }
 
     /* recursive case */
     for(lxb_dom_node_t* it = node->first_child; it ; it = it->next)
-        try( _make_submit_post_request_rec(it, is_https, req));
+        try( _make_submit_post_request_rec(it, is_https, r));
     return Ok;
 }
 
 
 
 static Err
-_mk_submit_post_request_(lxb_dom_node_t* form, bool is_https, Request req[_1_]) { 
+_mk_submit_post_request_(lxb_dom_node_t* form, bool is_https, Request r[_1_]) { 
 
     for(lxb_dom_node_t* it = form->first_child; it ; it = it->next) {
-        try(_make_submit_post_request_rec(it, is_https, req));
+        try(_make_submit_post_request_rec(it, is_https, r));
         if (it == form->last_child) break;
     }
 
@@ -419,7 +418,7 @@ _mk_submit_post_request_(lxb_dom_node_t* form, bool is_https, Request req[_1_]) 
 
 /* external linkage */
 
-Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request req[_1_]) {
+Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request r[_1_]) {
     const lxb_char_t* action;
     size_t action_len;
     lexbor_find_lit_attr_value__(form, "action", &action, &action_len);
@@ -429,16 +428,16 @@ Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request req[_1_]) {
     lexbor_find_lit_attr_value__(form, "method", &method, &method_len);
 
     if (action && action_len) 
-        try(str_append_z(request_urlstr(req), (char*)action, action_len));
+        try(str_append_z(request_urlstr(r), (char*)action, action_len));
 
 
     if (!method_len || lexbor_str_eq("get", method, method_len)) {
-        req->method = http_get;
-        return _make_submit_get_request_rec_(form, req);
+        r->method = http_get;
+        return _make_submit_get_request_rec_(form, r);
     }
     if (method_len && lexbor_str_eq("post", method, method_len)) {
-        req->method = http_post;
-        return _mk_submit_post_request_(form, is_https, req);
+        r->method = http_post;
+        return _mk_submit_post_request_(form, is_https, r);
     }
     return "not yet supported method";
 }

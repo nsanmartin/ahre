@@ -244,7 +244,7 @@ static inline bool lexbor_str_eq(const char* s, const lxb_char_t* lxb_str, size_
 }
 
 Err dbg_print_title(lxb_dom_node_t* title) ;
-Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request req[_1_]);
+Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request r[_1_]);
 
 Err lexbor_node_get_text(lxb_dom_node_t* node, const char* data[_1_], size_t len[_1_]);
 #define lexbor_get_text lexbor_node_get_text //TODO: use _Generics and match node/elem
@@ -388,12 +388,12 @@ lexbor_doc_get_element_by_id (lxb_html_document_t* lxbdoc, const char* id, size_
 Err lexbor_get_title_text(lxb_dom_node_t* title, Str out[_1_]);
 
 static inline Err lexbor_append_null_terminated_attr(
-    lxb_dom_node_t* node, const char* attr, size_t attr_len, Str s[_1_]
+    lxb_dom_node_t* node, const char* attr, size_t attr_len, Str out[_1_]
 ) {
     const lxb_char_t* data;
     size_t data_len;
     if (!lexbor_find_attr_value(node, attr, attr_len, &data, &data_len))
         return "lexbor node does not have attr";
-    return null_terminated_str_from_mem((char*)data, data_len, s);
+    return null_terminated_str_from_mem((char*)data, data_len, out);
 }
 #endif

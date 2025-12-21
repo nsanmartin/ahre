@@ -768,10 +768,9 @@ static Err _htmldoc_draw_(HtmlDoc htmldoc[_1_], Session s[_1_]) {
 #define HTMLDOC_FLAG_JS 0x1u
 
 
-Err htmldoc_init_from_request(
+Err htmldoc_init_move_request(
     HtmlDoc   d[_1_],
     Request   r[_1_],
-    Url*      u,
     UrlClient uc[_1_],
     Session*  s
 ) {
@@ -783,13 +782,12 @@ Err htmldoc_init_from_request(
 
     /* lexbor doc should be initialized before jse_init */
     *d = (HtmlDoc){
-        .method = request_method(r),
+        .req    = *r,
         .lxbdoc = lxb_html_document_create()
     };
     if (!d->lxbdoc) return "error: lxb failed to create html document";
     if (flags & HTMLDOC_FLAG_JS) 
         try_or_jump(e, Failure, jse_init(d));
-    try_or_jump(e, Failure, url_from_request(htmldoc_url(d), r, uc, u));
 
     ArlOf(FetchHistoryEntry)* hist = session_fetch_history(s);
      if (!arlfn(FetchHistoryEntry,append)(hist, &(FetchHistoryEntry){0}))
@@ -802,26 +800,26 @@ Err htmldoc_init_from_request(
     try_or_jump( e, Failure,
         fetch_history_entry_update_title(arlfn(FetchHistoryEntry,back)(hist),htmldoc_title(d)));
 
-
+    *r = (Request){0};
     return Ok;
 
 Failure:
+    d->req = (Request){0};
     htmldoc_cleanup(d);
 
     return e;
 }
 
 
-Err htmldoc_init_bookmark(HtmlDoc d[_1_], const char* urlstr) {
+Err htmldoc_init_bookmark_move_urlstr(HtmlDoc d[_1_], Str urlstr[_1_]) {
     Err e = Ok;
 
-    *d = (HtmlDoc){ .method = http_get, .lxbdoc = lxb_html_document_create() };
+    *d = (HtmlDoc){ .lxbdoc = lxb_html_document_create() };
     if (!d->lxbdoc) return "error: lxb failed to create html document";
     if (!urlstr) return "error: cannot initialize bookmark with not path";
-    Request r = (Request){
-        .method = http_get, .urlstr=(Str){.items=(char*)urlstr, .len=strlen(urlstr)}
-    };
-    try_or_jump(e, Failure_Lxb_Html_Document_Destroy, url_from_get_request(&d->url, &r, NULL));
+    Request r;
+    try_or_jump(e, Failure_Lxb_Html_Document_Destroy,
+        request_init_move_urlstr(&r, http_get, urlstr, NULL));
     return Ok;
 
 Failure_Lxb_Html_Document_Destroy:
@@ -872,6 +870,7 @@ void htmldoc_cleanup(HtmlDoc htmldoc[_1_]) {
     htmldoc_cache_cleanup(htmldoc);
     lxb_html_document_destroy(htmldoc_lxbdoc(htmldoc));
     url_cleanup(htmldoc_url(htmldoc));
+    request_clean(htmldoc_request(htmldoc));
 
     if (jse_rt(htmldoc_js(htmldoc))) jse_clean(htmldoc_js(htmldoc));
 }

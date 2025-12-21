@@ -34,18 +34,20 @@ static inline void url_cleanup(Url u[_1_]) {
 //
 
 
-
 typedef struct {
-    HttpMethod  method;
-    Str urlstr;
+    HttpMethod method;
+    Url*       urlview;
+    Url        url;
+    Str        urlstr;
     ArlOf(Str) keys;
     ArlOf(Str) values;
-    Str postfields; /* used for post field and quey */
+    Str        postfields; /* used for post field and quey */
 } Request;
 
 
 static inline HttpMethod request_method(Request r[_1_]) { return r->method; }
 static inline Str* request_urlstr(Request r[_1_]) { return &r->urlstr; }
+static inline Url* request_url(Request r[_1_]) { return &r->url; }
 static inline Str* request_postfields(Request r[_1_]) { return &r->postfields; }
 static inline ArlOf(Str)* request_query_keys(Request r[_1_]) { return &r->keys; }
 static inline ArlOf(Str)* request_query_values(Request r[_1_]) { return &r->values; }
@@ -54,23 +56,41 @@ static inline void request_clean(Request r[_1_]) {
     str_clean(request_postfields(r));
     arlfn(Str,clean)(request_query_keys(r));
     arlfn(Str,clean)(request_query_values(r));
+    url_cleanup(request_url(r));
 }
 
 Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method);
 
 static inline Err request_query_append_key_value(
-    Request req[_1_], const char*k, size_t klen, const char* v, size_t vlen
+    Request r[_1_], const char*k, size_t klen, const char* v, size_t vlen
 ) {
         Str* key = &(Str){0};
         Str* value = &(Str){0};
         try(str_append(key, (char*)k, klen));
         try(str_append(value, (char*)v, vlen));
-        if (!arlfn(Str,append)(request_query_keys(req), key) 
-                || !arlfn(Str,append)(request_query_values(req), value))
+        if (!arlfn(Str,append)(request_query_keys(r), key) 
+                || !arlfn(Str,append)(request_query_values(r), value))
             return "error: arl append failure";
         return Ok;
 }
 
+Err url_from_get_request(Request r[_1_]);
+Err url_from_request(Request r[_1_], UrlClient uc[_1_]);
+
+
+static inline Err
+request_init_move_urlstr(Request r[_1_], HttpMethod method, Str urlstr[_1_], Url* url) {
+    (void)url;
+    *r = (Request) {
+        .method=method,
+        .urlstr=*urlstr,
+        .urlview=url
+    };
+    return Ok;
+}
+
+
+/* req. */
 
 
 static inline Err url_cstr_malloc(Url u[_1_], char* out[_1_]) {
@@ -135,6 +155,4 @@ static inline Err curlu_scheme_is_https(CURLU* cu, bool out[_1_]) {
     return Ok;
 }
 
-Err url_from_request(Url u[_1_], Request r[_1_], UrlClient uc[_1_], Url* other);
-Err url_from_get_request(Url u[_1_], Request r[_1_], Url* other);
 #endif

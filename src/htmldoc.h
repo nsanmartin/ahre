@@ -67,9 +67,7 @@ static inline void http_header_clean(HttpHeader hh[_1_]) {
 
 
 typedef struct HtmlDoc {
-    /* Request              req; */
-    Url                  url;
-    HttpMethod           method;
+    Request              req;
     lxb_html_document_t* lxbdoc;
     DocFetchCache        fetch_cache;
     DocDrawCache         draw_cache;
@@ -79,6 +77,7 @@ typedef struct HtmlDoc {
 } HtmlDoc;
 
 /* getters */
+static inline Request* htmldoc_request(HtmlDoc h[_1_]) { return &h->req; }
 static inline HttpHeader* htmldoc_http_header(HtmlDoc h[_1_]) { return &h->http_header; }
 static inline Str*
 htmldoc_http_content_type(HtmlDoc h[_1_]) { return &htmldoc_http_header(h)->content_type; }
@@ -121,8 +120,8 @@ static inline Err htmldoc_input_at(HtmlDoc d[_1_], size_t ix, LxbNode out[_1_]) 
     return Ok;
 }
 
-static inline Url* htmldoc_url(HtmlDoc d[_1_]) { return &d->url; }
-static inline HttpMethod htmldoc_method(HtmlDoc d[_1_]) { return d->method; }
+static inline Url* htmldoc_url(HtmlDoc d[_1_]) { return &d->req.url; }
+static inline HttpMethod htmldoc_method(HtmlDoc d[_1_]) { return d->req.method; }
 static inline JsEngine* htmldoc_js(HtmlDoc d[_1_]) { return &d->jsdoc; }
 
 static inline bool htmldoc_is_valid(HtmlDoc htmldoc[_1_]) {
@@ -248,13 +247,12 @@ static inline Err htmldoc_switch_js(HtmlDoc htmldoc[_1_], Session* s) {
 
 void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[_1_], Session* s);
 
-Err htmldoc_init_from_request(
+Err htmldoc_init_move_request(
     HtmlDoc   d[_1_],
     Request   r[_1_],
-    Url*      u,
     UrlClient uc[_1_],
     Session*   s
 );
 Err htmldoc_scripts_write(HtmlDoc h[_1_], RangeParse rp[_1_], Writer w[_1_]);
-Err htmldoc_init_bookmark(HtmlDoc d[_1_], const char* urlstr);
+Err htmldoc_init_bookmark_move_urlstr(HtmlDoc d[_1_], Str urlstr[_1_]);
 #endif

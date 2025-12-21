@@ -20,7 +20,8 @@ _get_bookmarks_doc_(
     Err err = str_append_lit__(bm_url, "file://");
     try(err);
     try_or_jump(err, Clean_Bm_Url, str_append_str(bm_url, bm_file));
-    try_or_jump(err, Clean_Bm_Url, htmldoc_init_bookmark(out, items__(bm_url)));
+    try_or_jump(err, Clean_Bm_Url,
+        htmldoc_init_bookmark_move_urlstr(out, bm_url));
     FetchHistoryEntry e;
     err = _htmldoc_fetch_bookmark_(out, url_client, msg_writer, &e);
     fetch_history_entry_clean(&e);
@@ -162,7 +163,6 @@ clean_title:
 free_curl_url:
     curl_free(url);
 clean_bmfname_out_and_bmdoc:
-    str_clean(&bmfname_out);
     htmldoc_cleanup(&bm);
     return err;
 }

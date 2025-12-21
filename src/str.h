@@ -193,11 +193,22 @@ static inline Err null_terminated_str_from_mem(
     return Ok;
 }
 
-#define strview_from_lit__(LitStr) strview_from_mem(LitStr, sizeof(LitStr)-1)
-static inline StrView strview_from_str__(Str s) {return strview_from_mem(s.items, s.len); }
-static inline StrView strview_from_strptr__(Str s[_1_]) {return strview_from_mem(s->items, s->len); }
-#define strview_from_strptr__(S) strview_from_mem((S)->items, (S)->len)
-#define strview__(...) GET_MACRO__(NULL,__VA_ARGS__,strview_from_mem,strview_from_lit__,skip__)(__VA_ARGS__)
+#define strview_from_lit__(LitStr) strview_from_mem(LitStr, lit_len__(LitStr))
+static inline StrView strview_from_str(Str s[_1_]) {return strview_from_mem(items__(s), len__(s));}
+static inline StrView strview_from_cstr(const char* s) {
+    if (s) return strview_from_mem(s, strlen(s));
+    return (StrView){0};
+}
+#define _strview_from_onep(P) _Generic((P),\
+    Str*    : strview_from_str,\
+    StrView*: strview_from_strview,\
+    const char*: strview_from_cstr,\
+    char*: strview_from_cstr,\
+    void*: strview_from_cstr\
+)(P)
+
+#define strview__(...) \
+    GET_MACRO__(NULL,__VA_ARGS__,strview_from_mem,_strview_from_onep,skip__)(__VA_ARGS__)
 
 const char* parse_l(const char* tk, long lptr[_1_]);
 

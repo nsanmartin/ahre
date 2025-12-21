@@ -110,12 +110,10 @@ Failure_Free_Escaped:
     return e;
 }
 
-static Err _url_from_post_request_(
-    Url u[_1_], Request r[_1_], UrlClient uc[_1_], Url* other
-) {
-    try(url_init(u, other));
+static Err _url_from_post_request_(Request r[_1_], UrlClient uc[_1_]) {
+    try(url_init(request_url(r), r->urlview));
     CURL* curl = url_client_curl(uc);
-    CURLU* cu = url_cu(u);
+    CURLU* cu = url_cu(&r->url);
     if (len__(request_urlstr(r))) {
         CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, items__(request_urlstr(r)), 0);
         if (curl_code != CURLUE_OK)
@@ -156,9 +154,9 @@ Err _prepend_file_schema_if_file_exists_(Str url[_1_], Str out[_1_]) {
     return Ok;
 }
 
-Err url_from_get_request(Url u[_1_], Request r[_1_], Url* other) {
-    try(url_init(u, other));
-    CURLU* cu = url_cu(u);
+Err url_from_get_request(Request r[_1_]) {
+    try(url_init(request_url(r), r->urlview));
+    CURLU* cu = url_cu(&r->url);
     Err err = Ok;
     Str file = (Str){0};
     if (len__(request_urlstr(r))) {
@@ -205,16 +203,15 @@ Err url_from_get_request(Url u[_1_], Request r[_1_], Url* other) {
     return err;
 Failure_Clean_File_Url:
     str_clean(&file);
-/* Failure_Clean_Curlu: */
-    url_cleanup(u);
+    url_cleanup(request_url(r));
     return err;
 }
 
 
-Err url_from_request(Url u[_1_], Request r[_1_], UrlClient uc[_1_], Url* other) {
+Err url_from_request(Request r[_1_], UrlClient uc[_1_]) {
     switch (r->method) {
-        case http_post: return _url_from_post_request_(u, r, uc, other);
-        case http_get: return url_from_get_request(u, r, other);
+        case http_post: return _url_from_post_request_(r, uc);
+        case http_get: return url_from_get_request(r);
         default: return "error: could not initialize htmldoc, unsupported http method";
     }
 }

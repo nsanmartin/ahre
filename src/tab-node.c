@@ -5,13 +5,12 @@
 Err tab_node_init_from_request(
     TabNode     n[_1_],
     TabNode*    parent,
-    Url*        url,
     UrlClient   url_client[_1_],
     Request     r[_1_],
     Session     s[_1_]
 ) {
     try(_tab_node_init_base_(n, parent));
-    Err err = htmldoc_init_from_request(tab_node_doc(n), r, url, url_client, s);
+    Err err = htmldoc_init_move_request(tab_node_doc(n), r, url_client, s);
     if (err) {
         /* we don't want tab_node_cleanup to free node_doc again */
         *tab_node_doc(n) = (HtmlDoc){0};
@@ -40,13 +39,15 @@ Err tab_node_tree_append_ahref(
     LxbNodePtr* a = arlfn(LxbNodePtr, at)(anchors, linknum);
     if (!a) return "link number invalid";
 
-    Request r = (Request){.method=http_get};
-    try (lexbor_append_null_terminated_attr(*a, "href", 4, request_urlstr(&r)));
+    Str urlstr = (Str){0};
+    try (lexbor_append_null_terminated_attr(*a, "href", 4, &urlstr));
+    Request r;
+    try(request_init_move_urlstr(&r,http_get, &urlstr, htmldoc_url(d)));
 
     TabNode newnode;
     Err e = Ok;
     try_or_jump(e, Clean_Url_Str,
-        tab_node_init_from_request(&newnode, n, htmldoc_url(d), url_client, &r, s));
+        tab_node_init_from_request(&newnode, n, url_client, &r, s));
     try_or_jump(e, Failure_New_Node_Cleanup, tab_node_append_move_child(n, &newnode));
     goto Clean_Url_Str;
 Failure_New_Node_Cleanup:
@@ -74,22 +75,24 @@ Err tab_node_tree_append_submit(
 
     Err e = Ok;
     lxb_dom_node_t* form = _find_parent_form(lxbnode_node(&lbn));
-    Request r = (Request){0};
     if (form) {
-        try_or_jump(e, Clean_Request, mk_submit_request(form, true, &r));
+        Request r = (Request){.urlview=htmldoc_url(d)};
+        try( mk_submit_request(form, true, &r));
         TabNode newnode;
-        try_or_jump(e, Clean_Request,
-            tab_node_init_from_request(&newnode, n, htmldoc_url(d), url_client, &r, s));
+        try_or_jump(e, Failure_Clean_Request,
+            tab_node_init_from_request(&newnode, n, url_client, &r, s));
         try_or_jump(e, Failure_New_Node_Cleanup, tab_node_append_move_child(n, &newnode));
-        goto Clean_Request;
+        return Ok;
 
+Failure_Clean_Request:
+        request_clean(&r);
+        return e;
 Failure_New_Node_Cleanup:
         tab_node_cleanup(&newnode);
+        return e;
+
     } else { return "expected form, not found"; }
 
-Clean_Request:
-    request_clean(&r);
-    return e;
 }
 
 

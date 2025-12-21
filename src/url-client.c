@@ -50,6 +50,7 @@ cleanup:
 
 Err url_client_set_basic_options(UrlClient url_client[_1_]) {
     if ( 0
+        || curl_easy_setopt(url_client->curl, CURLOPT_TIMEOUT, 20L)
         || curl_easy_setopt(url_client->curl, CURLOPT_NOPROGRESS, 1L)
         || curl_easy_setopt(url_client->curl, CURLOPT_FOLLOWLOCATION, 1)
         || curl_easy_setopt(url_client->curl, CURLOPT_VERBOSE, 0L)

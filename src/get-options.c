@@ -20,15 +20,18 @@ static Err _read_cmd_opt_(CliParams cparams[_1_], const char* optopt) {
 static Err _read_data_opt_(CliParams cparams[_1_], const char* data, const char* url) {
     if (!data || !*data) return "invalid -d data optopt";
     if (!url || !*url) return "invalid -d url optopt";
-    Request r = (Request) {
-        .method=http_post,
-        .urlstr=(Str){.items=(char*)url, .len=strlen(url)},
-        .postfields=(Str){.items=(char*)data, .len=strlen(data)}
-    };
+    Str urlstr = (Str){0};
+    try(str_append(&urlstr, (char*)url, strlen(url) + 1));
+    Request r;
+    Err err = Ok;
+    try_or_jump(err, Failure, request_init_move_urlstr(&r, http_post, &urlstr, NULL));
+    r.postfields=(Str){.items=(char*)data, .len=strlen(data)};
     if (!arlfn(Request,append)(cparams_requests(cparams), &r))
         return "error: arl append failure";
 
     return Ok;
+Failure:
+    return err;
 }
 
 
@@ -58,9 +61,11 @@ Err _session_conf_from_options_(int argc, char* argv[], CliParams cparams[_1_]) 
 
         // read positional parameter
         if (*arg != '-') {
-            Request r = (Request) {
-                .method=http_get, .urlstr=(Str){.items=(char*)arg, .len=strlen(arg)}
-            };
+            Str urlstr = (Str){0};
+            try(str_append(&urlstr, (char*)arg, strlen(arg) + 1));
+            Request r;
+            Err err = request_init_move_urlstr(&r, http_get, &urlstr, NULL);
+            if (err) { str_clean(&urlstr); return err; }
             if (!arlfn(Request,append)(cparams_requests(cparams), &r))
                 return "error: arl append failure";
             continue;

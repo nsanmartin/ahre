@@ -5,7 +5,6 @@
 Err tab_node_init_from_request(
     TabNode     n[_1_],
     TabNode*    parent,
-    Url*        url,
     UrlClient   url_client[_1_],
     Request     r[_1_],
     Session     s[_1_]
@@ -20,7 +19,7 @@ Err tablist_append_tree_from_url(
     Session     s[_1_]
 ) {
     TabNode tn = (TabNode){0};
-    try( tab_node_init_from_request(&tn, NULL, NULL, url_client, r, s));
+    try( tab_node_init_from_request(&tn, NULL, url_client, r, s));
 
     Err err = Ok;
     try_or_jump(err, Failure_Tab_Node_Cleanup, tablist_append_move_tree(f, &tn));
