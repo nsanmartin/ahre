@@ -31,12 +31,8 @@ Err _lexbor_parse_chunk_end_(HtmlDoc htmldoc[_1_]) {
     return textbuf_append_line_indexes(htmldoc_sourcebuf(htmldoc));
 }
 
-
-CURLoption _curlopt_method_from_htmldoc_(HtmlDoc htmldoc[_1_]) {
-    return htmldoc_method(htmldoc) == http_post 
-               ? CURLOPT_POST
-               : CURLOPT_HTTPGET
-               ;
+CURLoption curlopt_method_from_http_method(HttpMethod m) {
+    return m == http_post ? CURLOPT_POST : CURLOPT_HTTPGET ;
 }
 
 
@@ -51,18 +47,22 @@ Err _curl_set_write_fn_and_data_(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]
     return Ok;
 }
 
-
-Err _curl_set_http_method_(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]) {
-    CURLoption method = _curlopt_method_from_htmldoc_(htmldoc);
+Err curl_set_method_from_http_method(UrlClient url_client[_1_], HttpMethod m) {
+    CURLoption method = curlopt_method_from_http_method(m);
     if (curl_easy_setopt(url_client->curl, method, 1L)) 
         return "error: curl failed to set method";
     return Ok;
 }
 
 
-Err _curl_set_curlu_(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]) {
+Err _curl_set_http_method_(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]) {
+    return curl_set_method_from_http_method(url_client, htmldoc_method(htmldoc));
+}
+
+
+Err curl_set_url(UrlClient url_client[_1_], Url url[_1_]) {
     char* url_str = NULL;
-    try( url_cstr_malloc(htmldoc_url(htmldoc), &url_str));
+    try( url_cstr_malloc(url, &url_str));
     CURLcode code = curl_easy_setopt(url_client->curl, CURLOPT_URL, url_str);
     curl_free(url_str);
     if (CURLE_OK == code) return Ok;
@@ -77,6 +77,9 @@ Err _curl_set_curlu_(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]) {
     /* return err_fmt("error: curl failed to set urlL %s", curl_easy_strerror(code)); */
 }
 
+Err _curl_set_curlu_(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]) {
+    return curl_set_url(url_client, htmldoc_url(htmldoc));
+}
 
 Err _curl_perform_error_( HtmlDoc htmldoc[_1_], CURLcode curl_code) {
     Url* url = htmldoc_url(htmldoc);
@@ -282,31 +285,6 @@ Err curl_lexbor_fetch_document(
 }
 
 
-
-
-/*TODO: rename to `url_client_curlu_to_file`*/
-/* Err curl_save_url(UrlClient url_client[_1_], CURLU* curlu , const char* fname) { */
-/*     try( url_client_reset(url_client)); */
-/*     FILE* fp; */
-/*     try(fopen_or_append_fopen(fname, curlu, &fp)); */
-/*     if (!fp) return err_fmt("error opening file '%s': %s\n", fname, strerror(errno)); */
-/*     if ( */
-/*        curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, fwrite) */
-/*     || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, fp) */
-/*     || curl_easy_setopt(url_client->curl, CURLOPT_CURLU, curlu) */
-/*     ) return "error configuring curl write fn/data"; */
-
-/*     CURLcode curl_code = curl_easy_perform(url_client->curl); */
-/*     fclose(fp); */
-
-/*     curl_easy_reset(url_client->curl); */
-/*     if (curl_code!=CURLE_OK) */ 
-/*         return err_fmt("curl failed to perform curl: %s", curl_easy_strerror(curl_code)); */
-/*     try( url_client_reset(url_client)); */
-/*     return Ok; */
-/* } */
-
-
 static Err
 _make_submit_get_request_rec_( lxb_dom_node_t* node, Request r[_1_]) {
     if (!node) return Ok;
@@ -472,3 +450,30 @@ char* mem_whitespace(char* s, size_t len) {
     while(len && *s && !isspace(*s)) { ++s; --len; }
     return len ? s : NULL;
 }
+
+
+Err request_to_file(Request r[_1_], UrlClient url_client[_1_], const char* fname) {
+    /* try( url_client_set_basic_options(url_client)); */
+    try( url_client_reset(url_client));/* why is this needed here while the htmldoc fetch does not? */
+    try( curl_set_method_from_http_method(url_client, request_method(r)));
+    try( curl_set_url(url_client, request_url(r)));
+
+    CURLU* curlu = url_cu(request_url(r));
+    FILE* fp;
+    try(fopen_or_append_fopen(fname, curlu, &fp));
+    if (!fp) return err_fmt("error opening file '%s': %s\n", fname, strerror(errno));
+    if (
+       curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, fwrite)
+    || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, fp)
+    ) return "error configuring curl write fn/data";
+
+    CURLcode curl_code = curl_easy_perform(url_client->curl);
+
+    /* curl_easy_reset(url_client->curl); */
+    if (curl_code!=CURLE_OK) 
+        return err_fmt("curl failed to perform curl: %s", curl_easy_strerror(curl_code));
+    /* try( url_client_reset(url_client)); */
+    fclose(fp);
+    return Ok;
+}
+

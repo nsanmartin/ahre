@@ -40,7 +40,7 @@ Err url_client_set_cookies(UrlClient url_client[_1_]) {
     char* cookiefile = "";
     /* if an error occurs getting the cookies filename, just ignore it, we'll not use one. */
     if (Ok == get_cookies_filename(buf)) cookiefile = items__(buf);
-    /* this call leaks in old curl versoins */
+    /* this call leaks in old curl versions */
     try_or_jump(e, cleanup, url_client_setopt_cstr(url_client, CURLOPT_COOKIEFILE, cookiefile));
     try_or_jump(e, cleanup, url_client_setopt_cstr(url_client, CURLOPT_COOKIEJAR, cookiefile));
 cleanup:
@@ -165,8 +165,10 @@ Err cmd_curl_set(CmdParams p[_1_]) {
     return Ok;
 }
 
-Err url_client_curlu_to_file(UrlClient url_client[_1_], CURLU* curlu , const char* fname) {
+
+Err url_client_curlu_to_file(UrlClient url_client[_1_], Url u[_1_], const char* fname) {
     /* try( url_client_reset(url_client)); */
+    CURLU* curlu = url_cu(u);
     FILE* fp;
     try(fopen_or_append_fopen(fname, curlu, &fp));
     if (!fp) return err_fmt("error opening file '%s': %s\n", fname, strerror(errno));

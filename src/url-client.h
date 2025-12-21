@@ -5,6 +5,7 @@
 
 #include "utils.h"
 
+
 typedef struct UrlClient {
     CURL* curl;
     CURLM* curlm;
@@ -39,6 +40,5 @@ static inline void url_client_curl_free_cstr(char* s) { curl_free(s); }
 Err url_client_print_cookies(Session* s, UrlClient uc[_1_]) ;
 Err url_client_reset(UrlClient url_client[_1_]);
 Err url_client_set_basic_options(UrlClient url_client[_1_]);
-Err url_client_curlu_to_file(UrlClient url_client[_1_], CURLU* curlu , const char* fname);
 
 #endif
