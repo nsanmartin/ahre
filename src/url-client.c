@@ -164,28 +164,3 @@ Err cmd_curl_set(CmdParams p[_1_]) {
     }
     return Ok;
 }
-
-
-Err url_client_curlu_to_file(UrlClient url_client[_1_], Url u[_1_], const char* fname) {
-    /* try( url_client_reset(url_client)); */
-    CURLU* curlu = url_cu(u);
-    FILE* fp;
-    try(fopen_or_append_fopen(fname, curlu, &fp));
-    if (!fp) return err_fmt("error opening file '%s': %s\n", fname, strerror(errno));
-    if (
-       curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, fwrite)
-    || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, fp)
-    || curl_easy_setopt(url_client->curl, CURLOPT_CURLU, curlu)
-    ) return "error configuring curl write fn/data";
-
-    CURLcode curl_code = curl_easy_perform(url_client->curl);
-    fclose(fp);
-
-    curl_easy_reset(url_client->curl);
-    if (curl_code!=CURLE_OK) 
-        return err_fmt("curl failed to perform curl: %s", curl_easy_strerror(curl_code));
-    /* try( url_client_reset(url_client)); */
-    return Ok;
-}
-
-

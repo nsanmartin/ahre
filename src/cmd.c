@@ -4,7 +4,6 @@
 #include "range-parse.h"
 #include "readpass.h"
 
-Err url_client_curlu_to_file(UrlClient url_client[_1_], Url url[_1_] , const char* fname);
 
 #define MsgLastLine EscCodePurple "%{- last line -}%" EscCodeReset
 
@@ -416,12 +415,24 @@ Err _cmd_anchor_save(Session session[_1_], size_t ix, const char* fname) {
     try( _get_anchor_by_ix(session, ix, &node));
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
-    Url* up = htmldoc_url(htmldoc);
-    CURLU* curlu = url_cu(up);
-    try( lexcurl_dup_curl_from_node_and_attr(node, "href", 4, &curlu));
-    Err err = url_client_curlu_to_file(session_url_client(session), up, fname);
-    curl_url_cleanup(curlu);
+
+    Str urlstr = (Str){0};
+    try (lexbor_append_null_terminated_attr(node, "href", 4, &urlstr));
+
+    Err err = Ok;
+    Request r;
+    try_or_jump(err, Clean_Url_Str,
+        request_init_move_urlstr(&r, http_get, &urlstr, htmldoc_url(htmldoc)));
+    try_or_jump(err, Clean_Request, url_from_request(&r, session_url_client(session)));
+
+    err = request_to_file(&r, session_url_client(session), fname);
+
     ok_then(err, session_write_msg_lit__(session, "file saved\n"));
+Clean_Request:
+    request_clean(&r);
+    return err;
+Clean_Url_Str:
+    str_clean(&urlstr);
     return err;
 }
 
