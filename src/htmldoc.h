@@ -159,6 +159,7 @@ void htmldoc_cache_cleanup(HtmlDoc htmldoc[_1_]) ;
 Err curl_lexbor_fetch_document(
     UrlClient         url_client[_1_],
     HtmlDoc           htmldoc[_1_],
+    StrView           cookies_fname,
     Writer            msg_writer[_1_],
     FetchHistoryEntry histentry[_1_]
 );
@@ -181,10 +182,11 @@ Err lexbor_read_doc_from_file(HtmlDoc htmldoc[_1_]) ;
 static inline Err htmldoc_fetch(
     HtmlDoc           htmldoc[_1_],
     UrlClient         url_client[_1_],
+    StrView           cookies_fname,
     Writer            msg_writer[_1_],
     FetchHistoryEntry he[_1_]
 ) {
-    return curl_lexbor_fetch_document(url_client, htmldoc, msg_writer, he);
+    return curl_lexbor_fetch_document(url_client, htmldoc, cookies_fname, msg_writer, he);
 }
 
 

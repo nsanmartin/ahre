@@ -2,8 +2,10 @@
 #define __MEM_AHRE_H__
 
 #define _XOPEN_SOURCE 500
-#include <string.h>
 #include <stdlib.h>
+#include <limits.h>
+#include <string.h>
+
 
 #define std_strdup  strdup
 #define std_free    free

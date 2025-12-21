@@ -20,7 +20,13 @@ static Err _fetch_many_urls_(Session session[_1_], ArlOf(Request) urls[_1_]) {
     for (Request* r = arlfn(Request,begin)(urls)
         ; r != arlfn(Request,end)(urls)
         ; ++r
-    ) try( session_fetch_request(session, r, session_url_client(session)));
+    ) {
+        Err err = session_fetch_request(session, r, session_url_client(session));
+        if (err) {
+            request_clean(r);
+            return err;
+        }
+    }
     return Ok;
 }
 

@@ -10,24 +10,24 @@
 static Err
 _get_bookmarks_doc_(
     UrlClient   url_client[_1_],
-    const char* session_bm,
-    Str         bm_file[_1_],
+    StrView     bm_path,
     Writer      msg_writer[_1_],
     HtmlDoc     out[_1_]
 ) {
-    try( get_bookmark_filename_if_it_exists(session_bm, bm_file));
     Str* bm_url = &(Str){0};
     Err err = str_append_lit__(bm_url, "file://");
     try(err);
-    try_or_jump(err, Clean_Bm_Url, str_append_str(bm_url, bm_file));
+    try_or_jump(err, Clean_Bm_Url, str_append(bm_url, (char*)bm_path.items, bm_path.len));
     try_or_jump(err, Clean_Bm_Url,
         htmldoc_init_bookmark_move_urlstr(out, bm_url));
-    FetchHistoryEntry e;
-    err = _htmldoc_fetch_bookmark_(out, url_client, msg_writer, &e);
+    FetchHistoryEntry e = (FetchHistoryEntry){0};
+    err = _htmldoc_fetch_bookmark_(out, url_client, (StrView){0}, msg_writer, &e);
     fetch_history_entry_clean(&e);
-    if (err) htmldoc_cleanup(out);
+    if (err) {
+        htmldoc_cleanup(out);
 Clean_Bm_Url:
-    str_clean(bm_url);
+        str_clean(bm_url);
+    }
     return err;
 }
 
@@ -124,28 +124,26 @@ Err bookmark_add_to_section(Session s[_1_], const char* line, UrlClient url_clie
     Err err = Ok; 
     
     HtmlDoc bm;
-    Str bmfname_out = (Str){0};
+    Str bm_path = (Str){0};
+    try(resolve_bookmarks_file(items__(session_bookmarks_fname(s)), &bm_path));
     Writer w;
-    try(session_msg_writer_init(&w, s));
-    try(_get_bookmarks_doc_(
-            url_client, items__(session_bookmarks_fname(s)), &bmfname_out, &w,  &bm
-        )
-    );
+    try_or_jump(err, Fail_Clean_Bm, session_msg_writer_init(&w, s));
+    try_or_jump(err, Fail_Clean_Bm, _get_bookmarks_doc_(url_client, strview__(&bm_path), &w,  &bm));
 
     char* url;
-    if ((err = url_cstr_malloc(htmldoc_url(d), &url))) goto clean_bmfname_out_and_bmdoc;
+    if ((err = url_cstr_malloc(htmldoc_url(d), &url))) goto Clean_Bm_Path_And_BmDoc;
 
     lxb_dom_node_t* body;
-    if ((err = bookmark_sections_body(&bm, &body))) goto free_curl_url;
+    if ((err = bookmark_sections_body(&bm, &body))) goto Free_Curl_Url;
 
     Str* title = &(Str){0};
-    if ((err = lxb_mk_title_or_url(d, url, title))) goto free_curl_url;
+    if ((err = lxb_mk_title_or_url(d, url, title))) goto Free_Curl_Url;
 
     lxb_dom_element_t* bm_entry;
-    if ((err = bookmark_mk_entry(bm.lxbdoc, url, title, &bm_entry))) goto clean_title;
+    if ((err = bookmark_mk_entry(bm.lxbdoc, url, title, &bm_entry))) goto Clean_Title;
 
     lxb_dom_node_t* section_ul;
-    if ((err = bookmark_section_ul_get(body, line, &section_ul))) goto clean_title;
+    if ((err = bookmark_section_ul_get(body, line, &section_ul))) goto Clean_Title;
     //TODO: wrap this
     if (section_ul) {
         lxb_dom_node_insert_child(
@@ -155,14 +153,18 @@ Err bookmark_add_to_section(Session s[_1_], const char* line, UrlClient url_clie
         err = bookmark_section_insert(&(bm.lxbdoc->dom_document), body, line, bm_entry);
     } else err = "section not found in bookmarks file";
 
-    ok_then(err, bookmarks_save_to_disc(&bm, &bmfname_out));
+    ok_then(err, bookmarks_save_to_disc(&bm, strview__(&bm_path)));
     ok_then(err, session_write_msg_lit__(s, "bookmark added\n"));
 
-clean_title:
+Clean_Title:
     str_clean(title);
-free_curl_url:
+Free_Curl_Url:
     curl_free(url);
-clean_bmfname_out_and_bmdoc:
+Clean_Bm_Path_And_BmDoc:
     htmldoc_cleanup(&bm);
+    str_clean(&bm_path);
+    return err;
+Fail_Clean_Bm:
+    str_clean(&bm_path);
     return err;
 }

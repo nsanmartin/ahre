@@ -1,5 +1,6 @@
-#include <sys/stat.h>
 #include "config.h"
+
+#include <sys/stat.h>
 
 
 static Err _str_concat_mem_2z(char* m1, size_t l1, char* m2, size_t l2, Str out[_1_]) {
@@ -20,22 +21,32 @@ static bool _create_dir_and_remove_z_(Str dirname[_1_]) {
 
 Err create_or_get_confdir(Str confdir[_1_]) {
     str_reset(confdir);
-    char* xdg_config = getenv("XDG_CONFIG_HOME");
-    if (xdg_config) {
-        try (_str_concat_mem_lit_z__(xdg_config, strlen(xdg_config), "/ahre", confdir));
-        if (_create_dir_and_remove_z_(confdir)) return Ok;
+    char buf[PATH_MAX];
+    char* xdg_config = NULL;
+    char* xdg_config_env = getenv("XDG_CONFIG_HOME");
+    char* basedir = NULL;
+
+    if (xdg_config_env) {
+        basedir = realpath(xdg_config_env, buf);
+        if (basedir) {
+            try (_str_concat_mem_lit_z__(basedir, strlen(basedir), "/ahre", confdir));
+            if (_create_dir_and_remove_z_(confdir)) return Ok;
+        }
     }
 
     str_reset(confdir);
     char* home = getenv("HOME");
     if (home) {
-        try (_str_concat_mem_lit_z__(home, strlen(home), "/.config/ahre", confdir));
-        if (_create_dir_and_remove_z_(confdir)) return Ok;
+        basedir = realpath(home, buf);
+        if (basedir) {
+            try (_str_concat_mem_lit_z__(basedir, strlen(basedir), "/.config/ahre", confdir));
+            if (_create_dir_and_remove_z_(confdir)) return Ok;
 
-        str_reset(confdir);
-        try (_str_concat_mem_lit_z__(home, strlen(home), "/.ahre", confdir));
+            str_reset(confdir);
+            try (_str_concat_mem_lit_z__(basedir, strlen(basedir), "/.ahre", confdir));
 
-        if (_create_dir_and_remove_z_(confdir)) return Ok;
+            if (_create_dir_and_remove_z_(confdir)) return Ok;
+        }
     }
 
     if (xdg_config || home) return err_fmt("could not create confdir: %s", strerror(errno));
@@ -43,15 +54,20 @@ Err create_or_get_confdir(Str confdir[_1_]) {
 }
 
 Err resolve_bookmarks_file(const char* path, Str out[_1_]) {
+    size_t prefix = len__(out);
     bool file_exists;
     try(resolve_path(path, &file_exists, out));
 
     if (file_exists) return Ok;
+    if (len__(out) <= prefix) {
+        str_clean(out);
+        return "error: prefix deleted while resolving path";
+    }
     Err err = Ok;
 #define EMPTY_BOOKMARK \
     "<html><head><title>Bookmarks</title></head>\n<body>\n<h1>Bookmarks</h1>\n</body>\n</html>"
     FILE* fp;
-    try_or_jump(err, Fail, file_open(items__(out), "w", &fp));
+    try_or_jump(err, Fail, file_open(items__(out) + prefix, "w", &fp));
     try_or_jump(err, Fail, file_write_or_close(EMPTY_BOOKMARK, lit_len__(EMPTY_BOOKMARK), fp));
     try_or_jump(err, Fail, file_close(fp));
     return Ok;

@@ -35,7 +35,9 @@ Err session_init(Session s[_1_], SessionConf sconf[_1_]) {
     *s = (Session) {
         .conf         = *sconf
     };
-    try( url_client_init(session_url_client(s)));
+
+    try( session_conf_set_paths(session_conf(s)));
+    try( url_client_init(session_url_client(s), session_cookies_fname(s)));
     try( str_append_datetime_now(session_dt_now_str(s)));
 
     return Ok;
@@ -117,7 +119,8 @@ Err session_write_fetch_history(Session s[_1_]) {
     int fd;
     FILE* fp;
     Str fetch_history_fname = (Str){0};
-    try(get_fetch_history_filename(&fetch_history_fname));
+    /* try(get_fetch_history_filename(&fetch_history_fname)); */
+    try(session_fetch_history_fname_append(s, &fetch_history_fname));
 
     if (-1 != (fd = open(fetch_history_fname.items, O_WRONLY | O_CREAT | O_EXCL, 0666))) {
         ssize_t nbytes = write(fd, FETCH_HISTORY_HEADER, lit_len__(FETCH_HISTORY_HEADER)) == -1;
@@ -146,10 +149,11 @@ Clean:
 
 
 Err session_write_input_history(Session s[_1_]) {
-    Str history_fname = (Str){0};
+    Str input_history_fname = (Str){0};
     FILE* fp;
-    try(get_input_history_filename(&history_fname));
-    try(file_open(history_fname.items, "a", &fp));
+    /* try(get_input_history_filename(&history_fname)); */
+    try(session_input_history_fname_append(s, &input_history_fname));
+    try(file_open(input_history_fname.items, "a", &fp));
     ArlOf(const_cstr)* history = session_input_history(s);
     Err e = Ok;
     Str* dt = session_dt_now_str(s);
@@ -165,7 +169,7 @@ Err session_write_input_history(Session s[_1_]) {
 
 Clean:
     file_close(fp);
-    str_clean(&history_fname);
+    str_clean(&input_history_fname);
     return Ok;
 }
 

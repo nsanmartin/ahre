@@ -89,7 +89,7 @@ request_init_move_urlstr(Request r[_1_], HttpMethod method, Str urlstr[_1_], Url
     return Ok;
 }
 
-Err request_to_file(Request r[_1_], UrlClient url_client[_1_], const char* fname);
+/* Err request_to_file(Request r[_1_], UrlClient url_client[_1_], const char* fname); */
 
 /* req. */
 

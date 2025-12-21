@@ -34,21 +34,16 @@ Err url_client_setopt_cstr(UrlClient url_client[_1_], CURLoption opt, char* valu
 }
 
 
-Err url_client_set_cookies(UrlClient url_client[_1_]) {
-    Err e = Ok;
-    Str* buf = &(Str){0};
-    char* cookiefile = "";
+Err url_client_set_cookies(UrlClient url_client[_1_], StrView cookies_fname) {
+    char* cookiefile = (char*)cookies_fname.items;
     /* if an error occurs getting the cookies filename, just ignore it, we'll not use one. */
-    if (Ok == get_cookies_filename(buf)) cookiefile = items__(buf);
     /* this call leaks in old curl versions */
-    try_or_jump(e, cleanup, url_client_setopt_cstr(url_client, CURLOPT_COOKIEFILE, cookiefile));
-    try_or_jump(e, cleanup, url_client_setopt_cstr(url_client, CURLOPT_COOKIEJAR, cookiefile));
-cleanup:
-    str_clean(buf);
-    return e;
+    try(url_client_setopt_cstr(url_client, CURLOPT_COOKIEFILE, cookiefile));
+    try(url_client_setopt_cstr(url_client, CURLOPT_COOKIEJAR, cookiefile));
+    return Ok;
 }
 
-Err url_client_set_basic_options(UrlClient url_client[_1_]) {
+Err url_client_set_basic_options(UrlClient url_client[_1_], StrView cookies_fname) {
     if ( 0
         || curl_easy_setopt(url_client->curl, CURLOPT_TIMEOUT, 20L)
         || curl_easy_setopt(url_client->curl, CURLOPT_NOPROGRESS, 1L)
@@ -58,20 +53,20 @@ Err url_client_set_basic_options(UrlClient url_client[_1_]) {
     ) {
         return "error: curl setopt failed (url_client_set_basic_options)";
     }
-    return url_client_set_cookies(url_client);
+    return url_client_set_cookies(url_client, cookies_fname);
 }
 
 
-Err url_client_reset(UrlClient url_client[_1_]) {
+Err url_client_reset(UrlClient url_client[_1_], StrView cookies_fname) {
  
     curl_easy_reset(url_client->curl);
     if (curl_easy_setopt(url_client->curl, CURLOPT_ERRORBUFFER, url_client->errbuf))
         return "error: curl errorbuffer configuration failed";
-    return url_client_set_basic_options(url_client);
+    return url_client_set_basic_options(url_client, cookies_fname);
 }
 
 
-Err url_client_init(UrlClient url_client[_1_]) {
+Err url_client_init(UrlClient url_client[_1_], StrView cookie_fname) {
     Err e = Ok;
 
     *url_client = (UrlClient){0};
@@ -85,7 +80,7 @@ Err url_client_init(UrlClient url_client[_1_]) {
         goto Failure_Curl_Easy_Cleanup;
     }
 
-    try_or_jump(e, Failure_Curl_Multi_Cleanup, url_client_reset(url_client));
+    try_or_jump(e, Failure_Curl_Multi_Cleanup, url_client_reset(url_client, cookie_fname));
 
     return Ok;
 

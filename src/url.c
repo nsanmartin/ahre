@@ -111,30 +111,45 @@ Failure_Free_Escaped:
 }
 
 static Err _url_from_post_request_(Request r[_1_], UrlClient uc[_1_]) {
+    Err err = Ok;
     try(url_init(request_url(r), r->urlview));
     CURL* curl = url_client_curl(uc);
     CURLU* cu = url_cu(&r->url);
     if (len__(request_urlstr(r))) {
-        CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, items__(request_urlstr(r)), 0);
-        if (curl_code != CURLUE_OK)
-            return err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
+        CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, items__(request_urlstr(r)), CURLU_DEFAULT_SCHEME);
+        if (curl_code != CURLUE_OK) {
+            err = err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
+            goto Clean_Url;
+        }
     }
     
     const char* postfields;
     size_t      len;
     try (_url_fill_postfields_(r, uc, &postfields, &len));
 
-    if (!len)
-        return "error: unexpected empty postfields";
+    if (!len) {
+        err = "error: unexpected empty postfields";
+        goto Clean_Url;
+    }
 
     CURLcode code;
     code = curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, len);
-    if (CURLE_OK != code) return "error: curl postfields size set failure";
+    if (CURLE_OK != code) {
+        err = "error: curl postfields size set failure";
+        goto Clean_Url;
+    }
     code = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postfields);
-    if (CURLE_OK != code) return "error: curl postfields set failure";
+    if (CURLE_OK != code) {
+        err = "error: curl postfields set failure";
+        goto Clean_Url;
+    }
     return Ok;
+Clean_Url:
+    url_cleanup(request_url(r));
+    return err;
 }
 
+#define FILE_SCHEMA "file://"
 Err _prepend_file_schema_if_file_exists_(Str url[_1_], Str out[_1_]) {
     if (!len__(url)) return Ok;
     try(str_append_lit__(out, FILE_SCHEMA));
@@ -155,7 +170,7 @@ Err _prepend_file_schema_if_file_exists_(Str url[_1_], Str out[_1_]) {
 }
 
 Err url_from_get_request(Request r[_1_]) {
-    try(url_init(request_url(r), r->urlview));
+    try(url_init(&r->url, r->urlview));
     CURLU* cu = url_cu(&r->url);
     Err err = Ok;
     Str file = (Str){0};
@@ -229,19 +244,19 @@ Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method) {
         params_len = strlen(params);
     }
 
-    *r = (Request){
-        .method=method,
-        .urlstr=(Str){.items=(char*)url, .len=url_len},
-        .postfields=(Str){.items=(char*)params, .len=params_len}
-    };
+    *r = (Request){ .method=method };
+
+    try(str_append_z(&r->urlstr, (char*)url, url_len));
+    if (params_len) try(str_append_z(&r->postfields, (char*)params, params_len));
     return Ok;
 }
 
 
 Err get_url_alias(Session* s, const char* cstr, BufOf(char)* out) {
     if (cstr_starts_with("bookmarks", cstr)) {
+        if (!len__(session_bookmarks_fname(s))) return "no bookmarks file configured";
         try(str_append_lit__(out, "file://"));
-        return get_bookmark_filename_if_it_exists(items__(session_bookmarks_fname(s)), out);
+        return resolve_bookmarks_file(items__(session_bookmarks_fname(s)), out);
     }
     return err_fmt("not a url alias: %s", cstr);
 }

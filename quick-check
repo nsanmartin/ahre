@@ -9,8 +9,8 @@ _check_compiler_ () {
     CComp=$1
     CFlags=$2
     make clean && \
-        CC=${CComp} CFLAGS=${CFlags} make ahre && \
-        CC=${CComp} CFLAGS=${CFlags} make test_all && \
+        CC=${CComp} CFLAGS=${CFlags} make ahre && make clean && \
+        CC=${CComp} CFLAGS=${CFlags} make run_tests && \
         _run_tests_
 }
 

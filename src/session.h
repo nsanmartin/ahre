@@ -71,8 +71,36 @@ static inline ArlOf(const_cstr)* session_input_history(Session s[_1_]) { return 
 static inline ArlOf(FetchHistoryEntry)* session_fetch_history(Session s[_1_]) {
     return &s->fetch_history;
 }
+
+static inline Str* session_confdirname(Session s[_1_]) {
+    return &session_conf(s)->confdirname;
+}
+
+
 static inline Str* session_bookmarks_fname(Session s[_1_]) {
     return &session_conf(s)->bookmarks_fname;
+}
+
+static inline Err session_bookmarks_fname_append(Session s[_1_], Str out[_1_]) {
+    return str_append(
+        out, session_conf(s)->bookmarks_fname.items, session_conf(s)->bookmarks_fname.len
+    );
+}
+
+static inline Err session_fetch_history_fname_append(Session s[_1_], Str out[_1_]) {
+    return str_append(
+        out, session_conf(s)->fetch_history_fname.items, session_conf(s)->fetch_history_fname.len
+    );
+}
+
+static inline Err session_input_history_fname_append(Session s[_1_], Str out[_1_]) {
+    return str_append(
+        out, session_conf(s)->input_history_fname.items, session_conf(s)->input_history_fname.len
+    );
+}
+
+static inline StrView session_cookies_fname(Session s[_1_]) {
+    return strview__(&s->conf.cookies_fname);
 }
 
 /* ctor */

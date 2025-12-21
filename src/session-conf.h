@@ -15,7 +15,11 @@ typedef struct {
     size_t        ncols;
     size_t        nrows;
     unsigned      flags;
+    Str           confdirname;
     Str           bookmarks_fname;
+    Str           cookies_fname;
+    Str           input_history_fname;
+    Str           fetch_history_fname;
 } SessionConf ;
 
 static inline
@@ -56,5 +60,12 @@ static inline UserInterface* session_conf_ui(SessionConf sc[_1_]) { return &sc->
 static inline UserInput* session_conf_uinput(SessionConf sc[_1_]) { return &sc->ui.uin; }
 static inline UserOutput* session_conf_uout(SessionConf sc[_1_]) { return &sc->ui.uout; }
 
-static inline void session_conf_cleanup(SessionConf sc[_1_]) { str_clean(&sc->bookmarks_fname); }
+static inline void session_conf_cleanup(SessionConf sc[_1_]) {
+    str_clean(&sc->confdirname);
+    str_clean(&sc->bookmarks_fname);
+    str_clean(&sc->cookies_fname);
+    str_clean(&sc->input_history_fname);
+    str_clean(&sc->fetch_history_fname);
+}
+Err session_conf_set_paths(SessionConf sc[_1_]);
 #endif

@@ -20,7 +20,9 @@ Err cmd_get(CmdParams p[_1_]) {
         return err;
     }
     try (request_from_userln(&r, p->ln, http_get));
-    return session_fetch_request(p->s, &r, session_url_client(p->s));
+    Err err = session_fetch_request(p->s, &r, session_url_client(p->s));
+    if (err) request_clean(&r);
+    return err;
 }
 
 
@@ -36,7 +38,9 @@ Err cmd_post(CmdParams p[_1_]) {
         return err;
     }
     try (request_from_userln(&r, p->ln, http_post));
-    return session_fetch_request(p->s, &r, session_url_client(p->s));
+    Err err = session_fetch_request(p->s, &r, session_url_client(p->s));
+    if (err) request_clean(&r);
+    return err;
 }
 
 
@@ -373,7 +377,7 @@ Err _cmd_image_save(Session session[_1_], size_t ix, const char* fname) {
         request_init_move_urlstr(&r,http_get, &urlstr, htmldoc_url(htmldoc)));
     try_or_jump(err, Clean_Request, url_from_request(&r, session_url_client(session)));
 
-    err = request_to_file(&r, session_url_client(session), fname);
+    err = request_to_file(&r, session_url_client(session), session_cookies_fname(session),fname);
 
     ok_then(err, session_write_msg_lit__(session, "data saved\n"));
 Clean_Request:
@@ -425,7 +429,7 @@ Err _cmd_anchor_save(Session session[_1_], size_t ix, const char* fname) {
         request_init_move_urlstr(&r, http_get, &urlstr, htmldoc_url(htmldoc)));
     try_or_jump(err, Clean_Request, url_from_request(&r, session_url_client(session)));
 
-    err = request_to_file(&r, session_url_client(session), fname);
+    err = request_to_file(&r, session_url_client(session), session_cookies_fname(session), fname);
 
     ok_then(err, session_write_msg_lit__(session, "file saved\n"));
 Clean_Request:

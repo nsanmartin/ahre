@@ -2,7 +2,7 @@
 #include "session.h"
 
 
-Err tab_node_init_from_request(
+Err tab_node_init_move_request(
     TabNode     n[_1_],
     TabNode*    parent,
     UrlClient   url_client[_1_],
@@ -47,7 +47,7 @@ Err tab_node_tree_append_ahref(
     TabNode newnode;
     Err e = Ok;
     try_or_jump(e, Clean_Url_Str,
-        tab_node_init_from_request(&newnode, n, url_client, &r, s));
+        tab_node_init_move_request(&newnode, n, url_client, &r, s));
     try_or_jump(e, Failure_New_Node_Cleanup, tab_node_append_move_child(n, &newnode));
     goto Clean_Url_Str;
 Failure_New_Node_Cleanup:
@@ -80,7 +80,7 @@ Err tab_node_tree_append_submit(
         try( mk_submit_request(form, true, &r));
         TabNode newnode;
         try_or_jump(e, Failure_Clean_Request,
-            tab_node_init_from_request(&newnode, n, url_client, &r, s));
+            tab_node_init_move_request(&newnode, n, url_client, &r, s));
         try_or_jump(e, Failure_New_Node_Cleanup, tab_node_append_move_child(n, &newnode));
         return Ok;
 

@@ -78,7 +78,8 @@ To build with no quickjs (and hence no js):
 ## Run
 
 ```
-./build/ahre ahre.pages.dev
+./build/ahre -d 'q=ahre' lite.duckduckgo.com/lite
+
 ```
 
 ## Usage:

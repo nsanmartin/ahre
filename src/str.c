@@ -250,16 +250,20 @@ Err expand_path(const char *path, Str out[_1_]) {
 }
 
 Err resolve_path(const char *path, bool file_exists[_1_], Str out[_1_]) {
-    try(expand_path(path, out));
+    Str expanded = (Str){0};
+    try(expand_path(path, &expanded));
     char buf[PATH_MAX];
-    char *real = realpath(items__(out), buf);
+    char *real = realpath(expanded.items, buf);
     if (!real && errno != ENOENT) {
-        str_clean(out);
+    	str_clean(&expanded);
         return err_fmt("could not resolve path: %s", strerror(errno));
     }
     *file_exists =  real && errno != ENOENT;
-    str_reset(out);
-    return str_append(out, buf, strlen(buf) +1 );
+    Err err = Ok;
+    if (real) err = str_append(out, real, strlen(real) + 1);
+    else err = str_append(out, expanded.items, expanded.len);
+    str_clean(&expanded);
+    return err;
 }
 
 

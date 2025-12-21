@@ -269,12 +269,12 @@ static inline Err bookmark_to_source(HtmlDoc bm[_1_], Str out[_1_]) {
 }
 
 static inline Err
-bookmarks_save_to_disc(HtmlDoc bm[_1_], Str bmfile[_1_]) {
+bookmarks_save_to_disc(HtmlDoc bm[_1_], StrView bm_path) {
     Str source = (Str){0};
     try( bookmark_to_source(bm, &source));
 
     FILE* fp;
-    try(file_open(bmfile->items, "w", &fp));
+    try(file_open(bm_path.items, "w", &fp));
 
     Err err = Ok;
     size_t written = fwrite(source.items, 1, source.len, fp);

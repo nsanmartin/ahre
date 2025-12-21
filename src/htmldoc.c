@@ -793,7 +793,8 @@ Err htmldoc_init_move_request(
      if (!arlfn(FetchHistoryEntry,append)(hist, &(FetchHistoryEntry){0}))
      { e = "error: arl append to fetch history failure"; goto Failure; }
 
-    try_or_jump(e, Failure, htmldoc_fetch(d, uc, &w, arlfn(FetchHistoryEntry,back)(hist)));
+    try_or_jump(e, Failure,
+            htmldoc_fetch(d, uc, session_cookies_fname(s), &w, arlfn(FetchHistoryEntry,back)(hist)));
 
     htmldoc_eval_js_scripts_or_continue(d, s);
     try_or_jump( e, Failure, _htmldoc_draw_(d, s));
@@ -804,6 +805,8 @@ Err htmldoc_init_move_request(
     return Ok;
 
 Failure:
+    /* In case of failure, the caller keeps ownership. In case of succes it loses it */
+    *r = d->req;
     d->req = (Request){0};
     htmldoc_cleanup(d);
 
@@ -817,9 +820,8 @@ Err htmldoc_init_bookmark_move_urlstr(HtmlDoc d[_1_], Str urlstr[_1_]) {
     *d = (HtmlDoc){ .lxbdoc = lxb_html_document_create() };
     if (!d->lxbdoc) return "error: lxb failed to create html document";
     if (!urlstr) return "error: cannot initialize bookmark with not path";
-    Request r;
     try_or_jump(e, Failure_Lxb_Html_Document_Destroy,
-        request_init_move_urlstr(&r, http_get, urlstr, NULL));
+        request_init_move_urlstr(htmldoc_request(d), http_get, urlstr, NULL));
     return Ok;
 
 Failure_Lxb_Html_Document_Destroy:

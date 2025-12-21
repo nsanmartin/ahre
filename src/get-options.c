@@ -20,17 +20,21 @@ static Err _read_cmd_opt_(CliParams cparams[_1_], const char* optopt) {
 static Err _read_data_opt_(CliParams cparams[_1_], const char* data, const char* url) {
     if (!data || !*data) return "invalid -d data optopt";
     if (!url || !*url) return "invalid -d url optopt";
-    Str urlstr = (Str){0};
-    try(str_append(&urlstr, (char*)url, strlen(url) + 1));
-    Request r;
     Err err = Ok;
-    try_or_jump(err, Failure, request_init_move_urlstr(&r, http_post, &urlstr, NULL));
-    r.postfields=(Str){.items=(char*)data, .len=strlen(data)};
+    Str urlstr = (Str){0};
+    Request r = (Request){0};
+
+    try(str_append(&urlstr, (char*)url, strlen(url) + 1));
+    try_or_jump(err, Fail_Clean_Post_Fields, request_init_move_urlstr(&r, http_post, &urlstr, NULL));
+    try_or_jump(err, Fail_Clean_Url_Str, str_append(&r.postfields, (char*)data, strlen(data)));
     if (!arlfn(Request,append)(cparams_requests(cparams), &r))
         return "error: arl append failure";
 
     return Ok;
-Failure:
+Fail_Clean_Post_Fields:
+    str_clean(&r.postfields);
+Fail_Clean_Url_Str:
+    str_clean(&urlstr);
     return err;
 }
 

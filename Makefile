@@ -4,9 +4,6 @@ ahre:
 	$(MAKE) -C src ../build/ahre
 
 
-test_all:
-	$(MAKE) -C utests test_all
-
 run_tests:
 	$(MAKE) -C utests run_tests
 

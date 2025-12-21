@@ -12,13 +12,14 @@
 #ifndef AHRE_STR_H__
 #define AHRE_STR_H__
 
+#include "mem.h"
+
 #include <ctype.h>
 #include <errno.h>
 #include <time.h>
 
 #include "error.h"
 #include "generic.h"
-#include "mem.h"
 #include "utils.h"
 
 

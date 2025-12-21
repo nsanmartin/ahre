@@ -255,11 +255,12 @@ Lxb_Array_Head_Destroy:
 Err curl_lexbor_fetch_document(
     UrlClient         url_client[_1_],
     HtmlDoc           htmldoc[_1_],
+    StrView           cookies_fname,
     Writer            msg_writer[_1_],
     FetchHistoryEntry histentry[_1_]
 ) {
     try( url_from_request(htmldoc_request(htmldoc), url_client));
-    try( url_client_set_basic_options(url_client));
+    try( url_client_set_basic_options(url_client, cookies_fname));
     try( _curl_set_write_fn_and_data_(url_client, htmldoc));
     try( _lexbor_parse_chunk_begin_(htmldoc));
     try( _curl_set_http_method_(url_client, htmldoc));
@@ -452,9 +453,9 @@ char* mem_whitespace(char* s, size_t len) {
 }
 
 
-Err request_to_file(Request r[_1_], UrlClient url_client[_1_], const char* fname) {
+Err request_to_file(Request r[_1_], UrlClient url_client[_1_], StrView cookies_fname, const char* fname) {
     /* try( url_client_set_basic_options(url_client)); */
-    try( url_client_reset(url_client));/* why is this needed here while the htmldoc fetch does not? */
+    try( url_client_reset(url_client, cookies_fname));/* why is this needed here while the htmldoc fetch does not? */
     try( curl_set_method_from_http_method(url_client, request_method(r)));
     try( curl_set_url(url_client, request_url(r)));
 
