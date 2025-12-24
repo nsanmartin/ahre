@@ -805,7 +805,7 @@ Err htmldoc_init_move_request(
     return Ok;
 
 Failure:
-    /* In case of failure, the caller keeps ownership. In case of succes it loses it */
+    /* In case of failure, the caller keeps ownership. In case of success it loses it */
     *r = d->req;
     d->req = (Request){0};
     htmldoc_cleanup(d);

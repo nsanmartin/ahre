@@ -124,12 +124,17 @@ Err cmd_fetch(Session session[_1_]) {
     try( session_current_doc(session, &htmldoc));
 
     HtmlDoc newdoc;
+    /* we reuse the request, but the Url is duplicated on fetch. We could
+     * instead try to not duplicate it in this specific case, but this is
+     * easier because the rest of the fetchs need to duplicate. */
+    Url u = htmldoc_request(htmldoc)->url;
     try(htmldoc_init_move_request(
         &newdoc,
         htmldoc_request(htmldoc),
         session_url_client(session),
         session
     ));
+    url_cleanup(&u);
     htmldoc_cleanup(htmldoc);
     *htmldoc = newdoc;
     return Ok;
