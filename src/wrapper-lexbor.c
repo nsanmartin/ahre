@@ -1,6 +1,8 @@
 #include "utils.h"
 #include "htmldoc.h"
 #include "wrapper-lexbor.h"
+#include <lexbor/dom/dom.h>
+
 
 /* internal linkage */
 
