@@ -1,4 +1,5 @@
 #include "config.h"
+#include "bookmark.h"
 
 #include <sys/stat.h>
 
@@ -64,8 +65,6 @@ Err resolve_bookmarks_file(const char* path, Str out[_1_]) {
         return "error: prefix deleted while resolving path";
     }
     Err err = Ok;
-#define EMPTY_BOOKMARK \
-    "<html><head><title>Bookmarks</title></head>\n<body>\n<h1>Bookmarks</h1>\n</body>\n</html>"
     FILE* fp;
     try_or_jump(err, Fail, file_open(items__(out) + prefix, "w", &fp));
     try_or_jump(err, Fail, file_write_or_close(EMPTY_BOOKMARK, lit_len__(EMPTY_BOOKMARK), fp));

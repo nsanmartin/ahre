@@ -8,6 +8,11 @@
 #include "error.h"
 #include "fetch-history.h"
 
+
+#define AHRE_BOOKMARK_HEAD "<html><head><title>Bookmarks</title></head>\n<body>\n"
+#define AHRE_BOOKMARK_TAIL "</body>\n</html>\n"
+#define EMPTY_BOOKMARK AHRE_BOOKMARK_HEAD "<h1>Bookmarks</h1>\n" AHRE_BOOKMARK_TAIL
+
 Err bookmark_sections_body(HtmlDoc bookmark[_1_], lxb_dom_node_t* out[_1_]);
 
 static inline Err bookmark_sections(lxb_dom_node_t* body, ArlOf(BufOf(char))* out) {
@@ -254,16 +259,14 @@ static inline Err bookmark_to_source(HtmlDoc bm[_1_], Str out[_1_]) {
     lxb_dom_node_t* body;
     try( bookmark_sections_body(bm, &body));
 
-    char* bm_header = "<html><head><title>Bookmarks</title></head>\n<body>\n";
-    Err err = str_append(out, bm_header, strlen(bm_header));
+    Err err = str_append_lit__(out, AHRE_BOOKMARK_HEAD);
     if (err) {
         str_clean(out);
         return err;
     }
     try( _bm_to_source_rec_childs_no_text_(body, out));
     if (!err) {
-        char* bm_header = "</body>\n</html>\n";
-        err = str_append(out, bm_header, strlen(bm_header));
+        err = str_append_lit__(out, AHRE_BOOKMARK_TAIL);
     }
     return err;
 }

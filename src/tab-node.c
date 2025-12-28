@@ -180,7 +180,7 @@ Err session_tab_node_print(
             try( session_write_msg(s, (char*)e, strlen(e)));
             try( session_write_msg_lit__(s, "\n"));
         } else {
-            Err e = session_write_msg(s, buf, strlen(buf));
+            e = session_write_msg(s, buf, strlen(buf));
             ok_then(e, session_write_msg_lit__(s, "\n"));
             curl_free(buf);
             if (e) return e;

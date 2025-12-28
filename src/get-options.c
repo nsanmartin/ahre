@@ -3,23 +3,23 @@
 #include "config.h"
 
 
-static Err _read_bm_opt_(CliParams cparams[_1_], const char* optopt) {
-    if (!optopt || !*optopt) return "invalid data option";
-    try(resolve_bookmarks_file(optopt, &cparams->sconf.bookmarks_fname));
+static Err _read_bm_opt_(CliParams cparams[_1_], const char* optparam) {
+    if (!optparam || !*optparam) return "invalid data option";
+    try(resolve_bookmarks_file(optparam, &cparams->sconf.bookmarks_fname));
     return Ok;
 }
 
 
-static Err _read_cmd_opt_(CliParams cparams[_1_], const char* optopt) {
-    if (!optopt || !*optopt) return "invalid data option";
-    cparams->cmd = optopt;
+static Err _read_cmd_opt_(CliParams cparams[_1_], const char* optparam) {
+    if (!optparam || !*optparam) return "invalid data option";
+    cparams->cmd = optparam;
     return Ok;
 }
 
 
 static Err _read_data_opt_(CliParams cparams[_1_], const char* data, const char* url) {
-    if (!data || !*data) return "invalid -d data optopt";
-    if (!url || !*url) return "invalid -d url optopt";
+    if (!data || !*data) return "invalid -d data optparam";
+    if (!url || !*url) return "invalid -d url optparam";
     Err err = Ok;
     Str urlstr = (Str){0};
     Request r = (Request){0};
@@ -39,11 +39,11 @@ Fail_Clean_Url_Str:
 }
 
 
-static Err _read_input_opt_(SessionConf sconf[_1_], const char* optopt) {
-    if (!optopt || !*optopt) return "invalid input option";
-    if (!strcmp("fgets", optopt)) sconf->ui = ui_fgets();
-    else if (!strcmp("isocline", optopt)) sconf->ui = ui_isocline();
-    else if (!strcmp("visual", optopt)) sconf->ui = ui_vi_mode();
+static Err _read_input_opt_(SessionConf sconf[_1_], const char* optparam) {
+    if (!optparam || !*optparam) return "invalid input option";
+    if (!strcmp("fgets", optparam)) sconf->ui = ui_fgets();
+    else if (!strcmp("isocline", optparam)) sconf->ui = ui_isocline();
+    else if (!strcmp("visual", optparam)) sconf->ui = ui_vi_mode();
     else return "invalid input iterface: must be fgets or isocline";
     return Ok;
 }
@@ -80,26 +80,26 @@ Err _session_conf_from_options_(int argc, char* argv[], CliParams cparams[_1_]) 
         // read short options
         if (arg[1] != '-') {
             const char* short_opt = arg + 1;
-            const char* optopt;
-            const char* optopt2;
+            const char* optparam;
+            const char* optparam2;
             switch (*short_opt) {
                 case 'b':
-                    optopt = short_opt[1] ? &short_opt[1] : argv[++i];
-                    try(_read_bm_opt_(cparams, optopt));
+                    optparam = short_opt[1] ? &short_opt[1] : argv[++i];
+                    try(_read_bm_opt_(cparams, optparam));
                     break;
                 case 'c':
-                    optopt = short_opt[1] ? &short_opt[1] : argv[++i];
-                    try(_read_cmd_opt_(cparams, optopt));
+                    optparam = short_opt[1] ? &short_opt[1] : argv[++i];
+                    try(_read_cmd_opt_(cparams, optparam));
                     break;
                 case 'd':
-                    optopt  = short_opt[1] ? &short_opt[1] : argv[++i];
-                    optopt2 = argv[++i];
-                    try(_read_data_opt_(cparams, optopt, optopt2));
+                    optparam  = short_opt[1] ? &short_opt[1] : argv[++i];
+                    optparam2 = argv[++i];
+                    try(_read_data_opt_(cparams, optparam, optparam2));
                     break;
                 case 'h': *cparams_help(cparams) = true; break;
                 case 'i': // input interface
-                    optopt = short_opt[1] ? &short_opt[1] : argv[++i];
-                    try(_read_input_opt_(sconf, optopt));
+                    optparam = short_opt[1] ? &short_opt[1] : argv[++i];
+                    try(_read_input_opt_(sconf, optparam));
                     break;
                 case 'j': session_conf_js_set(sconf, true); break;
                 case 'm': // monochrome
@@ -115,12 +115,12 @@ Err _session_conf_from_options_(int argc, char* argv[], CliParams cparams[_1_]) 
 
         const char* long_opt = arg + 2;
         if (!strcmp("bookmark", long_opt)) {
-            const char* optopt = argv[++i];
-            try(_read_bm_opt_(cparams, optopt));
+            const char* optparam = argv[++i];
+            try(_read_bm_opt_(cparams, optparam));
         }
         else if (!strcmp("cmd", long_opt)) {
-            const char* optopt = argv[++i];
-            try(_read_cmd_opt_(cparams, optopt));
+            const char* optparam = argv[++i];
+            try(_read_cmd_opt_(cparams, optparam));
         }
         else if (!strcmp("data", long_opt)) {
             const char* data = argv[++i];
@@ -129,8 +129,8 @@ Err _session_conf_from_options_(int argc, char* argv[], CliParams cparams[_1_]) 
         }
         else if (!strcmp("help", long_opt)) *cparams_help(cparams) = true;
         else if (!strcmp("input", long_opt)) {
-            const char* optopt = argv[++i];
-            try(_read_input_opt_(sconf, optopt));
+            const char* optparam = argv[++i];
+            try(_read_input_opt_(sconf, optparam));
         }
         else if (!strcmp("js", long_opt)) session_conf_js_set(sconf, true);
         else if (!strcmp("monochrome", long_opt)) session_conf_monochrome_set(sconf, true);
