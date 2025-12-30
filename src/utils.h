@@ -26,6 +26,8 @@ inline static bool file_exists(const char* filename) { return !access(filename, 
 static inline size_t size_t_min(size_t x, size_t y) { return x > y ? x : y; }
 
 
+#define cast__(T) (T)
+
 #define typeof_max__(X) _Generic((X),\
     int   :INT_MAX,\
     size_t:SIZE_MAX \
@@ -112,7 +114,7 @@ static inline  Err unsigned_to_str(uintmax_t ui, char* buf, size_t size , size_t
     int printlen = snprintf(buf, size, "%lu", ui);
     if (printlen < 0) return "error: snprintf returned 0";
     if (lt__(size, printlen)) return "error: number too large for string buffer";
-    *len = printlen;
+    *len = cast__(size_t)printlen;
     return Ok;
 }
 
@@ -121,7 +123,7 @@ static inline  Err int_to_str(intmax_t i, char* buf, size_t size , size_t len[_1
     int printlen = snprintf(buf, size, "%ld", i);
     if (printlen < 0) return "error: snprintf returned 0";
     if (lt__(size, printlen)) return "error: number too large for string buffer";
-    *len = printlen;
+    *len = cast__(size_t)printlen;
     return Ok;
 }
 

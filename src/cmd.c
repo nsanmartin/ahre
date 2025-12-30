@@ -191,11 +191,9 @@ StrView parse_pattern(const char* tk) {
     ++tk;
     const char* end = strchr(tk, delim);
 
-    if (!end) {
-        res = (StrView){.items = tk, .len=strlen(tk)};
-    } else {
-        res = (StrView){.items = tk, .len=end-tk};
-    }
+    if (!end) res = (StrView){.items = tk, .len=strlen(tk)};
+    else      res = (StrView){.items = tk, .len=cast__(size_t)(end-tk)};
+
     return res;
 }
 

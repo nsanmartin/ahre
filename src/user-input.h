@@ -67,7 +67,7 @@ static inline Err ui_fgets_readline(Session* s, const char* prompt, char* out[_1
     while (1) {
         *out = std_realloc(*out, len);
         if (!*out) return "error: realloc failure";
-        char* line = fgets(*out + readlen, len - readlen, stdin);
+        char* line = fgets(*out + readlen, cast__(int)(len - readlen), stdin);
         if (!line) {
             if (feof(stdin)) { clearerr(stdin); *out[0] = '\0'; return Ok; }
             return err_fmt("error: fgets failure: %s", strerror(errno));

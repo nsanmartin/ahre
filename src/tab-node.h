@@ -101,7 +101,7 @@ tab_node_get_child_index_of(TabNode n[_1_], TabNode child[_1_], size_t out[_1_])
     TabNode* beg = arlfn(TabNode, begin)(tab_node_childs(n));
     TabNode* end = arlfn(TabNode, end)(tab_node_childs(n));
     if (child < beg || end <= child) return "error: pointer not in range (tabnode not a child of)";
-    *out = child - beg;
+    *out = cast__(size_t)(child - beg);
     return Ok;
 }
 

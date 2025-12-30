@@ -62,7 +62,8 @@ static inline Err fetch_history_entry_update_title(FetchHistoryEntry e[_1_], Lxb
     try(lexbor_get_title_text(*np, &e->title));
     if (e->title.len) {
         char* rest = e->title.items;
-        while ((rest = memchr(rest, '\n', e->title.len - (rest-e->title.items)))) { *rest = ' '; }
+        while ((rest = memchr(rest, '\n', e->title.len - cast__(size_t)(rest - e->title.items))))
+            *rest = ' ';
     }
     return Ok;
 }

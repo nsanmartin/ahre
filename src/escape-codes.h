@@ -65,7 +65,7 @@ static inline size_t _mem_count_escape_codes_(const char* buf, size_t len) {
     const char* it = buf;
     size_t count = 0;
     while (it && it < buf + len) {
-        it = memchr(it, '\033', buf + len - it);
+        it = memchr(it, '\033', cast__(size_t)(buf + len - it));
         if (it) {
             ++it;
             ++count;

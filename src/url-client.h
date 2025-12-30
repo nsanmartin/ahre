@@ -23,9 +23,7 @@ Err url_client_init(UrlClient url_client[_1_], StrView cookie_fname);
 
 
 /* curl easy escape */
-static inline char* url_client_escape_url(
-    UrlClient url_client[_1_], const char* u, size_t len
-) {
+static inline char* url_client_escape_url(UrlClient url_client[_1_], const char* u, int len) {
     return curl_easy_escape(url_client->curl, u, len);
 }
 

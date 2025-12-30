@@ -105,11 +105,11 @@ static inline UserOutput uout_vi_mode(void) {
 
 static inline Err ui_write_unsigned(WriteUserOutputCallback wcb, uintmax_t ui, Session* s) {
     char numbf[3 * sizeof ui] = {0};
-    size_t len = 0;
-    if ((len = snprintf(numbf, (3 * sizeof ui), "%lu", ui)) > (3 * sizeof ui)) {
+    int len = 0;
+    if ((len = snprintf(numbf, (3 * sizeof ui), "%lu", ui)) > cast__(int)(3 * sizeof ui)) {
         return "error: snprintf failure";
     }
-    return wcb(numbf, len, s);
+    return wcb(numbf, cast__(size_t)len, s);
 }
 
 

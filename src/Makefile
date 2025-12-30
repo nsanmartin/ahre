@@ -10,7 +10,8 @@ AHRE_CFLAGS=$(CFLAGS) -g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-de
 			-Wshadow \
 			-Wformat \
 			-Wcast-align \
-			-Wnull-dereference
+			-Wnull-dereference \
+			-Wconversion
 AHRE_INCLUDE=-I. -I$(REPO_DIR)/hotl/include -I$(REPO_DIR)/isocline/include -I$(QUICKJS_INCLUDE)
 
 AHRE_LDFLAGS=$(LDFLAGS) -lcurl -llexbor -lm

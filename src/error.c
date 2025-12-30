@@ -36,12 +36,12 @@ Err _err_fmt_vsnprinf_(Err fmt, ...) {
     int bytes = vsnprintf(err_msg_buf, MAX_MSG_LEN, fmt, ap);
     va_end(ap);
     if (bytes < 0) return "error: while processing another error mesage, a failure was produced";
-    if ((size_t)bytes >= MAX_MSG_LEN) {
+    if (cast__(size_t)bytes >= MAX_MSG_LEN) {
         // message was truncated
         bytes = MAX_MSG_LEN;
         memcpy(err_msg_buf, TRUNC_ERR, sizeof(TRUNC_ERR)-1);
     }
-    memcpy(MSGBUF, err_msg_buf, bytes + 1);
+    memcpy(MSGBUF, err_msg_buf, cast__(size_t)bytes + 1);
     return MSGBUF;
 }
 
@@ -92,14 +92,14 @@ static Err _msg_buf_append_num_(
     }
     char* num            = *bufptr;
     while (n != 0 && *errmsgbuflen < errmsgbufmaxlen) {
-        **bufptr = '0' + (n % 10);
+        **bufptr = '0' + cast__(char)(n % 10);
         *bufptr  += 1;
         ++*errmsgbuflen;
         n /= 10;
     }
     if (*errmsgbuflen >= errmsgbufmaxlen)
         return "error: not enough size to convert num to str.";
-    str_reverse(num, *bufptr - num);
+    str_reverse(num, cast__(size_t)(*bufptr - num));
 
     return Ok;
 }
@@ -124,7 +124,9 @@ Err _err_fmt_while_(Err fmt, ...) {
     while ((end = strchr(beg, '%'))) {
         if (end < beg) return "error: strchr error.";
         else if (beg < end) {
-            try(_msg_buf_append(errmsgbuf, &errmsgbuflen, errmsgbufmaxlen, &buf, beg, end-beg));
+            try(_msg_buf_append(
+                errmsgbuf, &errmsgbuflen, errmsgbufmaxlen, &buf, beg, cast__(size_t)(end-beg)
+            ));
             beg = end + 1;
         } else if (beg == end) { ++beg; }
 
