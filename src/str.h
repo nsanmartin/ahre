@@ -215,17 +215,8 @@ const char* parse_l(const char* tk, long lptr[_1_]);
 
 StrView str_split_line(StrView text[_1_]);
 
-static inline Err
-bufofchar_append_ui_as_str(BufOf(char) buf[_1_], uintmax_t ui) {
-    char numbuf[3 * sizeof ui] = {0};
-    size_t len = 0;
-    if ((len = snprintf(numbuf, (3 * sizeof ui), "%lu", ui)) > (3 * sizeof ui)) {
-        //TODO: provide more info about the error
-        return "error: could not convert ui to str";
-    }
-    if (buffn(char, append)(buf, numbuf, len)) return Ok;
-    return "error: could not append str_ui to bufof char";
-}
+Err str_append_ui_as_base36(Str buf[_1_], uintmax_t ui);
+Err str_append_ui_as_base10(Str buf[_1_], uintmax_t ui);
 
 static inline void replace_char_inplace(char* s, char from, char to) {
     char* p;

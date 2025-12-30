@@ -209,15 +209,15 @@ Err _convert_to_utf8_(
 
 
 Err str_append_timespec(Str out[_1_], struct timespec ts[_1_]) {
-#define DT_BUFLEN 128
+#define DT_BUFLEN 128u
     char buff[DT_BUFLEN];
     if (!strftime(buff, sizeof buff, "%F %T", gmtime(&ts->tv_sec)))
         return "error: strftime output did not fit the DT_BUFLEN";
     try( str_append(out, buff, strlen(buff)));
-    const size_t len = snprintf(buff, DT_BUFLEN, ".%09ld UTC", ts->tv_nsec);
-    if (DT_BUFLEN <= len)
+    const int len = snprintf(buff, DT_BUFLEN, ".%09ld UTC", ts->tv_nsec);
+    if ((int)DT_BUFLEN <= len)
         return "error: snprintf output did not fit the DT_BUFLEN";
-    return str_append(out, buff, len);
+    return str_append(out, buff, (size_t)len);
 }
 
 Err str_append_datetime_now(Str out[_1_]) {
@@ -265,6 +265,24 @@ Err resolve_path(const char *path, bool file_exists[_1_], Str out[_1_]) {
     str_clean(&expanded);
     return err;
 }
+
+
+Err str_append_ui_as_base10(Str buf[_1_], uintmax_t ui) {
+    char numbuf[3 * sizeof ui] = {0};
+    int len = snprintf(numbuf, (3 * sizeof ui), "%lu", ui);
+    if (len < 0 || (len > 3 * (int)(sizeof(ui))))
+        return "error: could not convert ui to str";
+    return str_append(buf, numbuf, (size_t)len);
+}
+
+
+Err str_append_ui_as_base36(Str buf[_1_], uintmax_t ui) {
+    char numbf[3 * sizeof ui] = {0};
+    size_t len = 0;
+    try( uint_to_base36_str(numbf, 3 * sizeof ui, ui, &len));
+    return str_append(buf, numbf, len);
+}
+
 
 
 #ifdef TESTING_FAILURES

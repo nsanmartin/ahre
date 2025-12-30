@@ -71,7 +71,7 @@ test_ed_write: $(AHRE_UTESTS)/test_ed_write.c \
 		-lcurl -llexbor -lm
 
 
-test_iconv: $(AHRE_UTESTS)/test_iconv.c $(AHRE_BUILD)/error.o
+test_iconv: $(AHRE_UTESTS)/test_iconv.c $(AHRE_BUILD)/error.o $(AHRE_BUILD)/utils.o
 	$(CC) $(AHRE_CFLAGS) $(SANITIZE_FLAGS) $(AHRE_INCLUDE) -I. -I$(AHRE_UTESTS) \
 		-o $(AHRE_BUILD)/$@ $^ \
 		-lcurl -llexbor

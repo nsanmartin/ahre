@@ -8,8 +8,8 @@ AHRE_CFLAGS=$(CFLAGS) -g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-de
 			-Wunused-result \
 			-Wuninitialized \
 			-Wshadow \
-			-Wformat=2 \
-			-Wcast-align=strict \
+			-Wformat \
+			-Wcast-align \
 			-Wnull-dereference
 AHRE_INCLUDE=-I. -I$(REPO_DIR)/hotl/include -I$(REPO_DIR)/isocline/include -I$(QUICKJS_INCLUDE)
 

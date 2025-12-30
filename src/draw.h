@@ -31,7 +31,7 @@ static size_t _strview_trim_right_count_newlines_(StrView s[_1_]) {
     return newlines;
 }
 
-#define DRAW_SUBCTX_FLAG_DIV 0x1
+#define DRAW_SUBCTX_FLAG_DIV 0x1u
 typedef struct {
     BufOf(char) buf;
     size_t left_trim;
@@ -320,14 +320,10 @@ static inline Err draw_ctx_color_purple(DrawCtx ctx[_1_]) {
     return draw_ctx_buf_append_color_(ctx, esc_code_purple);
 }
 
-static inline Err draw_ctx_buf_append_ui_(DrawCtx ctx[_1_], uintmax_t ui) {
-    BufOf(char)* buf = draw_ctx_buf(ctx);
-    return bufofchar_append_ui_as_str(buf, ui);
-}
 
 static inline Err draw_ctx_buf_append_ui_base36_(DrawCtx ctx[_1_], uintmax_t ui) {
-    BufOf(char)* buf = draw_ctx_buf(ctx);
-    return bufofchar_append_ui_base36_as_str(buf, ui);
+    Str* buf = draw_ctx_buf(ctx);
+    return str_append_ui_as_base36(buf, ui);
 }
 
 static inline Err draw_ctx_reset_color(DrawCtx ctx[_1_]) {

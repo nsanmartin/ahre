@@ -16,8 +16,36 @@
 #define UINT_TO_STR_BUFSZ 64
 #define INT_TO_STR_BUFSZ    64
 
-static inline size_t size_t_min(size_t x, size_t y) { return x > y ? x : y; }
+
+Err parse_ll_err(const char* tk, intmax_t llp[_1_], const char* endptr[_1_]);
+Err parse_size_t_err(const char* tk, size_t out[_1_], const char* endptr[_1_], int base);
+Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) ;
+Err uint_to_base36_str(char* buf, size_t buf_sz, uintmax_t n, size_t len[_1_]);
+const char* parse_ull(const char* tk, uintmax_t* ullp);
 inline static bool file_exists(const char* filename) { return !access(filename, F_OK); }
+static inline size_t size_t_min(size_t x, size_t y) { return x > y ? x : y; }
+
+
+#define typeof_max__(X) _Generic((X),\
+    int   :INT_MAX,\
+    size_t:SIZE_MAX \
+)
+
+#define _less_than_(AType, A, BType, B) \
+    (  (typeof_max__(A) >= typeof_max__(B) && (A < (AType)B)) \
+    || (typeof_max__(A) <  typeof_max__(B) && ((BType)A < (AType)B)) )
+
+static inline bool _size_t_lt_int_(size_t s, int i) {
+    return i > 0 && _less_than_(size_t, s, int, i);
+}
+
+#define lt__(A,B) \
+    _Generic((A),\
+            size_t:_Generic((B),\
+                int: _size_t_lt_int_ \
+                )\
+            )(A,B)
+
 
 #define skip__(X)
 #define GET_MACRO__(_1,_2,_3,NAME,...) NAME
@@ -75,48 +103,25 @@ static inline int buf_append_hexp(void* p, BufOf(char)*buf) {
         fprintf(stdout, "truncating pointer address!\n");
         return -1;
     }
-    if (!buffn(char,append)(buf, num_buff, len)) { return -1; }
+    if (!buffn(char,append)(buf, num_buff, (size_t)len)) { return -1; }
     return 0;
 }
 
 
-Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[_1_]);
-
-
-static inline  Err
-bufofchar_append_ui_base36_as_str(BufOf(char) buf[_1_], uintmax_t ui) {
-    char numbf[3 * sizeof ui] = {0};
-    size_t len = 0;
-    try( uint_to_base36_str(numbf, 3 * sizeof ui, ui, &len));
-    if (!buffn(char, append)(buf, numbf, len)) return "error appending unsigned to bufof char";
+static inline  Err unsigned_to_str(uintmax_t ui, char* buf, size_t size , size_t len[_1_]) {
+    int printlen = snprintf(buf, size, "%lu", ui);
+    if (printlen < 0) return "error: snprintf returned 0";
+    if (lt__(size, printlen)) return "error: number too large for string buffer";
+    *len = printlen;
     return Ok;
 }
 
 
-static inline  Err
-unsigned_to_str(uintmax_t ui, char* buf, size_t size , size_t len[_1_]) {
-    if ((*len = snprintf(buf, size, "%lu", ui)) > size) {
-        return "error: number too large for string buffer";
-    }
-    return Ok;
-}
-
-static inline  Err
-int_to_str(intmax_t i, char* buf, size_t size , size_t len[_1_]) {
-    if ((*len = snprintf(buf, size, "%ld", i)) > size) {
-        return "error: number too large for string buffer";
-    }
-    return Ok;
-}
-
-
-static inline  Err
-append_unsigned_to_str(uintmax_t ui, char* str, size_t size, size_t len[_1_]) {
-    size_t numlen;
-    if ((numlen = snprintf(str + *len, size, "%lu", ui)) > (size - *len)) {
-        return "error: number too large for string buffer";
-    }
-    *len += numlen;
+static inline  Err int_to_str(intmax_t i, char* buf, size_t size , size_t len[_1_]) {
+    int printlen = snprintf(buf, size, "%ld", i);
+    if (printlen < 0) return "error: snprintf returned 0";
+    if (lt__(size, printlen)) return "error: number too large for string buffer";
+    *len = printlen;
     return Ok;
 }
 
@@ -129,24 +134,6 @@ void str_reverse(char* s, size_t n) {
         s[r] = tmp;
     }
 }
-
-
-Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[_1_]);
-const char* parse_ull(const char* tk, uintmax_t* ullp);
-/* Err parse_ull_err(const char* tk, uintmax_t ullp[_1_], const char* endptr[_1_]); */
-Err parse_ll_err(const char* tk, intmax_t llp[_1_], const char* endptr[_1_]);
-
-static inline Err bufofchar_append(BufOf(char) buf[_1_], char* s, size_t len) {
-    if (buffn(char, append)(buf, s, len)) return Ok;
-    buffn(char,clean)(buf);
-    return "error: BufOf(char) failed to append.";
-}
-
-#define bufofchar_append_lit__(Buffer, LitStr) \
-    bufofchar_append(Buffer, LitStr, sizeof(LitStr)-1)
-
-Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) ;
-Err parse_size_t_err(const char* tk, size_t out[_1_], const char* endptr[_1_], int base);
 
 
 #define foreach__(T,It,Col) \

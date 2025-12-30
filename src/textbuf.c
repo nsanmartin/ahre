@@ -35,37 +35,10 @@ static bool _char_is_point_of_break_(char c) {
     return isspace(c) || c == '\033';
 }
 
-//static Err _insert_line_splitting_with_esc_codes_(StrView line[_1_], BufOf(char) buf[_1_], size_t maxlen) {
-//    size_t off = 0;
-//    size_t len = 0;
-//    for (off = 0; off < strview_len(line); ) {
-//        char* beg = (char*)strview_beg(line) + off;
-//        if (beg + maxlen >= strview_end(line)) {
-//            len = strview_len(line) - off;
-//        } else {
-//            len = maxlen;
-//            size_t esc_codes_len = _mem_count_escape_codes_(beg, len);
-//            size_t esc_codes_mem = esc_codes_len * 4;
-//            if (beg + len + esc_codes_mem < strview_end(line))
-//                len += esc_codes_mem;
-//
-//            if (!_char_is_point_of_break_(line->items[off + len])) {
-//                while (len && !_char_is_point_of_break_(line->items[off + len])) --len;
-//                if (!len) len = maxlen;
-//            }
-//        }
-//        try( bufofchar_append(buf, beg, len)) ;
-//        try( bufofchar_append_lit__(buf, "\n")) ;
-//        off += len;
-//        if (beg + len < strview_end(line) && isspace(beg[len]))
-//            ++off;
-//    }
-//    return Ok;
-//}
 
 static Err _insert_line_splitting_(
     StrView line[_1_],
-    BufOf(char) buf[_1_],
+    Str buf[_1_],
     size_t maxlen,
     ArlOf(size_t) insertions[_1_]
 ) {
@@ -84,15 +57,16 @@ static Err _insert_line_splitting_(
             }
         }
         off += len;
-        try( bufofchar_append(buf, beg, len)) ;
+        try( str_append(buf, beg, len)) ;
         if (off >= strview_len(line)) break;
-        try( bufofchar_append_lit__(buf, "\n")) ;
+        try( str_append_lit__(buf, "\n")) ;
         if (beg + len < strview_end(line) && isspace(beg[len]))
             ++off;
         else if (!arlfn(size_t,append)(insertions,&len__(buf))) return "error: arl failure";
     }
     return Ok;
 }
+
 
 static Err
 _insert_missing_newlines_(TextBuf tb[_1_], size_t maxlen, ArlOf(size_t) insertions[_1_]) {
@@ -102,17 +76,17 @@ _insert_missing_newlines_(TextBuf tb[_1_], size_t maxlen, ArlOf(size_t) insertio
         return err_fmt("error: %s: bufof mem failure", __func__);
     size_t n = 1;
     StrView line;
-    BufOf(char)* buf = &(BufOf(char)){0};
+    Str* buf = &(BufOf(char)){0};
     while (textbuf_get_line(tb, n++, &line)) {
         Err err;
         if (line.len && line.len <= maxlen) {
             /* line includes the '\n' */
-            err = bufofchar_append(buf, (char*)line.items, line.len);
+            err = str_append(buf, (char*)line.items, line.len);
         } else {
             err = _insert_line_splitting_(&line, buf, maxlen, insertions);
         }
         if (err) {
-            buffn(char,clean)(buf);
+            str_clean(buf);
             return err;
         }
     }

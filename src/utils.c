@@ -62,15 +62,6 @@ Err file_close(FILE* fp) {
 
 const char _base36digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-/* /1* note that if something like "   -1" is received, 2^NBits -1 is returned *1/ */
-/* Err parse_ull_err(const char* tk, uintmax_t ullp[_1_], const char* endptr[_1_]) { */
-/*     if (!tk) return "error parsing ull: NULL received"; */
-/*     if (!*tk) return "error parsing ull: \"\\0\" received"; */
-/*     *ullp = strtoull(tk, (char**)endptr, 10); */
-/*     if (ERANGE == errno && ULLONG_MAX == *ullp) { return err_fmt("error: %s", strerror(errno)); } */
-/*     return Ok; */
-/* } */
-
 
 const char* parse_ull(const char* tk, uintmax_t* ullp) {
     if (!tk || !*tk) { return NULL; }
@@ -97,7 +88,7 @@ const char* parse_l(const char* tk, long lptr[_1_]) {
     return endptr == tk ? NULL: endptr;
 }
 
-Err uint_to_base36_str(char* buf, size_t buf_sz, int n, size_t len[_1_]) {
+Err uint_to_base36_str(char* buf, size_t buf_sz, uintmax_t n, size_t len[_1_]) {
     if (buf_sz == 0) return "error: not enough size to convert num to base36 str.";
     *len = 0;
     do {
