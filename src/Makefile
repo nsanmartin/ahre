@@ -5,7 +5,12 @@ QUICKJS_BUILD=$(QUICKJS_REPO)/build
 QUICKJS_LIB=$(QUICKJS_BUILD)/libqjs.a
 
 AHRE_CFLAGS=$(CFLAGS) -g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition \
-			-Wunused-result -Wuninitialized -Wshadow
+			-Wunused-result \
+			-Wuninitialized \
+			-Wshadow \
+			-Wformat=2 \
+			-Wcast-align=strict \
+			-Wnull-dereference
 AHRE_INCLUDE=-I. -I$(REPO_DIR)/hotl/include -I$(REPO_DIR)/isocline/include -I$(QUICKJS_INCLUDE)
 
 AHRE_LDFLAGS=$(LDFLAGS) -lcurl -llexbor -lm
