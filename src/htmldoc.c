@@ -1097,7 +1097,8 @@ Err _htmldoc_scripts_range_from_parsed_range_(
         case range_addr_prev_tag: 
         case range_addr_search_tag:
              return "invalid range.beg address for scripts";
-        case range_addr_beg_tag: r->beg = 0 + p->beg.delta;
+        case range_addr_beg_tag:
+             try(set__(&r->beg, p->beg.delta));
             break;
         case range_addr_end_tag: r->beg = script_max + p->beg.delta;
             break;
@@ -1137,8 +1138,12 @@ Err htmldoc_scripts_write(HtmlDoc h[_1_], RangeParse rp[_1_], Writer w[_1_]) {
         try( htmldoc_script_at(h, it, &sc));
         try(writer_write_lit__(w, "// script: "));
         try(writer_write(w, buf, len));
-        try(writer_write_lit__(w, "\n"));
-        try(writer_write(w, items__(sc), len__(sc) - 1));
+        if (len__(sc) <= 1) {
+            try(writer_write_lit__(w, " is empty!"));
+        } else {
+            try(writer_write_lit__(w, "\n"));
+            try(writer_write(w, items__(sc), len__(sc) - 1));
+        }
         try(writer_write_lit__(w, "\n"));
     }
     return Ok;

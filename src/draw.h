@@ -70,7 +70,6 @@ typedef struct {
 #define DRAW_CTX_FLAG_TITLE      0x4u
 #define DRAW_CTX_FLAG_JS         0x8u
     unsigned flags;
-    SessionWriteFn logfn;
     Session* session;
     DrawSubCtx sub;
 } DrawCtx;
@@ -96,7 +95,6 @@ typedef Err (*DrawEffectCb)(DrawCtx ctx[_1_]);
 
 static inline HtmlDoc* draw_ctx_htmldoc(DrawCtx ctx[_1_]) { return ctx->htmldoc; }
 
-static inline SessionWriteFn draw_ctx_logfn(DrawCtx ctx[_1_]) { return ctx->logfn; }
 
 static inline UrlClient* draw_ctx_url_client(DrawCtx ctx[_1_]) {
     return session_url_client(ctx->session);
@@ -225,7 +223,6 @@ draw_ctx_init(DrawCtx ctx[_1_], HtmlDoc htmldoc[_1_], Session s[_1_], unsigned f
         .htmldoc  = htmldoc,
         .fragment = fragment,
         .flags    = flags,
-        .logfn    = session_doc_msg_fn(s, htmldoc),
         .session  = s
     };
     return Ok;

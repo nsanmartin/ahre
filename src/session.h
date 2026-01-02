@@ -61,11 +61,6 @@ static inline TabList*
 session_tablist(Session s[_1_]) { return &s->tablist; }
 
 static inline bool session_is_empty(Session s[_1_]) { return !session_tablist(s)->tabs.len; }
-static inline SessionWriteFn
-session_doc_msg_fn(Session s[_1_], HtmlDoc d[_1_]) {
-    (void)d;
-    return (SessionWriteFn) {.write=session_uout(s)->write_msg, .ctx=s};
-}
 static inline bool session_js(Session s[_1_]) { return session_conf_js(session_conf(s)); }
 static inline ArlOf(const_cstr)* session_input_history(Session s[_1_]) { return &s->input_history; }
 static inline ArlOf(FetchHistoryEntry)* session_fetch_history(Session s[_1_]) {
@@ -195,18 +190,31 @@ static inline Err session_consume_line(Session s[_1_], UserLine userln[_1_]) {
 }
 
 
-static inline Err session_write_msg(Session s[_1_], char* msg, size_t len) {
+static inline Err _session_write_msg_(Session s[_1_], char* msg, size_t len) {
     UserOutput* uo = session_uout(s);
     return uo->write_msg(msg, len, s);
 }
 
-#define session_write_msg_lit__(Ses, LitStr) session_write_msg(Ses, LitStr, lit_len__(LitStr))
+#define session_write_msg(Ses, Msg, Len) (\
+    Msg && Len \
+        ? _session_write_msg_(Ses, Msg, Len) \
+        : err_fmt("error: session_write failure ("__FILE__":%d", __LINE__))
 
-static inline Err session_write_msg_ln(Session s[_1_], char* msg, size_t len) {
+
+#define session_write_msg_lit__(Ses, LitStr) (\
+     lit_len__(LitStr) \
+         ? _session_write_msg_(Ses, LitStr, lit_len__(LitStr)) \
+         : err_fmt("error: session_write failure ("__FILE__":%d", __LINE__) )
+
+static inline Err _session_write_msg_ln_(Session s[_1_], char* msg, size_t len) {
     UserOutput* uo = session_uout(s);
     try(uo->write_msg(msg, len, s));
     return session_write_msg_lit__(s, "\n");
 }
+
+#define session_write_msg_ln(Ses, Msg, Len) (\
+    Len ? _session_write_msg_ln_(Ses, Msg, Len) \
+        : err_fmt("error: session_write failure ("__FILE__":%d", __LINE__))
 
 
 static inline Err session_write_unsigned_std(Session s[_1_], uintmax_t ui) {

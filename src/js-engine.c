@@ -172,14 +172,15 @@ Err jse_eval(JsEngine js[_1_], Session* s, const char* script) {
     if (JS_IsException(result)) {
         JSValue error = JS_GetException(ctx);
         const char *error_str = JS_ToCString(ctx, error);
-        err = err_fmt("error evaluating js: %s\n", error_str);
+        err = err_fmt("error evaluating js: %s\n", error_str ? error_str : "(unknown error)");
         JS_FreeCString(ctx, error_str);
         JS_FreeValue(ctx, error);
     } else {
-        const char *str = JS_ToCString(ctx, result);
+        const char* str = JS_ToCString(ctx, result);
+        size_t str_len  = strlen(str);
         session_write_msg_lit__(s, "  => ");
-        session_write_msg(s, (char*)str, strlen(str));
-        session_write_msg_lit__(s, "\n");
+        if (str && str_len) session_write_msg_ln(s, (char*)str, strlen(str));
+        else session_write_msg_lit__(s, "\\0");
         JS_FreeCString(ctx, str);
     }
     

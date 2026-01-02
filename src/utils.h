@@ -48,6 +48,38 @@ static inline bool _size_t_lt_int_(size_t s, int i) {
                 )\
             )(A,B)
 
+#define abs_int__(I) (1+(int)(1+I))
+
+static inline Err incr_size_t_from_int(size_t s[_1_], int i) {
+    if (i < 0) {
+        if (*s == 0) return "error: size_t + int undeflow";
+        --*s;
+        int i_incr = 1 + i;
+        if (lt__(*s, i_incr)) return "error: size_t + int undeflow";
+        *s -= cast__(size_t)i_incr;
+        return Ok;
+    } else {
+        if (lt__(SIZE_MAX, i) || *s > SIZE_MAX - cast__(size_t)i)
+            return "error: size_t + int overflow";
+        *s += cast__(size_t)i;
+    }
+    return Ok;
+}
+
+static inline Err _set_size_t_from_int_(size_t s[_1_], int i) {
+    if (i < 0) return "error: size_t underflow (cannot be nagative)";
+    if (lt__(SIZE_MAX, i)) return "error: size_ overflow";
+    *s = cast__(size_t)i;
+    return Ok;
+}
+
+#define set__(A,B) \
+    _Generic((A),\
+            size_t*:_Generic((B),\
+                int: _set_size_t_from_int_ \
+                )\
+            )(A,B)
+
 
 #define skip__(X)
 #define GET_MACRO__(_1,_2,_3,NAME,...) NAME

@@ -10,14 +10,21 @@ typedef struct Writer {
 } Writer;
 
 
-static inline Err writer_write(Writer w[_1_], const char* src, size_t size) {
+static inline Err _writer_write_(Writer w[_1_], const char* src, size_t size) {
     return w->write(w, src, size);
 }
 
-#define writer_write_lit__(Wr, LitStr) _Generic((LitStr),\
-        const char*: writer_write,\
-        char*      : writer_write\
-    )(Wr, LitStr, lit_len__(LitStr))
+#define writer_write(Wr, Src,Sz) (\
+    Sz ? _writer_write_(Wr, Src, Sz) \
+       : err_fmt("error: cannot write empty buffer ("__FILE__":%d", __LINE__))
+
+#define writer_write_lit__(Wr, LitStr) (\
+   lit_len__(LitStr) \
+    ? _Generic((LitStr),\
+        const char*: _writer_write_,\
+        char*      : _writer_write_\
+    )(Wr, LitStr, lit_len__(LitStr)) \
+    : err_fmt("error: cannot write empty buffer ("__FILE__":%d", __LINE__))
 
 /* Writer To file */
 static inline Err writer_write_to_file(Writer* self, const char* mem, size_t len) {

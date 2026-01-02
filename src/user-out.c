@@ -118,6 +118,7 @@ Err ui_vi_flush_std(Session* s) {
 
 Err ui_vi_write_msg(const char* mem, size_t len, Session* s) {
     if (!s) return "error: no session";
+    if (!len) return "error: (internal) cannot write message with no len";
     return msg_append(session_msg(s), (char*)mem, len);
 }
 

@@ -109,7 +109,8 @@ static inline Err ui_write_unsigned(WriteUserOutputCallback wcb, uintmax_t ui, S
     if ((len = snprintf(numbf, (3 * sizeof ui), "%lu", ui)) > cast__(int)(3 * sizeof ui)) {
         return "error: snprintf failure";
     }
-    return wcb(numbf, cast__(size_t)len, s);
+    if (len <= 0) return "error: snprinf returnes <= 0";
+    return wcb(numbf, len, s);
 }
 
 

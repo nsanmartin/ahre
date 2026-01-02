@@ -45,7 +45,7 @@ Err url_client_set_cookies(UrlClient url_client[_1_], StrView cookies_fname) {
 
 Err url_client_set_basic_options(UrlClient url_client[_1_], StrView cookies_fname) {
     if ( 0
-        || curl_easy_setopt(url_client->curl, CURLOPT_TIMEOUT, 20L)
+        /* || curl_easy_setopt(url_client->curl, CURLOPT_TIMEOUT, 20L) */
         || curl_easy_setopt(url_client->curl, CURLOPT_NOPROGRESS, 1L)
         || curl_easy_setopt(url_client->curl, CURLOPT_FOLLOWLOCATION, 1)
         || curl_easy_setopt(url_client->curl, CURLOPT_VERBOSE, 0L)
