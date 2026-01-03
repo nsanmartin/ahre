@@ -214,14 +214,14 @@ Err curl_lexbor_fetch_scripts(
     CURLM*           multi  = url_client_multi(url_client);
     CURLU*           curlu  = url_cu(htmldoc_url(htmldoc));
 
-    e = w_curl_multi_add_handles(
-        multi, curlu, head_urls, htmldoc_head_scripts(htmldoc), easies, curlus, msg_writer);
+    e = url_client_multi_add_handles(
+        url_client, curlu, head_urls, htmldoc_head_scripts(htmldoc), easies, curlus, msg_writer);
     if (e) {
         try(writer_write_lit__(msg_writer, "could not add head handles: "));
         try(writer_write(msg_writer, (char*)e, strlen(e)));
     }
-    e = w_curl_multi_add_handles(
-        multi, curlu, body_urls, htmldoc_body_scripts(htmldoc), easies, curlus, msg_writer);
+    e = url_client_multi_add_handles(
+        url_client, curlu, body_urls, htmldoc_body_scripts(htmldoc), easies, curlus, msg_writer);
     if (e) {
         try(writer_write_lit__(msg_writer, "could not add head handles: "));
         try(writer_write(msg_writer, (char*)e, strlen(e)));
@@ -255,12 +255,11 @@ Lxb_Array_Head_Destroy:
 Err curl_lexbor_fetch_document(
     UrlClient         url_client[_1_],
     HtmlDoc           htmldoc[_1_],
-    StrView           cookies_fname,
     Writer            msg_writer[_1_],
     FetchHistoryEntry histentry[_1_]
 ) {
     try( url_from_request(htmldoc_request(htmldoc), url_client));
-    try( url_client_set_basic_options(url_client, cookies_fname));
+    try( url_client_set_basic_options(url_client));
     try( _curl_set_write_fn_and_data_(url_client, htmldoc));
     try( _lexbor_parse_chunk_begin_(htmldoc));
     try( _curl_set_http_method_(url_client, htmldoc));
@@ -453,9 +452,9 @@ char* mem_whitespace(char* s, size_t len) {
 }
 
 
-Err request_to_file(Request r[_1_], UrlClient url_client[_1_], StrView cookies_fname, const char* fname) {
+Err request_to_file(Request r[_1_], UrlClient url_client[_1_], const char* fname) {
     /* try( url_client_set_basic_options(url_client)); */
-    try( url_client_reset(url_client, cookies_fname));/* why is this needed here while the htmldoc fetch does not? */
+    try( url_client_reset(url_client));/* why is this needed here while the htmldoc fetch does not? */
     try( curl_set_method_from_http_method(url_client, request_method(r)));
     try( curl_set_url(url_client, request_url(r)));
 

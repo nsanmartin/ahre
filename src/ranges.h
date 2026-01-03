@@ -46,7 +46,12 @@ static inline Err basic_size_t_from_addr(
         case range_addr_beg_tag: *out=min; return Ok;
         case range_addr_end_tag: *out=bound - 1; return Ok;
         case range_addr_num_tag: *out=addr->n; return Ok;
-        case range_addr_none_tag: if (optional_none_default) *out=*optional_none_default; return Ok;
+        case range_addr_none_tag:
+            if (optional_none_default) {
+                *out=*optional_none_default;
+                return Ok;
+            }
+            return "no default value for range type";
         default: return "error parsing addr";
     }
 }

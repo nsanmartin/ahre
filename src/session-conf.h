@@ -38,20 +38,16 @@ static inline bool session_conf_show_forms(SessionConf sc[_1_]) {
     return sc->flags & SESSION_CONF_SHOW_FORM_JS;
 }
 
-static inline void _set_flag_(SessionConf sc[_1_], unsigned mask, bool value) {
-    if (value) sc->flags |= mask;
-    else sc->flags &= ~mask;
-}
 
 static inline void session_conf_show_forms_set(SessionConf sc[_1_], bool value) {
-    _set_flag_(sc, SESSION_CONF_SHOW_FORM_JS, value);
+    set_flag(&sc->flags, SESSION_CONF_SHOW_FORM_JS, value);
 }
 
 static inline void session_conf_monochrome_set(SessionConf sc[_1_], bool value) {
-    _set_flag_(sc, SESSION_CONF_FLAG_MONOCHROME, value);
+    set_flag(&sc->flags, SESSION_CONF_FLAG_MONOCHROME, value);
 }
 static inline void session_conf_js_set(SessionConf sc[_1_], bool value) {
-    _set_flag_(sc, SESSION_CONF_FLAG_JS, value);
+    set_flag(&sc->flags, SESSION_CONF_FLAG_JS, value);
 }
 static inline size_t* session_conf_nrows(SessionConf sc[_1_]) { return &sc->nrows; }
 static inline size_t* session_conf_ncols(SessionConf sc[_1_]) { return &sc->ncols; }

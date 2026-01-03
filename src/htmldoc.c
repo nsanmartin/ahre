@@ -793,9 +793,7 @@ Err htmldoc_init_move_request(
      if (!arlfn(FetchHistoryEntry,append)(hist, &(FetchHistoryEntry){0}))
      { e = "error: arl append to fetch history failure"; goto Failure; }
 
-    try_or_jump(e, Failure,
-            htmldoc_fetch(d, uc, session_cookies_fname(s), &w, arlfn(FetchHistoryEntry,back)(hist)));
-
+    try_or_jump(e, Failure, htmldoc_fetch(d, uc, &w, arlfn(FetchHistoryEntry,back)(hist)));
     htmldoc_eval_js_scripts_or_continue(d, s);
     try_or_jump( e, Failure, _htmldoc_draw_(d, s));
     try_or_jump( e, Failure,

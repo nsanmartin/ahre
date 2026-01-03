@@ -84,6 +84,11 @@ static inline Err _set_size_t_from_int_(size_t s[_1_], int i) {
 #define skip__(X)
 #define GET_MACRO__(_1,_2,_3,NAME,...) NAME
 
+static inline void set_flag(unsigned flags[_1_], unsigned mask, bool value) {
+    if (value) *flags |= mask;
+    else *flags &= ~mask;
+}
+
 #define lit_len__(Lit) (Lit == NULL ? 0 : sizeof(Lit)-1)
 #define T char
 #include <buf.h>

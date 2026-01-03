@@ -3,6 +3,7 @@
 [ ] [build] fix tcc quick-check build
 [ ] [curl] implement cancel for curl commands
 [ ] [curl] implement other curlopt setter in user interface
+[ ] [curl] use CULROPT_SHARE for multi interface
 [ ] [draw] browse ul/li
 [ ] [draw] draw properly blockquote 
 [ ] [draw] draw properly center 
@@ -18,12 +19,14 @@
 [~] [libcurl] store cookies in file and make it configurable.
 [*] [refa][?] separate more htmldoc init from draw
 [ ] [refa][ui] move from OOP to more functional
+[ ] [refa] reduce headers size moving code to the .c files
 [ ] [test] so many tests...
 [ ] [ui/refa] use different sesion_cmd arrays for different modes.
 [ ] [ui] images: send to progam
 [ ] [ui] implement def (or some other keyword) to define procedures
 [ ] [ui] implement ranges for doc's cache's elements. Vg: [1,4' means show anchors 1 to 4
 [ ] [ui] implement vi_process_line method that does not print (vi mode only prints on show)
+[ ] [ui] implement '> filename' as universal save command
 [ ] [ui] when saving images to directory path act as like anchors (generating the url).
 [ ] [ui] manage .+SECTION when SECTION is substring of SECTION'
 [ ] [bug] jump to content should only jump to content, not open a new doc

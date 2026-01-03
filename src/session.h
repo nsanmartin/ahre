@@ -46,6 +46,9 @@ session_monochrome_set(Session s[_1_], bool value) {
 }
 static inline void
 session_js_set(Session s[_1_], bool value) { session_conf_js_set(session_conf(s), value); }
+
+void session_set_verbose(Session [_1_], bool value);
+
 static inline UserInterface*
 session_ui(Session s[_1_]) { return session_conf_ui(session_conf(s)); }
 static inline UserInput*

@@ -22,13 +22,13 @@ static inline void curlu_ptr_clean(CurlUPtr* p) { curl_url_cleanup((void*)*p); }
 
 static inline Err err_from_curle(CURLcode code) {
     return code == CURLE_OK
-        ? Ok : err_fmt("error: could not set long CURLOPT: %s", curl_easy_strerror(code));
+        ? Ok : err_fmt("error: could not set CURLOPT: %s", curl_easy_strerror(code));
 }
 
 
 static inline Err err_from_curlm(CURLMcode code) {
     return code == CURLM_OK
-        ? Ok : err_fmt("error: could not set long CURLOPT: %s", curl_multi_strerror(code));
+        ? Ok : err_fmt("error: could not set multi CURLOPT: %s", curl_multi_strerror(code));
 }
 
 
@@ -72,30 +72,11 @@ static inline Err w_curl_url_get_malloc(CURLU* cu, CURLUPart part, char* out[_1_
 }
 
 
-Err w_curl_multi_add(
-    CURLM*         multi,
-    CURLU*         baseurl,
-    const char*    urlstr,
-    ArlOf(CurlPtr) easies[_1_],
-    ArlOf(Str)     destlist[_1_],
-    ArlOf(CurlUPtr) curlus[_1_]
-
-);
-
 
 #include "user-out.h"
 void w_curl_multi_remove_handles(
     CURLM* multi, ArlOf(CurlPtr)  easies[_1_], Writer msg_writer[_1_]);
 
-Err w_curl_multi_add_handles( 
-    CURLM*           multi,
-    CURLU*           curlu,
-    ArlOf(Str)       urls[_1_],
-    ArlOf(Str)       scripts[_1_],
-    ArlOf(CurlPtr)*  easies,
-    ArlOf(CurlUPtr)* curlus,
-    Writer           msg_buf[_1_]
-);
 Err w_curl_multi_perform_poll(CURLM* multi);
 
 Err for_htmldoc_size_download_append(

@@ -21,7 +21,7 @@ _get_bookmarks_doc_(
     try_or_jump(err, Clean_Bm_Url,
         htmldoc_init_bookmark_move_urlstr(out, bm_url));
     FetchHistoryEntry e = (FetchHistoryEntry){0};
-    err = _htmldoc_fetch_bookmark_(out, url_client, (StrView){0}, msg_writer, &e);
+    err = _htmldoc_fetch_bookmark_(out, url_client, msg_writer, &e);
     fetch_history_entry_clean(&e);
     if (err) {
         htmldoc_cleanup(out);

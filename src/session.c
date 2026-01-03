@@ -37,7 +37,12 @@ Err session_init(Session s[_1_], SessionConf sconf[_1_]) {
     };
 
     try( session_conf_set_paths(session_conf(s)));
-    try( url_client_init(session_url_client(s), session_cookies_fname(s)));
+    try( url_client_init(
+            session_url_client(s),
+            session_cookies_fname(s),
+            strview__(USER_AGENT_USED_),
+            0u
+    ));
     try( str_append_datetime_now(session_dt_now_str(s)));
 
     return Ok;
@@ -179,3 +184,8 @@ Err session_close(Session s[_1_]) {
     session_write_fetch_history(s);
     return Ok;
 }
+
+void session_set_verbose(Session s[_1_], bool value) {
+    url_client_set_verbose(session_url_client(s), value);
+}
+

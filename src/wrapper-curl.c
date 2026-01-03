@@ -69,34 +69,6 @@ Err curlinfo_sz_download_incr(
     return Ok;
 }
 
-Err w_curl_multi_add_handles( 
-    CURLM*           multi,
-    CURLU*           curlu,
-    ArlOf(Str)       urls[_1_],
-    ArlOf(Str)       scripts[_1_],
-    ArlOf(CurlPtr)*  easies,
-    ArlOf(CurlUPtr)* curlus,
-    Writer           msg_writer[_1_]
-) {
-
-    //TODO: do it in one op, of implement reserve/capacity in hotl
-    for (size_t i = 0; i < len__(urls); ++i) {
-        if (!arlfn(Str,append)(scripts, &(Str){0}))
-            return "error: arlfn(Str,append) failure";
-    }
-    scripts->len -= len__(urls);
-    /*^*/
-
-    for (Str* u = arlfn(Str,begin)(urls) ; u != arlfn(Str,end)(urls) ; ++u) {
-        Err e = w_curl_multi_add(multi, curlu, items__(u), easies, scripts, curlus);
-        if (e) {
-            try(writer_write_lit__(msg_writer, "couldn't get script: "));
-            try(writer_write(msg_writer, (char*)e, strlen(e)));
-        }
-    }
-    return Ok;
-}
-
 Err w_curl_multi_perform_poll(CURLM* multi){
     int running;
     Err err = Ok;
@@ -146,7 +118,7 @@ void w_curl_multi_remove_handles(
 }
 
 Err w_curl_multi_add(
-    CURLM*          multi,
+    UrlClient       uc[_1_],
     CURLU*          baseurl,
     const char*     urlstr,
     ArlOf(CurlPtr)  easies[_1_],
@@ -156,6 +128,7 @@ Err w_curl_multi_add(
     Err    e    = Ok;
     CURLU* dup;
     CURL*  easy;
+    CURLM* multi = url_client_multi(uc);
 
     //TODO!: dont do it this way. Array should had been filed by the caller.
     try( w_curl_url_dup(baseurl, &dup));
@@ -164,9 +137,14 @@ Err w_curl_multi_add(
     try_or_jump(e, Clean_Easy, w_curl_url_set(dup, CURLUPART_URL, urlstr, CURLU_DEFAULT_SCHEME));
     try_or_jump(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_CURLU        , dup));
     try_or_jump(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, str_append_flip));
-    try_or_jump(e, Clean_Easy, w_curl_easy_setopt(
-        easy, CURLOPT_WRITEDATA , arlfn(Str,back)(destlist)
-    ));
+    try_or_jump(e, Clean_Easy, w_curl_easy_setopt( easy, CURLOPT_WRITEDATA , arlfn(Str,back)(destlist)));
+
+    try_or_jump(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_VERBOSE, url_client_verbose(uc)));
+    try_or_jump(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_USERAGENT, url_client_user_agent(uc)));
+
+    //TODO: use CURLOPT_SHARE to share cookies etc between handles.
+    //https://everything.curl.dev/helpers/sharing.html
+
     try_or_jump(e, Clean_Easy, w_curl_multi_add_handle(multi, easy));
 
     if (!arlfn(CurlPtr,append)(easies, &easy)) {
