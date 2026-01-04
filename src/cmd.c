@@ -7,6 +7,7 @@
 
 #define MsgLastLine EscCodePurple "%{- last line -}%" EscCodeReset
 
+
 /* session commands */
 Err cmd_get(CmdParams p[_1_]) {
     p->ln = cstr_trim_space((char*)p->ln);
@@ -326,7 +327,9 @@ Clean_Matches:
 }
 
 
-Err _cmd_input_ix_set_(Session session[_1_], const size_t ix, const char* ln) {
+Err _cmd_input_ix_set_(CmdParams p[_1_], const size_t ix) {
+    Session* session = p->s;
+    const char* ln   = p->ln;
     HtmlDoc* d;
     LxbNode n = (LxbNode){0};
     try( session_current_doc(session, &d));
@@ -355,21 +358,22 @@ Err _get_image_by_ix(Session session[_1_], size_t ix, lxb_dom_node_t* outnode[_1
     return Ok;
 }
 
-Err _cmd_image_print(Session session[_1_], size_t ix) {
+Err _cmd_image_print(CmdParams p[_1_], size_t ix) {
     lxb_dom_node_t* node;
-    try( _get_image_by_ix(session, ix, &node));
+    try( _get_image_by_ix(p->s, ix, &node));
     Str* buf = &(Str){0};
     Err err = lexbor_node_to_str(node, buf);
-    ok_then(err, session_write_msg(session, items__(buf), len__(buf)));
+    ok_then(err, session_write_msg(p->s, items__(buf), len__(buf)));
     str_clean(buf);
     return err;
 }
 
-Err _cmd_image_save(Session session[_1_], size_t ix, const char* fname) {
+Err _cmd_image_save(CmdParams p[_1_], size_t ix) {
+    const char* fname = p->ln;
     lxb_dom_node_t* node;
-    try( _get_image_by_ix(session, ix, &node));
+    try( _get_image_by_ix(p->s, ix, &node));
     HtmlDoc* htmldoc;
-    try( session_current_doc(session, &htmldoc));
+    try( session_current_doc(p->s, &htmldoc));
 
     Str urlstr = (Str){0};
     try (lexbor_append_null_terminated_attr(node, "src", 3, &urlstr));
@@ -378,11 +382,11 @@ Err _cmd_image_save(Session session[_1_], size_t ix, const char* fname) {
     Request r;
     try_or_jump(err, Clean_Url_Str,
         request_init_move_urlstr(&r,http_get, &urlstr, htmldoc_url(htmldoc)));
-    try_or_jump(err, Clean_Request, url_from_request(&r, session_url_client(session)));
+    try_or_jump(err, Clean_Request, url_from_request(&r, session_url_client(p->s)));
 
-    err = request_to_file(&r, session_url_client(session), fname);
+    err = request_to_file(&r, session_url_client(p->s), fname);
 
-    ok_then(err, session_write_msg_lit__(session, "data saved\n"));
+    ok_then(err, session_write_msg_lit__(p->s, "data saved\n"));
 Clean_Request:
     request_clean(&r);
     return err;
@@ -404,14 +408,14 @@ Err _get_anchor_by_ix(Session session[_1_], size_t ix, lxb_dom_node_t* outnode[_
     return Ok;
 }
 
-Err _cmd_anchor_print(Session session[_1_], size_t linknum) {
+Err _cmd_anchor_print(CmdParams p[_1_], size_t linknum) {
     lxb_dom_node_t* a;
-    try( _get_anchor_by_ix(session, linknum, &a));
+    try( _get_anchor_by_ix(p->s, linknum, &a));
     
     Str* buf = &(Str){0};
     try( lexbor_node_to_str(a, buf));
 
-    Err err = session_write_msg(session, items__(buf), len__(buf));
+    Err err = session_write_msg(p->s, items__(buf), len__(buf));
     str_clean(buf);
     return err;
 }

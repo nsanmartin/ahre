@@ -25,6 +25,9 @@
 #define CMD_ANY 0x8
 
 
+typedef Err indexedCmdCallback (CmdParams p[_1_], size_t ix);
+
+
 /* internal linkage */
 
 static inline bool _char_cmd_match_(SessionCmd* cmd, CmdParams p[_1_]) {
@@ -105,6 +108,47 @@ static Err run_cmd_help(Session* s, SessionCmd cmd[_1_]) {
 }
 
 
+static Err _run_cmd_for_basic_range__(CmdParams p[_1_], size_t bound, indexedCmdCallback cb) {
+    Range r;
+    try(basic_range_from_parse(&p->rp, 0, bound, &r));
+    if (r.end <= r.beg) return "error: bad range";
+    for (size_t i = r.beg; i < r.end; ++i)
+        try( cb(p, i));
+
+    return Ok;
+}
+
+
+static Err _run_cmd_for_htmldoc_anchors_range__(CmdParams p[_1_], indexedCmdCallback cb) {
+    HtmlDoc* h;
+    try(session_current_doc(p->s, &h));
+    const size_t bound = len__(htmldoc_anchors(h));
+    return _run_cmd_for_basic_range__(p, bound, cb);
+}
+
+
+static Err _run_cmd_for_htmldoc_inputs_range__(CmdParams p[_1_], indexedCmdCallback cb) {
+    HtmlDoc* h;
+    try(session_current_doc(p->s, &h));
+    const size_t bound = len__(htmldoc_inputs(h));
+    return _run_cmd_for_basic_range__(p, bound, cb);
+}
+
+
+static Err _run_cmd_for_htmldoc_imgs_range__(CmdParams p[_1_], indexedCmdCallback cb) {
+    HtmlDoc* h;
+    try(session_current_doc(p->s, &h));
+    const size_t bound = len__(htmldoc_imgs(h));
+    return _run_cmd_for_basic_range__(p, bound, cb);
+}
+
+static Err _run_cmd_for_htmldoc_forms_range__(CmdParams p[_1_], indexedCmdCallback cb) {
+    HtmlDoc* h;
+    try(session_current_doc(p->s, &h));
+    const size_t bound = len__(htmldoc_forms(h));
+    return _run_cmd_for_basic_range__(p, bound, cb);
+}
+
 static Err run_cmd__(CmdParams p[_1_], SessionCmd cmdlist[]) {
     p->ln = cstr_skip_space(p->ln);
     for (SessionCmd* cmd = cmdlist; cmd->name ; ++cmd) {
@@ -132,28 +176,21 @@ static Err run_cmd_on_range__(CmdParams p[_1_], SessionCmd cmdlist[], int base) 
     return run_cmd__(p, cmdlist);
 }
 
-static Err run_cmd_on_ix__(CmdParams p[_1_], SessionCmd cmdlist[]) {
-    p->ln = cstr_skip_space(p->ln);
-    Err parse_failed = parse_size_t_or_throw(&p->ln, &p->ix, 36);
-    p->ln = cstr_skip_space(p->ln);
-    /* we assume SIZE_MAX is not an index and is used as not id given */
-    if (parse_failed) p->ix = SIZE_MAX; 
-    return run_cmd__(p, cmdlist);
-}
 
 /* anchor commands */
 
 #define CMD_ANCHOR_PRINT_DOC "Print anchor range info"
 Err cmd_anchor_print(CmdParams p[_1_]) {
-    Range r;
-    HtmlDoc* h;
-    try(session_current_doc(p->s, &h));
-    try(basic_range_from_parse(&p->rp, 0, len__(htmldoc_anchors(h)), &r));
-    if (r.end <= r.beg) return "error: bad range";
-    for (size_t i = r.beg; i < r.end; ++i)
-        try( _cmd_anchor_print(p->s, i));
+    return _run_cmd_for_htmldoc_anchors_range__(p, _cmd_anchor_print);
+    /* Range r; */
+    /* HtmlDoc* h; */
+    /* try(session_current_doc(p->s, &h)); */
+    /* try(basic_range_from_parse(&p->rp, 0, len__(htmldoc_anchors(h)), &r)); */
+    /* if (r.end <= r.beg) return "error: bad range"; */
+    /* for (size_t i = r.beg; i < r.end; ++i) */
+    /*     try( _cmd_anchor_print(p->s, i)); */
 
-    return Ok;
+    /* return Ok; */
 }
 Err cmd_anchor_asterisk(CmdParams p[_1_]) {
     Range r;
@@ -182,14 +219,19 @@ static SessionCmd _cmd_anchor_[] =
 
 /* input commands ({) */
 
-static Err cmd_input_info(CmdParams p[_1_]) { return _cmd_input_print(p->s, p->ix); }
-static Err cmd_input_default(CmdParams p[_1_]) { return cmd_input_default_ix(p->s, p->ix); }
-static Err cmd_input_submit(CmdParams p[_1_]) { return _cmd_input_submit_ix(p->s, p->ix); }
+static Err cmd_input_info(CmdParams p[_1_])
+{ return _run_cmd_for_htmldoc_inputs_range__(p, _cmd_input_print); }
+static Err cmd_input_default(CmdParams p[_1_])
+{ return _run_cmd_for_htmldoc_inputs_range__(p, cmd_input_default_ix); }
+static Err cmd_input_submit(CmdParams p[_1_])
+{ return _run_cmd_for_htmldoc_inputs_range__(p, _cmd_input_submit_ix); }
+
 #define CMD_INPUT_SET \
     "{= [VALUE]\n\n"\
     "If VALUE is given, sets the value of an input element.\n"\
     "If not, user's input is hidden (useful for passwords).\n"
-static Err cmd_input_set(CmdParams p[_1_]) { return _cmd_input_ix_set_(p->s, p->ix, p->ln); }
+static Err cmd_input_set(CmdParams p[_1_])
+{ return _run_cmd_for_htmldoc_inputs_range__(p, _cmd_input_ix_set_); }
 
 
 static SessionCmd _cmd_input_[] =
@@ -342,8 +384,12 @@ static SessionCmd _cmd_textbuf_[] =
 
 /* image commands (() */
 
-static Err cmd_image_info(CmdParams p[_1_]) { return _cmd_image_print(p->s, p->ix); }
-static Err cmd_image_save(CmdParams p[_1_]) { return _cmd_image_save(p->s, p->ix, p->ln); }
+static Err
+cmd_image_info(CmdParams p[_1_]) { return _run_cmd_for_htmldoc_imgs_range__(p, _cmd_image_print); }
+
+static Err cmd_image_save(CmdParams p[_1_])
+{ return _run_cmd_for_htmldoc_imgs_range__(p, _cmd_image_save); }
+
 static SessionCmd _cmd_image_[] =
     { {.name="\"", .fn=cmd_image_info,  .help=NULL, .flags=CMD_CHAR}
     , {.name=">",  .fn=cmd_image_save,  .help=NULL, .flags=CMD_CHAR}
@@ -405,15 +451,16 @@ Err cmd_sourcebuf(CmdParams p[_1_]) {
 #define CMD_INPUT_DOC \
     "{ LINK_ID [SUB_COMMAND]\n\n"\
     "'{' commands are applied to the input elements present in the document.\n"
-Err cmd_input(CmdParams p[_1_]) { return run_cmd_on_ix__(p, _cmd_input_); }
+Err cmd_input(CmdParams p[_1_]) { return run_cmd_on_range__(p, _cmd_input_, 36); }
 
-Err cmd_form_print(CmdParams p[_1_]) { return _cmd_form_print(p->s, p->ix); }
+Err cmd_form_print(CmdParams p[_1_])
+{ return _run_cmd_for_htmldoc_forms_range__(p, _cmd_form_print); }
 
 
 #define CMD_IMAGE_DOC \
     "( LINK_ID [SUB_COMMAND]\n\n"\
     "'(' commands are applied to the images present in the document.\n"
-Err cmd_image(CmdParams p[_1_]) { return run_cmd_on_ix__(p, _cmd_image_); }
+Err cmd_image(CmdParams p[_1_]) { return run_cmd_on_range__(p, _cmd_image_, 36); }
 
 
 #define CMD_SHORTCUT_Z "zN print the following N lines"

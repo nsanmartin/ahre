@@ -7,13 +7,27 @@
 
 #define cmd_assert_no_params(Ln) do{ if(*Ln) return "error: expecting no params"; }while(0)
 
-// typedef enum { cmd_base_tag, cmd_textbuf_tag } CmdTag;
+// could be the session std/msg outuput or a filename
+// nullptr means the standard, otherwise is a filename, 
+// we could add other cases in the future (other command
+// input, sockets, etc).
+typedef struct {
+    StrView* fname;
+} CmdSink;
+
+typedef struct {
+    // TODO: move here from Sessin
+    // Str std_out;
+    // Msg msg;
+    CmdSink sink;
+} CmdOut;
+
 typedef struct {
     const char* ln;
     Session*    s;
     TextBuf*    tb; /* in order to reuse buf cmds for source & buf, we pass it */
     RangeParse  rp;
-    size_t      ix; /* TODO: deprecate this and use only range */
+    CmdOut      out;
 } CmdParams;
 
 typedef Err (*SessionCmdFn)(CmdParams p[_1_]);
@@ -237,7 +251,7 @@ static inline Err cmd_textbuf_write(CmdParams p[_1_]) {
  * Anchor commands
  */
 
-Err _cmd_anchor_print(Session session[_1_], size_t linknum);
+Err _cmd_anchor_print(CmdParams p[_1_], size_t linknum);
 Err _cmd_anchor_save(Session session[_1_], size_t ix, const char* fname) ;
 
 
@@ -250,7 +264,7 @@ static inline Err _cmd_anchor_asterisk(Session session[_1_], size_t linknum) {
 /*
  * Input commands
  */
-Err _cmd_input_ix_set_(Session session[_1_], const size_t ix, const char* line);
+Err _cmd_input_ix_set_(CmdParams p[_1_], const size_t ix);
 
 
 static inline Err
@@ -277,20 +291,20 @@ static inline Err _cmd_lexbor_node_print_(
     return err;
 }
 
-static inline Err _cmd_form_print(Session s[_1_], size_t ix) {
+static inline Err _cmd_form_print(CmdParams p[_1_], size_t ix) {
     HtmlDoc* d;
-    try( session_current_doc(s, &d));
-    return _cmd_lexbor_node_print_(s, htmldoc_forms(d), ix);
+    try( session_current_doc(p->s, &d));
+    return _cmd_lexbor_node_print_(p->s, htmldoc_forms(d), ix);
 }
 
-static inline Err _cmd_input_print(Session s[_1_], size_t ix) {
+static inline Err _cmd_input_print(CmdParams p[_1_], size_t ix) {
     HtmlDoc* d;
-    try( session_current_doc(s, &d));
-    return _cmd_lexbor_node_print_(s, htmldoc_inputs(d), ix);
+    try( session_current_doc(p->s, &d));
+    return _cmd_lexbor_node_print_(p->s, htmldoc_inputs(d), ix);
 }
 
-static inline Err _cmd_input_submit_ix(Session session[_1_], size_t ix) {
-    return session_press_submit(session, ix);
+static inline Err _cmd_input_submit_ix(CmdParams p[_1_], size_t ix) {
+    return session_press_submit(p->s, ix);
 }
 
 static inline Err cmd_select_elem_show_options(LxbNode lbn[_1_], Session s[_1_]) {
@@ -320,23 +334,23 @@ static inline Err cmd_select_elem_show_options(LxbNode lbn[_1_], Session s[_1_])
 }
 
 
-static inline Err cmd_input_default_ix(Session s[_1_], size_t ix) {
+static inline Err cmd_input_default_ix(CmdParams p[_1_], size_t ix) {
     TabNode* tab;
     HtmlDoc* doc;
     LxbNode  lbn;
-    try( tablist_current_tab(session_tablist(s), &tab));
+    try( tablist_current_tab(session_tablist(p->s), &tab));
     try( tab_node_current_doc(tab, &doc));
     try( htmldoc_input_at(doc, ix, &lbn));
 
     if (lexbor_node_tag_is_input(&lbn)
     &&  lexbor_lit_attr_has_lit_value(&lbn, "type", "submit")) 
-        return tab_node_tree_append_submit(tab , ix, session_url_client(s), s);
+        return tab_node_tree_append_submit(tab , ix, session_url_client(p->s), p->s);
     else if (lexbor_node_tag_is_button(&lbn)
     &&  (lexbor_lit_attr_has_lit_value(&lbn, "type", "submit") 
         || !lexbor_has_lit_attr__(&lbn, "type")))
-        return tab_node_tree_append_submit(tab , ix, session_url_client(s), s);
+        return tab_node_tree_append_submit(tab , ix, session_url_client(p->s), p->s);
     else if (lexbor_node_tag_is_select(&lbn))
-        return cmd_select_elem_show_options(&lbn, s);
+        return cmd_select_elem_show_options(&lbn, p->s);
     
     return "error: invalid input node";
 }
@@ -347,8 +361,8 @@ static inline Err cmd_input_default_ix(Session s[_1_], size_t ix) {
 
 Err cmd_image(CmdParams p[_1_]);
 Err _get_image_by_ix(Session session[_1_], size_t ix, lxb_dom_node_t* outnode[_1_]);
-Err _cmd_image_print(Session session[_1_], size_t ix);
-Err _cmd_image_save(Session session[_1_], size_t ix, const char* fname);
+Err _cmd_image_print(CmdParams p[_1_], size_t ix);
+Err _cmd_image_save(CmdParams p[_1_], size_t ix);
 
 
 /*
