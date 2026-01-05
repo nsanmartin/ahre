@@ -120,7 +120,7 @@ Err cmd_set_session_input(CmdParams p[_1_]) {
  * These commands require a valid document, the caller should check this condition before
  */
 
-Err cmd_fetch(Session session[_1_]) {
+Err cmd_fetch(Session session[_1_], CmdOut* out) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
 
@@ -133,7 +133,8 @@ Err cmd_fetch(Session session[_1_]) {
         &newdoc,
         htmldoc_request(htmldoc),
         session_url_client(session),
-        session
+        session,
+        out
     ));
     url_cleanup(&u);
     htmldoc_cleanup(htmldoc);
@@ -202,8 +203,9 @@ StrView parse_pattern(const char* tk) {
 //
 //TODO: apply mods to text
 Err _textbuf_print_n_(
-    Session s[_1_], TextBuf textbuf[_1_], Range range[_1_], const char* ln)
-{
+    Session s[_1_], TextBuf textbuf[_1_], Range range[_1_], const char* ln, CmdOut* out
+) {
+    (void)out;
     (void)ln;
     try(validate_range_for_buffer(textbuf, range));
     Writer w;
@@ -223,8 +225,9 @@ Err _textbuf_print_n_(
 
 
 Err dbg_print_all_lines_nums(
-    Session s[_1_], TextBuf textbuf[_1_], Range r[_1_], const char* ln)
-{
+    Session s[_1_], TextBuf textbuf[_1_], Range r[_1_], const char* ln, CmdOut* out
+) {
+    (void)out;
     (void)r;
     cmd_assert_no_params(ln);
     size_t lnum = 1;
@@ -242,8 +245,9 @@ Err dbg_print_all_lines_nums(
 
 
 Err _cmd_textbuf_write_impl(
-    Session s[_1_], TextBuf textbuf[_1_], Range r[_1_], const char* rest
+    Session s[_1_], TextBuf textbuf[_1_], Range r[_1_], const char* rest, CmdOut* out
 ) {
+    (void)out;
     if (!rest || !*rest) { return "cannot write without file arg"; }
     rest = cstr_trim_space((char*)rest);
     if (!*rest) return "invalid url name";
@@ -415,13 +419,15 @@ Err _cmd_anchor_print(CmdParams p[_1_], size_t linknum) {
     Str* buf = &(Str){0};
     try( lexbor_node_to_str(a, buf));
 
+    //>< write to CmdOut
     Err err = session_write_msg(p->s, items__(buf), len__(buf));
     str_clean(buf);
     return err;
 }
 
 
-Err _cmd_anchor_save(Session session[_1_], size_t ix, const char* fname) {
+Err _cmd_anchor_save(Session session[_1_], size_t ix, const char* fname, CmdOut* out) {
+    (void)out;
     lxb_dom_node_t* node;
     try( _get_anchor_by_ix(session, ix, &node));
     HtmlDoc* htmldoc;

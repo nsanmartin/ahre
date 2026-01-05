@@ -1,7 +1,9 @@
 #ifndef __AHRE_JS_ENGINE_H__
 #define __AHRE_JS_ENGINE_H__
 
+
 typedef struct HtmlDoc HtmlDoc;
+typedef StrView CmdOut;
 
 #ifndef AHRE_QUICKJS_DISABLED
 
@@ -21,7 +23,7 @@ static inline Str* jse_consolebuf(JsEngine js[_1_]) { return &js->consolebuf; }
 
 static inline bool jse_is_enabled(JsEngine js[_1_]) { return js->rt; }
 
-Err jse_eval(JsEngine js[_1_], Session* s, const char* script);
+Err jse_eval(JsEngine js[_1_], Session* s, const char* script, CmdOut* out);
 
 static inline JSRuntime* jse_rt(JsEngine js[_1_]) { return js->rt; }
 static inline JSContext* jse_ctx(JsEngine js[_1_]) { return js->ctx; }
@@ -44,8 +46,8 @@ typedef int JsEngine;
 
 static inline bool jse_is_enabled(JsEngine js[_1_]) { (void)js; return 0; }
 
-static inline Err jse_eval(JsEngine js[_1_], Session* s, const char* script) {
-    (void)js; (void)s; (void)script; return AHRE_QUICKJS_DISABLED_MSG;
+static inline Err jse_eval(JsEngine js[_1_], Session* s, const char* script, CmdOut* out) {
+    (void)js; (void)s; (void)script; (void)out; return AHRE_QUICKJS_DISABLED_MSG;
 }
 
 static inline JSRuntime* jse_rt(JsEngine js[_1_]) { (void)js; return 0; }

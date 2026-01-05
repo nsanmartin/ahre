@@ -95,7 +95,8 @@ Failure_Curl_Easy_Cleanup:
 }
 
 
-Err url_client_print_cookies(Session* s, UrlClient uc[_1_]) {
+Err url_client_print_cookies(Session* s, UrlClient uc[_1_], CmdOut* out) {
+    (void)out;
     if (!s) return "error: session is null";
     struct curl_slist* cookies = NULL;
     CURLcode curl_code = curl_easy_getinfo(uc->curl, CURLINFO_COOKIELIST, &cookies);

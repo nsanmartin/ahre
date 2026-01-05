@@ -11,23 +11,23 @@
 // nullptr means the standard, otherwise is a filename, 
 // we could add other cases in the future (other command
 // input, sockets, etc).
-typedef struct {
-    StrView* fname;
-} CmdSink;
+// typedef struct { StrView* fname; } CmdSink;
 
-typedef struct {
-    // TODO: move here from Sessin
-    // Str std_out;
-    // Msg msg;
-    CmdSink sink;
-} CmdOut;
+// typedef struct CmdOut {
+//     // TODO: move here from Sessin
+//     // Str std_out;
+//     // Msg msg;
+//     CmdSink sink;
+// } CmdOut;
+
+typedef StrView CmdOut;
 
 typedef struct {
     const char* ln;
     Session*    s;
     TextBuf*    tb; /* in order to reuse buf cmds for source & buf, we pass it */
     RangeParse  rp;
-    CmdOut      out;
+    CmdOut*     out;
 } CmdParams;
 
 typedef Err (*SessionCmdFn)(CmdParams p[_1_]);
@@ -67,7 +67,7 @@ Err cmd_post(CmdParams p[_1_]);
 #define CMD_CURL_COOKIES_DOC \
     "Show the cookies.\n"
 static inline Err cmd_curl_cookies(CmdParams p[_1_]) {
-    return url_client_print_cookies(p->s, session_url_client(p->s));
+    return url_client_print_cookies(p->s, session_url_client(p->s), p->out);
 }
 
 #define CMD_CURL_VERSION_DOC \
@@ -87,16 +87,16 @@ static inline Err session_doc_draw(Session session[_1_]) {
     return htmldoc_redraw(htmldoc, session);
 }
 
-static inline Err session_doc_js(Session session[_1_]) {
+static inline Err session_doc_js(Session session[_1_], CmdOut* out) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
-    return htmldoc_switch_js(htmldoc, session);
+    return htmldoc_switch_js(htmldoc, session, out);
 }
 
-static inline Err session_doc_console(Session session[_1_], const char* line) {
+static inline Err session_doc_console(Session session[_1_], const char* line, CmdOut* out) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
-    return htmldoc_console(htmldoc, session, line);
+    return htmldoc_console(htmldoc, session, line, out);
 }
 
 
@@ -106,12 +106,12 @@ static inline Err cmd_doc_draw(CmdParams p[_1_]) { return session_doc_draw(p->s)
 
 #define CMD_DOC_JS \
     "Switch js engine for doc.\n"
-static inline Err cmd_doc_js(CmdParams p[_1_]) { return session_doc_js(p->s); }
+static inline Err cmd_doc_js(CmdParams p[_1_]) { return session_doc_js(p->s, p->out); }
 
 #define CMD_DOC_CONSOLE \
     "js engine console\n"
 static inline Err cmd_doc_console(CmdParams p[_1_]) {
-    return session_doc_console(p->s, p->ln);
+    return session_doc_console(p->s, p->ln, p->out);
 }
 
 /*
@@ -123,7 +123,7 @@ Err cmd_tabs(CmdParams p[_1_]);
 static inline Err cmd_tabs_info(CmdParams p[_1_]) {
     cmd_assert_no_params(p->ln);
     TabList* f = session_tablist(p->s);
-    return tablist_info(p->s, f);
+    return tablist_info(p->s, f, p->out);
 }
 
 static inline Err cmd_tabs_back(CmdParams p[_1_]) {
@@ -149,14 +149,14 @@ static inline Err cmd_doc_info(CmdParams p[_1_]) {
     cmd_assert_no_params(p->ln);
     HtmlDoc* d;
     try( session_current_doc(p->s, &d));
-    return htmldoc_print_info(p->s, d);
+    return htmldoc_print_info(p->s, d, p->out);
 }
 
 static inline Err cmd_doc_A(CmdParams p[_1_]) {
     cmd_assert_no_params(p->ln);
     HtmlDoc* d;
     try( session_current_doc(p->s, &d));
-    return htmldoc_A(p->s, d);
+    return htmldoc_A(p->s, d, p->out);
 }
 
 Err bookmark_add_to_section(Session s[_1_], const char* line, UrlClient url_client[_1_]);
@@ -210,29 +210,30 @@ static inline Err cmd_textbuf_print(CmdParams p[_1_]) {
 
 
 Err dbg_print_all_lines_nums(
-    Session s[_1_], TextBuf tb[_1_], Range r[_1_], const char* ln
+    Session s[_1_], TextBuf tb[_1_], Range r[_1_], const char* ln, CmdOut* out
 );
 
 static inline Err
 cmd_textbuf_dbg_print_all_lines_nums(CmdParams p[_1_]) {
     Range rng;
     try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
-    return dbg_print_all_lines_nums(p->s, p->tb, &rng, p->ln);
+    return dbg_print_all_lines_nums(p->s, p->tb, &rng, p->ln, p->out);
 }
 
 
 Err _textbuf_print_n_(
-    Session s[_1_], TextBuf textbuf[_1_], Range range[_1_], const char* ln);
+    Session s[_1_], TextBuf textbuf[_1_], Range range[_1_], const char* ln, CmdOut* out
+);
 
 static inline Err
 cmd_textbuf_print_n(CmdParams p[_1_]) {
     Range rng;
     try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
-    return  _textbuf_print_n_(p->s, p->tb, &rng, p->ln);
+    return  _textbuf_print_n_(p->s, p->tb, &rng, p->ln, p->out);
 }
 
 Err _cmd_textbuf_write_impl(
-   Session s[_1_], TextBuf textbuf[_1_], Range r[_1_], const char* rest
+   Session s[_1_], TextBuf textbuf[_1_], Range r[_1_], const char* rest, CmdOut* out
 );
 
 static inline Err cmd_textbuf_write(CmdParams p[_1_]) {
@@ -244,7 +245,7 @@ static inline Err cmd_textbuf_write(CmdParams p[_1_]) {
     }
     Range rng;
     try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
-    return _cmd_textbuf_write_impl(p->s, p->tb, &rng, filename);
+    return _cmd_textbuf_write_impl(p->s, p->tb, &rng, filename, p->out);
 }
 
 /*
@@ -252,11 +253,11 @@ static inline Err cmd_textbuf_write(CmdParams p[_1_]) {
  */
 
 Err _cmd_anchor_print(CmdParams p[_1_], size_t linknum);
-Err _cmd_anchor_save(Session session[_1_], size_t ix, const char* fname) ;
+Err _cmd_anchor_save(Session session[_1_], size_t ix, const char* fname, CmdOut* out);
 
 
-static inline Err _cmd_anchor_asterisk(Session session[_1_], size_t linknum) {
-    try( session_follow_ahref(session, linknum));
+static inline Err _cmd_anchor_asterisk(Session session[_1_], size_t linknum, CmdOut* out) {
+    try( session_follow_ahref(session, linknum, out));
     return Ok;
 }
 
@@ -304,7 +305,7 @@ static inline Err _cmd_input_print(CmdParams p[_1_], size_t ix) {
 }
 
 static inline Err _cmd_input_submit_ix(CmdParams p[_1_], size_t ix) {
-    return session_press_submit(p->s, ix);
+    return session_press_submit(p->s, ix, p->out);
 }
 
 static inline Err cmd_select_elem_show_options(LxbNode lbn[_1_], Session s[_1_]) {
@@ -344,11 +345,11 @@ static inline Err cmd_input_default_ix(CmdParams p[_1_], size_t ix) {
 
     if (lexbor_node_tag_is_input(&lbn)
     &&  lexbor_lit_attr_has_lit_value(&lbn, "type", "submit")) 
-        return tab_node_tree_append_submit(tab , ix, session_url_client(p->s), p->s);
+        return tab_node_tree_append_submit(tab , ix, session_url_client(p->s), p->s, p->out);
     else if (lexbor_node_tag_is_button(&lbn)
     &&  (lexbor_lit_attr_has_lit_value(&lbn, "type", "submit") 
         || !lexbor_has_lit_attr__(&lbn, "type")))
-        return tab_node_tree_append_submit(tab , ix, session_url_client(p->s), p->s);
+        return tab_node_tree_append_submit(tab , ix, session_url_client(p->s), p->s, p->out);
     else if (lexbor_node_tag_is_select(&lbn))
         return cmd_select_elem_show_options(&lbn, p->s);
     
@@ -377,6 +378,6 @@ static inline Err _cmd_misc_tag(const char* rest, Session session[_1_]) {
     return lexbor_cp_tag(rest, htmldoc->lxbdoc, textbuf_buf(htmldoc_textbuf(htmldoc)));
 }
 
-Err cmd_fetch(Session session[_1_]);
+Err cmd_fetch(Session session[_1_], CmdOut* out);
 Err cmd_set_session_forms(CmdParams p[_1_]);
 #endif

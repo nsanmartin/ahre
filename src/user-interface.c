@@ -198,7 +198,7 @@ Err cmd_anchor_asterisk(CmdParams p[_1_]) {
     try(session_current_doc(p->s, &h));
     try(basic_range_from_parse(&p->rp, 0, len__(htmldoc_anchors(h)), &r));
     if (r.beg + 1 != r.end) return "TODO: implement anchor * for ranges";
-    return _cmd_anchor_asterisk(p->s, r.beg);
+    return _cmd_anchor_asterisk(p->s, r.beg, p->out);
 }
 Err cmd_anchor_save(CmdParams p[_1_]) {
     Range r;
@@ -206,7 +206,7 @@ Err cmd_anchor_save(CmdParams p[_1_]) {
     try(session_current_doc(p->s, &h));
     try(basic_range_from_parse(&p->rp, 0, len__(htmldoc_anchors(h)), &r));
     if (r.beg + 1 != r.end) return "TODO: implement anchor > for ranges";
-    return _cmd_anchor_save(p->s, r.beg, p->ln);
+    return _cmd_anchor_save(p->s, r.beg, p->ln, p->out);
 }
 
 static SessionCmd _cmd_anchor_[] =
@@ -350,7 +350,7 @@ static inline Err cmd_doc_scripts_cmd(CmdParams p[_1_]) {
 
 #define CMD_DOC_FETCh \
     "Fetchs the current document.\n"
-static inline Err cmd_doc_fetch(CmdParams p[_1_]) { return cmd_fetch(p->s); }
+static inline Err cmd_doc_fetch(CmdParams p[_1_]) { return cmd_fetch(p->s, p->out); }
 
 
 static SessionCmd _cmd_doc_[] =

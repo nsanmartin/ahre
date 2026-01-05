@@ -7,10 +7,11 @@ Err tab_node_init_move_request(
     TabNode*    parent,
     UrlClient   url_client[_1_],
     Request     r[_1_],
-    Session     s[_1_]
+    Session     s[_1_],
+    CmdOut*     out
 ) {
     try(_tab_node_init_base_(n, parent));
-    Err err = htmldoc_init_move_request(tab_node_doc(n), r, url_client, s);
+    Err err = htmldoc_init_move_request(tab_node_doc(n), r, url_client, s, out);
     if (err) {
         /* we don't want tab_node_cleanup to free node_doc again */
         *tab_node_doc(n) = (HtmlDoc){0};
@@ -27,7 +28,8 @@ Err tab_node_tree_append_ahref(
     TabNode   t[_1_],
     size_t    linknum,
     UrlClient url_client[_1_],
-    Session   s[_1_]
+    Session   s[_1_],
+    CmdOut*   out
 ) {
     TabNode* n;
     HtmlDoc* d;
@@ -47,7 +49,7 @@ Err tab_node_tree_append_ahref(
     TabNode newnode;
     Err e = Ok;
     try_or_jump(e, Clean_Url_Str,
-        tab_node_init_move_request(&newnode, n, url_client, &r, s));
+        tab_node_init_move_request(&newnode, n, url_client, &r, s, out));
     try_or_jump(e, Failure_New_Node_Cleanup, tab_node_append_move_child(n, &newnode));
     goto Clean_Url_Str;
 Failure_New_Node_Cleanup:
@@ -62,7 +64,8 @@ Err tab_node_tree_append_submit(
     TabNode t[_1_],
     size_t ix,
     UrlClient url_client[_1_],
-    Session s[_1_]
+    Session s[_1_],
+    CmdOut* out
 ) {
     TabNode* n;
     HtmlDoc* d;
@@ -80,7 +83,7 @@ Err tab_node_tree_append_submit(
         try( mk_submit_request(form, true, &r));
         TabNode newnode;
         try_or_jump(e, Failure_Clean_Request,
-            tab_node_init_move_request(&newnode, n, url_client, &r, s));
+            tab_node_init_move_request(&newnode, n, url_client, &r, s, out));
         try_or_jump(e, Failure_New_Node_Cleanup, tab_node_append_move_child(n, &newnode));
         return Ok;
 
@@ -140,8 +143,10 @@ Err session_tab_node_print(
     TabNode n[_1_],
     size_t ix,
     ArlOf(size_t) stack[_1_],
-    TabNode* current_node
+    TabNode* current_node,
+    CmdOut* out
 ) {
+    (void)out;
     if (!arlfn(size_t, append)(stack, &ix)) return "error: arl append failure";
     HtmlDoc* d = &n->doc;
     LxbNodePtr title = *htmldoc_title(d);
@@ -192,7 +197,7 @@ Err session_tab_node_print(
     const TabNode* end = arlfn(TabNode, end)(n->childs);
     for (; it != end; ++it) {
         size_t subix = it-beg;
-        try( session_tab_node_print(s, it, subix, stack, current_node));
+        try( session_tab_node_print(s, it, subix, stack, current_node, out));
     }
     if (!stack->len) return "error: arl pop failure";
     else --stack->len;

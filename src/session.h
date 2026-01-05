@@ -140,13 +140,14 @@ Err tab_node_tree_append_ahref(
     TabNode t[_1_],
     size_t linknum,
     UrlClient url_client[_1_],
-    Session s[_1_]
+    Session s[_1_],
+    CmdOut* out
 );
-static inline Err session_follow_ahref(Session s[_1_], size_t linknum) {
+static inline Err session_follow_ahref(Session s[_1_], size_t linknum, CmdOut* out) {
     TabNode* current_tab;
     try( tablist_current_tab(session_tablist(s), &current_tab));
     if(current_tab)
-        return tab_node_tree_append_ahref(current_tab , linknum, session_url_client(s), s);
+        return tab_node_tree_append_ahref(current_tab , linknum, session_url_client(s), s, out);
     
     return "error: where is the href if current tree is empty?";
 }
@@ -155,13 +156,14 @@ Err tab_node_tree_append_submit(
     TabNode t[_1_],
     size_t ix,
     UrlClient url_client[_1_],
-    Session s[_1_]
+    Session s[_1_],
+    CmdOut* out
 );
-static inline Err session_press_submit(Session s[_1_], size_t ix) {
+static inline Err session_press_submit(Session s[_1_], size_t ix, CmdOut* out) {
     TabNode* current_tab;
     try( tablist_current_tab(session_tablist(s), &current_tab));
     if(current_tab)
-        return tab_node_tree_append_submit(current_tab , ix, session_url_client(s), s);
+        return tab_node_tree_append_submit(current_tab , ix, session_url_client(s), s, out);
 
     
     return "error: where is the input if current tree is empty?";
@@ -169,7 +171,6 @@ static inline Err session_press_submit(Session s[_1_], size_t ix) {
 
 int edcmd_print(Session session[_1_]);
 
-Err dbg_session_summary(Session session[_1_]);
 
 static inline Err session_read_user_input(Session s[_1_], UserLine ul[_1_]) {
     if (!user_line_empty(ul)) return Ok;

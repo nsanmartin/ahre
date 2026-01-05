@@ -35,7 +35,8 @@ Failure_Tab_Node_Cleanup:
 }
 
 
-Err tablist_info(Session* s, TabList f[_1_]) {
+Err tablist_info(Session* s, TabList f[_1_], CmdOut* out) {
+    (void)out;
     ArlOf(size_t)* stack = &(ArlOf(size_t)){0};
 
     TabNode* current_node;
@@ -54,7 +55,7 @@ Err tablist_info(Session* s, TabList f[_1_]) {
         
         for (; it != end; ++it) {
             size_t ix = it-beg;
-            if ((err=session_tab_node_print(s, it, ix, stack, current_node))) break;
+            if ((err=session_tab_node_print(s, it, ix, stack, current_node, out))) break;
         }
     }
     arlfn(size_t, clean)(stack);

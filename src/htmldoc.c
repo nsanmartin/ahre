@@ -772,7 +772,8 @@ Err htmldoc_init_move_request(
     HtmlDoc   d[_1_],
     Request   r[_1_],
     UrlClient uc[_1_],
-    Session*  s
+    Session*  s,
+    CmdOut*   out
 ) {
     if (!s) return "error: expecting a session, recived NULL";
     Err e = Ok;
@@ -794,7 +795,7 @@ Err htmldoc_init_move_request(
      { e = "error: arl append to fetch history failure"; goto Failure; }
 
     try_or_jump(e, Failure, htmldoc_fetch(d, uc, &w, arlfn(FetchHistoryEntry,back)(hist)));
-    htmldoc_eval_js_scripts_or_continue(d, s);
+    htmldoc_eval_js_scripts_or_continue(d, s, out);
     try_or_jump( e, Failure, _htmldoc_draw_(d, s));
     try_or_jump( e, Failure,
         fetch_history_entry_update_title(arlfn(FetchHistoryEntry,back)(hist),htmldoc_title(d)));
@@ -889,7 +890,8 @@ Err htmldoc_redraw(HtmlDoc htmldoc[_1_], Session s[_1_]) {
     return _htmldoc_draw_with_flags_(htmldoc, s, flags);
 }
 
-Err htmldoc_A(Session* s, HtmlDoc d[_1_]) {
+Err htmldoc_A(Session* s, HtmlDoc d[_1_], CmdOut* out) {
+    (void)out;
     if (!s) return "error: no session";
     Str* buf = &(Str){0};
     str_append_lit__(buf, "<li><a href=\"");
@@ -910,7 +912,8 @@ Err htmldoc_A(Session* s, HtmlDoc d[_1_]) {
     return Ok;
 }
 
-Err htmldoc_print_info(Session* s, HtmlDoc d[_1_]) {
+Err htmldoc_print_info(Session* s, HtmlDoc d[_1_], CmdOut* out) {
+    (void)out;
     Err err = Ok;
     LxbNodePtr* title = htmldoc_title(d);
     try (session_write_msg_lit__(s, "DOWNLOAD SIZE: "));
@@ -1040,24 +1043,24 @@ Err htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[_1_]) {
     return Ok;
 }
 
-Err htmldoc_console(HtmlDoc d[_1_], Session* s, const char* line) {
+Err htmldoc_console(HtmlDoc d[_1_], Session* s, const char* line, CmdOut* out) {
     if (!s) return "error: no session";
-    return jse_eval(htmldoc_js(d), s, line);
+    return jse_eval(htmldoc_js(d), s, line, out);
 }
 
-static Err jse_eval_doc_scripts(Session* s, HtmlDoc d[_1_]) {
+static Err jse_eval_doc_scripts(Session* s, HtmlDoc d[_1_], CmdOut* out) {
 
     for ( Str* it = arlfn(Str,begin)(htmldoc_head_scripts(d))
         ; it != arlfn(Str,end)(htmldoc_head_scripts(d))
         ; ++it) {
-        Err e = jse_eval(htmldoc_js(d), s, items__(it));
+        Err e = jse_eval(htmldoc_js(d), s, items__(it), out);
         if (e) session_write_msg(s, (char*)e, strlen(e));
     }
 
     for ( Str* it = arlfn(Str,begin)(htmldoc_body_scripts(d))
         ; it != arlfn(Str,end)(htmldoc_body_scripts(d))
         ; ++it) {
-        Err e = jse_eval(htmldoc_js(d), s, items__(it));
+        Err e = jse_eval(htmldoc_js(d), s, items__(it), out);
         if (e) session_write_msg(s, (char*)e, strlen(e));
     }
 
@@ -1065,16 +1068,16 @@ static Err jse_eval_doc_scripts(Session* s, HtmlDoc d[_1_]) {
 }
 
 //TODO: make this fn not Err and rename it
-Err htmldoc_js_enable(HtmlDoc d[_1_], Session* s) {
+Err htmldoc_js_enable(HtmlDoc d[_1_], Session* s, CmdOut* out) {
     try( jse_init(d));
-    Err e = jse_eval_doc_scripts(s, d);
+    Err e = jse_eval_doc_scripts(s, d, out);
     if (e) session_write_msg(s, (char*)e, strlen(e));
     return Ok;
 }
 
-void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[_1_], Session* s) {
+void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[_1_], Session* s, CmdOut* out) {
     if (htmldoc_js_is_enabled(d)) {
-        Err e = jse_eval_doc_scripts(s, d);
+        Err e = jse_eval_doc_scripts(s, d, out);
         if (e) session_write_msg(s, (char*)e, strlen(e));
     }
 }

@@ -24,6 +24,8 @@
 #define HIDE_OL 0x1u
 #define HIDE_UL 0x2u
 
+typedef StrView CmdOut;
+
 _Static_assert(sizeof(size_t) >= 2, "size_t type too small");
 _Static_assert(sizeof(size_t) >= sizeof(HIDE_OL), "size_t type too small");
 
@@ -168,8 +170,8 @@ static inline bool htmldoc_js_is_enabled(HtmlDoc d[_1_]) {
 }
 
 static inline void htmldoc_js_disable(HtmlDoc d[_1_]) { jse_clean(htmldoc_js(d)); }
-Err htmldoc_console(HtmlDoc d[_1_], Session* s, const char* line);
-Err htmldoc_js_enable(HtmlDoc d[_1_], Session* s);
+Err htmldoc_console(HtmlDoc d[_1_], Session* s, const char* line, CmdOut* out);
+Err htmldoc_js_enable(HtmlDoc d[_1_], Session* s, CmdOut* out);
 /**/
 
 // Err htmldoc_cache_buffer_summary(DocCache c[_1_], BufOf(char) buf[_1_]);
@@ -197,8 +199,8 @@ static inline Err htmldoc_fetch(
 
 /* htmldoc_tag_a.c */
 
-Err htmldoc_A(Session* s, HtmlDoc d[_1_]) ;
-Err htmldoc_print_info(Session* s, HtmlDoc d[_1_]) ;
+Err htmldoc_A(Session* s, HtmlDoc d[_1_], CmdOut* out);
+Err htmldoc_print_info(Session* s, HtmlDoc d[_1_], CmdOut* out);
 
 
 static inline Err htmldoc_tags_str_reduce_size_t(const char* tags, size_t ts[_1_]) {
@@ -234,24 +236,25 @@ static inline void textmod_trim_left(TextBufMods mods[_1_], size_t n) {
     }
 }
 
-static inline Err htmldoc_switch_js(HtmlDoc htmldoc[_1_], Session* s) {
+static inline Err htmldoc_switch_js(HtmlDoc htmldoc[_1_], Session* s, CmdOut* out) {
     if (!s) return "error: NULL session";
     JsEngine* js = htmldoc_js(htmldoc);
     bool is_enabled = jse_rt(js);
     if (is_enabled) jse_clean(js);
-    else try( htmldoc_js_enable(htmldoc, s));//TODO:REDRAW!
+    else try( htmldoc_js_enable(htmldoc, s, out));//TODO:REDRAW!
    
     return Ok;
 }
 
 
-void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[_1_], Session* s);
+void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[_1_], Session* s, CmdOut* out);
 
 Err htmldoc_init_move_request(
     HtmlDoc   d[_1_],
     Request   r[_1_],
     UrlClient uc[_1_],
-    Session*   s
+    Session*  s,
+    CmdOut*   out
 );
 Err htmldoc_scripts_write(HtmlDoc h[_1_], RangeParse rp[_1_], Writer w[_1_]);
 Err htmldoc_init_bookmark_move_urlstr(HtmlDoc d[_1_], Str urlstr[_1_]);

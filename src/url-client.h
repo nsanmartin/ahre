@@ -8,6 +8,7 @@
 #include "writer.h"
 #include "wrapper-curl.h"
 
+typedef StrView CmdOut;
 
 /*
  * User agent samples:
@@ -66,7 +67,7 @@ static inline void url_client_cleanup(UrlClient* url_client) {
 
 typedef struct Session Session;
 static inline void url_client_curl_free_cstr(char* s) { curl_free(s); }
-Err url_client_print_cookies(Session* s, UrlClient uc[_1_]) ;
+Err url_client_print_cookies(Session* s, UrlClient uc[_1_], CmdOut* out);
 Err url_client_reset(UrlClient url_client[_1_]);
 Err url_client_set_basic_options(UrlClient url_client[_1_]);
 

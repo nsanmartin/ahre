@@ -92,7 +92,8 @@ Err session_tab_node_print(
     TabNode n[_1_],
     size_t ix,
     ArlOf(size_t) stack[_1_],
-    TabNode* current_node
+    TabNode* current_node,
+    CmdOut* out
 );
 
 
