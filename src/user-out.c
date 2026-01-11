@@ -8,10 +8,11 @@
 Err ui_line_show_session(Session* s, CmdOut cout[_1_]) {
     (void)cout;
     if (!s) return "error: unexpected null session, this should really not happen";
-    if (session_is_empty(s)) return Ok;
-    //TODO:
-    /* return session_uout(s)->flush_std(NULL); */
-    return Ok;
+    /* if (session_is_empty(s)) return Ok; */
+    return session_flush_cmd_out(s, cout);
+    /* //TODO: */
+    /* /1* return session_uout(s)->flush_std(NULL); *1/ */
+    /* return Ok; */
 }
 
 Err ui_line_show_err(Session* s, char* err, size_t len) {
