@@ -464,8 +464,10 @@ Err cmd_image(CmdParams p[_1_]) { return run_cmd_on_range__(p, _cmd_image_, 36);
 
 
 #define CMD_SHORTCUT_Z "zN print the following N lines"
-Err shortcut_z(Session session[_1_], const char* rest);
-Err cmd_shortcut_z(CmdParams p[_1_]) { return shortcut_z(p->s, p->ln); }
+Err shortcut_z(Session session[_1_], const char* rest, CmdOut cmd_out[_1_]);
+Err cmd_shortcut_z(CmdParams p[_1_]) {
+    return shortcut_z(p->s, p->ln, cmd_params_cmd_out(p));
+}
 
 
 #define CMD_HELP_IX 0
@@ -507,27 +509,26 @@ static Err cmd_help(CmdParams p[_1_]) {
 /* } */
 
 
-Err process_line(Session session[_1_], const char* line) {
+Err process_line(Session session[_1_], const char* line, CmdOut cout[_1_]) {
     if (!line) { session_quit_set(session); return "no input received, exiting"; }
     line = cstr_skip_space(line);
     if (*line == '\\') line = cstr_skip_space(line + 1);
     if (!*line) { return Ok; }
 
-    CmdParams p = (CmdParams){.s=session,.ln=line};
+    CmdParams p = (CmdParams){.s=session,.ln=line,.out=cout};
     Err err = run_cmd__(&p, _session_cmd_);
     session_write_cmd_out(session, cmd_params_cmd_out(&p));
-    cmd_params_clean(&p);
     return err;
 }
 
-Err process_line_line_mode(Session* s, const char* line) {
+Err process_line_line_mode(Session* s, const char* line, CmdOut cout[_1_]) {
     if (!s) return "error: no session :./";
-    return process_line(s, line);
+    return process_line(s, line, cout);
 }
 
-Err process_line_vi_mode(Session* s, const char* line) {
+Err process_line_vi_mode(Session* s, const char* line, CmdOut cout[_1_]) {
     if (!s) return "error: no session :./";
-    try( process_line(s, line));
+    try( process_line(s, line, cout));
     return session_doc_draw(s);
 }
 

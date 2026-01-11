@@ -38,6 +38,7 @@ static inline void cmd_out_clean(CmdOut o[_1_]) {
     str_clean(msg_str(cmd_out_msg(o)));
 }
 
+/* Msg fns */
 #define cmd_out_msg_append_ln(M, Items, Nitems) msg_append_ln(cmd_out_msg(M), Items, Nitems)
 
 #define cmd_out_msg_append_lit__(M, S)  msg_append_lit__(cmd_out_msg(M), S)
@@ -47,4 +48,17 @@ static inline void cmd_out_clean(CmdOut o[_1_]) {
 
 #define cmd_out_msg_append_ui_as_base10(M,U) msg_append_ui_as_base10(cmd_out_msg(M), U)
 #define cmd_out_msg_append_ui_as_base36(M,U) msg_append_ui_as_base36(cmd_out_msg(M), U)
+
+
+/* std fns */
+#define cmd_out_std_append_ln(M, Items, Nitems) str_append_ln(cmd_out_std(M), Items, Nitems)
+
+#define cmd_out_std_append_lit__(M, S)  str_append_lit__(cmd_out_std(M), S)
+#define cmd_out_std_append_str(M,S)     str_append_str(cmd_out_std(M), S)
+#define cmd_out_std_append_str_ln(M, S) str_append_str_ln(cmd_out_std(M), S)
+#define cmd_out_std_append(M, Items, Nitems) str_append (cmd_out_std(M), Items, Nitems)
+
+#define cmd_out_std_append_ui_as_base10(M,U) str_append_ui_as_base10(cmd_out_std(M), U)
+#define cmd_out_std_append_ui_as_base36(M,U) str_append_ui_as_base36(cmd_out_std(M), U)
+
 #endif

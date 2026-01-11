@@ -152,7 +152,11 @@ inline static StrView strview_from_mem_trim(const char* s, size_t len) {
     ((!buffn(char,append)(StrPtr, Items, NItems) || !buffn(char,append)(StrPtr, "\n", 1))\
      ? "error: str_append_ln failure" : Ok)
 
-#define str_append_str(S, T)    str_append(S, items__(T), len__(T))
+#define str_append_str(S, T) _Generic((T),\
+    Str*:     str_append(S, (char*)items__(T), len__(T)), \
+    StrView*: str_append(S, (char*)items__(T), len__(T))  \
+)
+
 #define str_append_str_ln(S, T) str_append_ln(S, items__(T), len__(T))
 
 static inline bool str_startswith_mem(Str s[_1_], const char* mem, size_t len) {

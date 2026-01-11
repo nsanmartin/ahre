@@ -33,24 +33,27 @@ static Err _fetch_many_urls_(Session session[_1_], ArlOf(Request) urls[_1_]) {
 
 static Err _loop_(Session s[_1_], UserLine userln[_1_]) {
     init_user_input_history();
-    Err err    = Ok;
+    Err err      = Ok;
+    CmdOut* cout = &(CmdOut){0};
 
     while (!session_quit(s)) {
-        try_or_jump(err, Error, session_show_output(s));
+        try_or_jump(err, Error, session_show_output(s, cout));
         try_or_jump(err, Error, session_read_user_input(s, userln));
         if (!user_line_empty(userln))
-            try_or_jump(err, Error, session_consume_line(s, userln));
+            try_or_jump(err, Error, session_consume_line(s, userln, cout));
 Error:
         if (err) if (session_show_error(s, err)) return "error trying to show previous error"; 
     }
+    cmd_out_clean(cout);
     return Ok;
 }
 
 static Err run_cmds(Session s[_1_], UserLine userln[_1_]) {
-    Err err = Ok;
-    Str errors = (Str){0};
+    Err err      = Ok;
+    Str errors   = (Str){0};
+    CmdOut* cout = &(CmdOut){0};
     while (!user_line_empty(userln) && !session_quit(s)) {
-        if (!user_line_empty(userln)) err = session_consume_line(s, userln);
+        if (!user_line_empty(userln)) err = session_consume_line(s, userln, cout);
         if (err) try_or_jump(err, Clean_Errors, str_append_ln(&errors, (char*)err, strlen(err)));
     }
     if (errors.len) session_write_msg(s, errors.items, errors.len);

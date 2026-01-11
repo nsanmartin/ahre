@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "writer.h"
 #include "wrapper-curl.h"
+#include "cmd-out.h"
 
 typedef struct CmdOut CmdOut;
 
@@ -78,6 +79,6 @@ Err url_client_multi_add_handles(
     ArlOf(Str)       scripts[_1_],
     ArlOf(CurlPtr)*  easies,
     ArlOf(CurlUPtr)* curlus,
-    Writer           msg_writer[_1_]
+    CmdOut           cmd_out[_1_]
 );
 #endif

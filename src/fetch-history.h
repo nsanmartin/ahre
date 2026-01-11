@@ -53,7 +53,7 @@ static inline Err fetch_history_entry_init(FetchHistoryEntry e[_1_]) {
 Err fetch_history_entry_update_curl(
     FetchHistoryEntry e[_1_],
     CURL*             curl,
-    Writer            msg_writer[_1_]
+    CmdOut            cmd_out[_1_]
 );
 
 Err fetch_history_write_to_file(FetchHistoryEntry e[_1_], FILE* fp);

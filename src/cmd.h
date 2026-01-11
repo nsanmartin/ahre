@@ -14,14 +14,10 @@ typedef struct {
     Session*    s;
     TextBuf*    tb; /* in order to reuse buf cmds for source & buf, we pass it */
     RangeParse  rp;
-    CmdOut      out;
+    CmdOut*     out;
 } CmdParams;
 
-static inline CmdOut* cmd_params_cmd_out(CmdParams p[_1_]) { return &p->out; }
-static inline void cmd_params_clean(CmdParams p[_1_]) {
-    /* the only owned member is CmdOut here */
-    cmd_out_clean(cmd_params_cmd_out(p));
-}
+static inline CmdOut* cmd_params_cmd_out(CmdParams p[_1_]) { return p->out; }
 
 typedef Err (*SessionCmdFn)(CmdParams p[_1_]);
 typedef struct SessionCmd SessionCmd;
@@ -151,7 +147,9 @@ static inline Err cmd_doc_A(CmdParams p[_1_]) {
     return htmldoc_A(p->s, d, cmd_params_cmd_out(p));
 }
 
-Err bookmark_add_to_section(Session s[_1_], const char* line, UrlClient url_client[_1_]);
+Err bookmark_add_to_section(
+    Session s[_1_], const char* line, UrlClient url_client[_1_], CmdOut out[_1_]
+);
 #define CMD_DOC_BOOKMARK_ADD \
     ".+[/]SECTION_NAME\n\n"\
     "Adds current document to bookmarks.\n\n"\
@@ -197,7 +195,7 @@ typedef Err (*TextBufCmdFn)
 static inline Err cmd_textbuf_print(CmdParams p[_1_]) {
     Range rng;
     try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
-    return session_write_std_range_mod(p->s, p->tb, &rng);
+    return session_write_std_range_mod(p->s, p->tb, &rng, cmd_params_cmd_out(p));
 }
 
 
@@ -347,7 +345,7 @@ Err _cmd_image_save(CmdParams p[_1_], size_t ix);
    Misc commands
  */
 
-Err _cmd_misc(Session session[_1_], const char* line);
+Err _cmd_misc(Session session[_1_], const char* line, CmdOut cout[_1_]);
 
 static inline Err _cmd_misc_tag(const char* rest, Session session[_1_]) {
     HtmlDoc* htmldoc;

@@ -144,7 +144,7 @@ Err cmd_fetch(Session session[_1_], CmdOut* out) {
 }
 
 
-Err shortcut_z(Session session[_1_], const char* rest) {
+Err shortcut_z(Session session[_1_], const char* rest, CmdOut cmd_out[_1_]) {
     TextBuf* tb;
     try( session_current_buf(session, &tb));
     if(textbuf_current_line(tb) > textbuf_line_count(tb)) return "No more lines in buffer";
@@ -162,7 +162,7 @@ Err shortcut_z(Session session[_1_], const char* rest) {
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
 
 
-    try( session_write_std_range_mod(session, tb, &r));
+    try( session_write_std_range_mod(session, tb, &r, cmd_out));
     if (textbuf_current_line(tb) == r.end)
         puts(MsgLastLine);
     try( textbuf_get_offset_of_line(tb, r.end,textbuf_current_offset(tb)));
@@ -170,7 +170,7 @@ Err shortcut_z(Session session[_1_], const char* rest) {
 }
 
 //TODO: use it or delete it
-Err _cmd_misc(Session session[_1_], const char* line) {
+Err _cmd_misc(Session session[_1_], const char* line, CmdOut cout[_1_]) {
     const char* rest = 0x0;
     line = cstr_skip_space(line);
     if ((rest = csubstr_match(line, "attr", 2))) { return "TODO: attr"; }
@@ -178,7 +178,7 @@ Err _cmd_misc(Session session[_1_], const char* line) {
     ///if ((rest = csubstr_match(line, "clear", 3))) { return cmd_clear(session); }
     /* if ((rest = csubstr_match(line, "fetch", 1))) { return _cmd_fetch(session); } */
     if ((rest = csubstr_match(line, "tag", 2))) { return _cmd_misc_tag(rest, session); }
-    if ((rest = csubword_match(line, "z", 1))) { return shortcut_z(session, rest); }
+    if ((rest = csubword_match(line, "z", 1))) { return shortcut_z(session, rest, cout); }
 
     return "unknown cmd";
 }
@@ -209,8 +209,6 @@ Err _textbuf_print_n_(
     (void)out;
     (void)ln;
     try(validate_range_for_buffer(textbuf, range));
-    Writer w;
-    session_std_writer_init(&w, s);
     StrView line;
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";

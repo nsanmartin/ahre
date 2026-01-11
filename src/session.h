@@ -23,7 +23,7 @@ typedef struct Session {
 } Session;
 
 
-Err process_line(Session session[_1_], const char* line);
+Err process_line(Session session[_1_], const char* line, CmdOut cout[_1_]);
 
 /* getters */
 Err session_current_buf(Session session[_1_], TextBuf* out[_1_]);
@@ -182,7 +182,7 @@ static inline Err session_read_user_input(Session s[_1_], UserLine ul[_1_]) {
 }
 
 
-static inline Err session_consume_line(Session s[_1_], UserLine userln[_1_]) {
+static inline Err session_consume_line(Session s[_1_], UserLine userln[_1_], CmdOut cout[_1_]) {
     const char* cmd = *user_line_remaining(userln);
     char* rest = strchr(cmd, ';');
     if (rest) {
@@ -190,7 +190,7 @@ static inline Err session_consume_line(Session s[_1_], UserLine userln[_1_]) {
         rest[0] = '\0';
     } 
 
-    Err err = session_ui(s)->process_line(s, cmd);
+    Err err = session_ui(s)->process_line(s, cmd, cout);
     if (!rest) user_line_cleanup(userln);
     return err;
 }
@@ -266,8 +266,8 @@ static inline Err session_show_error(Session s[_1_], Err err) {
     return session_uout(s)->show_err(s, (char*)err, len);
 }
 
-static inline Err session_show_output(Session s[_1_]) {
-    return session_uout(s)->show_session(s);
+static inline Err session_show_output(Session s[_1_], CmdOut cout[_1_]) {
+    return session_uout(s)->show_session(s, cout);
 }
 
 
@@ -285,6 +285,10 @@ static inline Err session_msg_writer_init(Writer w[_1_], Session s[_1_]) {
 
 
 Err
-session_write_std_range_mod(Session s[_1_], TextBuf textbuf[_1_], Range range[_1_]);
+session_write_std_range_mod(Session s[_1_], TextBuf textbuf[_1_], Range range[_1_], CmdOut cmd_out[_1_]);
 Err session_write_input_history(Session s[_1_]);
+
+
+Err session_flush_cmd_out_msg(Session s[_1_], CmdOut cout[_1_]);
+Err session_flush_cmd_out_screen(Session s[_1_], CmdOut cout[_1_]);
 #endif

@@ -5,10 +5,13 @@
  * Line mode
  */
 
-Err ui_line_show_session(Session* s) {
+Err ui_line_show_session(Session* s, CmdOut cout[_1_]) {
+    (void)cout;
     if (!s) return "error: unexpected null session, this should really not happen";
     if (session_is_empty(s)) return Ok;
-    return session_uout(s)->flush_std(NULL);
+    //TODO:
+    /* return session_uout(s)->flush_std(NULL); */
+    return Ok;
 }
 
 Err ui_line_show_err(Session* s, char* err, size_t len) {
@@ -47,8 +50,10 @@ Err ui_vi_write_std(const char* mem, size_t len, Session* s) {
 }
 
 
-static Err _vi_print_range_std_mod_(TextBuf textbuf[_1_], Range range[_1_], Session* s) {
-    return session_write_std_range_mod(s, textbuf, range);
+static Err _vi_print_range_std_mod_(
+    TextBuf textbuf[_1_], Range range[_1_], Session* s, CmdOut cout[_1_]
+) {
+    return session_write_std_range_mod(s, textbuf, range, cout);
 }
 
 
@@ -58,12 +63,11 @@ static void _update_if_smaller_(size_t value[_1_], size_t new_value) {
 
 #define EMPTY_SESSION_MSG_ "Session is empty\n"
 #define EMPTY_BUFFER_MSG_ "Buffer is empty\n"
-Err ui_vi_show_session(Session* s) {
+Err ui_vi_show_session(Session* s, CmdOut cout[_1_]) {
     if (!s) return "error: unexpected null session, this should really not happen";
     if (session_is_empty(s)) {
-        try( msg_append_lit__(session_msg(s), EMPTY_SESSION_MSG_));
-        session_uout(s)->flush_std(s);
-        return Ok;
+        try( cmd_out_msg_append_lit__(cout, EMPTY_SESSION_MSG_));
+        return session_flush_cmd_out_msg(s, cout);
     }
 
 
@@ -71,11 +75,13 @@ Err ui_vi_show_session(Session* s) {
     try( session_current_buf(s, &tb));
     if (textbuf_is_empty(tb)) {
         try( msg_append_lit__(session_msg(s), EMPTY_BUFFER_MSG_));
-        session_uout(s)->flush_std(s);
-        return Ok;
+        return session_flush_cmd_out_msg(s, cout);
     }
 
-    session_uout(s)->flush_msg(s);
+    //TODO: no more msg in session
+    /* session_uout(s)->flush_msg(s); */
+    try( session_flush_cmd_out_msg(s, cout));
+    //TODO: instead stdout pass CmdOut
     try( lit_write__(EscCodeClsScr, stdout));
     size_t line = textbuf_current_line(tb);
     if (!line) return "error: expecting current line number, not found";
@@ -90,23 +96,25 @@ Err ui_vi_show_session(Session* s) {
     end = (end > textbuf_line_count(tb)) ? textbuf_line_count(tb) : end;
     Range r = (Range){ .beg=line, .end=end };
 
-    try( _vi_print_range_std_mod_(tb, &r, s));
-    session_uout(s)->flush_std(s);
+    try( _vi_print_range_std_mod_(tb, &r, s, cout));
+    try( session_flush_cmd_out_screen(s, cout));
+    /* session_uout(s)->flush_std(s); */
     return Ok;
 }
 
-Err ui_vi_flush_std(Session* s) {
+Err ui_vi_flush_std(Session* s, CmdOut cout[_1_]) {
     if (!s) return "error: no session";
-    Msg* msg = session_msg(s);
-    if (msg_len(msg)) {
-        try( mem_fwrite(msg_items(msg), msg_len(msg), stdout));
-        if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
-        msg_reset(msg);
-    }
+    /* Msg* msg = session_msg(s); */
+    /* if (msg_len(msg)) { */
+    /*     try( mem_fwrite(msg_items(msg), msg_len(msg), stdout)); */
+    /*     if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno)); */
+    /*     msg_reset(msg); */
+    /* } */
     if (!session_is_empty(s)) {
-        HtmlDoc* doc;
-        try( session_current_doc(s, &doc));
-        Str* screen = htmldoc_screen(doc);
+        /* HtmlDoc* doc; */
+        /* try( session_current_doc(s, &doc)); */
+        /* Str* screen = htmldoc_screen(doc); */
+        Str* screen = cmd_out_std(cout);
         if (!len__(screen)) return Ok;
         try( mem_fwrite(items__(screen), len__(screen), stdout));
         if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
@@ -124,9 +132,10 @@ Err ui_vi_write_msg(const char* mem, size_t len, Session* s) {
 
 #define MSG_PREFIX_ "{msg}:\n"
 #define CONTINUE_MSG_ "{% type enter to continue %}"
-Err ui_vi_flush_msg(Session* s) {
+Err ui_vi_flush_msg(Session* s, CmdOut cout[_1_]) {
     if (!s) return "error: no session";
-    Msg* msg = session_msg(s);
+    /* Msg* msg = session_msg(s); */
+    Msg* msg = cmd_out_msg(cout);
     if (!msg_len(msg)) return Ok;
     try( lit_write__(MSG_PREFIX_, stdout));
     try( mem_fwrite(msg_items(msg), msg_len(msg), stdout));

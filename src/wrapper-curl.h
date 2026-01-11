@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "error.h"
 #include "writer.h"
+#include "cmd-out.h"
 
 size_t curl_header_callback(char *buffer, size_t size, size_t nitems, void *htmldoc);
 
@@ -73,20 +74,18 @@ static inline Err w_curl_url_get_malloc(CURLU* cu, CURLUPart part, char* out[_1_
 
 
 
-#include "user-out.h"
-void w_curl_multi_remove_handles(
-    CURLM* multi, ArlOf(CurlPtr)  easies[_1_], Writer msg_writer[_1_]);
+void w_curl_multi_remove_handles(CURLM* multi, ArlOf(CurlPtr)  easies[_1_], CmdOut cmd_out[_1_]);
 
 Err w_curl_multi_perform_poll(CURLM* multi);
 
 Err for_htmldoc_size_download_append(
     ArlOf(CurlPtr) easies[_1_],
-    Writer         msg_writer[_1_],
+    CmdOut         cmd_out[_1_],
     CURL*          curl,
     uintmax_t      out[_1_]
 );
 Err curlinfo_sz_download_incr(
-    Writer    msg_writer[_1_],
+    CmdOut    cmd_out[_1_],
     CURL*     curl,
     uintmax_t nptr[_1_]
 );

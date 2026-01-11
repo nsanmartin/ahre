@@ -67,7 +67,7 @@ _next_text_end_(TextBufMods mods[_1_], ModAt it[_1_], size_t off, size_t line_en
 
 
 Err write_range_mod(
-    Writer  writer[_1_],
+    CmdOut  cmd_out[_1_],
     bool    monochrome,
     TextBuf textbuf[_1_],
     Range   range[_1_]
@@ -84,7 +84,7 @@ Err write_range_mod(
         it = mods_at_find_greater_or_eq(textbuf_mods(textbuf), it, line_off_beg);
 
         if (it >= arlfn(ModAt,end)(textbuf_mods(textbuf)) || line_off_end < it->offset) {
-            try( writer_write(writer, (char*)line.items, line.len));
+            try( cmd_out_std_append_str(cmd_out, &line));
             continue;
         }
 
@@ -92,31 +92,30 @@ Err write_range_mod(
             size_t next = _next_text_end_(textbuf_mods(textbuf), it, off, line_off_end);
 
             if (off < next)
-                try( writer_write(writer, textbuf_items(textbuf) + off, next - off));
+                try( cmd_out_std_append(cmd_out, textbuf_items(textbuf) + off, next - off));
 
             off = next;
             while (it < arlfn(ModAt,end)(textbuf_mods(textbuf)) && next == it->offset) {
                 StrView code_str;
                 try( esc_code_to_str(textmod_to_esc_code(it->tmod), &code_str));
-                try( writer_write(writer, (char*)code_str.items, code_str.len));
+                try( cmd_out_std_append_str(cmd_out, &code_str));
                 ++it;
             }
         }
     }
 
     if (!monochrome)
-        try( writer_write(writer, EscCodeReset, sizeof(EscCodeReset) - 1));
+        try( cmd_out_std_append(cmd_out, EscCodeReset, sizeof(EscCodeReset) - 1));
     if (line.len && line.items[line.len-1] != '\n') 
-        try( writer_write(writer, "\n", 1));
+        try( cmd_out_std_append(cmd_out, "\n", 1));
     return Ok;
 }
 
 
-Err
-session_write_std_range_mod(Session s[_1_], TextBuf textbuf[_1_], Range range[_1_]) {
-    Writer w;
-    session_std_writer_init(&w, s);
-    return write_range_mod(&w, session_monochrome(s), textbuf, range);
+Err session_write_std_range_mod(
+    Session s[_1_], TextBuf textbuf[_1_], Range range[_1_], CmdOut cmd_out[_1_]
+) {
+    return write_range_mod(cmd_out, session_monochrome(s), textbuf, range);
 }
 
 
@@ -195,3 +194,14 @@ Err session_write_cmd_out(Session s[_1_], CmdOut o[_1_]) {
         try( session_write_msg_str(s, msg));
     return Ok;
 }
+
+Err session_flush_cmd_out_msg(Session s[_1_], CmdOut cout[_1_]) {
+    try(session_uout(s)->flush_msg(s, cout));
+    return Ok;
+}
+
+Err session_flush_cmd_out_screen(Session s[_1_], CmdOut cout[_1_]) {
+    try(session_uout(s)->flush_std(s, cout));
+    return Ok;
+}
+

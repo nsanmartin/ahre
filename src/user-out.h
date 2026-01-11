@@ -5,14 +5,15 @@
 
 #include "utils.h"
 #include <curl/curl.h>
+#include "cmd-out.h"
 
 
 typedef struct Session Session;
 typedef struct UserOutput UserOutput;
 
 typedef Err (*WriteUserOutputCallback)(const char* mem, size_t len, Session* ctx);
-typedef Err (*FlushUserOutputCallback)(Session* s);
-typedef Err (*ShowSessionUserOutputCallback)(Session* s);
+typedef Err (*FlushUserOutputCallback)(Session* s, CmdOut cout[_1_]);
+typedef Err (*ShowSessionUserOutputCallback)(Session* s, CmdOut cout[_1_]);
 typedef Err (*ShowErrUserOutputCallback)(Session* s, char* err, size_t len);
 typedef void (*UserOutputCleanup)(UserOutput*);
 
@@ -38,13 +39,14 @@ static inline Err ui_write_callback_stdout(const char* mem, size_t len, Session*
 }
 
 
-static inline Err ui_line_flush_stdout(Session* s) {
+static inline Err ui_line_flush_stdout(Session* s, CmdOut cout[_1_]) {
+    (void)cout;
     (void)s;
     if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
     return Ok;
 }
 
-Err ui_line_show_session(Session* s);
+Err ui_line_show_session(Session* s, CmdOut cout[_1_]);
 Err ui_line_show_err(Session* s, char* err, size_t len);
 //
 // line mode
@@ -55,11 +57,11 @@ Err ui_line_show_err(Session* s, char* err, size_t len);
  */
 
 typedef struct Session Session;
-Err ui_vi_show_session(Session* s);
+Err ui_vi_show_session(Session* s, CmdOut cout[_1_]);
 Err ui_vi_write_msg(const char* mem, size_t len, Session* s);
-Err ui_vi_flush_msg(Session* s);
+Err ui_vi_flush_msg(Session* s, CmdOut cout[_1_]);
 Err ui_vi_show_err(Session* s, char* err, size_t len);
-Err ui_vi_flush_std(Session* s);
+Err ui_vi_flush_std(Session* s, CmdOut cout[_1_]);
 Err ui_vi_write_std(const char* mem, size_t len, Session* s);
 
 /* getter */

@@ -767,7 +767,7 @@ Err htmldoc_init_move_request(
     Request   r[_1_],
     UrlClient uc[_1_],
     Session*  s,
-    CmdOut*   out
+    CmdOut*   cmd_out
 ) {
     if (!s) return "error: expecting a session, recived NULL";
     Err e = Ok;
@@ -788,8 +788,8 @@ Err htmldoc_init_move_request(
      if (!arlfn(FetchHistoryEntry,append)(hist, &(FetchHistoryEntry){0}))
      { e = "error: arl append to fetch history failure"; goto Failure; }
 
-    try_or_jump(e, Failure, htmldoc_fetch(d, uc, &w, arlfn(FetchHistoryEntry,back)(hist)));
-    htmldoc_eval_js_scripts_or_continue(d, s, out);
+    try_or_jump(e, Failure, htmldoc_fetch(d, uc, cmd_out, arlfn(FetchHistoryEntry,back)(hist)));
+    htmldoc_eval_js_scripts_or_continue(d, s, cmd_out);
     try_or_jump( e, Failure, _htmldoc_draw_(d, s));
     try_or_jump( e, Failure,
         fetch_history_entry_update_title(arlfn(FetchHistoryEntry,back)(hist),htmldoc_title(d)));

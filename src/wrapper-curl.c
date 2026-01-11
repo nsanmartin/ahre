@@ -53,7 +53,7 @@ size_t curl_header_callback(char *buffer, size_t size, size_t nitems, void *html
 
 
 Err curlinfo_sz_download_incr(
-    Writer    msg_writer[_1_],
+    CmdOut    cmd_out[_1_],
     CURL*     curl,
     uintmax_t nptr[_1_]
 ) {
@@ -61,9 +61,10 @@ Err curlinfo_sz_download_incr(
     CURLcode curl_code = curl_easy_getinfo(curl, CURLINFO_SIZE_DOWNLOAD_T, &nbytes);
     if (curl_code!=CURLE_OK) {
         const char* cerr = curl_easy_strerror(curl_code);
-        try(writer_write(msg_writer,(char*)cerr, strlen(cerr))); 
+        try(cmd_out_msg_append(cmd_out,(char*)cerr, strlen(cerr))); 
     } else {
-        if (nbytes < 0) try(writer_write_lit__(msg_writer, "CURLINFO_SIZE_DOWNLOAD_T is negative"));
+        if (nbytes < 0)
+            try(cmd_out_msg_append_lit__(cmd_out, "CURLINFO_SIZE_DOWNLOAD_T is negative"));
         else *nptr += nbytes;
     }
     return Ok;
@@ -89,12 +90,12 @@ Err w_curl_multi_perform_poll(CURLM* multi){
 
 Err for_htmldoc_size_download_append(
     ArlOf(CurlPtr) easies[_1_],
-    Writer         msg_writer[_1_],
+    CmdOut         cmd_out[_1_],
     CURL*          curl,
     uintmax_t      out[_1_]
 ) {
     for (CurlPtr* cup = arlfn(CurlPtr,begin)(easies) ; cup != arlfn(CurlPtr,end)(easies) ; ++cup) {
-        try(curlinfo_sz_download_incr(msg_writer, curl, out));
+        try(curlinfo_sz_download_incr(cmd_out, curl, out));
     }
     return Ok;
 }
@@ -103,15 +104,15 @@ Err for_htmldoc_size_download_append(
 void w_curl_multi_remove_handles(
     CURLM*         multi,
     ArlOf(CurlPtr) easies[_1_],
-    Writer         msg_writer[_1_]
+    CmdOut         cmd_out[_1_]
 ) {
     for (CurlPtr* cup = arlfn(CurlPtr,begin)(easies) ; cup != arlfn(CurlPtr,end)(easies) ; ++cup) {
         CURLMcode code = curl_multi_remove_handle(multi, *cup);
         if (code != CURLM_OK) {
-            /*ignore e*/writer_write_lit__(
-                    msg_writer, "error: couldn't remove easy handle from multy ");
+            /*ignore e*/cmd_out_msg_append_lit__(
+                    cmd_out, "error: couldn't remove easy handle from multy ");
             char* msg = (char*)curl_multi_strerror(code); 
-            /*ignore e*/writer_write(msg_writer, msg, strlen(msg));
+            /*ignore e*/cmd_out_msg_append(cmd_out, msg, strlen(msg));
         }
         curl_easy_cleanup(*cup);
     }

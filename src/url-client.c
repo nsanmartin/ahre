@@ -165,7 +165,7 @@ Err url_client_multi_add_handles(
     ArlOf(Str)       scripts[_1_],
     ArlOf(CurlPtr)*  easies,
     ArlOf(CurlUPtr)* curlus,
-    Writer           msg_writer[_1_]
+    CmdOut           cmd_out[_1_]
 ) {
 
     //TODO: do it in one op, of implement reserve/capacity in hotl
@@ -179,8 +179,8 @@ Err url_client_multi_add_handles(
     for (Str* u = arlfn(Str,begin)(urls) ; u != arlfn(Str,end)(urls) ; ++u) {
         Err e = w_curl_multi_add(uc, curlu, items__(u), easies, scripts, curlus);
         if (e) {
-            try(writer_write_lit__(msg_writer, "couldn't get script: "));
-            try(writer_write(msg_writer, (char*)e, strlen(e)));
+            try(cmd_out_msg_append_lit__(cmd_out, "couldn't get script: "));
+            try(cmd_out_msg_append(cmd_out, (char*)e, strlen(e)));
         }
     }
     return Ok;

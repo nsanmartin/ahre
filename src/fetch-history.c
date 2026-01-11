@@ -3,7 +3,7 @@
 Err fetch_history_entry_update_curl(
     FetchHistoryEntry e[_1_],
     CURL*             curl,
-    Writer            msg_writer[_1_]
+    CmdOut            cmd_out[_1_]
 ) {
     const char* effective_url;
     const char* local_ip;
@@ -30,7 +30,7 @@ Err fetch_history_entry_update_curl(
 
     if (c !=CURLE_OK ) {
         const char* cerr = curl_easy_strerror(c);
-        try(writer_write(msg_writer,(char*)cerr, strlen(cerr))); 
+        try(cmd_out_msg_append(cmd_out,(char*)cerr, strlen(cerr))); 
     } else {
         str_append(&e->effective_url, (char*)effective_url, strlen(effective_url));
         str_append(&e->local_ip,      (char*)local_ip,      strlen(local_ip));

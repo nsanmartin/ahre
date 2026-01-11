@@ -11,20 +11,20 @@ static Err
 _get_bookmarks_doc_(
     UrlClient   url_client[_1_],
     StrView     bm_path,
-    Writer      msg_writer[_1_],
-    HtmlDoc     out[_1_]
+    CmdOut      cmd_out[_1_],
+    HtmlDoc     htmldoc_out[_1_]
 ) {
     Str* bm_url = &(Str){0};
     Err err = str_append_lit__(bm_url, "file://");
     try(err);
     try_or_jump(err, Clean_Bm_Url, str_append(bm_url, (char*)bm_path.items, bm_path.len));
     try_or_jump(err, Clean_Bm_Url,
-        htmldoc_init_bookmark_move_urlstr(out, bm_url));
+        htmldoc_init_bookmark_move_urlstr(htmldoc_out, bm_url));
     FetchHistoryEntry e = (FetchHistoryEntry){0};
-    err = _htmldoc_fetch_bookmark_(out, url_client, msg_writer, &e);
+    err = _htmldoc_fetch_bookmark_(htmldoc_out, url_client, cmd_out, &e);
     fetch_history_entry_clean(&e);
     if (err) {
-        htmldoc_cleanup(out);
+        htmldoc_cleanup(htmldoc_out);
 Clean_Bm_Url:
         str_clean(bm_url);
     }
@@ -110,7 +110,7 @@ Err cmd_bookmarks(CmdParams p[_1_]) {
 }
 
 Err bookmark_add_to_section(
-    Session s[_1_], const char* line, UrlClient url_client[_1_], CmdOut out[_1_]
+    Session s[_1_], const char* line, UrlClient url_client[_1_], CmdOut cmd_out[_1_]
 ) {
     HtmlDoc* d;
     try( session_current_doc(s, &d));
@@ -130,7 +130,8 @@ Err bookmark_add_to_section(
     try(resolve_bookmarks_file(items__(session_bookmarks_fname(s)), &bm_path));
     Writer w;
     try_or_jump(err, Fail_Clean_Bm, session_msg_writer_init(&w, s));
-    try_or_jump(err, Fail_Clean_Bm, _get_bookmarks_doc_(url_client, strview__(&bm_path), &w,  &bm));
+    try_or_jump(err, Fail_Clean_Bm,
+            _get_bookmarks_doc_(url_client, strview__(&bm_path), cmd_out,  &bm));
 
     char* url;
     if ((err = url_cstr_malloc(htmldoc_url(d), &url))) goto Clean_Bm_Path_And_BmDoc;
@@ -156,7 +157,7 @@ Err bookmark_add_to_section(
     } else err = "section not found in bookmarks file";
 
     ok_then(err, bookmarks_save_to_disc(&bm, strview__(&bm_path)));
-    ok_then(err, cmd_out_msg_append_lit__(out, "bookmark added\n"));
+    ok_then(err, cmd_out_msg_append_lit__(cmd_out, "bookmark added\n"));
 
 Clean_Title:
     str_clean(title);

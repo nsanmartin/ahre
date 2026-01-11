@@ -142,7 +142,7 @@ static Err _split_remote_local_(
     lxb_dom_collection_t* elems, 
     ArlOf(Str)            scripts[_1_],
     ArlOf(Str)            urls[_1_],
-    Writer                msg_writer[_1_]
+    CmdOut                cmd_out[_1_]
 ) {
     for (size_t i = 0; i < lxb_dom_collection_length(elems); i++) {
         Err e = Ok;
@@ -160,24 +160,25 @@ static Err _split_remote_local_(
             for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
                 e = _fetch_tag_script_from_text_(it, scripts);
                if (e || it == node->last_child) break;
-               else try(writer_write_lit__(msg_writer,  "script elem with more than one child??]n"));
+               else try(
+                   cmd_out_msg_append_lit__(cmd_out,  "script elem with more than one child??]n"));
                //Q? can script elem have mode that one (text) child?
             }
         }
-        if (e) try(writer_write(msg_writer, (char*)e, strlen(e)));
+        if (e) try(cmd_out_msg_append(cmd_out, (char*)e, strlen(e)));
     }
     return Ok;
 }
 
 
 
-static void _map_append_nullchar_(ArlOf(Str) strlist[_1_], Writer msg_writer[_1_]) {
+static void _map_append_nullchar_(ArlOf(Str) strlist[_1_], CmdOut cmd_out[_1_]) {
     for ( Str* sp = arlfn(Str,begin)(strlist) ; sp != arlfn(Str,end)(strlist) ; ++sp) {
         Err e0 = str_append_lit__(sp, "\0");
         if (e0) {
             str_reset(sp);
-            /*ignore e*/ writer_write_lit__(msg_writer, "could not append \\0 to str: ");
-            /*ignore e*/ writer_write(msg_writer, (char*)e0, strlen(e0));
+            /*ignore e*/ cmd_out_msg_append_lit__(cmd_out, "could not append \\0 to str: ");
+            /*ignore e*/ cmd_out_msg_append(cmd_out, (char*)e0, strlen(e0));
         }
     }
 }
@@ -185,7 +186,7 @@ static void _map_append_nullchar_(ArlOf(Str) strlist[_1_], Writer msg_writer[_1_
 Err curl_lexbor_fetch_scripts(
     HtmlDoc        htmldoc[_1_],
     UrlClient      url_client[_1_],
-    Writer         msg_writer[_1_]
+    CmdOut            cmd_out[_1_]
 ) {
     Err e = Ok;
     //TODO!: evaluate scripts in order
@@ -205,9 +206,9 @@ Err curl_lexbor_fetch_scripts(
     ArlOf(Str)* body_urls = &(ArlOf(Str)){0};
 
     try_or_jump(e, Lxb_Array_Body_Destroy,
-            _split_remote_local_(head_scripts, htmldoc_head_scripts(htmldoc), head_urls, msg_writer));
+            _split_remote_local_(head_scripts, htmldoc_head_scripts(htmldoc), head_urls, cmd_out));
     try_or_jump(e, Clean_Head_Urls,
-            _split_remote_local_(body_scripts, htmldoc_body_scripts(htmldoc), body_urls, msg_writer));
+            _split_remote_local_(body_scripts, htmldoc_body_scripts(htmldoc), body_urls, cmd_out));
 
     ArlOf(CurlPtr)*  easies = &(ArlOf(CurlPtr)){0};
     ArlOf(CurlUPtr)* curlus = &(ArlOf(CurlUPtr)){0};
@@ -215,29 +216,29 @@ Err curl_lexbor_fetch_scripts(
     CURLU*           curlu  = url_cu(htmldoc_url(htmldoc));
 
     e = url_client_multi_add_handles(
-        url_client, curlu, head_urls, htmldoc_head_scripts(htmldoc), easies, curlus, msg_writer);
+        url_client, curlu, head_urls, htmldoc_head_scripts(htmldoc), easies, curlus, cmd_out);
     if (e) {
-        try(writer_write_lit__(msg_writer, "could not add head handles: "));
-        try(writer_write(msg_writer, (char*)e, strlen(e)));
+        try(cmd_out_msg_append_lit__(cmd_out, "could not add head handles: "));
+        try(cmd_out_msg_append(cmd_out, (char*)e, strlen(e)));
     }
     e = url_client_multi_add_handles(
-        url_client, curlu, body_urls, htmldoc_body_scripts(htmldoc), easies, curlus, msg_writer);
+        url_client, curlu, body_urls, htmldoc_body_scripts(htmldoc), easies, curlus, cmd_out);
     if (e) {
-        try(writer_write_lit__(msg_writer, "could not add head handles: "));
-        try(writer_write(msg_writer, (char*)e, strlen(e)));
+        try(cmd_out_msg_append_lit__(cmd_out, "could not add head handles: "));
+        try(cmd_out_msg_append(cmd_out, (char*)e, strlen(e)));
     }
 
     e = w_curl_multi_perform_poll(multi);
 
     for_htmldoc_size_download_append(
-        easies, msg_writer, url_client_curl(url_client), htmldoc_curlinfo_sz_download(htmldoc));
-    w_curl_multi_remove_handles(multi, easies, msg_writer);
+        easies, cmd_out, url_client_curl(url_client), htmldoc_curlinfo_sz_download(htmldoc));
+    w_curl_multi_remove_handles(multi, easies, cmd_out);
 
     arlfn(CurlPtr,clean)(easies);
     arlfn(CurlUPtr,clean)(curlus);
 
-    _map_append_nullchar_(htmldoc_head_scripts(htmldoc), msg_writer);
-    _map_append_nullchar_(htmldoc_body_scripts(htmldoc), msg_writer);
+    _map_append_nullchar_(htmldoc_head_scripts(htmldoc), cmd_out);
+    _map_append_nullchar_(htmldoc_body_scripts(htmldoc), cmd_out);
 
     arlfn(Str,clean)(body_urls);
 Clean_Head_Urls:
@@ -255,7 +256,7 @@ Lxb_Array_Head_Destroy:
 Err curl_lexbor_fetch_document(
     UrlClient         url_client[_1_],
     HtmlDoc           htmldoc[_1_],
-    Writer            msg_writer[_1_],
+    CmdOut            cmd_out[_1_],
     FetchHistoryEntry histentry[_1_]
 ) {
     try( url_from_request(htmldoc_request(htmldoc), url_client));
@@ -267,20 +268,20 @@ Err curl_lexbor_fetch_document(
 
     try( fetch_history_entry_init(histentry));
     CURLcode curl_code = curl_easy_perform(url_client->curl);
-    fetch_history_entry_update_curl(histentry, url_client->curl, msg_writer);
+    fetch_history_entry_update_curl(histentry, url_client->curl, cmd_out);
     str_reset(url_client_postdata(url_client));
     if (curl_code!=CURLE_OK) 
         return _curl_perform_error_(htmldoc, curl_code);
 
     if (histentry->size_download_t < 0)
-        try(writer_write_lit__(msg_writer, "CURLINFO_SIZE_DOWNLOAD_T is negative"));
+        try(cmd_out_msg_append_lit__(cmd_out, "CURLINFO_SIZE_DOWNLOAD_T is negative"));
     else *htmldoc_curlinfo_sz_download(htmldoc) = histentry->size_download_t;
 
     try( _lexbor_parse_chunk_end_(htmldoc));
     try( _set_htmldoc_url_with_effective_url_(url_client, htmldoc));
     try( htmldoc_convert_sourcebuf_to_utf8(htmldoc));
     if (htmldoc_js_is_enabled(htmldoc))
-        try(curl_lexbor_fetch_scripts(htmldoc, url_client, msg_writer));
+        try(curl_lexbor_fetch_scripts(htmldoc, url_client, cmd_out));
     return Ok;
 }
 
