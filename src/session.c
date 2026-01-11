@@ -189,3 +189,9 @@ void session_set_verbose(Session s[_1_], bool value) {
     url_client_set_verbose(session_url_client(s), value);
 }
 
+Err session_write_cmd_out(Session s[_1_], CmdOut o[_1_]) {
+    Str* msg = msg_str(cmd_out_msg(o));
+    if (len__(msg))
+        try( session_write_msg_str(s, msg));
+    return Ok;
+}

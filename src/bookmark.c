@@ -89,7 +89,7 @@ Err cmd_bookmarks(CmdParams p[_1_]) {
         if (!err) {
             BufOf(char)* it = arlfn(BufOf(char), begin)(&list);
             for (; it != arlfn(BufOf(char), end)(&list); ++it) {
-                try( session_write_msg_ln(session, items__(it), len__(it)));
+                try( cmd_out_msg_append_str_ln(cmd_params_cmd_out(p), it));
             }
         }
         arlfn(BufOf(char),clean)(&list);
@@ -102,14 +102,16 @@ Err cmd_bookmarks(CmdParams p[_1_]) {
             size_t len;
             try( lexbor_node_get_text(section->first_child, &data, &len));
             if (len) {
-                try(session_write_msg_ln(session, (char*)data, len));
+                try(cmd_out_msg_append_ln(cmd_params_cmd_out(p), (char*)data, len));
             }
         } else err = "invalid section in bookmark";
     }
     return err;
 }
 
-Err bookmark_add_to_section(Session s[_1_], const char* line, UrlClient url_client[_1_]) {
+Err bookmark_add_to_section(
+    Session s[_1_], const char* line, UrlClient url_client[_1_], CmdOut out[_1_]
+) {
     HtmlDoc* d;
     try( session_current_doc(s, &d));
 
@@ -154,7 +156,7 @@ Err bookmark_add_to_section(Session s[_1_], const char* line, UrlClient url_clie
     } else err = "section not found in bookmarks file";
 
     ok_then(err, bookmarks_save_to_disc(&bm, strview__(&bm_path)));
-    ok_then(err, session_write_msg_lit__(s, "bookmark added\n"));
+    ok_then(err, cmd_out_msg_append_lit__(out, "bookmark added\n"));
 
 Clean_Title:
     str_clean(title);

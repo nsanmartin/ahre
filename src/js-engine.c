@@ -8,6 +8,7 @@
 #include "session.h"
 #include "js-engine.h"
 #include "htmldoc.h"
+#include "cmd-out.h"
 
 
 void jse_clean(JsEngine js[_1_]) {
@@ -152,7 +153,7 @@ static Err jse_add_document(JSContext* ctx, HtmlDoc d[_1_]) {
 }
 
 Err jse_eval(JsEngine js[_1_], Session* s, const char* script, CmdOut* out) {
-    (void)out;
+    (void)s; //TODO: do not pass it anymore
     if (!script) return "error: jse_eval cannot evaluate nullptr";
 
     JSContext *ctx = jse_context(js);
@@ -165,8 +166,7 @@ Err jse_eval(JsEngine js[_1_], Session* s, const char* script, CmdOut* out) {
 
     Str* consolebuf = jse_consolebuf(js);
     if (len__(consolebuf)) {
-        session_write_msg(s, items__(consolebuf), len__(consolebuf));
-        session_write_msg_lit__(s, "\n");
+        try(cmd_out_msg_append_str_ln(out, consolebuf));
         str_reset(consolebuf);
     }
 
@@ -179,9 +179,9 @@ Err jse_eval(JsEngine js[_1_], Session* s, const char* script, CmdOut* out) {
     } else {
         const char* str = JS_ToCString(ctx, result);
         size_t str_len  = strlen(str);
-        session_write_msg_lit__(s, "  => ");
-        if (str && str_len) session_write_msg_ln(s, (char*)str, strlen(str));
-        else session_write_msg_lit__(s, "\\0");
+        try(cmd_out_msg_append_lit__(out,  "  => "));
+        if (str && str_len) try(cmd_out_msg_append_ln(out, (char*)str, strlen(str)));
+        else try(cmd_out_msg_append_lit__(out,  "\\0"));
         JS_FreeCString(ctx, str);
     }
     

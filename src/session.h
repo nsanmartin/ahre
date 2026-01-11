@@ -9,6 +9,7 @@
 #include "writer.h"
 #include "reditline.h"
 #include "fetch-history.h"
+#include "cmd-out.h"
 
 typedef struct Session {
     UrlClient          url_client;
@@ -119,6 +120,7 @@ void session_destroy(Session* session);
 
 /**/
 
+Err session_write_cmd_out(Session s[_1_], CmdOut o[_1_]);
 Err session_close(Session s[_1_]);
 
 
@@ -205,6 +207,7 @@ static inline Err _session_write_msg_(Session s[_1_], char* msg, size_t len) {
         : err_fmt("error: session_write failure ("__FILE__":%d", __LINE__))
 
 
+#define session_write_msg_str(Ses, S) session_write_msg(Ses, items__(S), len__(S))
 #define session_write_msg_lit__(Ses, LitStr) (\
      lit_len__(LitStr) \
          ? _session_write_msg_(Ses, LitStr, lit_len__(LitStr)) \

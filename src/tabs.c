@@ -35,18 +35,18 @@ Failure_Tab_Node_Cleanup:
 }
 
 
-Err tablist_info(Session* s, TabList f[_1_], CmdOut* out) {
+Err tablist_info(TabList f[_1_], CmdOut* out) {
     (void)out;
     ArlOf(size_t)* stack = &(ArlOf(size_t)){0};
 
     TabNode* current_node;
     Err err = Ok;
     ok_then(err, tablist_current_node(f, &current_node));
-    ok_then(err, session_write_msg_lit__(s, "("));
-    ok_then(err, session_write_unsigned_msg(s, f->tabs.len));
-    ok_then(err, session_write_msg_lit__(s, " tab"));
-    if(f->tabs.len) ok_then(err, session_write_msg_lit__(s, "s"));
-    ok_then(err, session_write_msg_lit__(s, ")\n"));
+    ok_then(err, cmd_out_msg_append_lit__(out, "("));
+    ok_then(err, cmd_out_msg_append_ui_as_base10(out, f->tabs.len));
+    ok_then(err, cmd_out_msg_append_lit__(out, " tab"));
+    if(f->tabs.len) ok_then(err, cmd_out_msg_append_lit__(out, "s"));
+    ok_then(err, cmd_out_msg_append_lit__(out, ")\n"));
 
     if (!err) {
         TabNode* it = arlfn(TabNode, begin)(&f->tabs);
@@ -55,10 +55,10 @@ Err tablist_info(Session* s, TabList f[_1_], CmdOut* out) {
         
         for (; it != end; ++it) {
             size_t ix = it-beg;
-            if ((err=session_tab_node_print(s, it, ix, stack, current_node, out))) break;
+            if ((err=session_tab_node_print(it, ix, stack, current_node, out))) break;
         }
     }
     arlfn(size_t, clean)(stack);
-    ok_then(err, session_write_msg_lit__(s, "\n"));
+    ok_then(err, cmd_out_msg_append_lit__(out, "\n"));
     return Ok;
 }

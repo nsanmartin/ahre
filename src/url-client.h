@@ -8,7 +8,7 @@
 #include "writer.h"
 #include "wrapper-curl.h"
 
-typedef StrView CmdOut;
+typedef struct CmdOut CmdOut;
 
 /*
  * User agent samples:

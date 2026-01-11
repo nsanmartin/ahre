@@ -374,13 +374,7 @@ draw_tag_blockquote(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
 static Err draw_tag_title(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
     HtmlDoc* d = draw_ctx_htmldoc(ctx);
     *htmldoc_title(d) = node;
-    if (!(ctx->flags & DRAW_CTX_FLAG_TITLE)) return Ok;
-    Str title = (Str){0};
-    Err err = lexbor_get_title_text_line(node, &title);
-    if (!title.len)  return Ok;
-    ok_then(err, str_append_lit__(&title, "\n\0"));
-    str_clean(&title); 
-    return err;
+    return Ok;
 }
 
 static Err draw_mem_skipping_space(
@@ -891,65 +885,55 @@ Err htmldoc_redraw(HtmlDoc htmldoc[_1_], Session s[_1_]) {
 }
 
 Err htmldoc_A(Session* s, HtmlDoc d[_1_], CmdOut* out) {
-    (void)out;
     if (!s) return "error: no session";
-    Str* buf = &(Str){0};
-    str_append_lit__(buf, "<li><a href=\"");
+    cmd_out_msg_append_lit__(out, "<li><a href=\"");
     char* url_buf;
-    Err err = url_cstr_malloc(htmldoc_url(d), &url_buf);
-    if (err) {
-        str_clean(buf);
-        return err;
-    }
-    str_append(buf, url_buf, strlen(url_buf));
+    try( url_cstr_malloc(htmldoc_url(d), &url_buf));
+    cmd_out_msg_append(out, url_buf, strlen(url_buf));
     curl_free(url_buf);
-    str_append_lit__(buf, "\">");
-    try( lexbor_get_title_text_line(*htmldoc_title(d), buf));
-    str_append_lit__(buf, "</a>");
-    str_append_lit__(buf, "\n");
-    try( session_write_msg(s, items__(buf), len__(buf)));
-    str_clean(buf);
+    cmd_out_msg_append_lit__(out, "\">");
+    try( lexbor_get_title_text_line(*htmldoc_title(d), msg_str(cmd_out_msg(out))));
+    cmd_out_msg_append_lit__(out, "</a>");
+    cmd_out_msg_append_lit__(out, "\n");
     return Ok;
 }
 
-Err htmldoc_print_info(Session* s, HtmlDoc d[_1_], CmdOut* out) {
-    (void)out;
+Err htmldoc_print_info(HtmlDoc d[_1_], CmdOut* out) {
     Err err = Ok;
     LxbNodePtr* title = htmldoc_title(d);
-    try (session_write_msg_lit__(s, "DOWNLOAD SIZE: "));
-    try (session_write_unsigned_msg(s, *htmldoc_curlinfo_sz_download(d)));
-    try (session_write_msg_lit__(s, "\n"));
-    try (session_write_msg_lit__(s, "html size: "));
-    try (session_write_unsigned_msg(s, htmldoc_sourcebuf(d)->buf.len));
-    try (session_write_msg_lit__(s, "\n"));
+
+    try (cmd_out_msg_append_lit__(out, "DOWNLOAD SIZE: "));
+    try (cmd_out_msg_append_ui_as_base10(out, *htmldoc_curlinfo_sz_download(d)));
+    try (cmd_out_msg_append_lit__(out, "\n"));
+    try (cmd_out_msg_append_lit__(out, "html size: "));
+    try (cmd_out_msg_append_ui_as_base10(out, htmldoc_sourcebuf(d)->buf.len));
+    try (cmd_out_msg_append_lit__(out, "\n"));
 
     if (title) {
         Str buf = (Str){0};
         try (lexbor_get_title_text(*title, &buf));
-        if (!buf.len) err = session_write_msg_lit__(s,  "<NO TITLE>");
-        else err = session_write_msg(s, buf.items, buf.len);
+        if (!buf.len) err = cmd_out_msg_append_lit__(out,  "<NO TITLE>");
+        else err = cmd_out_msg_append(out, buf.items, buf.len);
         str_clean(&buf);
         try(err);
-        ok_then(err, session_write_msg_lit__(s, "\n"));
-    } else try(session_write_msg_lit__(s, "\n"));
+    }
+
+    try(cmd_out_msg_append_lit__(out, "\n"));
     
     char* url = NULL;
     ok_then(err, url_cstr_malloc(htmldoc_url(d), &url));
     if (url) {
-        ok_then(err, session_write_msg(s, url, strlen(url)));
+        ok_then(err, cmd_out_msg_append_ln(out, url, strlen(url)));
         curl_free(url);
-        ok_then(err, session_write_msg_lit__(s, "\n"));
     }
+
     Str* charset = htmldoc_http_charset(d);
-    if (len__(charset)) {
-        ok_then(err, session_write_msg(s, items__(charset), len__(charset)));
-        ok_then(err, session_write_msg_lit__(s, "\n"));
-    }
+    if (len__(charset))
+        ok_then(err, cmd_out_msg_append_str_ln(out, charset));
+
     Str* content_type = htmldoc_http_content_type(d);
-    if (len__(content_type)) {
-        ok_then(err, session_write_msg(s, items__(content_type), len__(content_type)));
-        ok_then(err, session_write_msg_lit__(s, "\n"));
-    }
+    if (len__(content_type))
+        ok_then(err, cmd_out_msg_append_str_ln(out, content_type));
 
     return err;
 }
@@ -1054,14 +1038,14 @@ static Err jse_eval_doc_scripts(Session* s, HtmlDoc d[_1_], CmdOut* out) {
         ; it != arlfn(Str,end)(htmldoc_head_scripts(d))
         ; ++it) {
         Err e = jse_eval(htmldoc_js(d), s, items__(it), out);
-        if (e) session_write_msg(s, (char*)e, strlen(e));
+        if (e) cmd_out_msg_append(out, (char*)e, strlen(e));
     }
 
     for ( Str* it = arlfn(Str,begin)(htmldoc_body_scripts(d))
         ; it != arlfn(Str,end)(htmldoc_body_scripts(d))
         ; ++it) {
         Err e = jse_eval(htmldoc_js(d), s, items__(it), out);
-        if (e) session_write_msg(s, (char*)e, strlen(e));
+        if (e) cmd_out_msg_append(out, (char*)e, strlen(e));
     }
 
     return Ok;
@@ -1071,14 +1055,14 @@ static Err jse_eval_doc_scripts(Session* s, HtmlDoc d[_1_], CmdOut* out) {
 Err htmldoc_js_enable(HtmlDoc d[_1_], Session* s, CmdOut* out) {
     try( jse_init(d));
     Err e = jse_eval_doc_scripts(s, d, out);
-    if (e) session_write_msg(s, (char*)e, strlen(e));
+    if (e) cmd_out_msg_append(out, (char*)e, strlen(e));
     return Ok;
 }
 
 void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[_1_], Session* s, CmdOut* out) {
     if (htmldoc_js_is_enabled(d)) {
         Err e = jse_eval_doc_scripts(s, d, out);
-        if (e) session_write_msg(s, (char*)e, strlen(e));
+        if (e) cmd_out_msg_append(out, (char*)e, strlen(e));
     }
 }
 

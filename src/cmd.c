@@ -51,11 +51,12 @@ Err cmd_set_session_winsz(CmdParams p[_1_]) {
     *session_nrows(p->s) = nrows;
     *session_ncols(p->s) = ncols;
     
-    try( session_write_msg_lit__(p->s, "win: nrows = ")); 
-    try( session_write_unsigned_msg(p->s, nrows));
-    try( session_write_msg_lit__(p->s, ", ncols = "));
-    try( session_write_unsigned_msg(p->s, ncols));
-    try( session_write_msg_lit__(p->s, "\n"));
+    CmdOut* out = cmd_params_cmd_out(p);
+    try( cmd_out_msg_append_lit__(out, "win: nrows = ")); 
+    try( cmd_out_msg_append_ui_as_base10(out, nrows));
+    try( cmd_out_msg_append_lit__(out, ", ncols = "));
+    try( cmd_out_msg_append_ui_as_base10(out, ncols));
+    try( cmd_out_msg_append_lit__(out, "\n"));
     return Ok;
 }
 
@@ -244,9 +245,7 @@ Err dbg_print_all_lines_nums(
 }
 
 
-Err _cmd_textbuf_write_impl(
-    Session s[_1_], TextBuf textbuf[_1_], Range r[_1_], const char* rest, CmdOut* out
-) {
+Err _cmd_textbuf_write_impl(TextBuf textbuf[_1_], Range r[_1_], const char* rest, CmdOut* out) {
     (void)out;
     if (!rest || !*rest) { return "cannot write without file arg"; }
     rest = cstr_trim_space((char*)rest);
@@ -263,7 +262,7 @@ Err _cmd_textbuf_write_impl(
         try(file_write_or_close(line.items, line.len, fp));
     }
     try(file_close(fp));
-    return session_write_msg_lit__(s, "file written. ");
+    return cmd_out_msg_append_lit__(out, "file written. ");
 }
 
 Err cmd_textbuf_global(CmdParams p[_1_]) {
@@ -367,7 +366,7 @@ Err _cmd_image_print(CmdParams p[_1_], size_t ix) {
     try( _get_image_by_ix(p->s, ix, &node));
     Str* buf = &(Str){0};
     Err err = lexbor_node_to_str(node, buf);
-    ok_then(err, session_write_msg(p->s, items__(buf), len__(buf)));
+    ok_then(err, cmd_out_msg_append_str(cmd_params_cmd_out(p), buf));
     str_clean(buf);
     return err;
 }
@@ -390,7 +389,7 @@ Err _cmd_image_save(CmdParams p[_1_], size_t ix) {
 
     err = request_to_file(&r, session_url_client(p->s), fname);
 
-    ok_then(err, session_write_msg_lit__(p->s, "data saved\n"));
+    ok_then(err, cmd_out_msg_append_lit__(cmd_params_cmd_out(p), "data saved\n"));
 Clean_Request:
     request_clean(&r);
     return err;
@@ -420,7 +419,7 @@ Err _cmd_anchor_print(CmdParams p[_1_], size_t linknum) {
     try( lexbor_node_to_str(a, buf));
 
     //>< write to CmdOut
-    Err err = session_write_msg(p->s, items__(buf), len__(buf));
+    Err err = cmd_out_msg_append_str(cmd_params_cmd_out(p), buf);
     str_clean(buf);
     return err;
 }
@@ -444,7 +443,7 @@ Err _cmd_anchor_save(Session session[_1_], size_t ix, const char* fname, CmdOut*
 
     err = request_to_file(&r, session_url_client(session), fname);
 
-    ok_then(err, session_write_msg_lit__(session, "file saved\n"));
+    ok_then(err, cmd_out_msg_append_lit__(out, "file saved\n"));
 Clean_Request:
     request_clean(&r);
     return err;
@@ -453,3 +452,14 @@ Clean_Url_Str:
     return err;
 }
 
+
+Err _cmd_lexbor_node_print_(ArlOf(LxbNodePtr) node_arl[_1_], size_t ix, CmdOut out[_1_]) {
+    lxb_dom_node_t* node;
+    try( _get_lexbor_node_ptr_by_ix(node_arl, ix, &node));
+    Str* buf = &(Str){0};
+    Err err = lexbor_node_to_str(node, buf);
+
+    ok_then(err,  cmd_out_msg_append_str(out, buf));
+    str_clean(buf);
+    return err;
+}

@@ -76,7 +76,7 @@ static inline void tablist_cleanup(TabList f[_1_]) {
     arl_of_tab_node_clean(&f->tabs);
 }
 
-Err tablist_info(Session* s,TabList f[_1_], CmdOut* out);
+Err tablist_info(TabList f[_1_], CmdOut* out);
 
 static inline Err tablist_back(TabList tl[_1_]) {
     TabNode* cn;

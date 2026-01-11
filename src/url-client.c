@@ -105,7 +105,7 @@ Err url_client_print_cookies(Session* s, UrlClient uc[_1_], CmdOut* out) {
 
     struct curl_slist* it = cookies;
     while (it) {
-        try(session_write_msg_ln(s, it->data, strlen(it->data)));
+        try(cmd_out_msg_append_ln(out, it->data, strlen(it->data)));
         it = it->next;
     }
     curl_slist_free_all(cookies);

@@ -58,9 +58,9 @@ static const char* _name_match_impl_(SessionCmd* cmd, CmdParams p[_1_]) {
 		if (*s != *name) { return 0x0; }
 	}
     if (len) { 
-        try(session_write_msg_lit__(p->s, "..."));
-        try(session_write_msg(p->s, (char*)cmd->name, strlen(cmd->name)));
-        try(session_write_msg_lit__(p->s, "?\n"));
+        try(cmd_out_msg_append_lit__(cmd_params_cmd_out(p), "..."));
+        try(cmd_out_msg_append(cmd_params_cmd_out(p), (char*)cmd->name, strlen(cmd->name)));
+        try(cmd_out_msg_append_lit__(cmd_params_cmd_out(p), "?\n"));
         return 0x0;
     }
 	return cstr_skip_space(s);
@@ -80,27 +80,28 @@ static bool _is_help_cmd_end_(CmdParams p[_1_]) {
 }
 
 
-static Err run_cmd_help(Session* s, SessionCmd cmd[_1_]) {
+static Err run_cmd_help(SessionCmd cmd[_1_], CmdOut out[_1_]) {
 #define RUN_CMD_DOC_TODO_MSG \
     "Not documented command.\n"\
     "TODO: document it.\n"
     if (!cmd->help && !cmd->subcmds) 
-        session_write_msg(s, RUN_CMD_DOC_TODO_MSG, lit_len__(RUN_CMD_DOC_TODO_MSG));
-    if (cmd->help) session_write_msg(s, (char*)cmd->help, strlen(cmd->help));
+        try(cmd_out_msg_append_lit__(out, RUN_CMD_DOC_TODO_MSG));
+    if (cmd->help)
+        try(cmd_out_msg_append(out, (char*)cmd->help, strlen(cmd->help)));
     if (cmd->subcmds) {
-        session_write_msg_lit__(s, "sub commands:\n");
+        cmd_out_msg_append_lit__(out, "sub commands:\n");
         for (SessionCmd* sub = cmd->subcmds; sub->name ; ++sub) {
             if (sub->flags & CMD_CHAR) {
-                session_write_msg_lit__(s, "  '");
-                session_write_msg_ln(s, (char*)sub->name, strlen(sub->name));
+                cmd_out_msg_append_lit__(out, "  '");
+                cmd_out_msg_append_ln(out, (char*)sub->name, strlen(sub->name));
             } else if (sub->flags & CMD_EMPTY) {
-                session_write_msg_lit__(s, "  <empty>\n");
+                cmd_out_msg_append_lit__(out, "  <empty>\n");
             } else if (sub->flags & CMD_ANY) {
-                session_write_msg_lit__(s, "  <any> ");
-                session_write_msg_ln(s, (char*)sub->name, strlen(sub->name));
+                cmd_out_msg_append_lit__(out, "  <any> ");
+                cmd_out_msg_append_ln(out, (char*)sub->name, strlen(sub->name));
             } else if (sub->name) {
-                session_write_msg_lit__(s, "  ");
-                session_write_msg_ln(s, (char*)sub->name, strlen(sub->name));
+                cmd_out_msg_append_lit__(out, "  ");
+                cmd_out_msg_append_ln(out, (char*)sub->name, strlen(sub->name));
             }
         }
     }
@@ -154,10 +155,10 @@ static Err run_cmd__(CmdParams p[_1_], SessionCmd cmdlist[]) {
     for (SessionCmd* cmd = cmdlist; cmd->name ; ++cmd) {
         if (_any_match_(cmd)) return cmd->fn(p);
         if (_char_cmd_match_(cmd, p)) {
-            if (_is_help_cmd_end_(p)) return run_cmd_help(p->s, cmd);
+            if (_is_help_cmd_end_(p)) return run_cmd_help(cmd, cmd_params_cmd_out(p));
             return cmd->fn(p);
         } else if (_name_match_(cmd, p)) {
-            if (_is_help_cmd_end_(p)) return run_cmd_help(p->s, cmd);
+            if (_is_help_cmd_end_(p)) return run_cmd_help(cmd, cmd_params_cmd_out(p));
             if (_no_params_match_(cmd, p)) return  "unexpected cmd param";
             else return cmd->fn(p);
         } else if (_empty_match_(cmd, p)) return cmd->fn(p);
@@ -198,7 +199,7 @@ Err cmd_anchor_asterisk(CmdParams p[_1_]) {
     try(session_current_doc(p->s, &h));
     try(basic_range_from_parse(&p->rp, 0, len__(htmldoc_anchors(h)), &r));
     if (r.beg + 1 != r.end) return "TODO: implement anchor * for ranges";
-    return _cmd_anchor_asterisk(p->s, r.beg, p->out);
+    return _cmd_anchor_asterisk(p->s, r.beg, cmd_params_cmd_out(p));
 }
 Err cmd_anchor_save(CmdParams p[_1_]) {
     Range r;
@@ -206,7 +207,7 @@ Err cmd_anchor_save(CmdParams p[_1_]) {
     try(session_current_doc(p->s, &h));
     try(basic_range_from_parse(&p->rp, 0, len__(htmldoc_anchors(h)), &r));
     if (r.beg + 1 != r.end) return "TODO: implement anchor > for ranges";
-    return _cmd_anchor_save(p->s, r.beg, p->ln, p->out);
+    return _cmd_anchor_save(p->s, r.beg, p->ln, cmd_params_cmd_out(p));
 }
 
 static SessionCmd _cmd_anchor_[] =
@@ -283,15 +284,13 @@ static Err cmd_doc_scripts_list(CmdParams p[_1_]) {
     try(session_current_doc(p->s, &h));
     size_t head_scripts_count = len__(htmldoc_head_scripts(h));
     size_t body_scripts_count = len__(htmldoc_body_scripts(h));
-    char buf[UINT_TO_STR_BUFSZ] = {0};
-    size_t len;
 
-    session_write_msg_lit__(p->s, "head script count: ");
-    try( unsigned_to_str(head_scripts_count, buf, UINT_TO_STR_BUFSZ, &len));
-    session_write_msg_ln(p->s, buf, len);
-    session_write_msg_lit__(p->s, "body script count: ");
-    try( unsigned_to_str(body_scripts_count, buf, UINT_TO_STR_BUFSZ, &len));
-    session_write_msg_ln(p->s, buf, len);
+    CmdOut* out = cmd_params_cmd_out(p);
+    try(cmd_out_msg_append_lit__(out, "head script count: "));
+    try(cmd_out_msg_append_ui_as_base10(out, head_scripts_count));
+    try(cmd_out_msg_append_lit__(out, "\nbody script count: "));
+    try(cmd_out_msg_append_ui_as_base10(out, body_scripts_count));
+    try(cmd_out_msg_append_lit__(out, "\n"));
     return Ok;
 }
 
@@ -305,7 +304,7 @@ static Err cmd_doc_scripts_save(CmdParams p[_1_]) {
     try_or_jump(e, Failure, file_writer_init(&w, fp));
     try_or_jump(e, Failure, htmldoc_scripts_write(h, &p->rp, &w));
     e = file_close(fp);
-    ok_then(e, session_write_msg_lit__(p->s, "script(s) saved\n"));
+    ok_then(e, cmd_out_msg_append_lit__(cmd_params_cmd_out(p), "script(s) saved\n"));
     return Ok;
 Failure:
     file_close(fp);
@@ -350,7 +349,7 @@ static inline Err cmd_doc_scripts_cmd(CmdParams p[_1_]) {
 
 #define CMD_DOC_FETCh \
     "Fetchs the current document.\n"
-static inline Err cmd_doc_fetch(CmdParams p[_1_]) { return cmd_fetch(p->s, p->out); }
+static inline Err cmd_doc_fetch(CmdParams p[_1_]) { return cmd_fetch(p->s, cmd_params_cmd_out(p)); }
 
 
 static SessionCmd _cmd_doc_[] =
@@ -410,7 +409,8 @@ Err cmd_bookmarks(CmdParams p[_1_]);
 
 #define CMD_ECHO_DOC "Prints in the message area the received parameters.\n"
 static Err cmd_echo (CmdParams p[_1_]) { 
-    if (p->s && p->ln && *p->ln) session_write_msg_ln(p->s, (char*)p->ln, strlen(p->ln));
+    if (p->s && p->ln && *p->ln)
+        cmd_out_msg_append(cmd_params_cmd_out(p), (char*)p->ln, strlen(p->ln));
     return Ok;
 }
 
@@ -490,7 +490,9 @@ static SessionCmd _session_cmd_[] =
     , [17]={0}
     };
 
-static Err cmd_help(CmdParams p[_1_]) { return run_cmd_help(p->s, &_session_cmd_[CMD_HELP_IX]); }
+static Err cmd_help(CmdParams p[_1_]) {
+    return run_cmd_help(&_session_cmd_[CMD_HELP_IX], cmd_params_cmd_out(p));
+}
 
 /* commands section end */
 /************************/
@@ -510,7 +512,12 @@ Err process_line(Session session[_1_], const char* line) {
     line = cstr_skip_space(line);
     if (*line == '\\') line = cstr_skip_space(line + 1);
     if (!*line) { return Ok; }
-    return run_cmd__(&(CmdParams){.s=session,.ln=line}, _session_cmd_);
+
+    CmdParams p = (CmdParams){.s=session,.ln=line};
+    Err err = run_cmd__(&p, _session_cmd_);
+    session_write_cmd_out(session, cmd_params_cmd_out(&p));
+    cmd_params_clean(&p);
+    return err;
 }
 
 Err process_line_line_mode(Session* s, const char* line) {

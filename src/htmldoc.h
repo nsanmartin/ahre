@@ -24,7 +24,6 @@
 #define HIDE_OL 0x1u
 #define HIDE_UL 0x2u
 
-typedef StrView CmdOut;
 
 _Static_assert(sizeof(size_t) >= 2, "size_t type too small");
 _Static_assert(sizeof(size_t) >= sizeof(HIDE_OL), "size_t type too small");
@@ -200,7 +199,7 @@ static inline Err htmldoc_fetch(
 /* htmldoc_tag_a.c */
 
 Err htmldoc_A(Session* s, HtmlDoc d[_1_], CmdOut* out);
-Err htmldoc_print_info(Session* s, HtmlDoc d[_1_], CmdOut* out);
+Err htmldoc_print_info(HtmlDoc d[_1_], CmdOut* out);
 
 
 static inline Err htmldoc_tags_str_reduce_size_t(const char* tags, size_t ts[_1_]) {

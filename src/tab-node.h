@@ -88,7 +88,6 @@ _tab_node_init_base_(TabNode n[_1_], TabNode* parent) {
 /**/
 
 Err session_tab_node_print(
-    Session* s,
     TabNode n[_1_],
     size_t ix,
     ArlOf(size_t) stack[_1_],

@@ -1,34 +1,27 @@
 #ifndef __AHRE_CMD_H__
 #define __AHRE_CMD_H__
 
+#include "cmd-out.h"
 #include "error.h"
 #include "session.h"
 #include "draw.h"
 
 #define cmd_assert_no_params(Ln) do{ if(*Ln) return "error: expecting no params"; }while(0)
 
-// could be the session std/msg outuput or a filename
-// nullptr means the standard, otherwise is a filename, 
-// we could add other cases in the future (other command
-// input, sockets, etc).
-// typedef struct { StrView* fname; } CmdSink;
-
-// typedef struct CmdOut {
-//     // TODO: move here from Sessin
-//     // Str std_out;
-//     // Msg msg;
-//     CmdSink sink;
-// } CmdOut;
-
-typedef StrView CmdOut;
 
 typedef struct {
     const char* ln;
     Session*    s;
     TextBuf*    tb; /* in order to reuse buf cmds for source & buf, we pass it */
     RangeParse  rp;
-    CmdOut*     out;
+    CmdOut      out;
 } CmdParams;
+
+static inline CmdOut* cmd_params_cmd_out(CmdParams p[_1_]) { return &p->out; }
+static inline void cmd_params_clean(CmdParams p[_1_]) {
+    /* the only owned member is CmdOut here */
+    cmd_out_clean(cmd_params_cmd_out(p));
+}
 
 typedef Err (*SessionCmdFn)(CmdParams p[_1_]);
 typedef struct SessionCmd SessionCmd;
@@ -67,15 +60,14 @@ Err cmd_post(CmdParams p[_1_]);
 #define CMD_CURL_COOKIES_DOC \
     "Show the cookies.\n"
 static inline Err cmd_curl_cookies(CmdParams p[_1_]) {
-    return url_client_print_cookies(p->s, session_url_client(p->s), p->out);
+    return url_client_print_cookies(p->s, session_url_client(p->s), cmd_params_cmd_out(p));
 }
 
 #define CMD_CURL_VERSION_DOC \
     "Shows curl's version.\n"
 static inline Err cmd_curl_version(CmdParams p[_1_]) {
-    if (!p->s) return "error: session is null";
     char* version = curl_version();
-    return session_write_msg_ln(p->s, version, strlen(version));
+    return cmd_out_msg_append(cmd_params_cmd_out(p), version, strlen(version));
 }
 
 // curl commands
@@ -106,12 +98,12 @@ static inline Err cmd_doc_draw(CmdParams p[_1_]) { return session_doc_draw(p->s)
 
 #define CMD_DOC_JS \
     "Switch js engine for doc.\n"
-static inline Err cmd_doc_js(CmdParams p[_1_]) { return session_doc_js(p->s, p->out); }
+static inline Err cmd_doc_js(CmdParams p[_1_]) { return session_doc_js(p->s, cmd_params_cmd_out(p)); }
 
 #define CMD_DOC_CONSOLE \
     "js engine console\n"
 static inline Err cmd_doc_console(CmdParams p[_1_]) {
-    return session_doc_console(p->s, p->ln, p->out);
+    return session_doc_console(p->s, p->ln, cmd_params_cmd_out(p));
 }
 
 /*
@@ -123,7 +115,7 @@ Err cmd_tabs(CmdParams p[_1_]);
 static inline Err cmd_tabs_info(CmdParams p[_1_]) {
     cmd_assert_no_params(p->ln);
     TabList* f = session_tablist(p->s);
-    return tablist_info(p->s, f, p->out);
+    return tablist_info(f, cmd_params_cmd_out(p));
 }
 
 static inline Err cmd_tabs_back(CmdParams p[_1_]) {
@@ -149,14 +141,14 @@ static inline Err cmd_doc_info(CmdParams p[_1_]) {
     cmd_assert_no_params(p->ln);
     HtmlDoc* d;
     try( session_current_doc(p->s, &d));
-    return htmldoc_print_info(p->s, d, p->out);
+    return htmldoc_print_info(d, cmd_params_cmd_out(p));
 }
 
 static inline Err cmd_doc_A(CmdParams p[_1_]) {
     cmd_assert_no_params(p->ln);
     HtmlDoc* d;
     try( session_current_doc(p->s, &d));
-    return htmldoc_A(p->s, d, p->out);
+    return htmldoc_A(p->s, d, cmd_params_cmd_out(p));
 }
 
 Err bookmark_add_to_section(Session s[_1_], const char* line, UrlClient url_client[_1_]);
@@ -168,7 +160,7 @@ Err bookmark_add_to_section(Session s[_1_], const char* line, UrlClient url_clie
     "If not, the section is created unless there is a complete match in which \n"\
     "case the document is added to it.\n"
 static inline Err cmd_doc_bookmark_add(CmdParams p[_1_]) {
-    return bookmark_add_to_section(p->s, p->ln, session_url_client(p->s));
+    return bookmark_add_to_section(p->s, p->ln, session_url_client(p->s), cmd_params_cmd_out(p));
 }
 
 static inline Err _cmd_doc_hide(Session session[_1_], const char* tags) {
@@ -217,7 +209,7 @@ static inline Err
 cmd_textbuf_dbg_print_all_lines_nums(CmdParams p[_1_]) {
     Range rng;
     try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
-    return dbg_print_all_lines_nums(p->s, p->tb, &rng, p->ln, p->out);
+    return dbg_print_all_lines_nums(p->s, p->tb, &rng, p->ln, cmd_params_cmd_out(p));
 }
 
 
@@ -229,23 +221,21 @@ static inline Err
 cmd_textbuf_print_n(CmdParams p[_1_]) {
     Range rng;
     try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
-    return  _textbuf_print_n_(p->s, p->tb, &rng, p->ln, p->out);
+    return  _textbuf_print_n_(p->s, p->tb, &rng, p->ln, cmd_params_cmd_out(p));
 }
 
-Err _cmd_textbuf_write_impl(
-   Session s[_1_], TextBuf textbuf[_1_], Range r[_1_], const char* rest, CmdOut* out
-);
+Err _cmd_textbuf_write_impl(TextBuf textbuf[_1_], Range r[_1_], const char* rest, CmdOut* out);
 
 static inline Err cmd_textbuf_write(CmdParams p[_1_]) {
 //TODO: allow >/>> modes
     const char* filename = cstr_trim_space((char*)p->ln);
     if (range_parse_is_none(&p->rp)) {
         try( textbuf_to_file(p->tb, filename, "w"));
-        return session_write_msg_lit__(p->s, "file written.");
+        return cmd_out_msg_append_lit__(cmd_params_cmd_out(p), "file written.");
     }
     Range rng;
     try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
-    return _cmd_textbuf_write_impl(p->s, p->tb, &rng, filename, p->out);
+    return _cmd_textbuf_write_impl(p->tb, &rng, filename, cmd_params_cmd_out(p));
 }
 
 /*
@@ -277,57 +267,44 @@ _get_lexbor_node_ptr_by_ix(ArlOf(LxbNodePtr) node_arl[_1_], size_t ix, lxb_dom_n
 }
 
 
-static inline Err _cmd_lexbor_node_print_(
-    Session           session[_1_],
-    ArlOf(LxbNodePtr) node_arl[_1_],
-    size_t            ix
-) {
-    lxb_dom_node_t* node;
-    try( _get_lexbor_node_ptr_by_ix(node_arl, ix, &node));
-    Str* buf = &(Str){0};
-    Err err = lexbor_node_to_str(node, buf);
-
-    ok_then(err,  session_write_msg(session, items__(buf), len__(buf)));
-    str_clean(buf);
-    return err;
-}
+Err _cmd_lexbor_node_print_( ArlOf(LxbNodePtr) node_arl[_1_], size_t ix, CmdOut out[_1_]);
 
 static inline Err _cmd_form_print(CmdParams p[_1_], size_t ix) {
     HtmlDoc* d;
     try( session_current_doc(p->s, &d));
-    return _cmd_lexbor_node_print_(p->s, htmldoc_forms(d), ix);
+    return _cmd_lexbor_node_print_(htmldoc_forms(d), ix, cmd_params_cmd_out(p));
 }
 
 static inline Err _cmd_input_print(CmdParams p[_1_], size_t ix) {
     HtmlDoc* d;
     try( session_current_doc(p->s, &d));
-    return _cmd_lexbor_node_print_(p->s, htmldoc_inputs(d), ix);
+    return _cmd_lexbor_node_print_(htmldoc_inputs(d), ix, cmd_params_cmd_out(p));
 }
 
 static inline Err _cmd_input_submit_ix(CmdParams p[_1_], size_t ix) {
-    return session_press_submit(p->s, ix, p->out);
+    return session_press_submit(p->s, ix, cmd_params_cmd_out(p));
 }
 
-static inline Err cmd_select_elem_show_options(LxbNode lbn[_1_], Session s[_1_]) {
+static inline Err cmd_select_elem_show_options(LxbNode lbn[_1_], CmdOut out [_1_]) {
     if (!lxbnode_node(lbn)) return "error: expecting lexbor node, not NULL";
     for(lxb_dom_node_t* it = lxbnode_node(lbn)->first_child; it ; it = it->next) {
         if (it->local_name == LXB_TAG_OPTION) {
 
-            if ( lexbor_has_lit_attr__(it, "selected")) session_write_msg_lit__(s, " *\t");
-            else session_write_msg_lit__(s, "\t");
+            if (lexbor_has_lit_attr__(it, "selected")) cmd_out_msg_append_lit__(out, " *\t");
+            else cmd_out_msg_append_lit__(out, "\t");
 
             lxb_dom_node_t* opt_text = it->first_child;
             if (opt_text->local_name == LXB_TAG__TEXT) {
                 const char* text;
                 size_t len;
                 try(lexbor_get_text(opt_text, &text, &len));
-                if (len) try( session_write_msg(s, (char*)text, len));
+                if (len) try( cmd_out_msg_append(out, (char*)text, len));
             }
 
-            session_write_msg_lit__(s, " | value: "); 
+            cmd_out_msg_append_lit__(out, " | value: "); 
             StrView value = lexbor_get_lit_attr__(it, "value");
-            if (value.len) session_write_msg_ln(s, (char*)value.items, value.len);
-            else session_write_msg_lit__(s, "\"\"\n"); 
+            if (value.len) cmd_out_msg_append_ln(out, (char*)value.items, value.len);
+            else cmd_out_msg_append_lit__(out, "\"\"\n"); 
 
         }
     }
@@ -345,13 +322,13 @@ static inline Err cmd_input_default_ix(CmdParams p[_1_], size_t ix) {
 
     if (lexbor_node_tag_is_input(&lbn)
     &&  lexbor_lit_attr_has_lit_value(&lbn, "type", "submit")) 
-        return tab_node_tree_append_submit(tab , ix, session_url_client(p->s), p->s, p->out);
+        return tab_node_tree_append_submit(tab , ix, session_url_client(p->s), p->s, cmd_params_cmd_out(p));
     else if (lexbor_node_tag_is_button(&lbn)
     &&  (lexbor_lit_attr_has_lit_value(&lbn, "type", "submit") 
         || !lexbor_has_lit_attr__(&lbn, "type")))
-        return tab_node_tree_append_submit(tab , ix, session_url_client(p->s), p->s, p->out);
+        return tab_node_tree_append_submit(tab , ix, session_url_client(p->s), p->s, cmd_params_cmd_out(p));
     else if (lexbor_node_tag_is_select(&lbn))
-        return cmd_select_elem_show_options(&lbn, p->s);
+        return cmd_select_elem_show_options(&lbn, cmd_params_cmd_out(p));
     
     return "error: invalid input node";
 }

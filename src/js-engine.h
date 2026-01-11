@@ -3,7 +3,6 @@
 
 
 typedef struct HtmlDoc HtmlDoc;
-typedef StrView CmdOut;
 
 #ifndef AHRE_QUICKJS_DISABLED
 

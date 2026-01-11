@@ -7,15 +7,6 @@
 #include <curl/curl.h>
 
 
-typedef struct { Str s; } Msg;
-#define msg_append(Mptr, Items, Nitems) str_append((&Mptr->s), Items, Nitems)
-#define msg_append_lit__(Mptr, Lit) str_append_lit__((&Mptr->s), Lit)
-#define msg_append_ln(Mptr, Items, Nitems) str_append_ln((&Mptr->s), Items, Nitems)
-#define msg_clean(Mptr) str_clean(&Mptr->s)
-#define msg_reset(Mptr) str_reset(&Mptr->s)
-#define msg_items(Mptr) items__(&Mptr->s)
-#define msg_len(Mptr) len__(&Mptr->s)
-
 typedef struct Session Session;
 typedef struct UserOutput UserOutput;
 

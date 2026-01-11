@@ -23,6 +23,7 @@
 #include "utils.h"
 
 
+
 /* mem fns */
 static inline char* mem_is_whitespace(char* s, size_t len) {
     while(len && *s && !isspace(*s)) { ++s; --len; }
@@ -136,9 +137,9 @@ inline static StrView strview_from_mem_trim(const char* s, size_t len) {
 #define str_at buffn(char,at)
 #define _str_ensure_extra_capacity(StrPtr, Len) \
     (buffn(char,__ensure_extra_capacity)(StrPtr, Len) ? Ok : "error: ensure extra capacity failure")
+
 #define str_append_lit__(StrPtr, Lit) str_append(StrPtr, Lit, lit_len__(Lit))
-/* #define str_append(StrPtr, Items, NItems) \ */
-/*     (buffn(char,append)(StrPtr, Items, NItems) ? Ok : "error: str_append failure") */
+
 #define str_append(StrPtr, Items, NItems) \
     (buffn(char,append)(StrPtr, Items, NItems) ? Ok \
      : err_fmt("error: str_append failure ("__FILE__":%d", __LINE__))
@@ -151,15 +152,17 @@ inline static StrView strview_from_mem_trim(const char* s, size_t len) {
     ((!buffn(char,append)(StrPtr, Items, NItems) || !buffn(char,append)(StrPtr, "\n", 1))\
      ? "error: str_append_ln failure" : Ok)
 
-static inline Err str_append_str(Str s[_1_], Str t[_1_]) {
-    return str_append(s, items__(t), len__(t));
-}
+#define str_append_str(S, T)    str_append(S, items__(T), len__(T))
+#define str_append_str_ln(S, T) str_append_ln(S, items__(T), len__(T))
 
 static inline bool str_startswith_mem(Str s[_1_], const char* mem, size_t len) {
     return len__(s) >= len && !strncmp(items__(s), mem, len);
 }
 
 #define str_startswith_lit(S, Lit) str_startswith_mem(S, Lit, lit_len__(Lit))
+
+Err str_append_ui_as_base36(Str buf[_1_], uintmax_t ui);
+Err str_append_ui_as_base10(Str buf[_1_], uintmax_t ui);
 
 static inline size_t str_append_flip(
     const char* mem,
@@ -216,9 +219,6 @@ static inline StrView strview_from_cstr(const char* s) {
 const char* parse_l(const char* tk, long lptr[_1_]);
 
 StrView str_split_line(StrView text[_1_]);
-
-Err str_append_ui_as_base36(Str buf[_1_], uintmax_t ui);
-Err str_append_ui_as_base10(Str buf[_1_], uintmax_t ui);
 
 static inline void replace_char_inplace(char* s, char from, char to) {
     char* p;
