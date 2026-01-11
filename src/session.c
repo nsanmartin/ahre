@@ -84,7 +84,7 @@ Err write_range_mod(
         it = mods_at_find_greater_or_eq(textbuf_mods(textbuf), it, line_off_beg);
 
         if (it >= arlfn(ModAt,end)(textbuf_mods(textbuf)) || line_off_end < it->offset) {
-            try( cmd_out_std_append_str(cmd_out, &line));
+            try( cmd_out_screen_append_str(cmd_out, &line));
             continue;
         }
 
@@ -92,22 +92,22 @@ Err write_range_mod(
             size_t next = _next_text_end_(textbuf_mods(textbuf), it, off, line_off_end);
 
             if (off < next)
-                try( cmd_out_std_append(cmd_out, textbuf_items(textbuf) + off, next - off));
+                try( cmd_out_screen_append(cmd_out, textbuf_items(textbuf) + off, next - off));
 
             off = next;
             while (it < arlfn(ModAt,end)(textbuf_mods(textbuf)) && next == it->offset) {
                 StrView code_str;
                 try( esc_code_to_str(textmod_to_esc_code(it->tmod), &code_str));
-                try( cmd_out_std_append_str(cmd_out, &code_str));
+                try( cmd_out_screen_append_str(cmd_out, &code_str));
                 ++it;
             }
         }
     }
 
     if (!monochrome)
-        try( cmd_out_std_append(cmd_out, EscCodeReset, sizeof(EscCodeReset) - 1));
+        try( cmd_out_screen_append(cmd_out, EscCodeReset, sizeof(EscCodeReset) - 1));
     if (line.len && line.items[line.len-1] != '\n') 
-        try( cmd_out_std_append(cmd_out, "\n", 1));
+        try( cmd_out_screen_append(cmd_out, "\n", 1));
     return Ok;
 }
 

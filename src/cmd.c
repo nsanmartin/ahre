@@ -209,13 +209,13 @@ Err _textbuf_print_n_(TextBuf textbuf[_1_], Range range[_1_], const char* ln, Cm
     StrView line;
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
-        try( cmd_out_std_append_ui_as_base10(out, linum));
-        try( cmd_out_std_append_lit__(out, "\t"));
-        if (line.len) try( cmd_out_std_append(out, (char*)line.items, line.len));
-        else try( cmd_out_std_append_lit__(out, "\n"));
+        try( cmd_out_screen_append_ui_as_base10(out, linum));
+        try( cmd_out_screen_append_lit__(out, "\t"));
+        if (line.len) try( cmd_out_screen_append(out, (char*)line.items, line.len));
+        else try( cmd_out_screen_append_lit__(out, "\n"));
     }
 
-    if (textbuf_line_count(textbuf) == range->end) try( cmd_out_std_append_lit__(out, "\n"));
+    if (textbuf_line_count(textbuf) == range->end) try( cmd_out_screen_append_lit__(out, "\n"));
     return Ok;
 }
 
@@ -226,12 +226,12 @@ Err dbg_print_all_lines_nums(TextBuf textbuf[_1_], Range r[_1_], const char* ln,
     size_t lnum = 1;
     StrView line;
     for (;textbuf_get_line(textbuf, lnum, &line); ++lnum) {
-        try( cmd_out_std_append_ui_as_base10(out, lnum));
-        try( cmd_out_std_append_lit__(out, "\t`"));
+        try( cmd_out_screen_append_ui_as_base10(out, lnum));
+        try( cmd_out_screen_append_lit__(out, "\t`"));
         if (line.len > 1) {
-            try( cmd_out_std_append(out, (char*)line.items, line.len-1));
+            try( cmd_out_screen_append(out, (char*)line.items, line.len-1));
         } 
-        try( cmd_out_std_append_lit__(out, "'\n"));
+        try( cmd_out_screen_append_lit__(out, "'\n"));
     }
     return Ok;
 }
@@ -271,7 +271,7 @@ Err cmd_textbuf_global(CmdParams p[_1_]) {
 Err _cmd_input_text_set_(Session session[_1_], LxbNode n[_1_], const char* line, CmdOut cout[_1_]) {
     Err err = Ok;
     if (!*line) {
-        try( cmd_out_std_append_lit__(cout, "> "));
+        try( cmd_out_screen_append_lit__(cout, "> "));
         ArlOf(char) masked = (ArlOf(char)){0};
         err = readpass_term(&masked, true);
         ok_then(err, lexbor_set_lit_attr__(lxbnode_node(n), "value", masked.items, masked.len));

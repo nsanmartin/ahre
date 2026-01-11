@@ -48,7 +48,7 @@ static inline Err ui_line_flush_msg(Session* s, CmdOut cout[_1_]) {
 
 static inline Err ui_line_flush_screen(Session* s, CmdOut cout[_1_]) {
     (void)s;
-    Str* screen = cmd_out_std(cout);
+    Str* screen = cmd_out_screen(cout);
     try( mem_fwrite(items__(screen), len__(screen), stdout));
     if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
     str_clean(screen);

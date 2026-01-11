@@ -8,11 +8,7 @@
 Err ui_line_show_session(Session* s, CmdOut cout[_1_]) {
     (void)cout;
     if (!s) return "error: unexpected null session, this should really not happen";
-    /* if (session_is_empty(s)) return Ok; */
     return session_flush_cmd_out(s, cout);
-    /* //TODO: */
-    /* /1* return session_uout(s)->flush_std(NULL); *1/ */
-    /* return Ok; */
 }
 
 Err ui_line_show_err(Session* s, char* err, size_t len) {
@@ -56,7 +52,7 @@ Err ui_vi_show_session(Session* s, CmdOut cout[_1_]) {
     if (!s) return "error: unexpected null session, this should really not happen";
     if (session_is_empty(s)) {
         if (cmd_out_is_empty(cout)) {
-            try( cmd_out_std_append_lit__(cout, EMPTY_SESSION_MSG_));
+            try( cmd_out_screen_append_lit__(cout, EMPTY_SESSION_MSG_));
             return session_flush_cmd_out_screen(s, cout);
         } else return session_flush_cmd_out(s, cout);
     }
@@ -94,7 +90,7 @@ Err ui_vi_show_session(Session* s, CmdOut cout[_1_]) {
 
 Err ui_vi_flush_std(Session* s, CmdOut cout[_1_]) {
     if (!s) return "error: no session";
-    Str* screen = cmd_out_std(cout);
+    Str* screen = cmd_out_screen(cout);
     if (len__(screen)) {
         try( mem_fwrite(items__(screen), len__(screen), stdout));
         if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
