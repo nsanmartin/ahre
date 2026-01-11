@@ -37,23 +37,11 @@ Err ui_line_show_err(Session* s, char* err, size_t len) {
 
 #define _vi_write_std_to_screen_lit__(Ses, Lit) _vi_write_std_to_screen_(Ses, Lit, lit_len__(Lit))
 
-// static inline Err _vi_write_unsigned_std_screen_(Session s[_1_], uintmax_t ui) {
-//     return ui_write_unsigned(session_conf_uout(session_conf(s))->write_std, ui, s);
-// }
-
-Err ui_vi_write_std(const char* mem, size_t len, Session* s) {
-    if (!s) return "error: no session";
-    HtmlDoc* doc;
-    try( session_current_doc(s, &doc));
-    Str* screen = htmldoc_screen(doc);
-    return str_append(screen, (char*)mem, len);
-}
-
 
 static Err _vi_print_range_std_mod_(
     TextBuf textbuf[_1_], Range range[_1_], Session* s, CmdOut cout[_1_]
 ) {
-    return session_write_std_range_mod(s, textbuf, range, cout);
+    return session_write_screen_range_mod(s, textbuf, range, cout);
 }
 
 
@@ -61,26 +49,27 @@ static void _update_if_smaller_(size_t value[_1_], size_t new_value) {
     if (*value > new_value) *value = new_value;
 }
 
-#define EMPTY_SESSION_MSG_ "Session is empty\n"
+#define EMPTY_SESSION_MSG_ "Session is empty\n\nType '\\?' (slash-question mark) for help.\n"
 #define EMPTY_BUFFER_MSG_ "Buffer is empty\n"
 Err ui_vi_show_session(Session* s, CmdOut cout[_1_]) {
     if (!s) return "error: unexpected null session, this should really not happen";
     if (session_is_empty(s)) {
-        try( cmd_out_msg_append_lit__(cout, EMPTY_SESSION_MSG_));
-        return session_flush_cmd_out_msg(s, cout);
+        if (cmd_out_is_empty(cout)) {
+            try( cmd_out_std_append_lit__(cout, EMPTY_SESSION_MSG_));
+            return session_flush_cmd_out_screen(s, cout);
+        } else return session_flush_cmd_out(s, cout);
     }
 
 
     TextBuf* tb;
     try( session_current_buf(s, &tb));
     if (textbuf_is_empty(tb)) {
-        try( msg_append_lit__(session_msg(s), EMPTY_BUFFER_MSG_));
+        try( cmd_out_msg_append_lit__(cout, EMPTY_BUFFER_MSG_));
         return session_flush_cmd_out_msg(s, cout);
     }
 
-    //TODO: no more msg in session
-    /* session_uout(s)->flush_msg(s); */
     try( session_flush_cmd_out_msg(s, cout));
+
     //TODO: instead stdout pass CmdOut
     try( lit_write__(EscCodeClsScr, stdout));
     size_t line = textbuf_current_line(tb);
@@ -98,24 +87,14 @@ Err ui_vi_show_session(Session* s, CmdOut cout[_1_]) {
 
     try( _vi_print_range_std_mod_(tb, &r, s, cout));
     try( session_flush_cmd_out_screen(s, cout));
-    /* session_uout(s)->flush_std(s); */
     return Ok;
 }
 
+
 Err ui_vi_flush_std(Session* s, CmdOut cout[_1_]) {
     if (!s) return "error: no session";
-    /* Msg* msg = session_msg(s); */
-    /* if (msg_len(msg)) { */
-    /*     try( mem_fwrite(msg_items(msg), msg_len(msg), stdout)); */
-    /*     if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno)); */
-    /*     msg_reset(msg); */
-    /* } */
-    if (!session_is_empty(s)) {
-        /* HtmlDoc* doc; */
-        /* try( session_current_doc(s, &doc)); */
-        /* Str* screen = htmldoc_screen(doc); */
-        Str* screen = cmd_out_std(cout);
-        if (!len__(screen)) return Ok;
+    Str* screen = cmd_out_std(cout);
+    if (len__(screen)) {
         try( mem_fwrite(items__(screen), len__(screen), stdout));
         if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
         str_reset(screen);
@@ -124,17 +103,10 @@ Err ui_vi_flush_std(Session* s, CmdOut cout[_1_]) {
 }
 
 
-Err ui_vi_write_msg(const char* mem, size_t len, Session* s) {
-    if (!s) return "error: no session";
-    if (!len) return "error: (internal) cannot write message with no len";
-    return msg_append(session_msg(s), (char*)mem, len);
-}
-
 #define MSG_PREFIX_ "{msg}:\n"
 #define CONTINUE_MSG_ "{% type enter to continue %}"
 Err ui_vi_flush_msg(Session* s, CmdOut cout[_1_]) {
     if (!s) return "error: no session";
-    /* Msg* msg = session_msg(s); */
     Msg* msg = cmd_out_msg(cout);
     if (!msg_len(msg)) return Ok;
     try( lit_write__(MSG_PREFIX_, stdout));

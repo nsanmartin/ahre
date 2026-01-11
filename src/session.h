@@ -16,7 +16,6 @@ typedef struct Session {
     TabList            tablist;
     SessionConf        conf;
 
-    Msg                      msg; //TODO: add one msg buffer per htmldoc?
     ArlOf(const_cstr)        input_history;
     Str                      dt_now_str;
     ArlOf(FetchHistoryEntry) fetch_history;
@@ -31,7 +30,6 @@ Err session_current_doc(Session session[_1_], HtmlDoc* out[_1_]);
 Err session_current_src(Session session[_1_], TextBuf* out[_1_]);
 
 static inline Str* session_dt_now_str(Session s[_1_]) { return &s->dt_now_str; }
-static inline Msg* session_msg(Session s[_1_]) { return &s->msg; }
 
 static inline UrlClient* session_url_client(Session session[_1_]) {
     return &session->url_client;
@@ -109,7 +107,6 @@ Err session_init(Session s[_1_], SessionConf sconf[_1_]);
 static inline void session_cleanup(Session s[_1_]) {
     url_client_cleanup(session_url_client(s));
     tablist_cleanup(session_tablist(s));
-    msg_clean(session_msg(s));
     reditline_history_cleanup(session_input_history(s));
     str_clean(session_dt_now_str(s));
     arlfn(FetchHistoryEntry,clean)(session_fetch_history(s));
@@ -196,71 +193,6 @@ static inline Err session_consume_line(Session s[_1_], UserLine userln[_1_], Cmd
 }
 
 
-static inline Err _session_write_msg_(Session s[_1_], char* msg, size_t len) {
-    UserOutput* uo = session_uout(s);
-    return uo->write_msg(msg, len, s);
-}
-
-#define session_write_msg(Ses, Msg, Len) (\
-    Msg && Len \
-        ? _session_write_msg_(Ses, Msg, Len) \
-        : err_fmt("error: session_write failure ("__FILE__":%d", __LINE__))
-
-
-#define session_write_msg_str(Ses, S) session_write_msg(Ses, items__(S), len__(S))
-#define session_write_msg_lit__(Ses, LitStr) (\
-     lit_len__(LitStr) \
-         ? _session_write_msg_(Ses, LitStr, lit_len__(LitStr)) \
-         : err_fmt("error: session_write failure ("__FILE__":%d", __LINE__) )
-
-static inline Err _session_write_msg_ln_(Session s[_1_], char* msg, size_t len) {
-    UserOutput* uo = session_uout(s);
-    try(uo->write_msg(msg, len, s));
-    return session_write_msg_lit__(s, "\n");
-}
-
-#define session_write_msg_ln(Ses, Msg, Len) (\
-    Len ? _session_write_msg_ln_(Ses, Msg, Len) \
-        : err_fmt("error: session_write failure ("__FILE__":%d", __LINE__))
-
-
-static inline Err session_write_unsigned_std(Session s[_1_], uintmax_t ui) {
-    return ui_write_unsigned(session_conf_uout(session_conf(s))->write_std, ui, s);
-}
-
-
-/* Writer To session std (ie screen) */
-static inline Err session_write_std(Session s[_1_], char* msg, size_t len) {
-    UserOutput* uo = session_uout(s);
-    return uo->write_std(msg, len, s);
-}
-
-#define session_write_std_lit__(Ses, LitStr) session_write_std(Ses, LitStr, lit_len__(LitStr))
-
-static inline Err session_write_std_ln(Session s[_1_], char* msg, size_t len) {
-    UserOutput* uo = session_uout(s);
-    try(uo->write_std(msg, len, s));
-    return session_write_std_lit__(s, "\n");
-}
-
-static inline Err _writer_write_to_session_std_(Writer* self, const char* mem, size_t len) {
-    UserOutput* uo = session_uout(self->out);
-    return uo->write_std(mem, len, self->out);
-}
-
-static inline Err session_std_writer_init(Writer w[_1_], Session s[_1_]) {
-    // if (!s) return "error: expecting a sessions, received NULL";
-    *w = (Writer){ .self=w, .write=_writer_write_to_session_std_, .out=s };
-    return Ok;
-}
-
-// Writer To session std (screen)
-
-static inline Err session_write_unsigned_msg(Session s[_1_], uintmax_t ui) {
-    return ui_write_unsigned(session_conf_uout(session_conf(s))->write_msg, ui, s);
-}
-
-
 static inline Err session_show_error(Session s[_1_], Err err) {
     size_t len = strlen(err);
     return session_uout(s)->show_err(s, (char*)err, len);
@@ -271,24 +203,14 @@ static inline Err session_show_output(Session s[_1_], CmdOut cout[_1_]) {
 }
 
 
-/* Writer To session msg */
-static inline Err writer_write_to_session_msg(Writer* self, const char* mem, size_t len) {
-    UserOutput* uo = session_uout(self->out);
-    return uo->write_msg(mem, len, self->out);
-}
-
-static inline Err session_msg_writer_init(Writer w[_1_], Session s[_1_]) {
-    *w = (Writer){ .self=w, .write=writer_write_to_session_msg, .out=s };
-    return Ok;
-}
-// Writer To session msg
 
 
 Err
-session_write_std_range_mod(Session s[_1_], TextBuf textbuf[_1_], Range range[_1_], CmdOut cmd_out[_1_]);
+session_write_screen_range_mod(Session s[_1_], TextBuf textbuf[_1_], Range range[_1_], CmdOut cmd_out[_1_]);
 Err session_write_input_history(Session s[_1_]);
 
 
 Err session_flush_cmd_out_msg(Session s[_1_], CmdOut cout[_1_]);
 Err session_flush_cmd_out_screen(Session s[_1_], CmdOut cout[_1_]);
+Err session_flush_cmd_out(Session s[_1_], CmdOut cout[_1_]);
 #endif

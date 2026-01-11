@@ -112,7 +112,7 @@ Err write_range_mod(
 }
 
 
-Err session_write_std_range_mod(
+Err session_write_screen_range_mod(
     Session s[_1_], TextBuf textbuf[_1_], Range range[_1_], CmdOut cmd_out[_1_]
 ) {
     return write_range_mod(cmd_out, session_monochrome(s), textbuf, range);
@@ -188,12 +188,6 @@ void session_set_verbose(Session s[_1_], bool value) {
     url_client_set_verbose(session_url_client(s), value);
 }
 
-Err session_write_cmd_out(Session s[_1_], CmdOut o[_1_]) {
-    Str* msg = msg_str(cmd_out_msg(o));
-    if (len__(msg))
-        try( session_write_msg_str(s, msg));
-    return Ok;
-}
 
 Err session_flush_cmd_out_msg(Session s[_1_], CmdOut cout[_1_]) {
     try(session_uout(s)->flush_msg(s, cout));
@@ -205,3 +199,8 @@ Err session_flush_cmd_out_screen(Session s[_1_], CmdOut cout[_1_]) {
     return Ok;
 }
 
+Err session_flush_cmd_out(Session s[_1_], CmdOut cout[_1_]) {
+    try( session_flush_cmd_out_msg(s, cout));
+    try( session_flush_cmd_out_screen(s, cout));
+    return Ok;
+}

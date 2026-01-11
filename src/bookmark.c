@@ -128,8 +128,8 @@ Err bookmark_add_to_section(
     HtmlDoc bm;
     Str bm_path = (Str){0};
     try(resolve_bookmarks_file(items__(session_bookmarks_fname(s)), &bm_path));
-    Writer w;
-    try_or_jump(err, Fail_Clean_Bm, session_msg_writer_init(&w, s));
+    /* Writer w; */
+    /* try_or_jump(err, Fail_Clean_Bm, session_msg_writer_init(&w, s)); */
     try_or_jump(err, Fail_Clean_Bm,
             _get_bookmarks_doc_(url_client, strview__(&bm_path), cmd_out,  &bm));
 

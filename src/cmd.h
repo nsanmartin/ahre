@@ -195,31 +195,27 @@ typedef Err (*TextBufCmdFn)
 static inline Err cmd_textbuf_print(CmdParams p[_1_]) {
     Range rng;
     try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
-    return session_write_std_range_mod(p->s, p->tb, &rng, cmd_params_cmd_out(p));
+    return session_write_screen_range_mod(p->s, p->tb, &rng, cmd_params_cmd_out(p));
 }
 
 
-Err dbg_print_all_lines_nums(
-    Session s[_1_], TextBuf tb[_1_], Range r[_1_], const char* ln, CmdOut* out
-);
+Err dbg_print_all_lines_nums(TextBuf tb[_1_], Range r[_1_], const char* ln, CmdOut* out);
 
 static inline Err
 cmd_textbuf_dbg_print_all_lines_nums(CmdParams p[_1_]) {
     Range rng;
     try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
-    return dbg_print_all_lines_nums(p->s, p->tb, &rng, p->ln, cmd_params_cmd_out(p));
+    return dbg_print_all_lines_nums(p->tb, &rng, p->ln, cmd_params_cmd_out(p));
 }
 
 
-Err _textbuf_print_n_(
-    Session s[_1_], TextBuf textbuf[_1_], Range range[_1_], const char* ln, CmdOut* out
-);
+Err _textbuf_print_n_(TextBuf textbuf[_1_], Range range[_1_], const char* ln, CmdOut* out);
 
 static inline Err
 cmd_textbuf_print_n(CmdParams p[_1_]) {
     Range rng;
     try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
-    return  _textbuf_print_n_(p->s, p->tb, &rng, p->ln, cmd_params_cmd_out(p));
+    return  _textbuf_print_n_(p->tb, &rng, p->ln, cmd_params_cmd_out(p));
 }
 
 Err _cmd_textbuf_write_impl(TextBuf textbuf[_1_], Range r[_1_], const char* rest, CmdOut* out);

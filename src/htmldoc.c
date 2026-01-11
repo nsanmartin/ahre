@@ -771,8 +771,6 @@ Err htmldoc_init_move_request(
 ) {
     if (!s) return "error: expecting a session, recived NULL";
     Err e = Ok;
-    Writer w;
-    try(session_msg_writer_init(&w, s));
     unsigned flags = session_js(s) ? HTMLDOC_FLAG_JS : 0x0;
 
     /* lexbor doc should be initialized before jse_init */

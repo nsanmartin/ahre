@@ -1,6 +1,8 @@
 #ifndef AHRE_WRITER_H__
 #define AHRE_WRITER_H__
 
+#include "cmd-out.h"
+
 
 typedef struct Writer Writer;
 typedef struct Writer {
@@ -40,5 +42,28 @@ static inline Err file_writer_init(Writer w[_1_], FILE* f) {
 }
 // Writer to file
 
+/* Writer To Str */
+static inline Err writer_write_to_str(Writer* self, const char* mem, size_t len) {
+    return str_append((Str*)self->out, (char*)mem, len);
+}
+
+static inline Err str_writer_init(Writer w[_1_], Str* s) {
+    if (!s) return "error: failed to initialide Writer with NULL FILE";
+    *w = (Writer){ .self=w, .write=writer_write_to_str, .out=s };
+    return Ok;
+}
+// Writer to Str
+
+/* Writer To Msg */
+static inline Err writer_write_to_msg(Writer* self, const char* mem, size_t len) {
+    return msg_append((Msg*)self->out, (char*)mem, len);
+}
+
+static inline Err msg_writer_init(Writer w[_1_], Msg* s) {
+    if (!s) return "error: failed to initialide Writer with NULL FILE";
+    *w = (Writer){ .self=w, .write=writer_write_to_msg, .out=s };
+    return Ok;
+}
+// Writer to Str
 
 #endif

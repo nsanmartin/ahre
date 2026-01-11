@@ -162,7 +162,7 @@ Err shortcut_z(Session session[_1_], const char* rest, CmdOut cmd_out[_1_]) {
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
 
 
-    try( session_write_std_range_mod(session, tb, &r, cmd_out));
+    try( session_write_screen_range_mod(session, tb, &r, cmd_out));
     if (textbuf_current_line(tb) == r.end)
         puts(MsgLastLine);
     try( textbuf_get_offset_of_line(tb, r.end,textbuf_current_offset(tb)));
@@ -203,41 +203,35 @@ StrView parse_pattern(const char* tk) {
 
 //
 //TODO: apply mods to text
-Err _textbuf_print_n_(
-    Session s[_1_], TextBuf textbuf[_1_], Range range[_1_], const char* ln, CmdOut* out
-) {
-    (void)out;
+Err _textbuf_print_n_(TextBuf textbuf[_1_], Range range[_1_], const char* ln, CmdOut* out) {
     (void)ln;
     try(validate_range_for_buffer(textbuf, range));
     StrView line;
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
-        try( session_write_unsigned_std(s, linum));
-        try( session_write_std_lit__(s, "\t"));
-        if (line.len) try( session_write_std(s, (char*)line.items, line.len));
-        else try( session_write_std_lit__(s, "\n"));
+        try( cmd_out_std_append_ui_as_base10(out, linum));
+        try( cmd_out_std_append_lit__(out, "\t"));
+        if (line.len) try( cmd_out_std_append(out, (char*)line.items, line.len));
+        else try( cmd_out_std_append_lit__(out, "\n"));
     }
 
-    if (textbuf_line_count(textbuf) == range->end) try( session_write_std_lit__(s, "\n"));
+    if (textbuf_line_count(textbuf) == range->end) try( cmd_out_std_append_lit__(out, "\n"));
     return Ok;
 }
 
 
-Err dbg_print_all_lines_nums(
-    Session s[_1_], TextBuf textbuf[_1_], Range r[_1_], const char* ln, CmdOut* out
-) {
-    (void)out;
+Err dbg_print_all_lines_nums(TextBuf textbuf[_1_], Range r[_1_], const char* ln, CmdOut* out) {
     (void)r;
     cmd_assert_no_params(ln);
     size_t lnum = 1;
     StrView line;
     for (;textbuf_get_line(textbuf, lnum, &line); ++lnum) {
-        try( session_write_unsigned_std(s, lnum));
-        try( session_write_std_lit__(s, "\t`"));
+        try( cmd_out_std_append_ui_as_base10(out, lnum));
+        try( cmd_out_std_append_lit__(out, "\t`"));
         if (line.len > 1) {
-            try( session_write_std(s, (char*)line.items, line.len-1));
+            try( cmd_out_std_append(out, (char*)line.items, line.len-1));
         } 
-        try( session_write_std_lit__(s, "'\n"));
+        try( cmd_out_std_append_lit__(out, "'\n"));
     }
     return Ok;
 }
@@ -274,11 +268,10 @@ Err cmd_textbuf_global(CmdParams p[_1_]) {
 /* input commands */
 
 
-Err _cmd_input_text_set_(Session session[_1_], LxbNode n[_1_], const char* line) {
-    UserOutput* out = session_uout(session);
+Err _cmd_input_text_set_(Session session[_1_], LxbNode n[_1_], const char* line, CmdOut cout[_1_]) {
     Err err = Ok;
     if (!*line) {
-        try( out->write_std("> ", 1, session));
+        try( cmd_out_std_append_lit__(cout, "> "));
         ArlOf(char) masked = (ArlOf(char)){0};
         err = readpass_term(&masked, true);
         ok_then(err, lexbor_set_lit_attr__(lxbnode_node(n), "value", masked.items, masked.len));
@@ -337,11 +330,11 @@ Err _cmd_input_ix_set_(CmdParams p[_1_], const size_t ix) {
     try( _get_lexbor_node_ptr_by_ix(htmldoc_inputs(d), ix, &n.n));
 
     if (lexbor_lit_attr_has_lit_value(&n, "type", "text"))
-        return _cmd_input_text_set_(session, &n, ln);
+        return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p));
     else if (lexbor_lit_attr_has_lit_value(&n, "type", "search"))
-        return _cmd_input_text_set_(session, &n, ln); //TODO: implement it properly
+        return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p)); //TODO: implement it properly
     else if (lexbor_lit_attr_has_lit_value(&n, "type", "password"))
-        return _cmd_input_text_set_(session, &n, ln);
+        return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p));
     else if (lexbor_node_tag_is_select(&n)) return _cmd_input_select_set_(session, &n, ln);
 
     return "input set not supported for element";
