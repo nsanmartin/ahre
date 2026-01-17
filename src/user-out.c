@@ -48,43 +48,56 @@ static void _update_if_smaller_(size_t value[_1_], size_t new_value) {
 
 #define EMPTY_SESSION_MSG_ "Session is empty\n\nType '\\?' (slash-question mark) for help.\n"
 #define EMPTY_BUFFER_MSG_ "Buffer is empty\n"
+/*
+ * The "default" session is the onw shown when there is no "screen" as a
+ * result of the user cmd.
+ */
+Err ui_vi_show_session_default(Session* s) {
+    CmdOut* default_out = &(CmdOut){0};
+    Err err             = Ok;
+
+    if (session_is_empty(s)) {
+        try( cmd_out_screen_append_lit__(default_out, EMPTY_SESSION_MSG_));
+        err = session_flush_cmd_out_screen(s, default_out);
+    } else {
+        TextBuf* tb;
+        try( session_current_buf(s, &tb));
+        if (textbuf_is_empty(tb)) {
+            try( cmd_out_msg_append_lit__(default_out, EMPTY_BUFFER_MSG_));
+            err = session_flush_cmd_out_msg(s, default_out);
+        } else {
+
+            size_t line = textbuf_current_line(tb);
+            if (!line) return "error: expecting current line number, not found";
+
+            size_t end = line + *session_nrows(s);
+            end = (end > textbuf_line_count(tb)) ? textbuf_line_count(tb) : end;
+            Range r = (Range){ .beg=line, .end=end };
+
+            err = _vi_print_range_std_mod_(tb, &r, s, default_out);
+            ok_then(err, session_flush_cmd_out_screen(s, default_out));
+        }
+    }
+    cmd_out_clean(default_out);
+    return err;
+
+}
+
 Err ui_vi_show_session(Session* s, CmdOut cout[_1_]) {
     if (!s) return "error: unexpected null session, this should really not happen";
-    if (session_is_empty(s)) {
-        if (cmd_out_is_empty(cout)) {
-            try( cmd_out_screen_append_lit__(cout, EMPTY_SESSION_MSG_));
-            return session_flush_cmd_out_screen(s, cout);
-        } else return session_flush_cmd_out(s, cout);
-    }
-
-
-    TextBuf* tb;
-    try( session_current_buf(s, &tb));
-    if (textbuf_is_empty(tb)) {
-        try( cmd_out_msg_append_lit__(cout, EMPTY_BUFFER_MSG_));
-        return session_flush_cmd_out_msg(s, cout);
-    }
-
-    try( session_flush_cmd_out_msg(s, cout));
-
-    //TODO: instead stdout pass CmdOut
-    try( lit_write__(EscCodeClsScr, stdout));
-    size_t line = textbuf_current_line(tb);
-    if (!line) return "error: expecting current line number, not found";
 
     size_t nrows, ncols;
     try( ui_get_win_size(&nrows, &ncols));
     _update_if_smaller_(session_nrows(s), nrows - 2);
     _update_if_smaller_(session_ncols(s), ncols);
-
     if (nrows <= 3) return "too few rows in window to show session";
-    size_t end = line + *session_nrows(s);
-    end = (end > textbuf_line_count(tb)) ? textbuf_line_count(tb) : end;
-    Range r = (Range){ .beg=line, .end=end };
 
-    try( _vi_print_range_std_mod_(tb, &r, s, cout));
-    try( session_flush_cmd_out_screen(s, cout));
-    return Ok;
+    //TODO: instead stdout pass CmdOut
+    try( lit_write__(EscCodeClsScr, stdout));
+    try( session_flush_cmd_out_msg(s, cout));
+
+    if (len__(cmd_out_screen(cout))) return session_flush_cmd_out_screen(s, cout);
+    return ui_vi_show_session_default(s);
 }
 
 
