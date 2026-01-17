@@ -252,12 +252,14 @@ Err cmd_set_session_ncols(CmdParams p[_1_]);
 Err cmd_set_session_monochrome(CmdParams p[_1_]);
 Err cmd_set_session_js(CmdParams p[_1_]);
 
-
+#define CMD_SESSION_JS \
+    "Enable or disable js engine for session.\n" \
+    "1 enables it, 0 disables it.\n"
 static SessionCmd _cmd_session_set_[] = 
     { {.name="bookmark",     .match=1, .fn=cmd_set_session_bookmark,   .help=NULL}
     , {.name="forms",        .match=1, .fn=cmd_set_session_forms,      .help=NULL}
     , {.name="input",        .match=1, .fn=cmd_set_session_input,      .help=NULL}
-    , {.name="js",           .match=1, .fn=cmd_set_session_js,         .help=NULL}
+    , {.name="js",           .match=1, .fn=cmd_set_session_js,         .help=CMD_SESSION_JS}
     , {.name="monochrome",   .match=1, .fn=cmd_set_session_monochrome, .help=NULL}
     , {.name="ncols",        .match=1, .fn=cmd_set_session_ncols,      .help=NULL}
     , {.name="winsz",        .match=1, .fn=cmd_set_session_winsz,      .help=NULL}
@@ -498,15 +500,6 @@ static Err cmd_help(CmdParams p[_1_]) {
 
 /* commands section end */
 /************************/
-
-
-/* Err read_line_from_user(Session session[_1_]) { */
-/*     char* line = 0x0; */
-/*     try( session_uinput(session)->read(session, NULL, &line)); */
-/*     Err err = process_line(session, line); */
-/*     std_free(line); */
-/*     return err; */
-/* } */
 
 
 Err process_line(Session session[_1_], const char* line, CmdOut cout[_1_]) {
