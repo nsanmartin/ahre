@@ -322,7 +322,7 @@ static Err cmd_doc_scripts_show(CmdParams p[_1_]) {
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
     Writer w;
-    try(msg_writer_init(&w, cmd_out_msg(cmd_params_cmd_out(p))));
+    try(str_writer_init(&w, cmd_out_screen(cmd_params_cmd_out(p))));
     return htmldoc_scripts_write(h, &p->rp, &w);
 }
 
