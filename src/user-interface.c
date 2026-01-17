@@ -318,19 +318,20 @@ Failure:
     return e;
 }
 
-static Err cmd_doc_scripts_show(CmdParams p[_1_]) {
+static Err cmd_doc_scripts_msg(CmdParams p[_1_]) {
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
     Writer w;
-    try(str_writer_init(&w, cmd_out_screen(cmd_params_cmd_out(p))));
+    try(msg_writer_init(&w, cmd_out_msg(cmd_params_cmd_out(p))));
     return htmldoc_scripts_write(h, &p->rp, &w);
 }
 
 /* doc scripts commands */
 static SessionCmd _cmd_doc_scripts_[] =
-    { {.name="",   .fn=cmd_doc_scripts_list, .help=NULL, .flags=CMD_EMPTY}
-    , {.name=">",  .fn=cmd_doc_scripts_save, .help=NULL, .flags=CMD_CHAR}
-    , {.name="\"", .fn=cmd_doc_scripts_show, .help=NULL, .flags=CMD_CHAR}
+    { {.name="",   .fn=cmd_doc_scripts_msg, .help=NULL, .flags=CMD_EMPTY}
+    , {.name="w",  .fn=cmd_doc_scripts_save, .help=NULL, .flags=CMD_CHAR}
+    , {.name="'",  .fn=cmd_doc_scripts_list, .help=NULL, .flags=CMD_CHAR}
+    , {.name="\"", .fn=cmd_doc_scripts_msg, .help=NULL, .flags=CMD_CHAR}
     , {0}
 };
 
@@ -349,8 +350,10 @@ Err cmd_curl(CmdParams p[_1_]) { return run_cmd__(p, _cmd_curl_); }
 
 /* doc commands */
 
-#define CMD_DOC_SCRIPTS_DOC "Doc's scripts cmd (only if js is enabled)"
-static inline Err cmd_doc_scripts_cmd(CmdParams p[_1_]) {
+#define CMD_SCRIPTS \
+    "Doc's scripts cmd (only if js is enabled)\n" \
+    "It accepts range (like in $%p), but is range of the scripts in the document, no lines.\n"
+static inline Err cmd_scripts(CmdParams p[_1_]) {
     return run_cmd_on_range__(p, _cmd_doc_scripts_, 10);
 }
 
@@ -361,7 +364,6 @@ static inline Err cmd_doc_fetch(CmdParams p[_1_]) { return cmd_fetch(p->s, cmd_p
 
 static SessionCmd _cmd_doc_[] =
     { {.name="",        .fn=cmd_doc_info,              .help=CMD_DOC_INFO_DOC,     .flags=CMD_EMPTY}
-    , {.name="$",       .fn=cmd_doc_scripts_cmd,           .help=CMD_DOC_SCRIPTS_DOC,  .flags=CMD_CHAR}
     , {.name="+",       .fn=cmd_doc_bookmark_add,      .help=CMD_DOC_BOOKMARK_ADD, .flags=CMD_CHAR}
     , {.name="A",       .fn=cmd_doc_A,                 .help=NULL,                 .flags=CMD_CHAR}
     , {.name="\"",      .fn=cmd_doc_info,              .help=CMD_DOC_INFO_DOC,     .flags=CMD_CHAR}
@@ -487,16 +489,17 @@ static SessionCmd _session_cmd_[] =
     , [ 5]={.name="post",          .fn=cmd_post,        .help=CMD_POST_DOC,                                                        .match=1 }
     , [ 6]={.name="quit",          .fn=cmd_quit,        .help=CMD_QUIT_DOC,      .flags=CMD_NO_PARAMS,                             .match=1 }
     , [ 7]={.name="set",           .fn=cmd_session_set, .help=SESSION_SET_DOC,                         .subcmds=_cmd_session_set_, .match=1 }
-    , [ 8]={.name="|",             .fn=cmd_tabs,        .help=CMD_TABS_DOC,      .flags=CMD_CHAR,      .subcmds=_cmd_tabs_                  }
-    , [ 9]={.name=".",             .fn=cmd_doc,         .help=CMD_DOC_DOC,       .flags=CMD_CHAR,      .subcmds=_cmd_doc_                   }
-    , [10]={.name=":",             .fn=cmd_textbuf,     .help=NULL,              .flags=CMD_CHAR,      .subcmds=_cmd_textbuf_               }
-    , [11]={.name="<",             .fn=cmd_sourcebuf,   .help=NULL,              .flags=CMD_CHAR,      .subcmds=_cmd_textbuf_               }
-    , [12]={.name=FORM_OPEN_STR,   .fn=cmd_form_print,  .help=NULL,              .flags=CMD_CHAR                                            }
-    , [13]={.name=ANCHOR_OPEN_STR, .fn=cmd_anchor,      .help=CMD_ANCHOR_DOC,    .flags=CMD_CHAR,      .subcmds=_cmd_anchor_                }
-    , [14]={.name=INPUT_OPEN_STR,  .fn=cmd_input,       .help=CMD_INPUT_DOC,     .flags=CMD_CHAR,      .subcmds=_cmd_input_                 }
-    , [15]={.name=IMAGE_OPEN_STR,  .fn=cmd_image,       .help=CMD_IMAGE_DOC,     .flags=CMD_CHAR,      .subcmds=_cmd_image_                 }
-    , [16]={.name="z",             .fn=cmd_shortcut_z,  .help=CMD_SHORTCUT_Z,    .flags=CMD_CHAR                                            }
-    , [17]={0}
+    , [ 8]={.name="$",             .fn=cmd_scripts,     .help=CMD_SCRIPTS,       .flags=CMD_CHAR                                            }
+    , [ 9]={.name="|",             .fn=cmd_tabs,        .help=CMD_TABS_DOC,      .flags=CMD_CHAR,      .subcmds=_cmd_tabs_                  }
+    , [10]={.name=".",             .fn=cmd_doc,         .help=CMD_DOC_DOC,       .flags=CMD_CHAR,      .subcmds=_cmd_doc_                   }
+    , [11]={.name=":",             .fn=cmd_textbuf,     .help=NULL,              .flags=CMD_CHAR,      .subcmds=_cmd_textbuf_               }
+    , [12]={.name="<",             .fn=cmd_sourcebuf,   .help=NULL,              .flags=CMD_CHAR,      .subcmds=_cmd_textbuf_               }
+    , [13]={.name=FORM_OPEN_STR,   .fn=cmd_form_print,  .help=NULL,              .flags=CMD_CHAR                                            }
+    , [14]={.name=ANCHOR_OPEN_STR, .fn=cmd_anchor,      .help=CMD_ANCHOR_DOC,    .flags=CMD_CHAR,      .subcmds=_cmd_anchor_                }
+    , [15]={.name=INPUT_OPEN_STR,  .fn=cmd_input,       .help=CMD_INPUT_DOC,     .flags=CMD_CHAR,      .subcmds=_cmd_input_                 }
+    , [16]={.name=IMAGE_OPEN_STR,  .fn=cmd_image,       .help=CMD_IMAGE_DOC,     .flags=CMD_CHAR,      .subcmds=_cmd_image_                 }
+    , [17]={.name="z",             .fn=cmd_shortcut_z,  .help=CMD_SHORTCUT_Z,    .flags=CMD_CHAR                                            }
+    , [18]={0}
     };
 
 static Err cmd_help(CmdParams p[_1_]) {

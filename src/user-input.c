@@ -6,28 +6,31 @@
 
 typedef enum {
     keycmd_null                = 0x0,
+    keycmd_dolar_sign          = '$',
     keycmd_left_parenthesis    = '(',
     keycmd_dot                 = '.',
     keycmd_colon               = ':',
     keycmd_lt                  = '<',
+    keycmd_eq                  = '=',
     keycmd_left_square_bracket = '[',
     keycmd_left_curly_bracket  = '{',
-    keycmd_pipe                =  '|',
+    keycmd_pipe                = '|',
     keycmd_inverted_bar        = '\\',
     keycmd_scroll_up,
     keycmd_scroll_down
 } KeyCmd;
 
 bool _is_cmd_char_(char c) {
-    return c == ':'
-        || c == '.'
-        || c == '|'
-        || c == '['
-        || c == '{'
-        || c == '('
-        || c == '<'
-        || c == '='
-        || c == '\\'
+    return c == keycmd_dolar_sign
+        || c == keycmd_left_parenthesis
+        || c == keycmd_dot
+        || c == keycmd_colon
+        || c == keycmd_lt
+        || c == keycmd_eq
+        || c == keycmd_left_square_bracket
+        || c == keycmd_left_curly_bracket
+        || c == keycmd_pipe
+        || c == keycmd_inverted_bar
         ;
 }
 
@@ -73,16 +76,10 @@ Err _ui_vi_read_vi_mode_keys_(Session s[_1_], KeyCmd cmd[_1_]) {
             case KeySpace: _ui_keystroke_ctrl_f_(s); *cmd = keycmd_scroll_up; break; 
             case KeyBackSpace:
             case KeyCtrl_B: _ui_keystroke_ctrl_b_(s); *cmd = keycmd_scroll_down; break; 
-            case ':':
-            case '.':
-            case '|':
-            case '[':
-            case '{':
-            case '(':
-            case '<':
-            case '=':
-            case '\\': *cmd = (KeyCmd)c; break;
-            default: continue;
+            default:
+                if (_is_cmd_char_(c)) {
+                    *cmd = (KeyCmd)c; break;
+                } else continue;
         }
     }
     return Ok;

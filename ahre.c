@@ -59,6 +59,7 @@ static Err run_cmds(Session s[_1_], UserLine userln[_1_]) {
     if (errors.len) cmd_out_msg_append(cout, errors.items, errors.len);
 Clean_Errors:
     str_clean(&errors);
+    cmd_out_clean(cout);
     return err;
 }
 
