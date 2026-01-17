@@ -26,7 +26,7 @@
 [ ] [ui] implement def (or some other keyword) to define procedures
 [ ] [ui] implement ranges for doc's cache's elements. Vg: [1,4' means show anchors 1 to 4
 [ ] [ui] implement vi_process_line method that does not print (vi mode only prints on show)
-[ ] [ui] implement '> filename' as universal save command
+[ ] [ui] implement '> filename' as universal save command (using CmdOut)
 [ ] [ui] when saving images to directory path act as like anchors (generating the url).
 [ ] [ui] manage .+SECTION when SECTION is substring of SECTION'
 [ ] [bug] jump to content should only jump to content, not open a new doc
