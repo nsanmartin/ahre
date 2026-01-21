@@ -10,7 +10,8 @@ AHRE_CFLAGS=$(CFLAGS) -g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-de
 			-Wshadow \
 			-Wformat \
 			-Wcast-align \
-			-Wnull-dereference 
+			-Wnull-dereference \
+			-Winit-self
 			#-Wconversion
 AHRE_INCLUDE=-I. -I$(REPO_DIR)/hotl/include -I$(REPO_DIR)/isocline/include -I$(QUICKJS_INCLUDE)
 
@@ -22,6 +23,7 @@ AHRE_SRCDIR=$(REPO_DIR)/src
 AHRE_HEADERS=$(wildcard $(=$(REPO_DIR))/src/*.h)
 AHRE_SRCS=$(wildcard $(AHRE_SRCDIR)/*.c)
 AHRE_OBJ=$(AHRE_SRCS:$(AHRE_SRCDIR)/%.c=$(AHRE_OBJDIR)/%.o)
+AHRE_PREPROCESSED=$(AHRE_SRCS:$(AHRE_SRCDIR)/%.c=$(AHRE_OBJDIR)/__pre__%.c)
 
 all: $(AHRE_BUILD)/ahre
 
@@ -45,3 +47,11 @@ $(AHRE_BUILD)/isocline.o:
 
 $(QUICKJS_LIB):
 	$(MAKE) -C $(QUICKJS_REPO)
+
+
+$(AHRE_OBJDIR)/__pre__%.c: $(AHRE_SRCDIR)/%.c
+	$(CC) $(AHRE_INCLUDE) -E -o $@ $<
+
+
+preprocessed: $(AHRE_PREPROCESSED)
+	$(CC) $(AHRE_INCLUDE) -E -o $(AHRE_BUILD)/ahre__pre__.c $(REPO_DIR)/ahre.c
