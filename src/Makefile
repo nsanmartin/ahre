@@ -5,6 +5,7 @@ QUICKJS_BUILD=$(QUICKJS_REPO)/build
 QUICKJS_LIB=$(QUICKJS_BUILD)/libqjs.a
 
 AHRE_CFLAGS=$(CFLAGS) -g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition \
+			-Wmissing-prototypes \
 			-Wunused-result \
 			-Wuninitialized \
 			-Wshadow \

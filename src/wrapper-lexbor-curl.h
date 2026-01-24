@@ -1,15 +1,14 @@
 #ifndef __LXB_CURL_AHRE_H__
 #define __LXB_CURL_AHRE_H__
 
-#include "htmldoc.h"
-#include "wrapper-curl.h"
 #include "wrapper-lexbor.h"
+#include "wrapper-curl.h"
 
-Err lexcurl_dup_curl_from_node_and_attr(
-    lxb_dom_node_t* node, const char* attr, size_t attr_len, CURLU* u[_1_]
-);
+Err curl_set_url(UrlClient url_client[_1_], Url url[_1_]);
 
-Err request_to_file(Request r[_1_], UrlClient url_client[_1_], const char* fname);
+static inline CURLoption curlopt_method_from_http_method(HttpMethod m) {
+    return m == http_post ? CURLOPT_POST : CURLOPT_HTTPGET ;
+}
 
-Err curl_set_method_from_http_method(UrlClient url_client[_1_], HttpMethod m);
-#endif
+
+#endif 

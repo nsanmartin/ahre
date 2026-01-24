@@ -1,6 +1,10 @@
 #ifndef __AHRE_RE_H__
 #define __AHRE_RE_H__
 
+#include <regex.h>
+#include "error.h"
+#include "utils.h"
+
 #ifndef AHRE_REGEX_DISABLED
 
 Err regex_search_next(const char* pattern, const char* string, size_t* off) ;

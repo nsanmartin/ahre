@@ -5,6 +5,8 @@
 #include "wrapper-lexbor.h"
 #include "wrapper-lexbor-curl.h"
 
+typedef struct Session Session;
+
 struct ArlOf(TabNode);
 typedef struct ArlOf(TabNode) ArlOf(TabNode);
 
@@ -133,5 +135,14 @@ tab_node_find_node(TabNode tn[_1_], const char* line, TabNode* out[_1_]) {
     if (!*line || *line != '.') return "invalid tab path (full path must en with dot)";
     return tab_node_find_node(tn, line + 1, out);
 }
+
+Err tab_node_init_move_request(
+    TabNode     n[_1_],
+    TabNode*    parent,
+    UrlClient   url_client[_1_],
+    Request     r[_1_],
+    Session*     s,
+    CmdOut*     out
+);
 
 #endif

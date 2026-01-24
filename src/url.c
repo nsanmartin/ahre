@@ -25,7 +25,7 @@ Err curl_url_to_filename_append(CURLU* cu, Str out[_1_]) {
     return err;
 }
 
-Err _append_fopen(const char* dirname, CURLU* cu, FILE* fp[_1_]) {
+static Err _append_fopen(const char* dirname, CURLU* cu, FILE* fp[_1_]) {
 /*
  * Append cu modified to dirname and open it in write mode.
  */
@@ -150,7 +150,7 @@ Clean_Url:
 }
 
 #define FILE_SCHEMA "file://"
-Err _prepend_file_schema_if_file_exists_(Str url[_1_], Str out[_1_]) {
+static Err _prepend_file_schema_if_file_exists_(Str url[_1_], Str out[_1_]) {
     if (!len__(url)) return Ok;
     try(str_append_lit__(out, FILE_SCHEMA));
 
@@ -223,12 +223,149 @@ Failure_Clean_File_Url:
 }
 
 
-Err url_from_request(Request r[_1_], UrlClient uc[_1_]) {
+Err url_from_request(Request r[_1_], UrlClient* uc) {
     switch (r->method) {
-        case http_post: return _url_from_post_request_(r, uc);
+        case http_post:
+            if (!uc) return "error: expetincg an UrlClient, got NULL";
+            return _url_from_post_request_(r, uc);
         case http_get: return url_from_get_request(r);
         default: return "error: could not initialize htmldoc, unsupported http method";
     }
+}
+
+static Err
+_make_submit_get_request_rec_( lxb_dom_node_t* node, Request r[_1_]) {
+    if (!node) return Ok;
+    else if (node->local_name == LXB_TAG_INPUT
+            && !lexbor_lit_attr_has_lit_value(node, "type", "submit")) {
+
+        const lxb_char_t* value;
+        size_t valuelen;
+        if (!lexbor_find_lit_attr_value__(node, "value", &value, &valuelen))
+            return Ok;
+
+        const lxb_char_t* name;
+        size_t namelen;
+        if (!lexbor_find_lit_attr_value__(node, "name", &name, &namelen))
+            return Ok;
+
+        if (strcasecmp("password", (char*)name) == 0)
+            return "warn: passwords not allowed in get requests";
+
+        try(request_query_append_key_value(r, (char*)name, namelen, (char*)value, valuelen));
+    } 
+
+    for(lxb_dom_node_t* it = node->first_child; ; it = it->next) {
+        try( _make_submit_get_request_rec_(it, r));
+        if (it == node->last_child) { break; }
+    }
+    return Ok;
+}
+
+
+static Err _request_append_select_(lxb_dom_node_t node[_1_], Request r[_1_]) {
+    StrView key = lexbor_get_lit_attr__(node, "name");
+    if (!key.len) return Ok;
+
+    lxb_dom_node_t* selected = NULL;
+    for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
+        if (it->local_name == LXB_TAG_OPTION && lexbor_has_lit_attr__(it, "selected")) {
+            selected = it;
+        }
+    }
+    if (selected) {
+        StrView value = lexbor_get_lit_attr__(selected, "value");
+        if (value.len) {
+            try(request_query_append_key_value(r, key.items, key.len, value.items, value.len));
+        }
+    }
+    return Ok;
+}
+
+static Err _request_append_lexbor_name_value_attrs_if_both_(
+    lxb_dom_node_t node[_1_],
+    bool is_https,
+    Request r[_1_]
+) {
+    const lxb_char_t* value;
+    size_t valuelen;
+    if (!lexbor_find_lit_attr_value__(node, "value", &value, &valuelen))
+        return Ok;
+
+    const lxb_char_t* name;
+    size_t namelen;
+    if (!lexbor_find_lit_attr_value__(node, "name", &name, &namelen))
+        return Ok;
+    if (strcasecmp("password", (char*)name) == 0 && !is_https)
+        return "warn: passwords allowed only under https";
+
+    return request_query_append_key_value(r, (char*)name, namelen, (char*)value, valuelen);
+}
+
+
+static Err _make_submit_post_request_rec(
+    lxb_dom_node_t* node,
+    bool is_https,
+    Request r[_1_]
+) {
+    if (!node) return Ok;
+    if (node->local_name == LXB_TAG_FORM) {
+       /* ignoring form nested inside another form */
+       //TODO: receive a msg callback to notify user
+       return Ok;
+    }
+
+    if (node->local_name == LXB_TAG_INPUT 
+        && !lexbor_lit_attr_has_lit_value(node, "type", "submit"))
+        return _request_append_lexbor_name_value_attrs_if_both_(node, is_https, r);
+    else if (node->local_name == LXB_TAG_SELECT) {
+        return _request_append_select_(node, r);
+    }
+
+    /* recursive case */
+    for(lxb_dom_node_t* it = node->first_child; it ; it = it->next)
+        try( _make_submit_post_request_rec(it, is_https, r));
+    return Ok;
+}
+
+
+
+static Err
+_mk_submit_post_request_(lxb_dom_node_t* form, bool is_https, Request r[_1_]) { 
+
+    for(lxb_dom_node_t* it = form->first_child; it ; it = it->next) {
+        try(_make_submit_post_request_rec(it, is_https, r));
+        if (it == form->last_child) break;
+    }
+
+    return Ok;
+}
+
+
+/* external linkage */
+
+Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request r[_1_]) {
+    const lxb_char_t* action;
+    size_t action_len;
+    lexbor_find_lit_attr_value__(form, "action", &action, &action_len);
+
+    const lxb_char_t* method;
+    size_t method_len;
+    lexbor_find_lit_attr_value__(form, "method", &method, &method_len);
+
+    if (action && action_len) 
+        try(str_append_z(request_urlstr(r), (char*)action, action_len));
+
+
+    if (!method_len || lexbor_str_eq("get", method, method_len)) {
+        r->method = http_get;
+        return _make_submit_get_request_rec_(form, r);
+    }
+    if (method_len && lexbor_str_eq("post", method, method_len)) {
+        r->method = http_post;
+        return _mk_submit_post_request_(form, is_https, r);
+    }
+    return "not yet supported method";
 }
 
 
@@ -259,5 +396,30 @@ Err get_url_alias(Session* s, const char* cstr, BufOf(char)* out) {
         return resolve_bookmarks_file(items__(session_bookmarks_fname(s)), out);
     }
     return err_fmt("not a url alias: %s", cstr);
+}
+
+Err request_to_file(Request r[_1_], UrlClient url_client[_1_], const char* fname) {
+    /* try( url_client_set_basic_options(url_client)); */
+    try( url_client_reset(url_client));/* why is this needed here while the htmldoc fetch does not? */
+    try( curl_set_method_from_http_method(url_client, request_method(r)));
+    try( curl_set_url(url_client, request_url(r)));
+
+    CURLU* curlu = url_cu(request_url(r));
+    FILE* fp;
+    try(fopen_or_append_fopen(fname, curlu, &fp));
+    if (!fp) return err_fmt("error opening file '%s': %s\n", fname, strerror(errno));
+    if (
+       curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, fwrite)
+    || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, fp)
+    ) return "error configuring curl write fn/data";
+
+    CURLcode curl_code = curl_easy_perform(url_client->curl);
+
+    /* curl_easy_reset(url_client->curl); */
+    if (curl_code!=CURLE_OK) 
+        return err_fmt("curl failed to perform curl: %s", curl_easy_strerror(curl_code));
+    /* try( url_client_reset(url_client)); */
+    fclose(fp);
+    return Ok;
 }
 

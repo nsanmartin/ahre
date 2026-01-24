@@ -1,14 +1,14 @@
+#include "htmldoc.h"
 #include "draw.h" 
 #include "bookmark.h"
-#include "cmd.h"
+//.#include "cmd.h"
 #include "session.h"
 
 /* internal linkage */
 
 
 #define _htmldoc_fetch_bookmark_ htmldoc_fetch /* bookmark does not have js so it's simpler */
-static Err
-_get_bookmarks_doc_(
+Err get_bookmarks_doc(
     UrlClient   url_client[_1_],
     StrView     bm_path,
     CmdOut      cmd_out[_1_],
@@ -52,29 +52,6 @@ Err bookmark_sections_body(HtmlDoc bookmark[_1_], lxb_dom_node_t* out[_1_]) {
 }
 
 
-Err draw_bookmark_rec(lxb_dom_node_t* node) {
-    if (node) {
-        switch(node->type) {
-            //case LXB_DOM_NODE_TYPE_ELEMENT: return draw_rec_tag(node);
-            //case LXB_DOM_NODE_TYPE_TEXT: return draw_text(node);
-            //TODO: do not ignore these types?
-            case LXB_DOM_NODE_TYPE_DOCUMENT: 
-            case LXB_DOM_NODE_TYPE_DOCUMENT_TYPE: 
-            case LXB_DOM_NODE_TYPE_COMMENT:
-                //return draw_list(node->first_child, node->last_child, NULL);
-                puts("g"); return Ok;
-            default: {
-                 //TODO: log this or do anythong else?
-                //if (node->type >= LXB_DOM_NODE_TYPE_LAST_ENTRY)
-                //    log_warn__("lexbor node type greater than last entry: %lx\n", node->type);
-                //else log_warn__("Ignored Node Type: %s\n", _dbg_node_types_[node->type]);
-                return Ok;
-            }
-        }
-    }
-    return Ok;
-}
-
 Err cmd_bookmarks(CmdParams p[_1_]) {
     Session* session = p->s;
     const char* url = p->ln;
@@ -109,65 +86,3 @@ Err cmd_bookmarks(CmdParams p[_1_]) {
     return err;
 }
 
-Err bookmark_add_to_section(
-    Session s[_1_], const char* line, UrlClient url_client[_1_], CmdOut cmd_out[_1_]
-) {
-    HtmlDoc* d;
-    try( session_current_doc(s, &d));
-
-    line = cstr_skip_space(line);
-    bool create_section_if_not_found = true;
-    if (*line == '/') {
-        ++line;
-        create_section_if_not_found = false;
-        line = cstr_skip_space(line);
-    }
-    if (!*line) return "not a valid bookmark section";
-    Err err = Ok; 
-    
-    HtmlDoc bm;
-    Str bm_path = (Str){0};
-    try(resolve_bookmarks_file(items__(session_bookmarks_fname(s)), &bm_path));
-    /* Writer w; */
-    /* try_or_jump(err, Fail_Clean_Bm, session_msg_writer_init(&w, s)); */
-    try_or_jump(err, Fail_Clean_Bm,
-            _get_bookmarks_doc_(url_client, strview__(&bm_path), cmd_out,  &bm));
-
-    char* url;
-    if ((err = url_cstr_malloc(htmldoc_url(d), &url))) goto Clean_Bm_Path_And_BmDoc;
-
-    lxb_dom_node_t* body;
-    if ((err = bookmark_sections_body(&bm, &body))) goto Free_Curl_Url;
-
-    Str* title = &(Str){0};
-    if ((err = lxb_mk_title_or_url(d, url, title))) goto Free_Curl_Url;
-
-    lxb_dom_element_t* bm_entry;
-    if ((err = bookmark_mk_entry(bm.lxbdoc, url, title, &bm_entry))) goto Clean_Title;
-
-    lxb_dom_node_t* section_ul;
-    if ((err = bookmark_section_ul_get(body, line, &section_ul))) goto Clean_Title;
-    //TODO: wrap this
-    if (section_ul) {
-        lxb_dom_node_insert_child(
-                lxb_dom_interface_node(section_ul), lxb_dom_interface_node(bm_entry)
-            );
-    } else if(create_section_if_not_found) {
-        err = bookmark_section_insert(&(bm.lxbdoc->dom_document), body, line, bm_entry);
-    } else err = "section not found in bookmarks file";
-
-    ok_then(err, bookmarks_save_to_disc(&bm, strview__(&bm_path)));
-    ok_then(err, cmd_out_msg_append_lit__(cmd_out, "bookmark added\n"));
-
-Clean_Title:
-    str_clean(title);
-Free_Curl_Url:
-    curl_free(url);
-Clean_Bm_Path_And_BmDoc:
-    htmldoc_cleanup(&bm);
-    str_clean(&bm_path);
-    return err;
-Fail_Clean_Bm:
-    str_clean(&bm_path);
-    return err;
-}

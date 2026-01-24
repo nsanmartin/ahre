@@ -16,7 +16,7 @@ static size_t _compute_required_newlines_in_line_(size_t linelen, size_t maxlen)
         return (linelen / maxlen) + (bool) (linelen % maxlen != 0);
 }
 
-size_t _compute_required_newlines_(TextBuf tb[_1_], size_t maxlen) {
+static size_t _compute_required_newlines_(TextBuf tb[_1_], size_t maxlen) {
     size_t res = 0;
     size_t n = 1;
     StrView line;
@@ -263,7 +263,7 @@ bool textbuf_get_line(TextBuf tb[_1_], size_t n, StrView out[_1_]) {
     return false;
 }
 
-Err _regex_search_pattern_in_buf_(
+static Err _regex_search_pattern_in_buf_(
     StrView pattern[_1_], const char* buf, size_t match_offset[_1_]
 ) {
     const char* lastptr = items__(pattern) + len__(pattern) - 1;
@@ -279,19 +279,19 @@ Err _regex_search_pattern_in_buf_(
     return Ok;
 }
 
-Err _textbuf_regex_search_linenum(
-    TextBuf tb[_1_],
-    StrView pattern[_1_],
-    size_t  outln[_1_],
-    size_t  match_offset[_1_]
-) {
-    size_t current_offset = *textbuf_current_offset(tb);
-    const char* buf = textbuf_items(tb) + current_offset;
-    try( _regex_search_pattern_in_buf_(pattern, buf, match_offset));
-    return textbuf_get_line_of_offset(tb, *match_offset, outln);
-}
+/* static Err  textbuf_regex_search_linenum( */
+/*     TextBuf tb[_1_], */
+/*     StrView pattern[_1_], */
+/*     size_t  outln[_1_], */
+/*     size_t  match_offset[_1_] */
+/* ) { */
+/*     size_t current_offset = *textbuf_current_offset(tb); */
+/*     const char* buf = textbuf_items(tb) + current_offset; */
+/*     try( _regex_search_pattern_in_buf_(pattern, buf, match_offset)); */
+/*     return textbuf_get_line_of_offset(tb, *match_offset, outln); */
+/* } */
 
-Err _textbuf_range_parse_to_range_(
+static Err _textbuf_range_parse_to_range_(
     TextBuf          tb[_1_],
     RangeParse parse[_1_],
     Range            range_out[_1_],

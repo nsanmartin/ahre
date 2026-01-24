@@ -7,7 +7,7 @@ Err tab_node_init_move_request(
     TabNode*    parent,
     UrlClient   url_client[_1_],
     Request     r[_1_],
-    Session     s[_1_],
+    Session*     s,
     CmdOut*     out
 ) {
     try(_tab_node_init_base_(n, parent));
@@ -117,13 +117,13 @@ void tab_node_cleanup(TabNode n[_1_]) {
     std_free(n->childs);
 }
 
-void _set_parent_to_all_(TabNode parent[_1_], ArlOf(TabNode) childs[_1_]) {
+static void _set_parent_to_all_(TabNode parent[_1_], ArlOf(TabNode) childs[_1_]) {
     for (TabNode* it = arlfn(TabNode,begin)(childs); it != arlfn(TabNode,end)(childs); ++it) {
         it->parent = parent;
     }
 }
 
-void _fix_childs_parents_(ArlOf(TabNode)* list) {
+static void _fix_childs_parents_(ArlOf(TabNode)* list) {
     for (TabNode* it = arlfn(TabNode,begin)(list); it != arlfn(TabNode,end)(list); ++it) {
         _set_parent_to_all_(it, tab_node_childs(it));
     }

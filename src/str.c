@@ -28,20 +28,20 @@ size_t mem_count_ocurrencies(char* data, size_t len, char c) {
 }
 
 
-Err mem_get_indexes(char* data, size_t len, size_t offset, char c, ArlOf(size_t)* indexes) {
-    char* end = data + len;
-    char* it = data;
+/* static Err mem_get_indexes(char* data, size_t len, size_t offset, char c, ArlOf(size_t)* indexes) { */
+/*     char* end = data + len; */
+/*     char* it = data; */
 
-    for(; it < end;) {
-        it = memchr(it, c, end-it);
-        if (!it || it >= end) { break; }
-        size_t off = offset + (it - data);
-        if(NULL == arlfn(size_t, append)(indexes, &off)) { return "arlfn append failed"; }
-        ++it;
-    }
+/*     for(; it < end;) { */
+/*         it = memchr(it, c, end-it); */
+/*         if (!it || it >= end) { break; } */
+/*         size_t off = offset + (it - data); */
+/*         if(NULL == arlfn(size_t, append)(indexes, &off)) { return "arlfn append failed"; } */
+/*         ++it; */
+/*     } */
 
-    return Ok;
-}
+/*     return Ok; */
+/* } */
 
 
 const char* cstr_skip_space(const char* s) {
@@ -227,7 +227,7 @@ Err str_append_datetime_now(Str out[_1_]) {
     return str_append_timespec(out, &ts);
 }
 
-Err expand_path(const char *path, Str out[_1_]) {
+static Err expand_path(const char *path, Str out[_1_]) {
     wordexp_t result = {0};
 
     switch (wordexp (path, &result, WRDE_NOCMD | WRDE_UNDEF)) {

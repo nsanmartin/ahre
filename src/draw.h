@@ -12,15 +12,6 @@
 #define T EscCode
 #include <arl.h>
 
-static size_t _strview_trim_left_count_newlines_(StrView s[_1_]) {
-    size_t newlines = 0;
-    while(s->len && isspace(*(items__(s)))) {
-        newlines += *(items__(s)) == '\n';
-        ++s->items;
-        --s->len;
-    }
-    return newlines;
-}
 
 static size_t _strview_trim_right_count_newlines_(StrView s[_1_]) {
     size_t newlines = 0;
@@ -48,12 +39,6 @@ static inline void draw_subctx_clean(DrawSubCtx subctx[_1_]) {
     arlfn(ModAt, clean)(&subctx->mods);
 }
 
-static inline void draw_subctx_trim_left(DrawSubCtx sub[_1_]) {
-    StrView content = strview_from_mem(sub->buf.items, sub->buf.len);
-    sub->left_newlines = _strview_trim_left_count_newlines_(&content);
-    sub->left_trim = sub->buf.len-content.len;
-    textmod_trim_left(&sub->mods, sub->left_trim);
-}
 
 static inline void draw_subctx_trim_right(DrawSubCtx sub[_1_]) {
     StrView content = strview_from_mem(sub->buf.items, sub->buf.len);

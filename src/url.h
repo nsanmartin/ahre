@@ -11,6 +11,8 @@
 #include "error.h"
 #include "url-client.h"
 
+//TODO: include only in one place
+#include <lexbor/html/html.h>
 
 typedef struct Session Session;
 
@@ -60,6 +62,7 @@ static inline void request_clean(Request r[_1_]) {
 }
 
 Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method);
+Err request_to_file(Request r[_1_], UrlClient url_client[_1_], const char* fname);
 
 static inline Err request_query_append_key_value(
     Request r[_1_], const char*k, size_t klen, const char* v, size_t vlen
@@ -75,7 +78,7 @@ static inline Err request_query_append_key_value(
 }
 
 Err url_from_get_request(Request r[_1_]);
-Err url_from_request(Request r[_1_], UrlClient uc[_1_]);
+Err url_from_request(Request r[_1_], UrlClient* uc);
 
 
 static inline Err
@@ -155,4 +158,5 @@ static inline Err curlu_scheme_is_https(CURLU* cu, bool out[_1_]) {
     return Ok;
 }
 
+Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request r[_1_]);
 #endif

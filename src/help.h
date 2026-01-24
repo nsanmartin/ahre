@@ -14,7 +14,7 @@ const char* _options_ =
 "\n\n"
 "Use '?' from within ahre to get the documentation of ahre commands\n"
 ;
-void print_help(const char* prog) {
+static inline void print_help(const char* prog) {
     printf(
         "usage: %s [options] [url ...]\n\n"
         "       visit url(s) (using get method). If an error occur, program will exit.\n"

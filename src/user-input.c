@@ -20,7 +20,7 @@ typedef enum {
     keycmd_scroll_down
 } KeyCmd;
 
-bool _is_cmd_char_(char c) {
+static bool _is_cmd_char_(char c) {
     return c == keycmd_dolar_sign
         || c == keycmd_left_parenthesis
         || c == keycmd_dot
@@ -34,14 +34,14 @@ bool _is_cmd_char_(char c) {
         ;
 }
 
-Err _ui_keystroke_ctrl_gg_(Session s[_1_]) {
-    TextBuf* tb;
-    try( session_current_buf(s, &tb));
-    *textbuf_current_offset(tb) = 0;
-    return Ok;
-}
+/* static Err _ui_keystroke_ctrl_gg_(Session s[_1_]) { */
+/*     TextBuf* tb; */
+/*     try( session_current_buf(s, &tb)); */
+/*     *textbuf_current_offset(tb) = 0; */
+/*     return Ok; */
+/* } */
 
-Err _ui_keystroke_ctrl_f_(Session s[_1_]) {
+static Err _ui_keystroke_ctrl_f_(Session s[_1_]) {
     TextBuf* tb;
     try( session_current_buf(s, &tb));
     size_t line = textbuf_current_line(tb) + *session_nrows(s);
@@ -53,7 +53,7 @@ Err _ui_keystroke_ctrl_f_(Session s[_1_]) {
     return Ok;
 }
 
-Err _ui_keystroke_ctrl_b_(Session s[_1_]) {
+static Err _ui_keystroke_ctrl_b_(Session s[_1_]) {
     TextBuf* tb;
     try( session_current_buf(s, &tb));
     size_t line = textbuf_current_line(tb);
@@ -65,7 +65,7 @@ Err _ui_keystroke_ctrl_b_(Session s[_1_]) {
 }
 
 
-Err _ui_vi_read_vi_mode_keys_(Session s[_1_], KeyCmd cmd[_1_]) {
+static Err _ui_vi_read_vi_mode_keys_(Session s[_1_], KeyCmd cmd[_1_]) {
     while (!*cmd) {
         int c = fgetc(stdin);
         switch(c) {

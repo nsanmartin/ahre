@@ -8,6 +8,7 @@
 #include "writer.h"
 #include "wrapper-curl.h"
 #include "cmd-out.h"
+#include "cmd-params.h"
 
 typedef struct CmdOut CmdOut;
 
@@ -81,4 +82,17 @@ Err url_client_multi_add_handles(
     ArlOf(CurlUPtr)* curlus,
     CmdOut           cmd_out[_1_]
 );
+
+Err cmd_curl_set(CmdParams p[_1_]);
+Err curl_set_method_from_http_method(UrlClient url_client[_1_], HttpMethod m);
+
+Err w_curl_multi_add(
+    UrlClient       uc[_1_],
+    CURLU*          baseurl,
+    const char*     urlstr,
+    ArlOf(CurlPtr)  easies[_1_],
+    ArlOf(Str)      destlist[_1_],
+    ArlOf(CurlUPtr) curlus[_1_]
+);
+
 #endif

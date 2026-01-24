@@ -181,7 +181,7 @@ static Err run_cmd_on_range__(CmdParams p[_1_], SessionCmd cmdlist[], int base) 
 /* anchor commands */
 
 #define CMD_ANCHOR_PRINT_DOC "Print anchor range info"
-Err cmd_anchor_print(CmdParams p[_1_]) {
+static Err cmd_anchor_print(CmdParams p[_1_]) {
     return _run_cmd_for_htmldoc_anchors_range__(p, _cmd_anchor_print);
     /* Range r; */
     /* HtmlDoc* h; */
@@ -193,7 +193,9 @@ Err cmd_anchor_print(CmdParams p[_1_]) {
 
     /* return Ok; */
 }
-Err cmd_anchor_asterisk(CmdParams p[_1_]) {
+
+
+static Err cmd_anchor_asterisk(CmdParams p[_1_]) {
     Range r;
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
@@ -201,7 +203,9 @@ Err cmd_anchor_asterisk(CmdParams p[_1_]) {
     if (r.beg + 1 != r.end) return "TODO: implement anchor * for ranges";
     return _cmd_anchor_asterisk(p->s, r.beg, cmd_params_cmd_out(p));
 }
-Err cmd_anchor_save(CmdParams p[_1_]) {
+
+
+static Err cmd_anchor_save(CmdParams p[_1_]) {
     Range r;
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
@@ -245,12 +249,6 @@ static SessionCmd _cmd_input_[] =
 
 /* set session comands */
 
-Err cmd_set_session_bookmark(CmdParams p[_1_]);
-Err cmd_set_session_input(CmdParams p[_1_]);
-Err cmd_set_session_winsz(CmdParams p[_1_]);
-Err cmd_set_session_ncols(CmdParams p[_1_]);
-Err cmd_set_session_monochrome(CmdParams p[_1_]);
-Err cmd_set_session_js(CmdParams p[_1_]);
 
 #define CMD_SESSION_INPUT \
     "Sets the 'input mode'.\nModes avalable are:\n" \
@@ -273,7 +271,7 @@ static SessionCmd _cmd_session_set_[] =
 
 /* set commands */
 #define SESSION_SET_DOC "Sets a session conf\n"
-Err cmd_session_set(CmdParams p[_1_]) { return run_cmd__(p, _cmd_session_set_); }
+static Err cmd_session_set(CmdParams p[_1_]) { return run_cmd__(p, _cmd_session_set_); }
 
 
 /* tab commands (|) */
@@ -345,8 +343,10 @@ static SessionCmd _cmd_curl_[] =
     , [2]={.name="set",     .match=1, .fn=cmd_curl_set,     .help=CMD_CURL_SET}
     , [3]={0}
     };
+
+
 #define CMD_CURL_DOC "Curl commands.\n"
-Err cmd_curl(CmdParams p[_1_]) { return run_cmd__(p, _cmd_curl_); }
+static Err cmd_curl(CmdParams p[_1_]) { return run_cmd__(p, _cmd_curl_); }
 
 /* doc commands */
 
@@ -413,7 +413,7 @@ static SessionCmd _cmd_image_[] =
     "In ahre we open the file at $HOME/.w3m/bookmark.html by \\go \\bookmark.\n\n"\
     "the bookamrks command list the bookmars file sections.\n\n"\
     "TODO: is this command useful at all?\n"
-Err cmd_bookmarks(CmdParams p[_1_]);
+/* Err cmd_bookmarks(CmdParams p[_1_]); */
 
 
 #define CMD_ECHO_DOC "Prints in the message area the received parameters.\n"
@@ -426,7 +426,7 @@ static Err cmd_echo (CmdParams p[_1_]) {
 #define CMD_ANCHOR_DOC \
     "[ LINK_ID [SUB_COMMAND]\n\n"\
     "'[' commands are applied to the links present in the document.\n"
-Err cmd_anchor(CmdParams p[_1_]) { return run_cmd_on_range__(p, _cmd_anchor_, 36); }
+static Err cmd_anchor(CmdParams p[_1_]) { return run_cmd_on_range__(p, _cmd_anchor_, 36); }
 
 #define CMD_HELP_DOC \
     "Ahre has char commands and word commands.\n" \
@@ -446,12 +446,12 @@ Err cmd_tabs(CmdParams p[_1_]) { return run_cmd__(p, _cmd_tabs_); }
 #define CMD_DOC_DOC "'.' command: commands related to the current document\n"
 Err cmd_doc(CmdParams p[_1_]) { return run_cmd__(p, _cmd_doc_); }
 
-Err cmd_textbuf(CmdParams p[_1_]) {
+static Err cmd_textbuf(CmdParams p[_1_]) {
     try( session_current_buf(p->s, &p->tb));
     return run_cmd_on_range__(p, _cmd_textbuf_, 10);
 }
 
-Err cmd_sourcebuf(CmdParams p[_1_]) {
+static Err cmd_sourcebuf(CmdParams p[_1_]) {
     try( session_current_src(p->s, &p->tb));
     return run_cmd_on_range__(p, _cmd_textbuf_, 10);
 }
@@ -460,9 +460,9 @@ Err cmd_sourcebuf(CmdParams p[_1_]) {
 #define CMD_INPUT_DOC \
     "{ LINK_ID [SUB_COMMAND]\n\n"\
     "'{' commands are applied to the input elements present in the document.\n"
-Err cmd_input(CmdParams p[_1_]) { return run_cmd_on_range__(p, _cmd_input_, 36); }
+static Err cmd_input(CmdParams p[_1_]) { return run_cmd_on_range__(p, _cmd_input_, 36); }
 
-Err cmd_form_print(CmdParams p[_1_])
+static Err cmd_form_print(CmdParams p[_1_])
 { return _run_cmd_for_htmldoc_forms_range__(p, _cmd_form_print); }
 
 
@@ -474,7 +474,7 @@ Err cmd_image(CmdParams p[_1_]) { return run_cmd_on_range__(p, _cmd_image_, 36);
 
 #define CMD_SHORTCUT_Z "zN print the following N lines"
 Err shortcut_z(Session session[_1_], const char* rest, CmdOut cmd_out[_1_]);
-Err cmd_shortcut_z(CmdParams p[_1_]) {
+static Err cmd_shortcut_z(CmdParams p[_1_]) {
     return shortcut_z(p->s, p->ln, cmd_params_cmd_out(p));
 }
 
@@ -526,11 +526,11 @@ Err process_line_line_mode(Session* s, const char* line, CmdOut cout[_1_]) {
     return process_line(s, line, cout);
 }
 
-Err process_line_vi_mode(Session* s, const char* line, CmdOut cout[_1_]) {
-    if (!s) return "error: no session :./";
-    try( process_line(s, line, cout));
-    return session_doc_draw(s);
-}
+/* Err process_line_vi_mode(Session* s, const char* line, CmdOut cout[_1_]) { */
+/*     if (!s) return "error: no session :./"; */
+/*     try( process_line(s, line, cout)); */
+/*     return session_doc_draw(s); */
+/* } */
 
 #include <sys/ioctl.h>
 

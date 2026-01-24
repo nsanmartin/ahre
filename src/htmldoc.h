@@ -258,4 +258,5 @@ Err htmldoc_init_move_request(
 );
 Err htmldoc_scripts_write(HtmlDoc h[_1_], RangeParse rp[_1_], Writer w[_1_]);
 Err htmldoc_init_bookmark_move_urlstr(HtmlDoc d[_1_], Str urlstr[_1_]);
+Err _htmldoc_draw_with_flags_(HtmlDoc htmldoc[_1_], Session* s, unsigned flags);
 #endif

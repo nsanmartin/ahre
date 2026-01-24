@@ -52,7 +52,7 @@ static void _update_if_smaller_(size_t value[_1_], size_t new_value) {
  * The "default" session is the onw shown when there is no "screen" as a
  * result of the user cmd.
  */
-Err ui_vi_show_session_default(Session* s) {
+static Err ui_vi_show_session_default(Session* s) {
     CmdOut* default_out = &(CmdOut){0};
     Err err             = Ok;
 

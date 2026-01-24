@@ -16,12 +16,12 @@
 
 
 
-static Err _fetch_many_urls_(Session session[_1_], ArlOf(Request) urls[_1_]) {
+static Err _fetch_many_urls_(Session session[_1_], ArlOf(Request) urls[_1_], CmdOut cout[_1_]) {
     for (Request* r = arlfn(Request,begin)(urls)
         ; r != arlfn(Request,end)(urls)
         ; ++r
     ) {
-        Err err = session_fetch_request(session, r, session_url_client(session));
+        Err err = session_fetch_request(session, r, session_url_client(session), cout);
         if (err) {
             request_clean(r);
             return err;
@@ -31,10 +31,9 @@ static Err _fetch_many_urls_(Session session[_1_], ArlOf(Request) urls[_1_]) {
 }
 
 
-static Err _loop_(Session s[_1_], UserLine userln[_1_]) {
+static Err _loop_(Session s[_1_], UserLine userln[_1_], CmdOut cout[_1_]) {
     init_user_input_history();
     Err err      = Ok;
-    CmdOut* cout = &(CmdOut){0};
 
     while (!session_quit(s)) {
         try_or_jump(err, Error, session_show_output(s, cout));
@@ -44,7 +43,6 @@ static Err _loop_(Session s[_1_], UserLine userln[_1_]) {
 Error:
         if (err) if (session_show_error(s, err)) return "error trying to show previous error"; 
     }
-    cmd_out_clean(cout);
     return Ok;
 }
 
@@ -85,10 +83,11 @@ int main(int argc, char **argv) {
         try_or_jump(err, Clean_Session, run_cmds(&session, &userln));
         user_line_cleanup(&userln);
     }
-    try_or_jump(err, Clean_Session, _fetch_many_urls_(&session, cparams_requests(&cparams)));
+    CmdOut* cout = &(CmdOut){0};
+    try_or_jump(err, Clean_Session, _fetch_many_urls_(&session, cparams_requests(&cparams), cout));
 
-    err = _loop_(&session, &userln);
-
+    err = _loop_(&session, &userln, cout);
+    cmd_out_clean(cout);
 Clean_Session:
     session_close(&session);
     session_cleanup(&session);

@@ -48,7 +48,7 @@ static Err _read_input_opt_(SessionConf sconf[_1_], const char* optparam) {
     return Ok;
 }
 
-Err _session_conf_from_options_(int argc, char* argv[], CliParams cparams[_1_]) {
+static Err _session_conf_from_options_(int argc, char* argv[], CliParams cparams[_1_]) {
 
     SessionConf* sconf = cparams_sconf(cparams);
     size_t nrows, ncols;

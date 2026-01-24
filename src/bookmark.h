@@ -7,7 +7,9 @@
 #include "htmldoc.h"
 #include "error.h"
 #include "fetch-history.h"
+//. #include "cmd.h"
 
+Err cmd_bookmarks(CmdParams p[_1_]);
 
 #define AHRE_BOOKMARK_HEAD "<html><head><title>Bookmarks</title></head>\n<body>\n"
 #define AHRE_BOOKMARK_TAIL "</body>\n</html>\n"
@@ -288,4 +290,10 @@ bookmarks_save_to_disc(HtmlDoc bm[_1_], StrView bm_path) {
 }
 
 
+Err get_bookmarks_doc(
+    UrlClient   url_client[_1_],
+    StrView     bm_path,
+    CmdOut      cmd_out[_1_],
+    HtmlDoc     htmldoc_out[_1_]
+);
 #endif

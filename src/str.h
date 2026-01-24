@@ -158,7 +158,8 @@ inline static StrView strview_from_mem_trim(const char* s, size_t len) {
 )
 
 #define str_append_str_ln(S, T) str_append_ln(S, items__(T), len__(T))
-
+ 
+void str_trim_space(StrView* l);
 static inline bool str_startswith_mem(Str s[_1_], const char* mem, size_t len) {
     return len__(s) >= len && !strncmp(items__(s), mem, len);
 }

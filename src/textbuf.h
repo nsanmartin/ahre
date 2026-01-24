@@ -16,7 +16,7 @@ typedef struct {
 } TextBufCache;
 
 
-typedef struct {
+typedef struct TextBuf {
     BufOf(char) buf;
     size_t current_offset;
     ArlOf(size_t) eols;

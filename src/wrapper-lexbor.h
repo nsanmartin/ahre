@@ -5,7 +5,6 @@
 #include <lexbor/html/html.h>
 
 #include "textbuf.h"
-#include "url.h"
 
 #define T lxb_char_t
 #include <buf.h>
@@ -244,7 +243,6 @@ static inline bool lexbor_str_eq(const char* s, const lxb_char_t* lxb_str, size_
 }
 
 Err dbg_print_title(lxb_dom_node_t* title) ;
-Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request r[_1_]);
 
 Err lexbor_node_get_text(lxb_dom_node_t* node, const char* data[_1_], size_t len[_1_]);
 #define lexbor_get_text lexbor_node_get_text //TODO: use _Generics and match node/elem

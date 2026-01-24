@@ -55,25 +55,25 @@ Err lexbor_cp_tag(const char* tag, lxb_html_document_t* document, BufOf(char)* b
 }
 
 
-Err lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf) {
-    lxb_dom_node_t *node = lxb_dom_interface_node(document->body);
-    if (!node) {
-        return "could not get lexbor document body as node";
-    }
-    size_t len = 0;
-    lxb_char_t* text = lxb_dom_node_text_content(node, &len);
-    Err err = NULL;
-    if ((err = textbuf_append_part(buf, (char*)text, len))) {
-        return err;
-    }
-    return textbuf_append_null(buf);
-}
+/* Err lexbor_html_text_append(lxb_html_document_t* document, TextBuf* buf) { */
+/*     lxb_dom_node_t *node = lxb_dom_interface_node(document->body); */
+/*     if (!node) { */
+/*         return "could not get lexbor document body as node"; */
+/*     } */
+/*     size_t len = 0; */
+/*     lxb_char_t* text = lxb_dom_node_text_content(node, &len); */
+/*     Err err = NULL; */
+/*     if ((err = textbuf_append_part(buf, (char*)text, len))) { */
+/*         return err; */
+/*     } */
+/*     return textbuf_append_null(buf); */
+/* } */
 
 
 /*
  * The signature of this fn must match the api of curl_easy_setopt CURLOPT_WRITEFUNCTION
  */
-size_t _read_curl_chunk_callback(char *in, size_t size, size_t nmemb, void* outstream) {
+static size_t _read_curl_chunk_callback(char *in, size_t size, size_t nmemb, void* outstream) {
     HtmlDoc* htmldoc = outstream;
     size_t r = size * nmemb;
     /* Your callback should return the number of bytes actually taken care of.

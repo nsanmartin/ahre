@@ -1,14 +1,5 @@
 #include "tabs.h"
-#include "tab-node.h"
 #include "session.h"
-
-Err tab_node_init_move_request(
-    TabNode     n[_1_],
-    TabNode*    parent,
-    UrlClient   url_client[_1_],
-    Request     r[_1_],
-    Session     s[_1_]
-);
 
 
 
@@ -16,10 +7,11 @@ Err tablist_append_tree_from_url(
     TabList     f[_1_],
     Request     r[_1_],
     UrlClient   url_client[_1_],
-    Session     s[_1_]
+    Session     s[_1_],
+    CmdOut      cout[_1_]
 ) {
     TabNode tn = (TabNode){0};
-    try( tab_node_init_move_request(&tn, NULL, url_client, r, s));
+    try( tab_node_init_move_request(&tn, NULL, url_client, r, s, cout));
 
     Err err = Ok;
     try_or_jump(err, Failure_Tab_Node_Cleanup, tablist_append_move_tree(f, &tn));

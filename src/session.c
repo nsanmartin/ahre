@@ -5,6 +5,7 @@
 #include "session.h"
 #include "user-interface.h"
 #include "reditline.h"
+#include "draw.h"
 
 
 Err session_current_doc(Session session[_1_], HtmlDoc* out[_1_]) {
@@ -66,7 +67,7 @@ _next_text_end_(TextBufMods mods[_1_], ModAt it[_1_], size_t off, size_t line_en
 }
 
 
-Err write_range_mod(
+static Err write_range_mod(
     CmdOut  cmd_out[_1_],
     bool    monochrome,
     TextBuf textbuf[_1_],
@@ -119,7 +120,7 @@ Err session_write_screen_range_mod(
 }
 
 
-Err session_write_fetch_history(Session s[_1_]) {
+static Err session_write_fetch_history(Session s[_1_]) {
     int fd;
     FILE* fp;
     Str fetch_history_fname = (Str){0};
@@ -204,3 +205,10 @@ Err session_flush_cmd_out(Session s[_1_], CmdOut cout[_1_]) {
     try( session_flush_cmd_out_screen(s, cout));
     return Ok;
 }
+
+Err session_htmldoc_redraw(HtmlDoc htmldoc[_1_], Session s[_1_]) {
+    htmldoc_reset_draw(htmldoc);
+    unsigned flags = draw_ctx_flags_from_session(s);
+    return _htmldoc_draw_with_flags_(htmldoc, s, flags);
+}
+

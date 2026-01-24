@@ -1,3 +1,4 @@
+#include "readpass.h"
 #include "reditline.h"
 
 Err readpass_term(ArlOf(char) passw[_1_], bool write) {

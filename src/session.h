@@ -1,15 +1,17 @@
 #ifndef AHRE_SESSION_H__
 #define AHRE_SESSION_H__
 
+#include "cmd-out.h"
+#include "fetch-history.h"
+//#include "htmldoc.h"
+#include "reditline.h"
 #include "session-conf.h"
 #include "tabs.h"
+#include "url-client.h"
 #include "user-input.h"
 #include "user-out.h"
 #include "utils.h"
 #include "writer.h"
-#include "reditline.h"
-#include "fetch-history.h"
-#include "cmd-out.h"
 
 typedef struct Session {
     UrlClient          url_client;
@@ -125,15 +127,17 @@ Err tablist_append_tree_from_url(
     TabList   f[_1_],
     Request   r[_1_],
     UrlClient url_client[_1_],
-    Session   s[_1_]
+    Session   s[_1_],
+    CmdOut    cout[_1_]
 );
 
 
 static inline Err session_fetch_request(
     Session     s[_1_],
     Request     r[_1_],
-    UrlClient   url_client[_1_]
-) { return tablist_append_tree_from_url(session_tablist(s), r, url_client, s); }
+    UrlClient   url_client[_1_],
+    CmdOut      cout[_1_]
+) { return tablist_append_tree_from_url(session_tablist(s), r, url_client, s, cout); }
 
 Err tab_node_tree_append_ahref(
     TabNode t[_1_],
@@ -213,4 +217,5 @@ Err session_write_input_history(Session s[_1_]);
 Err session_flush_cmd_out_msg(Session s[_1_], CmdOut cout[_1_]);
 Err session_flush_cmd_out_screen(Session s[_1_], CmdOut cout[_1_]);
 Err session_flush_cmd_out(Session s[_1_], CmdOut cout[_1_]);
+Err session_htmldoc_redraw(HtmlDoc htmldoc[_1_], Session s[_1_]);
 #endif

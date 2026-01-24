@@ -1,23 +1,14 @@
 #ifndef __AHRE_CMD_H__
 #define __AHRE_CMD_H__
 
-#include "cmd-out.h"
+#include "draw.h"
 #include "error.h"
 #include "session.h"
-#include "draw.h"
+#include "cmd-params.h"
+// #include "url-client.h"
 
 #define cmd_assert_no_params(Ln) do{ if(*Ln) return "error: expecting no params"; }while(0)
 
-
-typedef struct {
-    const char* ln;
-    Session*    s;
-    TextBuf*    tb; /* in order to reuse buf cmds for source & buf, we pass it */
-    RangeParse  rp;
-    CmdOut*     out;
-} CmdParams;
-
-static inline CmdOut* cmd_params_cmd_out(CmdParams p[_1_]) { return p->out; }
 
 typedef Err (*SessionCmdFn)(CmdParams p[_1_]);
 typedef struct SessionCmd SessionCmd;
@@ -48,7 +39,16 @@ Err cmd_get(CmdParams p[_1_]);
     "If the url is an existing file in the host ahre will try to open it,\n"\
     "if it is an 'alias' (such as \\bookmark) it will open it.\n"\
     "Otherwise, it will curl it.\n"
+
 Err cmd_post(CmdParams p[_1_]);
+Err cmd_set_session_bookmark(CmdParams p[_1_]);
+Err cmd_set_session_input(CmdParams p[_1_]);
+Err cmd_set_session_js(CmdParams p[_1_]);
+Err cmd_set_session_monochrome(CmdParams p[_1_]);
+Err cmd_set_session_ncols(CmdParams p[_1_]);
+Err cmd_set_session_winsz(CmdParams p[_1_]);
+Err shortcut_z(Session session[_1_], const char* rest, CmdOut cmd_out[_1_]);
+
 /*
  * Curl commands
  */
@@ -68,11 +68,10 @@ static inline Err cmd_curl_version(CmdParams p[_1_]) {
 
 // curl commands
 
-Err htmldoc_redraw(HtmlDoc htmldoc[_1_], Session s[_1_]);
 static inline Err session_doc_draw(Session session[_1_]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
-    return htmldoc_redraw(htmldoc, session);
+    return session_htmldoc_redraw(htmldoc, session);
 }
 
 static inline Err session_doc_js(Session session[_1_], CmdOut* out) {
@@ -147,9 +146,8 @@ static inline Err cmd_doc_A(CmdParams p[_1_]) {
     return htmldoc_A(p->s, d, cmd_params_cmd_out(p));
 }
 
-Err bookmark_add_to_section(
-    Session s[_1_], const char* line, UrlClient url_client[_1_], CmdOut out[_1_]
-);
+Err
+bookmark_add_to_section(Session s[_1_], const char* line, UrlClient url_client[_1_], CmdOut out[_1_]);
 #define CMD_DOC_BOOKMARK_ADD \
     ".+[/]SECTION_NAME\n\n"\
     "Adds current document to bookmarks.\n\n"\

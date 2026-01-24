@@ -8,20 +8,23 @@
 #define MsgLastLine EscCodePurple "%{- last line -}%" EscCodeReset
 
 
+static bool _is_url_alias_(const char* cmd) { return *cmd == '\\'; }
+
 /* session commands */
 Err cmd_get(CmdParams p[_1_]) {
     p->ln = cstr_trim_space((char*)p->ln);
     Request r;
-    if (*p->ln == '\\') {
+    if (_is_url_alias_(p->ln)) {
         Str u = (Str){0};
         try (get_url_alias(p->s, cstr_skip_space(p->ln + 1), &u));
         Err err = request_init_move_urlstr(&r, http_get, &u, NULL);
-        ok_then(err, session_fetch_request(p->s, &r, session_url_client(p->s)));
+        ok_then(err,
+            session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p)));
         request_clean(&r);
         return err;
     }
     try (request_from_userln(&r, p->ln, http_get));
-    Err err = session_fetch_request(p->s, &r, session_url_client(p->s));
+    Err err = session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p));
     if (err) request_clean(&r);
     return err;
 }
@@ -30,16 +33,17 @@ Err cmd_get(CmdParams p[_1_]) {
 Err cmd_post(CmdParams p[_1_]) {
     p->ln = cstr_trim_space((char*)p->ln);
     Request r;
-    if (*p->ln == '\\') {
+    if (_is_url_alias_(p->ln)) {
         Str u = (Str){0};
         try (get_url_alias(p->s, cstr_skip_space(p->ln + 1), &u));
         Err err = request_init_move_urlstr(&r, http_get, &u, NULL);
-        ok_then(err, session_fetch_request(p->s, &r, session_url_client(p->s)));
+        ok_then(err,
+            session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p)));
         request_clean(&r);
         return err;
     }
     try (request_from_userln(&r, p->ln, http_post));
-    Err err = session_fetch_request(p->s, &r, session_url_client(p->s));
+    Err err = session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p));
     if (err) request_clean(&r);
     return err;
 }
@@ -120,6 +124,7 @@ Err cmd_set_session_input(CmdParams p[_1_]) {
 /*
  * These commands require a valid document, the caller should check this condition before
  */
+
 
 Err cmd_fetch(Session session[_1_], CmdOut* out) {
     HtmlDoc* htmldoc;
@@ -268,7 +273,8 @@ Err cmd_textbuf_global(CmdParams p[_1_]) {
 /* input commands */
 
 
-Err _cmd_input_text_set_(Session session[_1_], LxbNode n[_1_], const char* line, CmdOut cout[_1_]) {
+static Err
+_cmd_input_text_set_(Session session[_1_], LxbNode n[_1_], const char* line, CmdOut cout[_1_]) {
     Err err = Ok;
     if (!*line) {
         try( cmd_out_screen_append_lit__(cout, "> "));
@@ -286,7 +292,7 @@ Err _cmd_input_text_set_(Session session[_1_], LxbNode n[_1_], const char* line,
     return err;
 }
 
-Err _cmd_input_select_set_(Session session[_1_], LxbNode n[_1_], const char* line) {
+static Err _cmd_input_select_set_(Session session[_1_], LxbNode n[_1_], const char* line) {
     ArlOf(LxbNodePtr)* matches = &(ArlOf(LxbNodePtr)){0};
     Err e = Ok;
 
@@ -329,7 +335,9 @@ Err _cmd_input_ix_set_(CmdParams p[_1_], const size_t ix) {
     try( session_current_doc(session, &d));
     try( _get_lexbor_node_ptr_by_ix(htmldoc_inputs(d), ix, &n.n));
 
-    if (lexbor_lit_attr_has_lit_value(&n, "type", "text"))
+    if (!lexbor_has_lit_attr__(&n, "type"))
+        return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p));
+    else if (lexbor_lit_attr_has_lit_value(&n, "type", "text"))
         return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p));
     else if (lexbor_lit_attr_has_lit_value(&n, "type", "search"))
         return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p)); //TODO: implement it properly
@@ -392,7 +400,7 @@ Clean_Url_Str:
 
 /* anchor commands */
 
-Err _get_anchor_by_ix(Session session[_1_], size_t ix, lxb_dom_node_t* outnode[_1_]) {
+static Err _get_anchor_by_ix(Session session[_1_], size_t ix, lxb_dom_node_t* outnode[_1_]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
     ArlOf(LxbNodePtr)* anchors = htmldoc_anchors(htmldoc);
@@ -452,5 +460,68 @@ Err _cmd_lexbor_node_print_(ArlOf(LxbNodePtr) node_arl[_1_], size_t ix, CmdOut o
 
     ok_then(err,  cmd_out_msg_append_str(out, buf));
     str_clean(buf);
+    return err;
+}
+
+Err bookmark_add_to_section(
+    Session s[_1_], const char* line, UrlClient url_client[_1_], CmdOut cmd_out[_1_]
+) {
+    HtmlDoc* d;
+    try( session_current_doc(s, &d));
+
+    line = cstr_skip_space(line);
+    bool create_section_if_not_found = true;
+    if (*line == '/') {
+        ++line;
+        create_section_if_not_found = false;
+        line = cstr_skip_space(line);
+    }
+    if (!*line) return "not a valid bookmark section";
+    Err err = Ok; 
+    
+    HtmlDoc bm;
+    Str bm_path = (Str){0};
+    try(resolve_bookmarks_file(items__(session_bookmarks_fname(s)), &bm_path));
+    /* Writer w; */
+    /* try_or_jump(err, Fail_Clean_Bm, session_msg_writer_init(&w, s)); */
+    try_or_jump(err, Fail_Clean_Bm,
+            get_bookmarks_doc(url_client, strview__(&bm_path), cmd_out,  &bm));
+
+    char* url;
+    if ((err = url_cstr_malloc(htmldoc_url(d), &url))) goto Clean_Bm_Path_And_BmDoc;
+
+    lxb_dom_node_t* body;
+    if ((err = bookmark_sections_body(&bm, &body))) goto Free_Curl_Url;
+
+    Str* title = &(Str){0};
+    if ((err = lxb_mk_title_or_url(d, url, title))) goto Free_Curl_Url;
+
+    lxb_dom_element_t* bm_entry;
+    if ((err = bookmark_mk_entry(bm.lxbdoc, url, title, &bm_entry))) goto Clean_Title;
+
+    lxb_dom_node_t* section_ul;
+    if ((err = bookmark_section_ul_get(body, line, &section_ul))) goto Clean_Title;
+    //TODO: wrap this
+    if (section_ul) {
+        lxb_dom_node_insert_child(
+                lxb_dom_interface_node(section_ul), lxb_dom_interface_node(bm_entry)
+            );
+    } else if(create_section_if_not_found) {
+        err = bookmark_section_insert(&(bm.lxbdoc->dom_document), body, line, bm_entry);
+    } else err = "section not found in bookmarks file";
+
+    ok_then(err, bookmarks_save_to_disc(&bm, strview__(&bm_path)));
+    ok_then(err, cmd_out_msg_append_lit__(cmd_out, "bookmark added\n"));
+
+Clean_Title:
+    str_clean(title);
+Free_Curl_Url:
+    curl_free(url);
+Clean_Bm_Path_And_BmDoc:
+    htmldoc_cleanup(&bm);
+    str_clean(&bm_path);
+    return err;
+Fail_Clean_Bm:
+    str_clean(&bm_path);
     return err;
 }

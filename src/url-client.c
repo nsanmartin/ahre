@@ -6,20 +6,10 @@
 #include "cmd.h"
 
 
-//TODO: move
-Err w_curl_multi_add(
-    UrlClient       uc[_1_],
-    CURLU*          baseurl,
-    const char*     urlstr,
-    ArlOf(CurlPtr)  easies[_1_],
-    ArlOf(Str)      destlist[_1_],
-    ArlOf(CurlUPtr) curlus[_1_]
-);
-
 #define url_client_setopt(Uc, Opt, Val) w_curl_easy_setopt((Uc)->curl, Opt, Val)
 
 
-Err url_client_set_cookies(UrlClient uc[_1_]) {
+static Err url_client_set_cookies(UrlClient uc[_1_]) {
     if (uc->cookies_fname.len) {
         char* cookiefile = url_client_cookies_fname(uc);
         /* this call leaks in old curl versions */
@@ -30,15 +20,15 @@ Err url_client_set_cookies(UrlClient uc[_1_]) {
 }
 
 
-Err url_client_setopt_verbose(UrlClient uc[_1_]) {
+static Err url_client_setopt_verbose(UrlClient uc[_1_]) {
     return url_client_setopt(uc, CURLOPT_VERBOSE, url_client_verbose(uc));
 }
 
-Err url_client_setopt_error_buffer(UrlClient uc[_1_]) {
+static Err url_client_setopt_error_buffer(UrlClient uc[_1_]) {
     return url_client_setopt(uc, CURLOPT_ERRORBUFFER, uc->errbuf);
 }
 
-Err url_client_setopt_user_agent(UrlClient uc[_1_]) {
+static Err url_client_setopt_user_agent(UrlClient uc[_1_]) {
     return url_client_setopt(uc, CURLOPT_USERAGENT, url_client_user_agent(uc));
 }
 
@@ -113,7 +103,7 @@ Err url_client_print_cookies(Session* s, UrlClient uc[_1_], CmdOut* out) {
 }
 
 
-const char* _parse_opt(const char* line, CURLoption opt[_1_]) {
+static const char* _parse_opt(const char* line, CURLoption opt[_1_]) {
 
     const char* rest;
     if ((rest = csubstr_match(line, "noprogress", 1))) { *opt=CURLOPT_NOPROGRESS; return rest; }
@@ -189,3 +179,12 @@ Err url_client_multi_add_handles(
 void url_client_set_verbose(UrlClient uc[_1_], bool value) {
     set_flag(&uc->flags, URL_CLIENT_FLAG_VERBOSE, value);
 }
+
+
+Err curl_set_method_from_http_method(UrlClient url_client[_1_], HttpMethod m) {
+    CURLoption method = curlopt_method_from_http_method(m);
+    if (curl_easy_setopt(url_client->curl, method, 1L)) 
+        return "error: curl failed to set method";
+    return Ok;
+}
+
