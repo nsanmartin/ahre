@@ -1,7 +1,6 @@
 #include "htmldoc.h"
 #include "draw.h" 
 #include "bookmark.h"
-//.#include "cmd.h"
 #include "session.h"
 
 /* internal linkage */

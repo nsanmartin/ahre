@@ -3,6 +3,11 @@
 
 #include "../src/str.c"
 
+int test_0(void);
+int test_1(void);
+int test_2(void);
+int test_3(void);
+
 int test_0(void) {
     const char* outstr;
     size_t outlen;

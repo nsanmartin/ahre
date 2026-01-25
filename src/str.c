@@ -28,7 +28,7 @@ size_t mem_count_ocurrencies(char* data, size_t len, char c) {
 }
 
 
-/* static Err mem_get_indexes(char* data, size_t len, size_t offset, char c, ArlOf(size_t)* indexes) { */
+/* static Err mem_get_indexes_of(char* data, size_t len, size_t offset, char c, ArlOf(size_t)* indexes) { */
 /*     char* end = data + len; */
 /*     char* it = data; */
 

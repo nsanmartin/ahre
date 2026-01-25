@@ -34,12 +34,6 @@ static bool _is_cmd_char_(char c) {
         ;
 }
 
-/* static Err _ui_keystroke_ctrl_gg_(Session s[_1_]) { */
-/*     TextBuf* tb; */
-/*     try( session_current_buf(s, &tb)); */
-/*     *textbuf_current_offset(tb) = 0; */
-/*     return Ok; */
-/* } */
 
 static Err _ui_keystroke_ctrl_f_(Session s[_1_]) {
     TextBuf* tb;

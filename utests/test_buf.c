@@ -7,6 +7,10 @@
 #include "../src/utils.c"
 
 
+int test_2_fit_lines_mods(void);
+int modat_arr_eq(ArlOf(ModAt)* x, ArlOf(ModAt)* y);
+int test_1_fit_lines(void);
+int test_0(void);
 
 int test_0(void) {
 #define str0 "01\n02\n03"

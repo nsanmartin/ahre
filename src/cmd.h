@@ -5,7 +5,6 @@
 #include "error.h"
 #include "session.h"
 #include "cmd-params.h"
-// #include "url-client.h"
 
 #define cmd_assert_no_params(Ln) do{ if(*Ln) return "error: expecting no params"; }while(0)
 

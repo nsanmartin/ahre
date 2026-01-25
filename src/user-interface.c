@@ -413,7 +413,6 @@ static SessionCmd _cmd_image_[] =
     "In ahre we open the file at $HOME/.w3m/bookmark.html by \\go \\bookmark.\n\n"\
     "the bookamrks command list the bookmars file sections.\n\n"\
     "TODO: is this command useful at all?\n"
-/* Err cmd_bookmarks(CmdParams p[_1_]); */
 
 
 #define CMD_ECHO_DOC "Prints in the message area the received parameters.\n"

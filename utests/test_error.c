@@ -5,6 +5,10 @@
 #include "../src/error.c"
 
 
+int test_1(void);
+int test_0(void);
+
+
 int test_0(void) {
     Err e0 = err_fmt("%s", "FOO");
     utest_assert(strcmp(e0, "FOO") == 0, fail);

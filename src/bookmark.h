@@ -7,7 +7,6 @@
 #include "htmldoc.h"
 #include "error.h"
 #include "fetch-history.h"
-//. #include "cmd.h"
 
 Err cmd_bookmarks(CmdParams p[_1_]);
 

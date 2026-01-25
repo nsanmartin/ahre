@@ -70,4 +70,9 @@ static inline Err mock_file_write_(const char* mem, size_t len, FILE* fp) {
 } 
 static inline Err mock_file_close(FILE* fp) { (void)fp; return Ok; }
 
+/* Mock */
+typedef struct { const void* ptr; size_t size; size_t nmemb; } MockFwriteParams;
+size_t mock_fwrite_called_with(const void* ptr, size_t size, size_t nmemb, FILE * stream);
+void fwrite_params_queue_push(MockFwriteParams expected);
+
 #endif

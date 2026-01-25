@@ -4,6 +4,11 @@
 
 #include "../src/error.c"
 
+
+int test__append_fopen(void);
+int test_curl_url_to_filename_append(void);
+int test_curl_url_to_filename_append_0(void);
+
 typedef CURLUcode (*CurlUrlGetFn)(const CURLU* u, CURLUPart p, char** c, unsigned int f);
 static CurlUrlGetFn _mock_curl_url_get_ = NULL;
 static unsigned _curl_free_calls = 0;

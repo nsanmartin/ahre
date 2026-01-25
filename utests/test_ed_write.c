@@ -1,6 +1,7 @@
 #include <utests.h>
 
-typedef struct { const void* ptr; size_t size; size_t nmemb; } MockFwriteParams;
+int test_1(void);
+
 #define fwrite_params_queue_sz 32
 static MockFwriteParams _fwrite_params_queue_[fwrite_params_queue_sz] = {0};
 static size_t fwrite_params_queue_right = 0;

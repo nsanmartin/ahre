@@ -5,6 +5,7 @@
 #include "../src/range-parse.c"
 #include "../src/re.c"
 
+int test_1(void);
 
 
 
