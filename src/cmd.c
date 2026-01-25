@@ -335,15 +335,15 @@ Err _cmd_input_ix_set_(CmdParams p[_1_], const size_t ix) {
     try( session_current_doc(session, &d));
     try( _get_lexbor_node_ptr_by_ix(htmldoc_inputs(d), ix, &n.n));
 
-    if (!lexbor_has_lit_attr__(&n, "type"))
-        return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p));
-    else if (lexbor_lit_attr_has_lit_value(&n, "type", "text"))
+    if (lexbor_lit_attr_has_lit_value(&n, "type", "text"))
         return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p));
     else if (lexbor_lit_attr_has_lit_value(&n, "type", "search"))
         return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p)); //TODO: implement it properly
     else if (lexbor_lit_attr_has_lit_value(&n, "type", "password"))
         return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p));
     else if (lexbor_node_tag_is_select(&n)) return _cmd_input_select_set_(session, &n, ln);
+    else if (!lexbor_has_lit_attr__(&n, "type"))
+        return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p));
 
     return "input set not supported for element";
 }
