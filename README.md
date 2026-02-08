@@ -34,6 +34,15 @@ make
 sudo make install
 ```
 
+You may need also to:
+
+```
+sudo echo /usr/local/lib > /etc/ls.so.conf.d/lexbor.conf
+sudo ldconfig
+```
+
+if `liblexbor.so.2 not found` when running `ahre`.
+
 ### System dependant Dependencies
 #### Termux
 ```bash
