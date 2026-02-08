@@ -93,5 +93,15 @@ To build with no quickjs (and hence no js):
 
 ```
 
+Search something in duckduckgo
+```
+ddg  () {
+    local IFS="+"
+    ahre -d q="$1" lite.duckduckgo.com/lite
+}
+
+ddg something
+```
+
 ## Usage:
 See [./doc/quick-reference-guide.md](https://codeberg.org/nsm/ahre/src/branch/main/doc/quick-reference-guide.md)
