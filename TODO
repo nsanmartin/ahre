@@ -29,6 +29,8 @@
 [ ] [ui] implement '> filename' as universal save command (using CmdOut)
 [ ] [ui] when saving images to directory path act as like anchors (generating the url).
 [ ] [ui] manage .+SECTION when SECTION is substring of SECTION'
+[ ] [ui] relative path in write command
+[ ] [ui/readline] edit user line
 [ ] [bug] jump to content should only jump to content, not open a new doc
 
 #CLOSED

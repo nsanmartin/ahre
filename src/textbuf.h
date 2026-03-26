@@ -17,11 +17,11 @@ typedef struct {
 
 
 typedef struct TextBuf {
-    BufOf(char) buf;
-    size_t current_offset;
+    BufOf(char)   buf;
+    size_t        current_offset;
     ArlOf(size_t) eols;
-    TextBufCache cache;
-    TextBufMods mods;
+    TextBufCache  cache;
+    TextBufMods   mods;
 } TextBuf;
 
 
@@ -109,9 +109,6 @@ static inline Err textbuf_append_null(TextBuf textbuf[_1_]) {
 }
 Err textbuf_get_line_of(TextBuf tb[_1_], const char* ch, size_t* out) ;
 
-//static inline char* textbuf_current_line_offset(TextBuf tb[_1_]) {
-//    return textbuf_line_offset(tb, textbuf_current_line(tb));
-//}
 Err textbuf_append_part(TextBuf textbuf[_1_], char* data, size_t len);
 Err textbuf_fit_lines(TextBuf tb[_1_], size_t maxlen);
 

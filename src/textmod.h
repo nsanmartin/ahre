@@ -1,3 +1,4 @@
+/* Text modifications such as colour, etc. */
 #ifndef __AHRE_TEXTMOD_H__
 #define __AHRE_TEXTMOD_H__
 

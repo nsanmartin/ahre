@@ -80,6 +80,7 @@ static Err write_range_mod(
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
         if (!line.len || !line.items || !*line.items) continue;
 
+        /* the line offset within the textbuf */
         size_t line_off_beg = line.items - textbuf_items(textbuf);
         size_t line_off_end = line_off_beg + line.len;
         it = mods_at_find_greater_or_eq(textbuf_mods(textbuf), it, line_off_beg);

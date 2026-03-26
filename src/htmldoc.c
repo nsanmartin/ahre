@@ -534,7 +534,7 @@ Err _htmldoc_draw_with_flags_(HtmlDoc htmldoc[_1_], Session* s, unsigned flags) 
     try(err);
     ok_then(err, draw_rec(lxb_dom_interface_node(lxbdoc), &ctx));
     ok_then(err, draw_ctx_buf_commit(&ctx));
-    ok_then(err, textbuf_fit_lines(htmldoc_textbuf(htmldoc), *session_conf_ncols(session_conf(s))));
+    ok_then(err, textbuf_fit_lines(htmldoc_textbuf(htmldoc), *session_ncols(s)));
 
     draw_ctx_cleanup(&ctx);
     if (err) arlfn(ModAt,clean) (draw_ctx_mods(&ctx));
