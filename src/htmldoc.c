@@ -354,15 +354,21 @@ draw_tag_code(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
 
 static Err
 draw_tag_b(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
-    if (node->prev && draw_ctx_buf_last_isgraph(ctx)) try( draw_ctx_buf_append_lit__(ctx, " "));
+    if (node->prev && draw_ctx_buf_last_isalnum(ctx)) try( draw_ctx_buf_append_lit__(ctx, " "));
     try(_hypertext_open_(ctx, draw_ctx_push_bold, space_str));
     try (draw_list(node->first_child, node->last_child, ctx));
     try( _hypertext_close_(ctx, draw_ctx_reset_color, space_str));
     return Ok;
 }
 
+static Err draw_tag_separating_with_space(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
+    if (node->prev && draw_ctx_buf_last_isalnum(ctx)) try( draw_ctx_buf_append_lit__(ctx, " "));
+    try (draw_list(node->first_child, node->last_child, ctx));
+    return Ok;
+}
+
 static Err draw_tag_em(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
-    if (node->prev && draw_ctx_buf_last_isgraph(ctx)) try( draw_ctx_buf_append_lit__(ctx, " "));
+    if (node->prev && draw_ctx_buf_last_isalnum(ctx)) try( draw_ctx_buf_append_lit__(ctx, " "));
     try(_hypertext_open_(ctx, draw_ctx_push_underline, space_str));
     try (draw_list(node->first_child, node->last_child, ctx));
     try( _hypertext_close_(ctx, draw_ctx_reset_color, space_str));
@@ -463,6 +469,11 @@ static Err draw_rec_tag(lxb_dom_node_t* node, DrawCtx ctx[_1_]) {
         case LXB_TAG_TR: { return draw_tag_tr(node, ctx); }
         case LXB_TAG_TT: { return draw_tag_code(node, ctx); }
         case LXB_TAG_UL: { return draw_tag_ul(node, ctx); }
+        //TODO: implement all these tags, meanwhile we just add
+        // spaces when needed t oseparate from previous word
+        case LXB_TAG_SAMP:
+        case LXB_TAG_STRONG:
+        case LXB_TAG_VAR: { return draw_tag_separating_with_space(node, ctx); }
         default: {
             /* if (node->local_name >= LXB_TAG__LAST_ENTRY) */
             /*     return err_fmt( */

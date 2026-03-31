@@ -159,9 +159,10 @@ draw_ctx_buf_commit(DrawCtx ctx[_1_]) {
     return Ok;
 }
 
-static inline bool draw_ctx_buf_last_isgraph(DrawCtx ctx[_1_]) {
+static inline bool draw_ctx_buf_last_isalnum(DrawCtx ctx[_1_]) {
     Str* buf = draw_ctx_buf(ctx);
-    return len__(buf) && items__(buf)[len__(buf) - 1];
+    return len__(buf) 
+        && isalnum(items__(buf)[len__(buf) - 1]);
 }
 
 static inline Err
