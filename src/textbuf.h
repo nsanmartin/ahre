@@ -17,7 +17,7 @@ typedef struct {
 
 
 typedef struct TextBuf {
-    BufOf(char)   buf;
+    Str           buf;
     size_t        current_offset;
     ArlOf(size_t) eols;
     TextBufCache  cache;
@@ -45,8 +45,6 @@ void textbuf_destroy(TextBuf* b);
 Err textbuf_append_part(TextBuf ab[_1_], char* data, size_t len);
 static inline size_t textbuf_len(TextBuf textbuf[_1_]) { return textbuf->buf.len; }
 static inline char* textbuf_items(TextBuf textbuf[_1_]) { return textbuf->buf.items; }
-
-//char* textbuf_line_offset(TextBuf ab[_1_], size_t line);
 
 
 Err textbuf_get_line_of_offset(TextBuf tb[_1_], size_t off, size_t* out);

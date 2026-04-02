@@ -47,8 +47,10 @@ static inline EscCode textmod_to_esc_code(TextMod tm) { return (EscCode)tm; }
 
 static inline Err
 textmod_concatenate(TextBufMods base[_1_], size_t offset, TextBufMods consumed[_1_]) {
-    for (ModAt* it = arlfn(ModAt, begin)(consumed)
-        ; it != arlfn(ModAt, end)(consumed)
+    ModAt* begin = arlfn(ModAt, begin)(consumed);
+    ModAt* end   = arlfn(ModAt, end)(consumed);
+    for (ModAt* it = begin
+        ; it != end
         ; ++it
     ) {
         ModAt displaced = (ModAt){.offset=it->offset + offset, .tmod=it->tmod};

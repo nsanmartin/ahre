@@ -7,6 +7,10 @@ QUICKJS_LIB=$(QUICKJS_BUILD)/libqjs.a
 AHRE_CFLAGS=$(CFLAGS) -g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition \
 			-Wmissing-prototypes \
 			-Wunused-result \
+			-Wunused-function \
+			-Wunused-label \
+			-Wunused-variable \
+			-Wunused-value \
 			-Wuninitialized \
 			-Wshadow \
 			-Wformat \

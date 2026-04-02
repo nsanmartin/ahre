@@ -187,6 +187,11 @@ static inline char* str_beg(Str s[_1_]) { return items__(s); }
 static inline char* str_end(Str s[_1_]) {
     return len__(s) ? items__(s) + len__(s) : items__(s);
 }
+
+static inline bool str_contains(Str s[_1_], char c) { return len__(s) && memchr(items__(s), c, len__(s)); }
+
+/* * */
+
 static inline Err null_terminated_str_from_mem(
     const char* mem,
     size_t      len,
