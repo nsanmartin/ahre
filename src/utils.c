@@ -72,14 +72,6 @@ const char* parse_ull(const char* tk, uintmax_t* ullp) {
 }
 
 
-/* static const char* parse_ll(const char* tk, intmax_t* llp) { */
-/*     if (!tk || !*tk) { return NULL; } */
-/*     char* endptr = 0x0; */
-/*     *llp = strtoll(tk, &endptr, 10); */
-/*     if (ERANGE == errno && (LLONG_MAX == *llp||LLONG_MIN == *llp)) { return NULL; } */
-/*     return endptr == tk ? NULL: endptr; */
-/* } */
-
 const char* parse_l(const char* tk, long lptr[_1_]) {
     if (!tk || !*tk) { return NULL; }
     char* endptr = 0x0;

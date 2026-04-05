@@ -57,9 +57,9 @@ static Err _insert_line_splitting_(
             }
         }
         off += len;
-        try( str_append(buf, beg, len)) ;
+        try( str_append(buf, sv(beg, len)));
         if (off >= strview_len(line)) break;
-        try( str_append_lit__(buf, "\n")) ;
+        try( str_append(buf, svl("\n"))) ;
         if (beg + len < strview_end(line) && isspace(beg[len]))
             ++off;
         else if (!arlfn(size_t,append)(insertions,&len__(buf))) return "error: arl failure";
@@ -81,7 +81,7 @@ _insert_missing_newlines_(TextBuf tb[_1_], size_t maxlen, ArlOf(size_t) insertio
         Err err;
         if (line.len && line.len <= maxlen) {
             /* line includes the '\n' */
-            err = str_append(buf, (char*)line.items, line.len);
+            err = str_append(buf, line);
         } else {
             err = _insert_line_splitting_(&line, buf, maxlen, insertions);
         }

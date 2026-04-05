@@ -32,8 +32,8 @@ test_range: $(AHRE_UTESTS)/test_range.c $(AHRE_BUILD)/isocline.o \
 	$(AHRE_BUILD)/user-interface.o $(AHRE_BUILD)/fetch-history.o \
 	$(AHRE_BUILD)/user-input.o $(AHRE_BUILD)/user-out.o \
 	$(AHRE_BUILD)/tabs.o $(AHRE_BUILD)/bookmark.o $(AHRE_BUILD)/cmd.o $(AHRE_BUILD)/url.o \
-	$(AHRE_BUILD)/js-engine.o $(AHRE_BUILD)/wrapper-curl.o \
-	$(AHRE_BUILD)/config.o $(AHRE_BUILD)/session-conf.o \
+	$(AHRE_BUILD)/js-engine.o $(AHRE_BUILD)/wrapper-curl.o $(AHRE_BUILD)/sys.o \
+	$(AHRE_BUILD)/config.o $(AHRE_BUILD)/session-conf.o $(AHRE_BUILD)/dom.o \
 	$(QUICKJS_LIB)
 	$(CC) $(AHRE_CFLAGS) $(SANITIZE_FLAGS) $(AHRE_INCLUDE) -I. -I$(AHRE_UTESTS) \
 		-o $(AHRE_BUILD)/$@ \
@@ -53,7 +53,7 @@ test_error: $(AHRE_UTESTS)/test_error.c
 
 test_ed_write: $(AHRE_UTESTS)/test_ed_write.c \
 	$(AHRE_BUILD)/error.o $(AHRE_BUILD)/str.o $(AHRE_BUILD)/range-parse.o \
-	$(AHRE_BUILD)/config.o $(AHRE_BUILD)/re.o  $(AHRE_BUILD)/url-client.o \
+	$(AHRE_BUILD)/config.o $(AHRE_BUILD)/re.o  $(AHRE_BUILD)/url-client.o $(AHRE_BUILD)/sys.o \
 	$(AHRE_BUILD)/wrapper-lexbor-curl.o $(AHRE_BUILD)/wrapper-lexbor.o \
 	$(AHRE_BUILD)/session.o $(AHRE_BUILD)/htmldoc.o \
 	$(AHRE_BUILD)/tab-node.o  $(AHRE_BUILD)/readpass.o $(AHRE_BUILD)/reditline.o \
@@ -61,7 +61,7 @@ test_ed_write: $(AHRE_UTESTS)/test_ed_write.c \
 	$(AHRE_BUILD)/user-out.o $(AHRE_BUILD)/user-input.o \
 	$(AHRE_BUILD)/tabs.o $(AHRE_BUILD)/bookmark.o $(AHRE_BUILD)/js-engine.o \
 	$(AHRE_BUILD)/wrapper-curl.o $(AHRE_BUILD)/fetch-history.o \
-	$(AHRE_BUILD)/session-conf.o $(AHRE_BUILD)/url.o \
+	$(AHRE_BUILD)/session-conf.o $(AHRE_BUILD)/url.o $(AHRE_BUILD)/dom.o \
 	$(QUICKJS_LIB)
 
 	$(CC) $(AHRE_CFLAGS) $(SANITIZE_FLAGS) $(AHRE_INCLUDE) -I. -I$(AHRE_UTESTS) \
@@ -81,7 +81,7 @@ test_url: $(AHRE_UTESTS)/test_url.c \
 	$(AHRE_BUILD)/wrapper-curl.o $(AHRE_BUILD)/session.o $(AHRE_BUILD)/session-conf.o \
 	$(AHRE_BUILD)/textbuf.o $(AHRE_BUILD)/reditline.o $(AHRE_BUILD)/fetch-history.o \
 	$(AHRE_BUILD)/tab-node.o $(AHRE_BUILD)/wrapper-lexbor.o $(AHRE_BUILD)/wrapper-lexbor-curl.o \
-	$(AHRE_BUILD)/htmldoc.o $(AHRE_BUILD)/js-engine.o \
+	$(AHRE_BUILD)/htmldoc.o $(AHRE_BUILD)/js-engine.o $(AHRE_BUILD)/dom.o $(AHRE_BUILD)/sys.o \
 	$(QUICKJS_LIB)
 	$(CC) $(AHRE_CFLAGS) $(SANITIZE_FLAGS) $(AHRE_INCLUDE) -I. -I$(AHRE_UTESTS) -o \
 		$(AHRE_BUILD)/$@ \

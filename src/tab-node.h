@@ -21,7 +21,7 @@ typedef struct TabNode {
 void tab_node_cleanup(TabNode n[_1_]);
 
 #define T TabNode
-// #define TClean tab_node_cleanup //TODO: uncomment
+#define TClean tab_node_cleanup
 #include <arl.h>
 
 TabNode* arl_of_tab_node_append(ArlOf(TabNode)* list, TabNode tn[_1_]);

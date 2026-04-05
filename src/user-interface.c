@@ -58,9 +58,9 @@ static const char* _name_match_impl_(SessionCmd* cmd, CmdParams p[_1_]) {
 		if (*s != *name) { return 0x0; }
 	}
     if (len) { 
-        try(cmd_out_msg_append_lit__(cmd_params_cmd_out(p), "..."));
-        try(cmd_out_msg_append(cmd_params_cmd_out(p), (char*)cmd->name, strlen(cmd->name)));
-        try(cmd_out_msg_append_lit__(cmd_params_cmd_out(p), "?\n"));
+        try(cmd_out_msg_append(cmd_params_cmd_out(p), svl("...")));
+        try(cmd_out_msg_append(cmd_params_cmd_out(p), (char*)cmd->name));
+        try(cmd_out_msg_append(cmd_params_cmd_out(p), svl("?\n")));
         return 0x0;
     }
 	return cstr_skip_space(s);
@@ -85,23 +85,23 @@ static Err run_cmd_help(SessionCmd cmd[_1_], CmdOut out[_1_]) {
     "Not documented command.\n"\
     "TODO: document it.\n"
     if (!cmd->help && !cmd->subcmds) 
-        try(cmd_out_msg_append_lit__(out, RUN_CMD_DOC_TODO_MSG));
+        try(cmd_out_msg_append(out, svl(RUN_CMD_DOC_TODO_MSG)));
     if (cmd->help)
-        try(cmd_out_msg_append(out, (char*)cmd->help, strlen(cmd->help)));
+        try(cmd_out_msg_append(out, (char*)cmd->help));
     if (cmd->subcmds) {
-        cmd_out_msg_append_lit__(out, "sub commands:\n");
+        cmd_out_msg_append(out, svl("sub commands:\n"));
         for (SessionCmd* sub = cmd->subcmds; sub->name ; ++sub) {
             if (sub->flags & CMD_CHAR) {
-                cmd_out_msg_append_lit__(out, "  '");
-                cmd_out_msg_append_ln(out, (char*)sub->name, strlen(sub->name));
+                cmd_out_msg_append(out, svl("  '"));
+                cmd_out_msg_append_ln(out, (char*)sub->name);
             } else if (sub->flags & CMD_EMPTY) {
-                cmd_out_msg_append_lit__(out, "  <empty>\n");
+                cmd_out_msg_append(out, svl("  <empty>\n"));
             } else if (sub->flags & CMD_ANY) {
-                cmd_out_msg_append_lit__(out, "  <any> ");
-                cmd_out_msg_append_ln(out, (char*)sub->name, strlen(sub->name));
+                cmd_out_msg_append(out, svl("  <any> "));
+                cmd_out_msg_append_ln(out, (char*)sub->name);
             } else if (sub->name) {
-                cmd_out_msg_append_lit__(out, "  ");
-                cmd_out_msg_append_ln(out, (char*)sub->name, strlen(sub->name));
+                cmd_out_msg_append(out, svl("  "));
+                cmd_out_msg_append_ln(out, (char*)sub->name);
             }
         }
     }
@@ -291,11 +291,11 @@ static Err cmd_doc_scripts_list(CmdParams p[_1_]) {
     size_t body_scripts_count = len__(htmldoc_body_scripts(h));
 
     CmdOut* out = cmd_params_cmd_out(p);
-    try(cmd_out_msg_append_lit__(out, "head script count: "));
+    try(cmd_out_msg_append(out, svl("head script count: ")));
     try(cmd_out_msg_append_ui_as_base10(out, head_scripts_count));
-    try(cmd_out_msg_append_lit__(out, "\nbody script count: "));
+    try(cmd_out_msg_append(out, svl("\nbody script count: ")));
     try(cmd_out_msg_append_ui_as_base10(out, body_scripts_count));
-    try(cmd_out_msg_append_lit__(out, "\n"));
+    try(cmd_out_msg_append(out, svl("\n")));
     return Ok;
 }
 
@@ -309,7 +309,7 @@ static Err cmd_doc_scripts_save(CmdParams p[_1_]) {
     try_or_jump(e, Failure, file_writer_init(&w, fp));
     try_or_jump(e, Failure, htmldoc_scripts_write(h, &p->rp, &w));
     e = file_close(fp);
-    ok_then(e, cmd_out_msg_append_lit__(cmd_params_cmd_out(p), "script(s) saved\n"));
+    ok_then(e, cmd_out_msg_append(cmd_params_cmd_out(p), svl("script(s) saved\n")));
     return Ok;
 Failure:
     file_close(fp);
@@ -418,7 +418,7 @@ static SessionCmd _cmd_image_[] =
 #define CMD_ECHO_DOC "Prints in the message area the received parameters.\n"
 static Err cmd_echo (CmdParams p[_1_]) { 
     if (p->s && p->ln && *p->ln)
-        cmd_out_msg_append_ln(cmd_params_cmd_out(p), (char*)p->ln, strlen(p->ln));
+        cmd_out_msg_append_ln(cmd_params_cmd_out(p), (char*)p->ln);
     return Ok;
 }
 

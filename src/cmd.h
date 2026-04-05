@@ -62,7 +62,7 @@ static inline Err cmd_curl_cookies(CmdParams p[_1_]) {
     "Shows curl's version.\n"
 static inline Err cmd_curl_version(CmdParams p[_1_]) {
     char* version = curl_version();
-    return cmd_out_msg_append(cmd_params_cmd_out(p), version, strlen(version));
+    return cmd_out_msg_append(cmd_params_cmd_out(p), version);
 }
 
 // curl commands
@@ -222,7 +222,7 @@ static inline Err cmd_textbuf_write(CmdParams p[_1_]) {
     const char* filename = cstr_trim_space((char*)p->ln);
     if (range_parse_is_none(&p->rp)) {
         try( textbuf_to_file(p->tb, filename, "w"));
-        return cmd_out_msg_append_lit__(cmd_params_cmd_out(p), "file written.");
+        return cmd_out_msg_append(cmd_params_cmd_out(p), svl("file written."));
     }
     Range rng;
     try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
@@ -250,15 +250,15 @@ Err _cmd_input_ix_set_(CmdParams p[_1_], const size_t ix);
 
 
 static inline Err
-_get_lexbor_node_ptr_by_ix(ArlOf(LxbNodePtr) node_arl[_1_], size_t ix, lxb_dom_node_t* outnode[_1_]) {
-    LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(node_arl, ix);
+_get_dom_node_at_(ArlOf(DomNode) node_arl[_1_], size_t ix, DomNode outnode[_1_]) {
+    DomNode* nodeptr = arlfn(DomNode, at)(node_arl, ix);
     if (!nodeptr) return "input element number invalid";
     *outnode = *nodeptr;
     return Ok;
 }
 
 
-Err _cmd_lexbor_node_print_( ArlOf(LxbNodePtr) node_arl[_1_], size_t ix, CmdOut out[_1_]);
+Err _cmd_lexbor_node_print_(ArlOf(DomNode) node_arl[_1_], size_t ix, CmdOut out[_1_]);
 
 static inline Err _cmd_form_print(CmdParams p[_1_], size_t ix) {
     HtmlDoc* d;
@@ -276,26 +276,18 @@ static inline Err _cmd_input_submit_ix(CmdParams p[_1_], size_t ix) {
     return session_press_submit(p->s, ix, cmd_params_cmd_out(p));
 }
 
-static inline Err cmd_select_elem_show_options(LxbNode lbn[_1_], CmdOut out [_1_]) {
-    if (!lxbnode_node(lbn)) return "error: expecting lexbor node, not NULL";
-    for(lxb_dom_node_t* it = lxbnode_node(lbn)->first_child; it ; it = it->next) {
-        if (it->local_name == LXB_TAG_OPTION) {
+static inline Err cmd_select_elem_show_options(DomNode lbn[_1_], CmdOut out [_1_]) {
+    if (isnull(*lbn)) return "error: expecting lexbor node, not NULL";
+    for(DomNode it = dom_node_first_child(*lbn); !isnull(it) ; it = dom_node_next(it)) {
+        if (dom_node_tag(it) == HTML_TAG_OPTION) {
 
-            if (lexbor_has_lit_attr__(it, "selected")) cmd_out_msg_append_lit__(out, " *\t");
-            else cmd_out_msg_append_lit__(out, "\t");
+            if (dom_node_has_attr(it, svl("selected"))) cmd_out_msg_append(out, svl(" *\t"));
+            else cmd_out_msg_append(out, svl("\t"));
 
-            lxb_dom_node_t* opt_text = it->first_child;
-            if (opt_text->local_name == LXB_TAG__TEXT) {
-                const char* text;
-                size_t len;
-                try(lexbor_get_text(opt_text, &text, &len));
-                if (len) try( cmd_out_msg_append(out, (char*)text, len));
-            }
-
-            cmd_out_msg_append_lit__(out, " | value: "); 
-            StrView value = lexbor_get_lit_attr__(it, "value");
-            if (value.len) cmd_out_msg_append_ln(out, (char*)value.items, value.len);
-            else cmd_out_msg_append_lit__(out, "\"\"\n"); 
+            cmd_out_msg_append(out, svl(" | value: ")); 
+            StrView value = dom_node_attr_value(it, svl("value"));
+            if (value.len) cmd_out_msg_append_ln(out, value);
+            else cmd_out_msg_append(out, svl("\"\"\n")); 
 
         }
     }
@@ -306,19 +298,19 @@ static inline Err cmd_select_elem_show_options(LxbNode lbn[_1_], CmdOut out [_1_
 static inline Err cmd_input_default_ix(CmdParams p[_1_], size_t ix) {
     TabNode* tab;
     HtmlDoc* doc;
-    LxbNode  lbn;
+    DomNode  lbn;
     try( tablist_current_tab(session_tablist(p->s), &tab));
     try( tab_node_current_doc(tab, &doc));
     try( htmldoc_input_at(doc, ix, &lbn));
 
-    if (lexbor_node_tag_is_input(&lbn)
-    &&  lexbor_lit_attr_has_lit_value(&lbn, "type", "submit")) 
+    if (dom_node_tag(lbn) == HTML_TAG_INPUT
+    &&  dom_node_attr_has_value(lbn, svl("type"), svl("submit"))) 
         return tab_node_tree_append_submit(tab , ix, session_url_client(p->s), p->s, cmd_params_cmd_out(p));
-    else if (lexbor_node_tag_is_button(&lbn)
-    &&  (lexbor_lit_attr_has_lit_value(&lbn, "type", "submit") 
-        || !lexbor_has_lit_attr__(&lbn, "type")))
+    else if (dom_node_tag(lbn) == HTML_TAG_BUTTON
+    &&  (dom_node_attr_has_value(lbn, svl("type"), svl("submit"))
+        || !dom_node_has_attr(lbn, svl("type"))))
         return tab_node_tree_append_submit(tab , ix, session_url_client(p->s), p->s, cmd_params_cmd_out(p));
-    else if (lexbor_node_tag_is_select(&lbn))
+    else if (dom_node_tag(lbn) == HTML_TAG_SELECT)
         return cmd_select_elem_show_options(&lbn, cmd_params_cmd_out(p));
     
     return "error: invalid input node";
@@ -329,7 +321,6 @@ static inline Err cmd_input_default_ix(CmdParams p[_1_], size_t ix) {
 */
 
 Err cmd_image(CmdParams p[_1_]);
-Err _get_image_by_ix(Session session[_1_], size_t ix, lxb_dom_node_t* outnode[_1_]);
 Err _cmd_image_print(CmdParams p[_1_], size_t ix);
 Err _cmd_image_save(CmdParams p[_1_], size_t ix);
 
@@ -338,13 +329,13 @@ Err _cmd_image_save(CmdParams p[_1_], size_t ix);
    Misc commands
  */
 
-Err _cmd_misc(Session session[_1_], const char* line, CmdOut cout[_1_]);
+// Err _cmd_misc(Session session[_1_], const char* line, CmdOut cout[_1_]);
 
-static inline Err _cmd_misc_tag(const char* rest, Session session[_1_]) {
-    HtmlDoc* htmldoc;
-    try( session_current_doc(session, &htmldoc));
-    return lexbor_cp_tag(rest, htmldoc->lxbdoc, textbuf_buf(htmldoc_textbuf(htmldoc)));
-}
+// static inline Err _cmd_misc_tag(const char* rest, Session session[_1_]) {
+//     HtmlDoc* htmldoc;
+//     try( session_current_doc(session, &htmldoc));
+//     return lexbor_cp_tag(rest, htmldoc->lxbdoc, textbuf_buf(htmldoc_textbuf(htmldoc)));
+// }
 
 Err cmd_fetch(Session session[_1_], CmdOut* out);
 Err cmd_set_session_forms(CmdParams p[_1_]);

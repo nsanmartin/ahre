@@ -5,7 +5,6 @@
 #include <errno.h>
 #include <unistd.h>
 
-#include <lexbor/html/html.h>
 
 #include "constants.h"
 #include "doc-elem.h"
@@ -46,13 +45,13 @@ typedef struct {
 
 
 typedef struct {
-    TextBuf           textbuf;
-    Str               screen;
-    LxbNodePtr        title;
-    ArlOf(LxbNodePtr) anchors;
-    ArlOf(LxbNodePtr) imgs;
-    ArlOf(LxbNodePtr) inputs;
-    ArlOf(LxbNodePtr) forms;
+    TextBuf        textbuf;
+    Str            screen;
+    DomNode        title;
+    ArlOf(DomNode) anchors;
+    ArlOf(DomNode) imgs;
+    ArlOf(DomNode) inputs;
+    ArlOf(DomNode) forms;
 } DocDrawCache;
 
 
@@ -70,7 +69,7 @@ static inline void http_header_clean(HttpHeader hh[_1_]) {
 
 typedef struct HtmlDoc {
     Request              req;
-    lxb_html_document_t* lxbdoc;
+    Dom                  dom;
     DocFetchCache        fetch_cache;
     DocDrawCache         draw_cache;
     size_t               hide_tags;
@@ -86,15 +85,16 @@ htmldoc_http_content_type(HtmlDoc h[_1_]) { return &htmldoc_http_header(h)->cont
 static inline Str*
 htmldoc_http_charset(HtmlDoc h[_1_]) { return &htmldoc_http_header(h)->charset; }
 static inline size_t* htmldoc_hide_tags(HtmlDoc d[_1_]) { return &d->hide_tags; }
-static inline lxb_html_document_t* htmldoc_lxbdoc(HtmlDoc d[_1_]) { return d->lxbdoc; }
+static inline Dom htmldoc_dom(HtmlDoc d[_1_]) { return d->dom; }
+static inline Dom* htmldoc_dom_ptr(HtmlDoc d[_1_]) { return &d->dom; }
 static inline TextBuf* htmldoc_sourcebuf(HtmlDoc d[_1_]) { return &d->fetch_cache.sourcebuf; }
 static inline TextBuf* htmldoc_textbuf(HtmlDoc d[_1_]) { return &d->draw_cache.textbuf; }
 static inline Str* htmldoc_screen(HtmlDoc d[_1_]) { return &d->draw_cache.screen; }
-static inline ArlOf(LxbNodePtr)*
+static inline ArlOf(DomNode)*
 htmldoc_anchors(HtmlDoc d[_1_]) { return &d->draw_cache.anchors; }
-static inline ArlOf(LxbNodePtr)* htmldoc_imgs(HtmlDoc d[_1_]) { return &d->draw_cache.imgs; }
-static inline ArlOf(LxbNodePtr)* htmldoc_inputs(HtmlDoc d[_1_]) { return &d->draw_cache.inputs; }
-static inline ArlOf(LxbNodePtr)* htmldoc_forms(HtmlDoc d[_1_]) { return &d->draw_cache.forms; }
+static inline ArlOf(DomNode)* htmldoc_imgs(HtmlDoc d[_1_]) { return &d->draw_cache.imgs; }
+static inline ArlOf(DomNode)* htmldoc_inputs(HtmlDoc d[_1_]) { return &d->draw_cache.inputs; }
+static inline ArlOf(DomNode)* htmldoc_forms(HtmlDoc d[_1_]) { return &d->draw_cache.forms; }
 
 static inline ArlOf(Str)* htmldoc_head_scripts(HtmlDoc d[_1_])
 { return &d->fetch_cache.head_scripts; }
@@ -113,12 +113,12 @@ static inline Err htmldoc_script_at(HtmlDoc d[_1_], size_t ix, Str* sptr[_1_]) {
     return err_fmt("not script at %d", ix);
 }
 
-static inline LxbNodePtr* htmldoc_title(HtmlDoc d[_1_]) { return &d->draw_cache.title; }
+static inline DomNode* htmldoc_title(HtmlDoc d[_1_]) { return &d->draw_cache.title; }
 
-static inline Err htmldoc_input_at(HtmlDoc d[_1_], size_t ix, LxbNode out[_1_]) {
-    LxbNodePtr* np = arlfn(LxbNodePtr, at)(htmldoc_inputs(d), ix);
+static inline Err htmldoc_input_at(HtmlDoc d[_1_], size_t ix, DomNode out[_1_]) {
+    DomNode* np = arlfn(DomNode, at)(htmldoc_inputs(d), ix);
     if (!np) return  "link number invalid";
-    out->n = *np;
+    *out = *np;
     return Ok;
 }
 
@@ -126,10 +126,6 @@ static inline Url* htmldoc_url(HtmlDoc d[_1_]) { return &d->req.url; }
 static inline HttpMethod htmldoc_method(HtmlDoc d[_1_]) { return d->req.method; }
 static inline JsEngine* htmldoc_js(HtmlDoc d[_1_]) { return &d->jsdoc; }
 
-static inline bool htmldoc_is_valid(HtmlDoc htmldoc[_1_]) {
-    ////TODO: remove, not needed since URLU
-    return htmldoc && htmldoc->lxbdoc && htmldoc->lxbdoc->body;
-}
 
 static inline bool htmldoc_http_charset_is_utf8(HtmlDoc d[_1_]) {
     char* from_charset = items__(htmldoc_http_charset(d));
@@ -216,13 +212,13 @@ static inline Err htmldoc_tags_str_reduce_size_t(const char* tags, size_t ts[_1_
 }
 
 
-static inline Err lxb_mk_title_or_url(HtmlDoc d[_1_], char* url, Str title[_1_]) {
+static inline Err htmldoc_title_or_url(HtmlDoc d[_1_], char* url, Str title[_1_]) {
     Err err = Ok;
-    lxb_dom_node_t* title_node;
-    try( lexbor_get_title_node(htmldoc_lxbdoc(d), &title_node));
-    if (title_node) err = lexbor_get_title_text_line(title_node, title);
+    DomNode title_node;
+    try( dom_get_title_node(htmldoc_dom(d), &title_node));
+    if (!isnull(title_node)) err = dom_get_title_text_line(htmldoc_dom(d), title);
     else if (!*url) err = "no title nor url";
-    else err = str_append(title, url, strlen(url));
+    else err = str_append(title, url);
 
     return err;
 }

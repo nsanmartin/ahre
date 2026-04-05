@@ -81,25 +81,19 @@ static inline Str* session_bookmarks_fname(Session s[_1_]) {
 }
 
 static inline Err session_bookmarks_fname_append(Session s[_1_], Str out[_1_]) {
-    return str_append(
-        out, session_conf(s)->bookmarks_fname.items, session_conf(s)->bookmarks_fname.len
-    );
+    return str_append(out, session_conf(s)->bookmarks_fname);
 }
 
 static inline Err session_fetch_history_fname_append(Session s[_1_], Str out[_1_]) {
-    return str_append(
-        out, session_conf(s)->fetch_history_fname.items, session_conf(s)->fetch_history_fname.len
-    );
+    return str_append(out, session_conf(s)->fetch_history_fname);
 }
 
 static inline Err session_input_history_fname_append(Session s[_1_], Str out[_1_]) {
-    return str_append(
-        out, session_conf(s)->input_history_fname.items, session_conf(s)->input_history_fname.len
-    );
+    return str_append(out, session_conf(s)->input_history_fname);
 }
 
 static inline StrView session_cookies_fname(Session s[_1_]) {
-    return strview__(&s->conf.cookies_fname);
+    return sv(&s->conf.cookies_fname);
 }
 
 /* ctor */

@@ -30,11 +30,11 @@ Err fetch_history_entry_update_curl(
 
     if (c !=CURLE_OK ) {
         const char* cerr = curl_easy_strerror(c);
-        try(cmd_out_msg_append(cmd_out,(char*)cerr, strlen(cerr))); 
+        try(cmd_out_msg_append(cmd_out,(char*)cerr)); 
     } else {
-        str_append(&e->effective_url, (char*)effective_url, strlen(effective_url));
-        str_append(&e->local_ip,      (char*)local_ip,      strlen(local_ip));
-        str_append(&e->primary_ip,    (char*)primary_ip,    strlen(primary_ip));
+        str_append(&e->effective_url, (char*)effective_url);
+        str_append(&e->local_ip,      (char*)local_ip);
+        str_append(&e->primary_ip,    (char*)primary_ip);
     }
     return Ok;
 }

@@ -9,18 +9,18 @@ Err session_conf_set_paths(SessionConf sc[_1_]) {
         return Ok; /* we ignore this error and just init a session with no config dir*/
 
     sc->confdirname = confdir;
-    try_or_jump(err, Fail_Clean_Conf_Dir, str_append_str(&sc->cookies_fname, &sc->confdirname));
+    try_or_jump(err, Fail_Clean_Conf_Dir, str_append(&sc->cookies_fname, &sc->confdirname));
     try_or_jump(err, Fail_Clean_Cookies, append_cookies_filename(&sc->cookies_fname));
 
-    try_or_jump(err, Fail_Clean_Cookies, str_append_str(&sc->bookmarks_fname, &sc->confdirname));
+    try_or_jump(err, Fail_Clean_Cookies, str_append(&sc->bookmarks_fname, &sc->confdirname));
     try_or_jump(err, Fail_Clean_Bookmarks, append_bookmark_filename(NULL, &sc->bookmarks_fname));
 
     try_or_jump(err, Fail_Clean_Bookmarks,
-        str_append_str(&sc->input_history_fname, &sc->confdirname));
+        str_append(&sc->input_history_fname, &sc->confdirname));
     try_or_jump(err, Fail_Clean_Input_Hist, append_input_history_filename(&sc->input_history_fname));
 
     try_or_jump(err, Fail_Clean_Input_Hist,
-        str_append_str(&sc->fetch_history_fname, &sc->confdirname));
+        str_append(&sc->fetch_history_fname, &sc->confdirname));
     try_or_jump(err, Fail_Clean_Fetch_Hist, append_fetch_history_filename(&sc->fetch_history_fname));
 
     return err;

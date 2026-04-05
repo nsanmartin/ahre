@@ -95,7 +95,7 @@ Err url_client_print_cookies(Session* s, UrlClient uc[_1_], CmdOut* out) {
 
     struct curl_slist* it = cookies;
     while (it) {
-        try(cmd_out_msg_append_ln(out, it->data, strlen(it->data)));
+        try(cmd_out_msg_append_ln(out, cast__(const char*)it->data));
         it = it->next;
     }
     curl_slist_free_all(cookies);
@@ -169,8 +169,8 @@ Err url_client_multi_add_handles(
     for (Str* u = arlfn(Str,begin)(urls) ; u != arlfn(Str,end)(urls) ; ++u) {
         Err e = w_curl_multi_add(uc, curlu, items__(u), easies, scripts, curlus);
         if (e) {
-            try(cmd_out_msg_append_lit__(cmd_out, "couldn't get script: "));
-            try(cmd_out_msg_append(cmd_out, (char*)e, strlen(e)));
+            try(cmd_out_msg_append(cmd_out, svl("couldn't get script: ")));
+            try(cmd_out_msg_append(cmd_out, (char*)e));
         }
     }
     return Ok;

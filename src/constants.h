@@ -29,33 +29,33 @@
 #define ELEM_ID_SEP_BUTTON "\u25B8"
 
 
-static inline StrView input_text_open_str(void) { return strview_from_lit__(INPUT_OPEN_STR); }
-static inline StrView input_text_sep_str(void) { return strview_from_lit__(INPUT_SEP_STR); }
-static inline StrView input_text_close_str(void) { return strview_from_lit__(INPUT_CLOSE_STR); }
+static inline StrView input_text_open_str(void) { return svl(INPUT_OPEN_STR); }
+static inline StrView input_text_sep_str(void) { return svl(INPUT_SEP_STR); }
+static inline StrView input_text_close_str(void) { return svl(INPUT_CLOSE_STR); }
 
-static inline StrView input_select_sep_str(void) { return strview_from_lit__(SELECT_SEP_STR); }
+static inline StrView input_select_sep_str(void) { return svl(SELECT_SEP_STR); }
 
-static inline StrView input_submit_sep_str(void) { return strview_from_lit__("/"); }
-static inline StrView input_submit_close_str(void) { return strview_from_lit__(INPUT_CLOSE_STR); }
+static inline StrView input_submit_sep_str(void) { return svl("/"); }
+static inline StrView input_submit_close_str(void) { return svl(INPUT_CLOSE_STR); }
 
-static inline StrView anchor_open_str(void) { return strview_from_lit__(ANCHOR_OPEN_STR); }
-static inline StrView anchor_sep_str(void) { return strview_from_lit__(ANCHOR_SEP_STR); }
-static inline StrView anchor_close_str(void) { return strview_from_lit__(ANCHOR_CLOSE_STR); }
+static inline StrView anchor_open_str(void) { return svl(ANCHOR_OPEN_STR); }
+static inline StrView anchor_sep_str(void) { return svl(ANCHOR_SEP_STR); }
+static inline StrView anchor_close_str(void) { return svl(ANCHOR_CLOSE_STR); }
 
-static inline StrView image_open_str(void) { return strview_from_lit__(IMAGE_OPEN_STR); }
-static inline StrView image_close_str(void) { return strview_from_lit__(IMAGE_CLOSE_STR); }
+static inline StrView image_open_str(void) { return svl(IMAGE_OPEN_STR); }
+static inline StrView image_close_str(void) { return svl(IMAGE_CLOSE_STR); }
 
-static inline StrView button_open_str(void) { return strview_from_lit__(BUTTON_OPEN_STR); }
-static inline StrView button_sep_str(void) { return strview_from_lit__(BUTTON_SEP_STR); }
-static inline StrView button_close_str(void) { return strview_from_lit__(BUTTON_CLOSE_STR); }
+static inline StrView button_open_str(void) { return svl(BUTTON_OPEN_STR); }
+static inline StrView button_sep_str(void) { return svl(BUTTON_SEP_STR); }
+static inline StrView button_close_str(void) { return svl(BUTTON_CLOSE_STR); }
 
-static inline StrView form_open_str(void) { return strview_from_lit__(FORM_OPEN_STR); }
-static inline StrView form_sep_str(void) { return strview_from_lit__(FORM_SEP_STR); }
-static inline StrView form_close_str(void) { return strview_from_lit__(FORM_CLOSE_STR); }
+static inline StrView form_open_str(void) { return svl(FORM_OPEN_STR); }
+static inline StrView form_sep_str(void) { return svl(FORM_SEP_STR); }
+static inline StrView form_close_str(void) { return svl(FORM_CLOSE_STR); }
 
-static inline StrView elem_id_sep_default(void) { return strview_from_lit__(ELEM_ID_SEP); }
-static inline StrView h_tag_open_str(void) { return strview_from_lit__("\n# "); }
+static inline StrView elem_id_sep_default(void) { return svl(ELEM_ID_SEP); }
+static inline StrView h_tag_open_str(void) { return svl("\n# "); }
 
-static inline StrView newline_str(void) { return strview_from_lit__("\n"); }
-static inline StrView space_str(void) { return strview_from_lit__(" "); }
+static inline StrView newline_str(void) { return svl("\n"); }
+static inline StrView space_str(void) { return svl(" "); }
 #endif

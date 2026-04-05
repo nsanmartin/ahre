@@ -14,9 +14,9 @@ Err get_bookmarks_doc(
     HtmlDoc     htmldoc_out[_1_]
 ) {
     Str* bm_url = &(Str){0};
-    Err err = str_append_lit__(bm_url, "file://");
+    Err err = str_append(bm_url, svl("file://"));
     try(err);
-    try_or_jump(err, Clean_Bm_Url, str_append(bm_url, (char*)bm_path.items, bm_path.len));
+    try_or_jump(err, Clean_Bm_Url, str_append(bm_url, bm_path));
     try_or_jump(err, Clean_Bm_Url,
         htmldoc_init_bookmark_move_urlstr(htmldoc_out, bm_url));
     FetchHistoryEntry e = (FetchHistoryEntry){0};
@@ -33,20 +33,22 @@ Clean_Bm_Url:
 
 
 /* external linkage */
-Err bookmark_sections_body(HtmlDoc bookmark[_1_], lxb_dom_node_t* out[_1_]) {
-    lxb_html_document_t* lxbdoc = htmldoc_lxbdoc(bookmark);
-    lxb_dom_node_t* node = lxb_dom_interface_node(lxbdoc);
-    if (!node) return "error: no document";
-    if (node->type != LXB_DOM_NODE_TYPE_DOCUMENT) return "not a bookmark file";
-    lxb_dom_node_t* html = node->first_child;
-    if (!html) return "not a bookmark file: expecting an html tag";
-    if (html != node->last_child) return "not a bookmark file";
-    if (html->local_name != LXB_TAG_HTML) return "not a bookmark file";
-    if (!html->first_child) return "not a bookmark: expecting head";
-    if (html->first_child->local_name != LXB_TAG_HEAD) return "not a bookmark file";
-    if (!html->last_child) return "not a bookmark: expecting body";
-    if (html->last_child->local_name != LXB_TAG_BODY) return "not a bookmark file";
-    *out = html->last_child;
+Err bookmark_sections_body(HtmlDoc bookmark[_1_], DomNode out[_1_]) {
+    Dom dom = htmldoc_dom(bookmark);
+    DomNode node = dom_root(dom);
+    if (isnull(node)) return "error: no document";
+    if (!dom_node_has_type_document(node)) return "not a bookmark file";
+    DomNode html = dom_node_first_child(node);
+    if (isnull(html)) return "not a bookmark file: expecting an html tag";
+    if (!dom_node_eq(html, dom_node_last_child(node))) return "not a bookmark file";
+    if (!dom_node_has_tag_html(html)) return "not a bookmark file";
+    DomNode first_child = dom_node_first_child(html);
+    if (isnull(first_child)) return "not a bookmark: expecting head";
+    if (!dom_node_has_tag_head(first_child)) return "not a bookmark file";
+    DomNode html_last_child = dom_node_last_child(html);
+    if (isnull(html_last_child)) return "not a bookmark: expecting body";
+    if (!dom_node_has_tag_body(html_last_child)) return "not a bookmark file";
+    *out = html_last_child;
     return Ok;
 }
 
@@ -57,7 +59,7 @@ Err cmd_bookmarks(CmdParams p[_1_]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
     ArlOf(BufOf(char)) list = (ArlOf(BufOf(char))){0};
-    lxb_dom_node_t* body;
+    DomNode body;
     try(bookmark_sections_body(htmldoc, &body));
     Err err = Ok;
     if (!*url) {
@@ -70,15 +72,13 @@ Err cmd_bookmarks(CmdParams p[_1_]) {
         }
         arlfn(BufOf(char),clean)(&list);
     } else {
-        lxb_dom_node_t* section;
-        try( bookmark_section_get(body, url, &section));
+        DomNode section;
+        try( bookmark_section_get(body, url, &section, /*match_prefix*/false));
 
-        if (section) {
-            const char* data;
-            size_t len;
-            try( lexbor_node_get_text(section->first_child, &data, &len));
-            if (len) {
-                try(cmd_out_msg_append_ln(cmd_params_cmd_out(p), (char*)data, len));
+        if (!isnull(section)) {
+            StrView data = dom_node_text_view(dom_node_first_child(section));
+            if (data.len) {
+                try(cmd_out_msg_append_str_ln(cmd_params_cmd_out(p), &data));
             }
         } else err = "invalid section in bookmark";
     }

@@ -3,14 +3,19 @@
 #include <ctype.h>
 #include <errno.h>
 #include <iconv.h>
-#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <wordexp.h>
 
 #include "error.h"
 #include "generic.h"
 #include "str.h"
+#include "sys.h"
+
+/* mem fns */
+char* mem_is_whitespace(char* s, size_t len) {
+    while(len && *s && !isspace(*s)) { ++s; --len; }
+    return len ? s : NULL;
+}
 
 
 size_t mem_count_ocurrencies(char* data, size_t len, char c) {
@@ -28,6 +33,44 @@ size_t mem_count_ocurrencies(char* data, size_t len, char c) {
 }
 
 
+const char* mem_to_dup_str(const char* data, size_t len) {
+    char* res = std_malloc(len + 1);
+    if (!res) return NULL;
+    memcpy(res, data, len);
+    res[len] = '\0';
+    return res;
+}
+
+
+bool mem_skip_space_inplace(const char* data[_1_], size_t len[_1_]) {
+    for(; *len && isspace(**data); --(*len), ++(*data))
+        ;
+    return *len != 0;
+}
+
+
+Err mem_fwrite(const char* mem, size_t len, FILE* stream) {
+    if (len != fwrite(mem, 1, len, stream)) return "error: mem_fwrite failure";
+    return Ok;
+}
+
+
+int memstr_cmp(const char* mem, size_t len, const char* cstr) {
+    size_t cmplen = strlen(cstr);
+    if (cmplen > len) cmplen = len;
+    return strncmp(mem, cstr, cmplen);
+}
+
+
+bool cstr_starts_with(const char* s, const char* t) {
+    return s && t && strncmp(s, t, strlen(t)) == 0;
+}
+
+
+bool cstr_mem_eq_case(const char* cstr, const char* mem, size_t len) { 
+    return cstr && mem && strlen(cstr) == len && !strncasecmp(cstr, mem, len);
+}
+
 /* static Err mem_get_indexes_of(char* data, size_t len, size_t offset, char c, ArlOf(size_t)* indexes) { */
 /*     char* end = data + len; */
 /*     char* it = data; */
@@ -44,21 +87,27 @@ size_t mem_count_ocurrencies(char* data, size_t len, char c) {
 /* } */
 
 
-const char* cstr_skip_space(const char* s) {
+/* cstr fns */
+
+const char*
+cstr_skip_space(const char* s) {
     for (; *s && isspace(*s); ++s);
     return s;
 }
 
-const char* cstr_next_space(const char* l) {
+
+const char*
+cstr_next_space(const char* l) {
     while (*l && !isspace(*l)) { ++l; }
     return l;
 }
 
-void str_trim_space(StrView* l) {
-    l->items = cstr_skip_space(items__(l));
-    l->len = cstr_next_space(items__(l)) - items__(l);
-}
 
+void
+cstr_replace_char_inplace(char* s, char from, char to) {
+    char* p;
+    while ((p=strchr(s,from))) *p = to;
+}
 
 const char* csubstr_match(const char* s, const char* cmd, size_t len) {
     if (!*s || !isalpha(*s)) { return 0x0; }
@@ -128,24 +177,12 @@ const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen) {
     return buf;
 }
 
-StrView str_split_line(StrView text[_1_]) {
-    StrView line = *text;
-    const char* nl = memchr(line.items, '\n', line.len);
-    if (nl) {
-        line.len = nl - line.items;
-        text->items = nl + 1;
-        text->len -= (line.len + 1);
-    } else  {
-        *text = (StrView){0};
-    }
-    return line;
-}
 
 bool substr_match_all(const char* s, size_t len, const char* cmd) {
     return (s=csubstr_match(s, cmd, len)) && !*cstr_skip_space(s);
 }
 
-Err _convert_to_utf8_(
+Err mem_convert_to_utf8(
     const char* inbuf,
     const size_t inlen,
     const char* charset,
@@ -213,11 +250,11 @@ Err str_append_timespec(Str out[_1_], struct timespec ts[_1_]) {
     char buff[DT_BUFLEN];
     if (!strftime(buff, sizeof buff, "%F %T", gmtime(&ts->tv_sec)))
         return "error: strftime output did not fit the DT_BUFLEN";
-    try( str_append(out, buff, strlen(buff)));
+    try( str_append(out, buff));
     const int len = snprintf(buff, DT_BUFLEN, ".%09ld UTC", ts->tv_nsec);
     if ((int)DT_BUFLEN <= len)
         return "error: snprintf output did not fit the DT_BUFLEN";
-    return str_append(out, buff, (size_t)len);
+    return str_append(out, buff);
 }
 
 Err str_append_datetime_now(Str out[_1_]) {
@@ -227,52 +264,13 @@ Err str_append_datetime_now(Str out[_1_]) {
     return str_append_timespec(out, &ts);
 }
 
-static Err expand_path(const char *path, Str out[_1_]) {
-    wordexp_t result = {0};
-
-    switch (wordexp (path, &result, WRDE_NOCMD | WRDE_UNDEF)) {
-        case 0: break;
-        case WRDE_BADVAL: 
-            wordfree (&result);
-            return "undefined enviroment variable in path";
-        case WRDE_NOSPACE:
-            wordfree (&result);
-            return "out of memory parsing path";
-        default: return "invalid path, wordexp could not parse";
-    }
-
-    if (result.we_wordc == 0) { wordfree(&result); return "invalid path: cannot be empty"; }
-    const char* expanded = result.we_wordv[0];
-    if (!strlen(expanded)) return "invalid path with no length";
-    Err err = str_append_z(out, (char*)expanded, strlen(expanded)); wordfree(&result);
-
-    return err;
-}
-
-Err resolve_path(const char *path, bool file_exists[_1_], Str out[_1_]) {
-    Str expanded = (Str){0};
-    try(expand_path(path, &expanded));
-    char buf[PATH_MAX];
-    char *real = realpath(expanded.items, buf);
-    if (!real && errno != ENOENT) {
-    	str_clean(&expanded);
-        return err_fmt("could not resolve path: %s", strerror(errno));
-    }
-    *file_exists =  real && errno != ENOENT;
-    Err err = Ok;
-    if (real) err = str_append(out, real, strlen(real) + 1);
-    else err = str_append(out, expanded.items, expanded.len);
-    str_clean(&expanded);
-    return err;
-}
-
 
 Err str_append_ui_as_base10(Str buf[_1_], uintmax_t ui) {
     char numbuf[3 * sizeof ui] = {0};
     int len = snprintf(numbuf, (3 * sizeof ui), "%lu", ui);
     if (len < 0 || (len > 3 * (int)(sizeof(ui))))
         return "error: could not convert ui to str";
-    return str_append(buf, numbuf, (size_t)len);
+    return str_append(buf, sv(numbuf, (size_t)len));
 }
 
 
@@ -280,18 +278,171 @@ Err str_append_ui_as_base36(Str buf[_1_], uintmax_t ui) {
     char numbf[3 * sizeof ui] = {0};
     size_t len = 0;
     try( uint_to_base36_str(numbf, 3 * sizeof ui, ui, &len));
-    return str_append(buf, numbf, len);
+    return str_append(buf, sv(numbf, len));
 }
 
 
+/* strview fns */
 
+StrView strview_from_mem(const char* s, size_t len) {return (StrView){.items=s, .len=len};}
+StrView strview_from_strview(StrView s[_1_]) { return *s; }
+bool strview_is_empty(const StrView s[_1_]) { return !s->items || s->len == 0; }
+const char* strview_beg(const StrView s[_1_]) { return s->items; }
+const char* strview_end(const StrView s[_1_]) { return s->items + s->len; }
+size_t strview_len(const StrView s[_1_]) { return s->len; }
+
+void strview_trim_space_left(StrView s[_1_]) {
+    while(s->len && isspace(*(items__(s)))) { ++s->items; --s->len; }
+}
+
+
+void strview_trim_space_in_place(StrView s[_1_]) {
+    while(s->len && isspace(*(s->items))) { ++s->items; --s->len; }
+    while(s->len > 1 && isspace(s->items[s->len-1])) { --s->len; }
+}
+
+StrView strview_split_word(StrView s[_1_]) {
+    StrView word = (StrView){.items=items__(s)};
+    while(s->len && !isspace(*(items__(s)))) { ++word.len; ++s->items; --s->len; }
+    return word;
+}
+
+StrView cstr_split_word(const char* s[_1_]) {
+    StrView word = (StrView){.items=*s};
+    while(**s && !isspace(**s)) { ++(*s); ++word.len; }
+    while(**s && isspace(**s)) { ++(*s); }
+    return word;
+}
+
+StrView strview_from_mem_trim(const char* s, size_t len) {
+    StrView rv = strview_from_mem(s, len);
+    strview_trim_space_in_place(&rv);
+    return rv;
+}
+
+bool strview_skip_space_inplace(StrView s[_1_]) {
+    for(; s->len && isspace(*s->items); --(s->len), ++(s->items))
+        ;
+    return s->len != 0;
+}
+
+
+Err strview_join_lines_to_str(StrView view, Str out[_1_]) {
+    while (view.len && view.items) {
+        StrView line = strview_split_line(&view);
+        if (line.len) {
+            Err err = str_append(out, line);
+            if (err) { str_clean(out); return err; }
+        }
+    }
+    return Ok;
+}
+
+StrView
+strview_from_str(Str s[_1_]) {return strview_from_mem(items__(s), len__(s));}
+
+
+StrView
+strview_from_arl_of_char(ArlOf(char) a[_1_]) {
+    return strview_from_mem(items__(a), len__(a));
+}
+
+
+StrView
+strview_from_cstr(const char* s) {
+    if (s) return strview_from_mem(s, strlen(s));
+    return (StrView){0};
+}
+
+
+StrView
+strview_split_line(StrView text[_1_]) {
+    StrView line = *text;
+    const char* nl = memchr(line.items, '\n', line.len);
+    if (nl) {
+        line.len = nl - line.items;
+        text->items = nl + 1;
+        text->len -= (line.len + 1);
+    } else  {
+        *text = (StrView){0};
+    }
+    return line;
+}
+
+
+bool
+strview_eq_case(StrView s, StrView t) {
+    return s.len == t.len && strncasecmp(s.items, t.items, s.len) == 0;
+}
+
+/* str fns*/
+
+#define append_mem_(B,S,T) (!buffn(char,append)(B, (char*)S, T))
+#define append_(B,S) (append_mem_(B, items__(S), len__(S)))
+#define append_if_(B,S) (len__(S)?append_mem_(B, items__(S), len__(S)):false)
+bool str_append_str_ptr_2_(Str s[_1_], Str t[_1_], StrView u) {
+    return append_(s, t) || append_if_(s,&u);
+}
+bool str_append_str_2_(Str s[_1_], Str t, StrView u) {
+    return append_(s, &t) || append_if_(s,&u);
+}
+#define append_cstr_(B,Cstr) (!buffn(char,append)(B, (char*)Cstr, strlen(Cstr)))
+bool str_append_strview_ptr_2_(Str s[_1_], StrView t[_1_], StrView u) {
+    return append_(s, t) || append_if_(s,&u);
+}
+bool str_append_strview_2_(Str s[_1_], StrView t, StrView u) {
+    return append_(s, &t) || append_if_(s,&u);
+}
+bool str_append_cstr_2_(Str s[_1_], const char* cstr, StrView u) {
+    return append_cstr_(s,cstr) || append_if_(s,&u);
+}
+#undef append_mem_
+#undef append_
+#undef append_cstr_
+
+bool
+str_contains(Str s[_1_], char c) { return len__(s) && memchr(items__(s), c, len__(s)); }
+
+void
+str_trim_space(StrView* l) {
+    l->items = cstr_skip_space(items__(l));
+    l->len = cstr_next_space(items__(l)) - items__(l);
+}
+
+
+Err
+str_replace_char_inplace(Str s[_1_], char from, char to) {
+    char* rest = s->items;
+    while ((rest = memchr(rest, from, s->len - cast__(size_t)(rest - s->items))))
+        *rest = to;
+    return Ok;
+}
+
+
+bool
+str_startswith_mem(Str s[_1_], const char* mem, size_t len) {
+    return len__(s) >= len && !strncmp(items__(s), mem, len);
+}
+
+
+size_t
+str_append_flip(const char* mem, size_t size, size_t nmemb, Str out[_1_]) {
+    size_t len = size * nmemb;
+
+    if (buffn(char,append)(out, (char*)mem, len))
+        return len;
+    return 0;
+}
+
+
+/* testing */
 #ifdef TESTING_FAILURES
-static unsigned APPENDS__ = 0;
-Err str_append(Str* s, char* items, size_t len) {
+bool unsigned APPENDS__ = 0;
+Err str_append_mem_(Str* s, char* items, size_t len) {
     bool condition = (++APPENDS__) % 480 == 0;
     if (condition) {
         return err_fmt("TESTING: appends limit (APPENDS__: %d)", APPENDS__);
     }
-    return (buffn(char,append)(s, items, len) ? Ok : "error: str_append failure");
+    return (buffn(char,append)(s, items, len) ? false  : true);
 }
 #endif

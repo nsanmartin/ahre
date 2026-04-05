@@ -24,8 +24,8 @@ size_t curl_header_callback(char *buffer, size_t size, size_t nitems, void *html
             char* ws = mem_is_whitespace(buffer, len);
             size_t chslen = ws ? (size_t)(ws - buffer) : len;
             str_reset(htmldoc_http_charset(hd));
-            str_append(htmldoc_http_charset(hd), buffer, chslen);
-            str_append_lit__(htmldoc_http_charset(hd), "\0");
+            str_append(htmldoc_http_charset(hd), sv(buffer, chslen));
+            str_append(htmldoc_http_charset(hd), svl("\0"));
             buffer += chslen;
             len -= chslen;
             mem_skip_space_inplace((const char**)&buffer, &len);
@@ -39,7 +39,7 @@ size_t curl_header_callback(char *buffer, size_t size, size_t nitems, void *html
             size_t contypelen = colon ? (size_t)(colon - buffer) : len;
             str_reset(htmldoc_http_content_type(hd));
             //TODO: does not depend on null termoination
-            str_append(htmldoc_http_content_type(hd), buffer, contypelen);
+            str_append(htmldoc_http_content_type(hd), sv(buffer, contypelen));
             if (colon) ++contypelen;
             buffer += contypelen;
             len -= contypelen;
@@ -61,10 +61,10 @@ Err curlinfo_sz_download_incr(
     CURLcode curl_code = curl_easy_getinfo(curl, CURLINFO_SIZE_DOWNLOAD_T, &nbytes);
     if (curl_code!=CURLE_OK) {
         const char* cerr = curl_easy_strerror(curl_code);
-        try(cmd_out_msg_append(cmd_out,(char*)cerr, strlen(cerr))); 
+        try(cmd_out_msg_append(cmd_out,(char*)cerr)); 
     } else {
         if (nbytes < 0)
-            try(cmd_out_msg_append_lit__(cmd_out, "CURLINFO_SIZE_DOWNLOAD_T is negative"));
+            try(cmd_out_msg_append(cmd_out, svl("CURLINFO_SIZE_DOWNLOAD_T is negative")));
         else *nptr += nbytes;
     }
     return Ok;
@@ -109,10 +109,10 @@ void w_curl_multi_remove_handles(
     for (CurlPtr* cup = arlfn(CurlPtr,begin)(easies) ; cup != arlfn(CurlPtr,end)(easies) ; ++cup) {
         CURLMcode code = curl_multi_remove_handle(multi, *cup);
         if (code != CURLM_OK) {
-            /*ignore e*/cmd_out_msg_append_lit__(
-                    cmd_out, "error: couldn't remove easy handle from multy ");
+            /*ignore e*/cmd_out_msg_append(
+                    cmd_out, svl("error: couldn't remove easy handle from multy "));
             char* msg = (char*)curl_multi_strerror(code); 
-            /*ignore e*/cmd_out_msg_append(cmd_out, msg, strlen(msg));
+            /*ignore e*/cmd_out_msg_append(cmd_out, msg);
         }
         curl_easy_cleanup(*cup);
     }

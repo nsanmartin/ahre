@@ -1,5 +1,6 @@
 #include "tab-node.h"
 #include "session.h"
+#include "dom.h"
 
 
 Err tab_node_init_move_request(
@@ -36,13 +37,14 @@ Err tab_node_tree_append_ahref(
     try(  tab_node_current_node(t, &n));
     try(  tab_node_current_doc(t, &d));
 
-    ArlOf(LxbNodePtr)* anchors = htmldoc_anchors(d);
+    ArlOf(DomNode)* anchors = htmldoc_anchors(d);
 
-    LxbNodePtr* a = arlfn(LxbNodePtr, at)(anchors, linknum);
+    DomNode* a = arlfn(DomNode, at)(anchors, linknum);
     if (!a) return "link number invalid";
 
-    Str urlstr = (Str){0};
-    try (lexbor_append_null_terminated_attr(*a, "href", 4, &urlstr));
+    Str urlstr   = (Str){0};
+    StrView html = dom_node_attr_value(*a, svl("href"));
+    try( str_append_z(&urlstr, &html));
     Request r;
     try(request_init_move_urlstr(&r,http_get, &urlstr, htmldoc_url(d)));
 
@@ -69,16 +71,16 @@ Err tab_node_tree_append_submit(
 ) {
     TabNode* n;
     HtmlDoc* d;
-    LxbNode  lbn;
+    DomNode  lbn;
     try( tab_node_current_node(t, &n));
     try( tab_node_current_doc(t, &d));
     try( htmldoc_input_at(d, ix, &lbn));
-    if (!lexbor_lit_attr_has_lit_value(&lbn, "type", "submit"))
+    if (!dom_node_attr_has_value(lbn, svl("type"), svl("submit")))
         return "warn: not submit input";
 
     Err e = Ok;
-    lxb_dom_node_t* form = _find_parent_form(lxbnode_node(&lbn));
-    if (form) {
+    DomNode form = dom_node_find_parent_form(lbn);
+    if (!isnull(form)) {
         Request r = (Request){.urlview=htmldoc_url(d)};
         try( mk_submit_request(form, true, &r));
         TabNode newnode;
@@ -99,21 +101,9 @@ Failure_New_Node_Cleanup:
 }
 
 
-void arl_of_tab_node_clean(ArlOf(TabNode)* f) {
-    //TODO: fix #include TClean <- ...
-
-    for (TabNode* it = arlfn(TabNode, begin)(f); it != arlfn(TabNode,end)(f); ++it) {
-        tab_node_cleanup(it);
-    }
-    std_free((void*)f->items);
-    *f = (ArlOf(TabNode)){0};
-}
-
-
 void tab_node_cleanup(TabNode n[_1_]) {
     htmldoc_cleanup(&n->doc);
-    //arlfn(TabNode, clean)(n->childs);
-    arl_of_tab_node_clean(n->childs);
+    arlfn(TabNode, clean)(n->childs);
     std_free(n->childs);
 }
 
@@ -147,43 +137,44 @@ Err session_tab_node_print(
 ) {
     if (!arlfn(size_t, append)(stack, &ix)) return "error: arl append failure";
     HtmlDoc* d = &n->doc;
-    LxbNodePtr title = *htmldoc_title(d);
 
     for(size_t* it = arlfn(size_t, begin)(stack); it != arlfn(size_t, end)(stack); ++it) {
         if (it == arlfn(size_t, begin)(stack)) {
             if (n == current_node) {
-                try( cmd_out_msg_append_lit__(out, "[+] "));
+                try( cmd_out_msg_append(out, svl("[+] ")));
                 try( cmd_out_msg_append_ui_as_base10(out, *it));
-                try( cmd_out_msg_append_lit__(out, "."));
+                try( cmd_out_msg_append(out, svl(".")));
             } else if (tab_node_is_current_in_tab(n)) {
-                try( cmd_out_msg_append_lit__(out, "[ ] "));
+                try( cmd_out_msg_append(out, svl("[ ] ")));
                 try( cmd_out_msg_append_ui_as_base10(out, *it));
-                try( cmd_out_msg_append_lit__(out, "."));
+                try( cmd_out_msg_append(out, svl(".")));
             } else {
-                try( cmd_out_msg_append_lit__(out, "    "));
+                try( cmd_out_msg_append(out, svl("    ")));
                 try( cmd_out_msg_append_ui_as_base10(out, *it));
-                try( cmd_out_msg_append_lit__(out, "."));
+                try( cmd_out_msg_append(out, svl(".")));
             } } else { 
                 try( cmd_out_msg_append_ui_as_base10(out, *it));
-                try( cmd_out_msg_append_lit__(out, "."));
+                try( cmd_out_msg_append(out, svl(".")));
             }
     }
-    try( cmd_out_msg_append_lit__(out, " "));
-    if (title) {
-            Str title_text = (Str){0};
-            Err e = lexbor_get_title_text_line(title, &title_text);
-            ok_then(e, cmd_out_msg_append_str_ln(out, &title_text));
-            str_clean(&title_text);
+    try( cmd_out_msg_append(out, svl(" ")));
+    DomNode title = *htmldoc_title(d);
+    if (!isnull(title)) {
+            Err e = strview_join_lines_to_str(
+                dom_node_text_view(dom_node_first_child(title)),
+                msg_str(cmd_out_msg(out))
+            );
+            ok_then(e, cmd_out_msg_append(out, svl("\n")));
     } else {
         char* buf;
         Err e = url_cstr_malloc(htmldoc_url(d), &buf);
         if (e) {
-            try( cmd_out_msg_append_lit__(out, "error: "));
-            try( cmd_out_msg_append(out, (char*)e, strlen(e)));
-            try( cmd_out_msg_append_lit__(out, "\n"));
+            try( cmd_out_msg_append(out, svl("error: ")));
+            try( cmd_out_msg_append(out, (char*)e));
+            try( cmd_out_msg_append(out, svl("\n")));
         } else {
-            e = cmd_out_msg_append(out, buf, strlen(buf));
-            ok_then(e, cmd_out_msg_append_lit__(out, "\n"));
+            e = cmd_out_msg_append(out, buf);
+            ok_then(e, cmd_out_msg_append(out, svl("\n")));
             curl_free(buf);
             if (e) return e;
         }

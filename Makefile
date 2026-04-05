@@ -16,6 +16,17 @@ tags: $(wildcard $(AHRE_SRCDIR)/*.c) clean-tags
 		--exclude=js \
 		--exclude=tmp \
 		--exclude=build \
+		--exclude=quickjs \
+		.
+
+tags-deps:$(wildcard $(AHRE_SRCDIR)/*.c) clean-tags
+	ctags -R \
+		--exclude=.git \
+		--exclude=hotl/scripts \
+		--exclude=html \
+		--exclude=js \
+		--exclude=tmp \
+		--exclude=build \
 		--exclude=quickjs/tests \
 		--exclude=quickjs/test262 \
 		--exclude=quickjs/examples  .

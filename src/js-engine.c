@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <quickjs.h>
 
-#include <lexbor/html/html.h>
 
 #include "error.h"
 #include "session.h"
@@ -51,7 +50,7 @@ static JSValue _console_log(JSContext *ctx, JSValueConst self, int argc, JSValue
         size_t len;
         const char* arg = JS_ToCStringLen(ctx, &len, argv[i]);
         if (!arg) return JS_ThrowTypeError(ctx, "invalid arg");
-        str_append(buf, (char*)arg, len);
+        str_append(buf, sv(arg, len));
         JS_FreeCString(ctx, arg);
     }
 
@@ -135,8 +134,7 @@ static Err jse_add_document(JSContext* ctx, HtmlDoc d[_1_]) {
     JSValue document = JS_NewObjectClass(ctx, element_class_id);
     if (JS_IsException(document)) return "error: could not create the document";
 
-    lxb_dom_element_t* doc = lxb_dom_interface_element(htmldoc_lxbdoc(d));
-    if (JS_SetOpaque(document, doc)) return "error: could not set document opaque";
+    if (JS_SetOpaque(document, htmldoc_dom(d).ptr)) return "error: could not set document opaque";
     JS_SetPropertyStr(
         ctx,
         document,
@@ -179,9 +177,9 @@ Err jse_eval(JsEngine js[_1_], Session* s, const char* script, CmdOut* out) {
     } else {
         const char* str = JS_ToCString(ctx, result);
         size_t str_len  = strlen(str);
-        try(cmd_out_msg_append_lit__(out,  "  => "));
-        if (str && str_len) try(cmd_out_msg_append_ln(out, (char*)str, strlen(str)));
-        else try(cmd_out_msg_append_lit__(out,  "\\0"));
+        try(cmd_out_msg_append(out,  svl("  => ")));
+        if (str && str_len) try(cmd_out_msg_append_ln(out, str));
+        else try(cmd_out_msg_append(out,  svl("\\0")));
         JS_FreeCString(ctx, str);
     }
     
@@ -189,69 +187,57 @@ Err jse_eval(JsEngine js[_1_], Session* s, const char* script, CmdOut* out) {
     return err;
 }
 
-static inline bool _attr_is_valid_(lxb_dom_attr_t* attr) {
-    return attr
-        && attr->node.owner_document
-        ;
-}
 
 static inline JSValue
 _element_get_attribute(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv) {
     if (argc != 1) return JS_ThrowTypeError(ctx, "Expected 1 argument");
 
-   lxb_dom_element_t* element = JS_GetOpaque(self, element_class_id);
-   if (!element) return JS_ThrowTypeError(ctx, "ahrerr: invalid attribute");
+   DomElem elem = dom_elem_from_ptr(JS_GetOpaque(self, element_class_id));
+   if (isnull(elem)) return JS_ThrowTypeError(ctx, "ahrerr: invalid attribute");
 
     size_t attrlen;
     const char* attr = JS_ToCStringLen(ctx, &attrlen, argv[0]);
     if (!attr) return JS_ThrowTypeError(ctx, "invalid attribute");
 
-    size_t valuelen = 0;
-    const lxb_char_t * value = lxb_dom_element_get_attribute(
-        element, (const lxb_char_t*)attr, attrlen, &valuelen
-    );
-    if (!valuelen || !value) return JS_ThrowTypeError(ctx, "invalid attribute");
+    StrView value = dom_elem_attr_value(elem, sv(attr, attrlen));
+    if (!value.len || !value.items) return JS_ThrowTypeError(ctx, "invalid attribute");
 
-    return JS_NewStringLen(ctx, (char*)value, valuelen);
+    return JS_NewStringLen(ctx, (char*)value.items, value.len);
 }
 
-static inline JSValue _js_value_from_lexbor_element(JSContext *ctx, lxb_dom_element_t* element) {
+static inline JSValue _js_value_from_dom_elem(JSContext *ctx, DomElem elem) {
     JSValue js_element = JS_NewObjectClass(ctx, element_class_id);
 
     Str* buf = &(Str){0};
-    lxb_dom_attr_t* attr = lxb_dom_element_first_attribute(element);
+    DomAttr attr = dom_elem_first_attr(elem);
 
-    while (attr) {
-        if (!_attr_is_valid_(attr))
-            return JS_ThrowTypeError(ctx, "internal error atribbute is malformed");
+    while (!isnull(attr)) {
+        if (!dom_attr_has_owner(attr))
+            return JS_ThrowTypeError(ctx, "internal error atribute is malformed");
 
-        size_t namelen;
-        const lxb_char_t* name = lxb_dom_attr_qualified_name(attr, &namelen);
-
-        size_t valuelen;
-        const lxb_char_t* value = lxb_dom_attr_value(attr, &valuelen);
+        StrView name  = dom_attr_name_view(attr);
+        StrView value = dom_attr_value_view(attr);
         
         str_reset(buf);
 
-        if (str_append(buf, (char*)name, namelen) || str_append(buf, "\0", 1)) {
+        if (str_append_z(buf, &name)) {
             str_clean(buf);
             return JS_ThrowTypeError(ctx, "str append failure");
         }
 
-
-        if (valuelen)
+        if (value.len)
             JS_SetPropertyStr(
-                ctx, js_element, items__(buf), JS_NewStringLen(ctx, (char*)value, valuelen)
+                ctx, js_element, items__(buf), JS_NewStringLen(ctx, (char*)value.items, value.len)
             );
 
-        attr = lxb_dom_element_next_attribute(attr);
+        attr = dom_attr_next(attr);
     }
     str_clean(buf);
-    if (JS_SetOpaque(js_element, element))
-        return JS_ThrowTypeError(ctx, "aherr: could not set opaque val");
+    if (JS_SetOpaque(js_element, elem.ptr))
+        return JS_ThrowTypeError(ctx, "ahrerr: could not set opaque val");
 
-   lxb_dom_element_t* e = JS_GetOpaque(js_element, element_class_id);
-   if (!e) return JS_ThrowTypeError(ctx, "ahrerr: invalid attribute");
+   DomElem e = dom_elem_from_ptr(JS_GetOpaque(js_element, element_class_id));
+   if (isnull(e)) return JS_ThrowTypeError(ctx, "ahrerr: invalid attribute");
 
     JS_SetPropertyStr(
         ctx,
@@ -267,20 +253,19 @@ _document_getElementById(JSContext *ctx, JSValueConst self, int argc, JSValueCon
 
     if (argc != 1) return JS_ThrowTypeError(ctx, "Expected 1 argument");
 
-    lxb_dom_element_t* doc = JS_GetOpaque(self, element_class_id);
+    Dom dom = dom_from_ptr(JS_GetOpaque(self, element_class_id));
 
-    if (!doc) return JS_ThrowTypeError(ctx, "error: document not properly initialized");
+    if (isnull(dom)) return JS_ThrowTypeError(ctx, "error: document not properly initialized");
 
     size_t idlen;
     const char *id = JS_ToCStringLen(ctx, &idlen, argv[0]);
     if (!id) return JS_ThrowTypeError(ctx, "Invalid ID");
 
-    lxb_dom_element_t* element =
-        lexbor_doc_get_element_by_id(lxb_html_interface_document(doc), id, idlen);
+    DomElem element = dom_get_elem_by_id(dom, sv(id, idlen));
     JS_FreeCString(ctx, id);
-    if (!element) return JS_NULL;
+    if (isnull(element)) return JS_NULL;
 
-    return _js_value_from_lexbor_element(ctx, element);
+    return _js_value_from_dom_elem(ctx, element);
 }
 #else /* quickjs disabled: */
 typedef int _quickjs_disabled_;

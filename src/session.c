@@ -41,7 +41,7 @@ Err session_init(Session s[_1_], SessionConf sconf[_1_]) {
     try( url_client_init(
             session_url_client(s),
             session_cookies_fname(s),
-            strview__(USER_AGENT_USED_),
+            sv(USER_AGENT_USED_),
             0u
     ));
     try( str_append_datetime_now(session_dt_now_str(s)));
@@ -94,7 +94,7 @@ static Err write_range_mod(
             size_t next = _next_text_end_(textbuf_mods(textbuf), it, off, line_off_end);
 
             if (off < next)
-                try( cmd_out_screen_append(cmd_out, textbuf_items(textbuf) + off, next - off));
+                try( cmd_out_screen_append(cmd_out, sv(textbuf_items(textbuf) + off, next - off)));
 
             off = next;
             while (it < arlfn(ModAt,end)(textbuf_mods(textbuf)) && next == it->offset) {
@@ -107,9 +107,9 @@ static Err write_range_mod(
     }
 
     if (!monochrome)
-        try( cmd_out_screen_append(cmd_out, EscCodeReset, sizeof(EscCodeReset) - 1));
+        try( cmd_out_screen_append(cmd_out, svl(EscCodeReset)));
     if (line.len && line.items[line.len-1] != '\n') 
-        try( cmd_out_screen_append(cmd_out, "\n", 1));
+        try( cmd_out_screen_append(cmd_out, svl("\n")));
     return Ok;
 }
 

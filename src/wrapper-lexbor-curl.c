@@ -10,7 +10,7 @@
 
 
 static Err _lexbor_parse_chunk_begin_(HtmlDoc htmldoc[_1_]) {
-    lxb_html_document_t* lxbdoc = htmldoc->lxbdoc;
+    lxb_html_document_t* lxbdoc = htmldoc_dom(htmldoc).ptr;
     if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(lxbdoc)) 
         return "error: lex failed to init html document";
     textbuf_reset(htmldoc_sourcebuf(htmldoc));
@@ -19,7 +19,7 @@ static Err _lexbor_parse_chunk_begin_(HtmlDoc htmldoc[_1_]) {
 
 
 static Err _lexbor_parse_chunk_end_(HtmlDoc htmldoc[_1_]) {
-    lxb_html_document_t* lxbdoc = htmldoc->lxbdoc;
+    lxb_html_document_t* lxbdoc = htmldoc_dom(htmldoc).ptr;
     lexbor_status_t lxb_status = lxb_html_document_parse_chunk_end(lxbdoc);
     if (LXB_STATUS_OK != lxb_status) 
         return err_fmt("error: lbx failed to parse html, status: %d", lxb_status);
@@ -93,12 +93,10 @@ static Err _set_htmldoc_url_with_effective_url_(
 
 static Err _fetch_tag_script_from_text_(lxb_dom_node_t node[_1_], ArlOf(Str) out[_1_]) {
 
-    const char* data;
-    size_t len;
-    try( lexbor_node_get_text(node, &data, &len));
-    if (mem_skip_space_inplace(&data, &len)) {
+    StrView data = dom_node_text_view((DomNode){.ptr=node});
+    if (strview_skip_space_inplace(&data)) {
         Str* s = &(Str){0};
-        try( null_terminated_str_from_mem(data, len, s));
+        try( str_append_z(s, &data));
         if (!arlfn(Str,append)(out,s)) {
             str_clean(s);
             return "error: append failure";
@@ -134,23 +132,24 @@ static Err _split_remote_local_(
         lxb_dom_element_t* element = lxb_dom_collection_element(elems, i);
         if (!element) return "error: lexbor collection failed to retrieve element";
         lxb_dom_node_t*   node = lxb_dom_interface_node(element);
-        const lxb_char_t* src;
-        size_t            src_len;
 
-        if (lexbor_find_lit_attr_value__(node, "src", &src, &src_len)) {
+        StrView src = dom_node_attr_value((DomNode){.ptr=node}, svl("src"));
+        if (src.len) {
             Str* url = &(Str){0};
-            try(null_terminated_str_from_mem((const char*)src, src_len, url));
+            try( str_append_z(url, &src));
+            //TODO1: manage error
             arlfn(Str, append)(urls, url);
         } else {
             for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
                 e = _fetch_tag_script_from_text_(it, scripts);
                if (e || it == node->last_child) break;
                else try(
-                   cmd_out_msg_append_lit__(cmd_out,  "script elem with more than one child??]n"));
+                   cmd_out_msg_append(cmd_out,  svl("script elem with more than one child??]n")));
                //Q? can script elem have mode that one (text) child?
             }
         }
-        if (e) try(cmd_out_msg_append(cmd_out, (char*)e, strlen(e)));
+
+        if (e) try(cmd_out_msg_append(cmd_out, (char*)e));
     }
     return Ok;
 }
@@ -159,11 +158,11 @@ static Err _split_remote_local_(
 
 static void _map_append_nullchar_(ArlOf(Str) strlist[_1_], CmdOut cmd_out[_1_]) {
     for ( Str* sp = arlfn(Str,begin)(strlist) ; sp != arlfn(Str,end)(strlist) ; ++sp) {
-        Err e0 = str_append_lit__(sp, "\0");
+        Err e0 = str_append(sp, svl("\0"));
         if (e0) {
             str_reset(sp);
-            /*ignore e*/ cmd_out_msg_append_lit__(cmd_out, "could not append \\0 to str: ");
-            /*ignore e*/ cmd_out_msg_append(cmd_out, (char*)e0, strlen(e0));
+            /*ignore e*/ cmd_out_msg_append(cmd_out, svl("could not append \\0 to str: "));
+            /*ignore e*/ cmd_out_msg_append(cmd_out, (char*)e0);
         }
     }
 }
@@ -176,7 +175,7 @@ static Err curl_lexbor_fetch_scripts(
     Err e = Ok;
     //TODO!: evaluate scripts in order
 
-    lxb_html_document_t* doc = htmldoc_lxbdoc(htmldoc);
+    lxb_html_document_t* doc = htmldoc_dom(htmldoc).ptr;
     lxb_dom_collection_t* head_scripts;
     lxb_dom_collection_t* body_scripts;
 
@@ -203,14 +202,14 @@ static Err curl_lexbor_fetch_scripts(
     e = url_client_multi_add_handles(
         url_client, curlu, head_urls, htmldoc_head_scripts(htmldoc), easies, curlus, cmd_out);
     if (e) {
-        try(cmd_out_msg_append_lit__(cmd_out, "could not add head handles: "));
-        try(cmd_out_msg_append(cmd_out, (char*)e, strlen(e)));
+        try(cmd_out_msg_append(cmd_out, svl("could not add head handles: ")));
+        try(cmd_out_msg_append(cmd_out, (char*)e));
     }
     e = url_client_multi_add_handles(
         url_client, curlu, body_urls, htmldoc_body_scripts(htmldoc), easies, curlus, cmd_out);
     if (e) {
-        try(cmd_out_msg_append_lit__(cmd_out, "could not add head handles: "));
-        try(cmd_out_msg_append(cmd_out, (char*)e, strlen(e)));
+        try(cmd_out_msg_append(cmd_out, svl("could not add head handles: ")));
+        try(cmd_out_msg_append(cmd_out, (char*)e));
     }
 
     e = w_curl_multi_perform_poll(multi);
@@ -259,7 +258,7 @@ Err curl_lexbor_fetch_document(
         return _curl_perform_error_(htmldoc, curl_code);
 
     if (histentry->size_download_t < 0)
-        try(cmd_out_msg_append_lit__(cmd_out, "CURLINFO_SIZE_DOWNLOAD_T is negative"));
+        try(cmd_out_msg_append(cmd_out, svl("CURLINFO_SIZE_DOWNLOAD_T is negative")));
     else *htmldoc_curlinfo_sz_download(htmldoc) = histentry->size_download_t;
 
     try( _lexbor_parse_chunk_end_(htmldoc));
@@ -269,38 +268,3 @@ Err curl_lexbor_fetch_document(
         try(curl_lexbor_fetch_scripts(htmldoc, url_client, cmd_out));
     return Ok;
 }
-
-
-
-
-/* Err lexcurl_dup_curl_from_node_and_attr( */
-/*     lxb_dom_node_t* node, const char* attr, size_t attr_len, CURLU* u[_1_] */
-/* ) */
-/* { */
-/*     Err e = Ok; */
-
-/*     StrView data = lexbor_get_attr(node, attr, attr_len); */
-/*     if (!data.items || !data.len) */
-/*         return "lexbor node does not have attr"; */
-
-/*     CURLU* dup = curl_url_dup(*u); */
-/*     if (!dup) return "error: memory failure (curl_url_dup)"; */
-/*     Str* buf = &(Str){0}; */
-/*     try_or_jump(e, failure, null_terminated_str_from_mem((char*)data.items, data.len, buf)); */
-/*     try_or_jump(e, failure, curlu_set_url_or_fragment(dup, buf->items)); */
-/*     str_clean(buf); */
-/*     *u = dup; */
-/*     return Ok; */
-/* failure: */
-/*     str_clean(buf); */
-/*     curl_url_cleanup(dup); */
-/*     return e; */
-/* } */
-
-
-/* char* mem_whitespace(char* s, size_t len) { */
-/*     while(len && *s && !isspace(*s)) { ++s; --len; } */
-/*     return len ? s : NULL; */
-/* } */
-
-

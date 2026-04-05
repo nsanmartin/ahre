@@ -44,7 +44,7 @@ static inline Err file_writer_init(Writer w[_1_], FILE* f) {
 
 /* Writer To Str */
 static inline Err writer_write_to_str(Writer* self, const char* mem, size_t len) {
-    return str_append((Str*)self->out, (char*)mem, len);
+    return str_append((Str*)self->out, sv(mem, len));
 }
 
 static inline Err str_writer_init(Writer w[_1_], Str* s) {
@@ -56,7 +56,7 @@ static inline Err str_writer_init(Writer w[_1_], Str* s) {
 
 /* Writer To Msg */
 static inline Err writer_write_to_msg(Writer* self, const char* mem, size_t len) {
-    return msg_append((Msg*)self->out, (char*)mem, len);
+    return msg_append((Msg*)self->out, sv(mem, len));
 }
 
 static inline Err msg_writer_init(Writer w[_1_], Msg* s) {

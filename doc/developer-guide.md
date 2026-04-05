@@ -3,8 +3,8 @@
 # Functions 
 All functions and methods are written in snake case.
 
-Functions with internal-linkage are surrounded by underscores, e.g.:
-`_convert_to_utf8_`.
+Functions with internal-linkage are surrounded by underscores.
+
 
 Methods (functions tightly associated to types) start with the type name
 in snake case (types are in "Pascal" case), e.g.:
@@ -69,3 +69,7 @@ or with any other ssl option.
 And for quickjs, you need to `make debug` the quickjs sources.
 
 The target is `./build/debug`.
+
+# Adding a module
+When creating a module, the utest's Makefile should be updated to include it as dependency 
+if required. This does not apply to all cases though.

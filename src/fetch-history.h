@@ -6,6 +6,7 @@
 #include <curl/curl.h>
 
 #include "wrapper-lexbor.h"
+#include "dom.h"
 #include "str.h"
 #include "writer.h"
 
@@ -58,12 +59,11 @@ Err fetch_history_entry_update_curl(
 
 Err fetch_history_write_to_file(FetchHistoryEntry e[_1_], FILE* fp);
 
-static inline Err fetch_history_entry_update_title(FetchHistoryEntry e[_1_], LxbNodePtr np[_1_]) {
-    try(lexbor_get_title_text(*np, &e->title));
-    if (e->title.len) {
-        char* rest = e->title.items;
-        while ((rest = memchr(rest, '\n', e->title.len - cast__(size_t)(rest - e->title.items))))
-            *rest = ' ';
+static inline Err fetch_history_entry_update_title(FetchHistoryEntry e[_1_], DomNode np[_1_]) {
+    StrView data = dom_node_text_view(*np);
+    if (data.len) {
+        try( str_append(&e->title, &data));
+        str_replace_char_inplace(&e->title, '\n', ' ');
     }
     return Ok;
 }

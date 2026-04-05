@@ -1,7 +1,9 @@
 #include <errno.h>
 #include <sys/stat.h>
 
+#include "dom.h"
 #include "str.h"
+#include "utils.h"
 #include "url.h"
 #include "session.h"
 
@@ -19,8 +21,8 @@ Err curl_url_to_filename_append(CURLU* cu, Str out[_1_]) {
     size_t schema_len = strlen(schema);
     if (!strncmp(fname, schema, strlen(schema))) fname += schema_len;
     if (!strncmp(fname, "://", 3)) fname += 3;
-    replace_char_inplace(fname, '/', '_');
-    err = str_append(out, fname, strlen(fname) + 1);
+    cstr_replace_char_inplace(fname, '/', '_');
+    err = str_append(out, sv(fname, strlen(fname) + 1));
     curl_free(schema); curl_free(url);
     return err;
 }
@@ -31,14 +33,14 @@ static Err _append_fopen(const char* dirname, CURLU* cu, FILE* fp[_1_]) {
  */
     Err err = Ok;
     Str* path = &(Str){0};
-    try( str_append(path, (char*)dirname, strlen(dirname)));
+    try( str_append(path, (char*)dirname));
     char* last_char_p = str_at(path, len__(path)-1);
     if (!last_char_p) { str_clean(path); return "error: unexpected out of range index"; }
-    if (*last_char_p != '/') ok_then(err, str_append_lit__(path, "/"));
+    if (*last_char_p != '/') ok_then(err, str_append(path, svl("/")));
 
     if ((err = curl_url_to_filename_append(cu, path)))
     { str_clean(path); return "error: append failure"; }
-    if ((err = str_append_lit__(path, "\0"))) { str_clean(path); return "error: append failure"; }
+    if ((err = str_append(path, svl("\0")))) { str_clean(path); return "error: append failure"; }
 
     *fp = fopen(items__(path), "wa");
     str_clean(path);
@@ -91,17 +93,17 @@ static Err _url_fill_postfields_(
         escaped = curl_easy_escape(curl, items__(vit), len__(vit));
         if (!escaped) return "error: curl_escape failure";
         try_or_jump( e, Failure_Free_Escaped,
-            str_append_lit__(request_postfields(r), "&"));
+            str_append(request_postfields(r), svl("&")));
         try_or_jump(e, Failure_Free_Escaped,
-            str_append(request_postfields(r), items__(kit), len__(kit)));
+            str_append(request_postfields(r), kit));
         try_or_jump(e, Failure_Free_Escaped,
-            str_append_lit__(request_postfields(r), "="));
+            str_append(request_postfields(r), svl("=")));
         try_or_jump(e, Failure_Free_Escaped,
-            str_append(request_postfields(r), escaped, strlen(escaped)));
+            str_append(request_postfields(r), escaped));
         curl_free(escaped);
     }
     //TODO: write postfields in htmldoc?
-    try(str_append_lit__(request_postfields(r), "\0"));
+    try(str_append(request_postfields(r), svl("\0")));
     *postfields = items__(request_postfields(r)) + 1; /* ignore the first '&'! */
     *len        = len__(request_postfields(r)) - 2; /* ignore first '&' and '\0' ! */
     return Ok;
@@ -152,17 +154,17 @@ Clean_Url:
 #define FILE_SCHEMA "file://"
 static Err _prepend_file_schema_if_file_exists_(Str url[_1_], Str out[_1_]) {
     if (!len__(url)) return Ok;
-    try(str_append_lit__(out, FILE_SCHEMA));
+    try(str_append(out, svl(FILE_SCHEMA)));
 
     const char* path = items__(url);
     if (path[0] != '/') {
          char cwdbuf[4000];
          if(!getcwd(cwdbuf, 4000)) { return "error: gwtcwd failed"; }
-         try(str_append(out, cwdbuf, strlen(cwdbuf)));
+         try(str_append(out, cwdbuf));
          if (*path == '.' && path[1] == '/') ++path;
-         else try(str_append_lit__(out, "/"));
+         else try(str_append(out, svl("/")));
     }
-    try( str_append_z(out, (char*)path, strlen(path)));
+    try( str_append_z(out, path));
 
     if (!file_exists(items__(out) + lit_len__(FILE_SCHEMA)))
         str_reset(out);
@@ -197,10 +199,10 @@ Err url_from_get_request(Request r[_1_]) {
     Str* vit = arlfn(Str,begin)(vs);
     for ( ; kit != arlfn(Str,end)(ks) && vit != arlfn(Str,end)(vs) ; ++kit, ++vit) {
         str_reset(request_postfields(r));
-        try_or_jump(err, Failure_Clean_File_Url, str_append_str(request_postfields(r), kit));
-        try_or_jump(err, Failure_Clean_File_Url, str_append_lit__(request_postfields(r), "="));
-        try_or_jump(err, Failure_Clean_File_Url, str_append_str(request_postfields(r), vit));
-        try_or_jump(err, Failure_Clean_File_Url, str_append_lit__(request_postfields(r), "\0"));
+        try_or_jump(err, Failure_Clean_File_Url, str_append(request_postfields(r), kit));
+        try_or_jump(err, Failure_Clean_File_Url, str_append(request_postfields(r), svl("=")));
+        try_or_jump(err, Failure_Clean_File_Url, str_append(request_postfields(r), vit));
+        try_or_jump(err, Failure_Clean_File_Url, str_append(request_postfields(r), svl("\0")));
         CURLUcode curl_code = curl_url_set(
             cu,
             CURLUPART_QUERY,
@@ -234,47 +236,45 @@ Err url_from_request(Request r[_1_], UrlClient* uc) {
 }
 
 static Err
-_make_submit_get_request_rec_( lxb_dom_node_t* node, Request r[_1_]) {
-    if (!node) return Ok;
-    else if (node->local_name == LXB_TAG_INPUT
-            && !lexbor_lit_attr_has_lit_value(node, "type", "submit")) {
+_make_submit_get_request_rec_(DomNode node, Request r[_1_]) {
+    if (isnull(node)) return Ok;
+    else if (dom_node_has_tag_input(node)
+            && !dom_node_attr_has_value(node, svl("type"), svl("submit"))) {
 
-        const lxb_char_t* value;
-        size_t valuelen;
-        if (!lexbor_find_lit_attr_value__(node, "value", &value, &valuelen))
-            return Ok;
+        StrView value = dom_node_attr_value(node, svl("value"));
+        if (!value.len) return Ok;
 
-        const lxb_char_t* name;
-        size_t namelen;
-        if (!lexbor_find_lit_attr_value__(node, "name", &name, &namelen))
-            return Ok;
+        StrView name = dom_node_attr_value(node, svl("name"));
+        if (!name.len) return Ok;
 
-        if (strcasecmp("password", (char*)name) == 0)
+        if (strview_eq_case(name, svl("password")))
             return "warn: passwords not allowed in get requests";
 
-        try(request_query_append_key_value(r, (char*)name, namelen, (char*)value, valuelen));
+        try(request_query_append_key_value(
+            r, (char*)name.items, name.len, (char*)value.items, value.len)
+        );
     } 
 
-    for(lxb_dom_node_t* it = node->first_child; ; it = it->next) {
+    for(DomNode it = dom_node_first_child(node); ; it = dom_node_next(it)) {
         try( _make_submit_get_request_rec_(it, r));
-        if (it == node->last_child) { break; }
+        if (dom_node_eq(it, dom_node_last_child(node))) { break; }
     }
     return Ok;
 }
 
 
-static Err _request_append_select_(lxb_dom_node_t node[_1_], Request r[_1_]) {
-    StrView key = lexbor_get_lit_attr__(node, "name");
+static Err _request_append_select_(DomNode node, Request r[_1_]) {
+    StrView key = dom_node_attr_value(node, svl("name"));
     if (!key.len) return Ok;
 
-    lxb_dom_node_t* selected = NULL;
-    for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
-        if (it->local_name == LXB_TAG_OPTION && lexbor_has_lit_attr__(it, "selected")) {
+    DomNode selected = (DomNode){0};
+    for(DomNode it = dom_node_first_child(node); !isnull(it) ; it = dom_node_next(it)) {
+        if (dom_node_has_tag_option(it) && dom_node_has_attr(it, svl("selected"))) {
             selected = it;
         }
     }
-    if (selected) {
-        StrView value = lexbor_get_lit_attr__(selected, "value");
+    if (!isnull(selected)) {
+        StrView value = dom_node_attr_value(selected, svl("value"));
         if (value.len) {
             try(request_query_append_key_value(r, key.items, key.len, value.items, value.len));
         }
@@ -283,47 +283,47 @@ static Err _request_append_select_(lxb_dom_node_t node[_1_], Request r[_1_]) {
 }
 
 static Err _request_append_lexbor_name_value_attrs_if_both_(
-    lxb_dom_node_t node[_1_],
-    bool is_https,
+    DomNode node,
+    bool    is_https,
     Request r[_1_]
 ) {
-    const lxb_char_t* value;
-    size_t valuelen;
-    if (!lexbor_find_lit_attr_value__(node, "value", &value, &valuelen))
-        return Ok;
 
-    const lxb_char_t* name;
-    size_t namelen;
-    if (!lexbor_find_lit_attr_value__(node, "name", &name, &namelen))
-        return Ok;
-    if (strcasecmp("password", (char*)name) == 0 && !is_https)
+    StrView value = dom_node_attr_value(node, svl("value"));
+    if (!value.len || !value.items) return Ok;
+
+    StrView name = dom_node_attr_value(node, svl("name"));
+    if (!name.len || !name.items) return Ok;
+
+    if (strview_eq_case(svl("password"), name) && !is_https)
         return "warn: passwords allowed only under https";
 
-    return request_query_append_key_value(r, (char*)name, namelen, (char*)value, valuelen);
+    return request_query_append_key_value(
+        r, (char*)name.items, name.len, (char*)value.items, value.len
+    );
 }
 
 
 static Err _make_submit_post_request_rec(
-    lxb_dom_node_t* node,
+    DomNode node,
     bool is_https,
     Request r[_1_]
 ) {
-    if (!node) return Ok;
-    if (node->local_name == LXB_TAG_FORM) {
+    if (isnull(node)) return Ok;
+    if (dom_node_has_tag_form(node)) {
        /* ignoring form nested inside another form */
        //TODO: receive a msg callback to notify user
        return Ok;
     }
 
-    if (node->local_name == LXB_TAG_INPUT 
-        && !lexbor_lit_attr_has_lit_value(node, "type", "submit"))
+    if (dom_node_has_tag_input(node)
+        && !strview_eq_case(svl("submit"), dom_node_attr_value(node, svl("type"))))
         return _request_append_lexbor_name_value_attrs_if_both_(node, is_https, r);
-    else if (node->local_name == LXB_TAG_SELECT) {
+    else if (dom_node_has_tag_select(node)) {
         return _request_append_select_(node, r);
     }
 
     /* recursive case */
-    for(lxb_dom_node_t* it = node->first_child; it ; it = it->next)
+    for(DomNode it = dom_node_first_child(node); !isnull(it) ; it = dom_node_next(it))
         try( _make_submit_post_request_rec(it, is_https, r));
     return Ok;
 }
@@ -331,11 +331,11 @@ static Err _make_submit_post_request_rec(
 
 
 static Err
-_mk_submit_post_request_(lxb_dom_node_t* form, bool is_https, Request r[_1_]) { 
+_mk_submit_post_request_(DomNode form, bool is_https, Request r[_1_]) { 
 
-    for(lxb_dom_node_t* it = form->first_child; it ; it = it->next) {
+    for(DomNode it = dom_node_first_child(form); !isnull(it) ; it = dom_node_next(it)) {
         try(_make_submit_post_request_rec(it, is_https, r));
-        if (it == form->last_child) break;
+        if (dom_node_eq(it, dom_node_last_child(form))) break;
     }
 
     return Ok;
@@ -344,24 +344,19 @@ _mk_submit_post_request_(lxb_dom_node_t* form, bool is_https, Request r[_1_]) {
 
 /* external linkage */
 
-Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request r[_1_]) {
-    const lxb_char_t* action;
-    size_t action_len;
-    lexbor_find_lit_attr_value__(form, "action", &action, &action_len);
+Err mk_submit_request (DomNode form, bool is_https, Request r[_1_]) {
+    StrView action = dom_node_attr_value(form, svl("action"));
+    StrView method = dom_node_attr_value(form, svl("method"));
 
-    const lxb_char_t* method;
-    size_t method_len;
-    lexbor_find_lit_attr_value__(form, "method", &method, &method_len);
-
-    if (action && action_len) 
-        try(str_append_z(request_urlstr(r), (char*)action, action_len));
+    if (action.items && action.len) 
+        try(str_append_z(request_urlstr(r), &action));
 
 
-    if (!method_len || lexbor_str_eq("get", method, method_len)) {
+    if (!method.len || strview_eq_case(svl("get"), method)) {
         r->method = http_get;
         return _make_submit_get_request_rec_(form, r);
     }
-    if (method_len && lexbor_str_eq("post", method, method_len)) {
+    if (method.len && strview_eq_case(svl("post"), method)) {
         r->method = http_post;
         return _mk_submit_post_request_(form, is_https, r);
     }
@@ -383,8 +378,8 @@ Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method) {
 
     *r = (Request){ .method=method };
 
-    try(str_append_z(&r->urlstr, (char*)url, url_len));
-    if (params_len) try(str_append_z(&r->postfields, (char*)params, params_len));
+    try(str_append_z(&r->urlstr, sv(url, url_len))); 
+    if (params_len) try(str_append_z(&r->postfields, sv(params, params_len)));
     return Ok;
 }
 
@@ -392,7 +387,7 @@ Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method) {
 Err get_url_alias(Session* s, const char* cstr, BufOf(char)* out) {
     if (cstr_starts_with("bookmarks", cstr)) {
         if (!len__(session_bookmarks_fname(s))) return "no bookmarks file configured";
-        try(str_append_lit__(out, "file://"));
+        try(str_append(out, svl("file://")));
         return resolve_bookmarks_file(items__(session_bookmarks_fname(s)), out);
     }
     return err_fmt("not a url alias: %s", cstr);

@@ -74,7 +74,7 @@ tablist_append_move_tree(TabList f[_1_], TabNode t[_1_]) {
 
 /* dtor */
 static inline void tablist_cleanup(TabList f[_1_]) {
-    arl_of_tab_node_clean(&f->tabs);
+    arlfn(TabNode, clean)(&f->tabs);
 }
 
 Err tablist_info(TabList f[_1_], CmdOut* out);

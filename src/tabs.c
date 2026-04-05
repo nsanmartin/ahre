@@ -28,17 +28,16 @@ Failure_Tab_Node_Cleanup:
 
 
 Err tablist_info(TabList f[_1_], CmdOut* out) {
-    (void)out;
     ArlOf(size_t)* stack = &(ArlOf(size_t)){0};
 
     TabNode* current_node;
     Err err = Ok;
     ok_then(err, tablist_current_node(f, &current_node));
-    ok_then(err, cmd_out_msg_append_lit__(out, "("));
+    ok_then(err, cmd_out_msg_append(out, svl("(")));
     ok_then(err, cmd_out_msg_append_ui_as_base10(out, f->tabs.len));
-    ok_then(err, cmd_out_msg_append_lit__(out, " tab"));
-    if(f->tabs.len) ok_then(err, cmd_out_msg_append_lit__(out, "s"));
-    ok_then(err, cmd_out_msg_append_lit__(out, ")\n"));
+    ok_then(err, cmd_out_msg_append(out, svl(" tab")));
+    if(f->tabs.len) ok_then(err, cmd_out_msg_append(out, svl("s")));
+    ok_then(err, cmd_out_msg_append(out, svl(")\n")));
 
     if (!err) {
         TabNode* it = arlfn(TabNode, begin)(&f->tabs);
@@ -51,6 +50,6 @@ Err tablist_info(TabList f[_1_], CmdOut* out) {
         }
     }
     arlfn(size_t, clean)(stack);
-    ok_then(err, cmd_out_msg_append_lit__(out, "\n"));
+    ok_then(err, cmd_out_msg_append(out, svl("\n")));
     return Ok;
 }

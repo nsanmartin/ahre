@@ -7,6 +7,7 @@
 
 #define MsgLastLine EscCodePurple "%{- last line -}%" EscCodeReset
 
+Err _get_image_by_ix(Session session[_1_], size_t ix, DomNode outnode[_1_]);
 
 static bool _is_url_alias_(const char* cmd) { return *cmd == '\\'; }
 
@@ -56,11 +57,11 @@ Err cmd_set_session_winsz(CmdParams p[_1_]) {
     *session_ncols(p->s) = ncols;
     
     CmdOut* out = cmd_params_cmd_out(p);
-    try( cmd_out_msg_append_lit__(out, "win: nrows = ")); 
+    try( cmd_out_msg_append(out, svl("win: nrows = "))); 
     try( cmd_out_msg_append_ui_as_base10(out, nrows));
-    try( cmd_out_msg_append_lit__(out, ", ncols = "));
+    try( cmd_out_msg_append(out, svl(", ncols = ")));
     try( cmd_out_msg_append_ui_as_base10(out, ncols));
-    try( cmd_out_msg_append_lit__(out, "\n"));
+    try( cmd_out_msg_append(out, svl("\n")));
     return Ok;
 }
 
@@ -174,19 +175,18 @@ Err shortcut_z(Session session[_1_], const char* rest, CmdOut cmd_out[_1_]) {
     return Ok;
 }
 
-//TODO: use it or delete it
-Err _cmd_misc(Session session[_1_], const char* line, CmdOut cout[_1_]) {
-    const char* rest = 0x0;
-    line = cstr_skip_space(line);
-    if ((rest = csubstr_match(line, "attr", 2))) { return "TODO: attr"; }
-    if ((rest = csubstr_match(line, "class", 3))) { return "TODO: class"; }
-    ///if ((rest = csubstr_match(line, "clear", 3))) { return cmd_clear(session); }
-    /* if ((rest = csubstr_match(line, "fetch", 1))) { return _cmd_fetch(session); } */
-    if ((rest = csubstr_match(line, "tag", 2))) { return _cmd_misc_tag(rest, session); }
-    if ((rest = csubword_match(line, "z", 1))) { return shortcut_z(session, rest, cout); }
-
-    return "unknown cmd";
-}
+/* //TODO: use it or delete it */
+/* Err _cmd_misc(Session session[_1_], const char* line, CmdOut cout[_1_]) { */
+/*     const char* rest = 0x0; */
+/*     line = cstr_skip_space(line); */
+/*     if ((rest = csubstr_match(line, "attr", 2))) { return "TODO: attr"; } */
+/*     if ((rest = csubstr_match(line, "class", 3))) { return "TODO: class"; } */
+/*     ///if ((rest = csubstr_match(line, "clear", 3))) { return cmd_clear(session); } */
+/*     /1* if ((rest = csubstr_match(line, "fetch", 1))) { return _cmd_fetch(session); } *1/ */
+/*     if ((rest = csubstr_match(line, "tag", 2))) { return _cmd_misc_tag(rest, session); } */
+/*     if ((rest = csubword_match(line, "z", 1))) { return shortcut_z(session, rest, cout); } */
+/*     return "unknown cmd"; */
+/* } */
 
 /* textbuf commands */
 
@@ -215,12 +215,12 @@ Err _textbuf_print_n_(TextBuf textbuf[_1_], Range range[_1_], const char* ln, Cm
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
         try( cmd_out_screen_append_ui_as_base10(out, linum));
-        try( cmd_out_screen_append_lit__(out, "\t"));
-        if (line.len) try( cmd_out_screen_append(out, (char*)line.items, line.len));
-        else try( cmd_out_screen_append_lit__(out, "\n"));
+        try( cmd_out_screen_append(out, svl("\t")));
+        if (line.len) try( cmd_out_screen_append(out, line));
+        else try( cmd_out_screen_append(out, svl("\n")));
     }
 
-    if (textbuf_line_count(textbuf) == range->end) try( cmd_out_screen_append_lit__(out, "\n"));
+    if (textbuf_line_count(textbuf) == range->end) try( cmd_out_screen_append(out, svl("\n")));
     return Ok;
 }
 
@@ -232,11 +232,11 @@ Err dbg_print_all_lines_nums(TextBuf textbuf[_1_], Range r[_1_], const char* ln,
     StrView line;
     for (;textbuf_get_line(textbuf, lnum, &line); ++lnum) {
         try( cmd_out_screen_append_ui_as_base10(out, lnum));
-        try( cmd_out_screen_append_lit__(out, "\t`"));
+        try( cmd_out_screen_append(out, svl("\t`")));
         if (line.len > 1) {
-            try( cmd_out_screen_append(out, (char*)line.items, line.len-1));
+            try( cmd_out_screen_append(out, sv(line.items, line.len-1)));
         } 
-        try( cmd_out_screen_append_lit__(out, "'\n"));
+        try( cmd_out_screen_append(out, svl("'\n")));
     }
     return Ok;
 }
@@ -259,7 +259,7 @@ Err _cmd_textbuf_write_impl(TextBuf textbuf[_1_], Range r[_1_], const char* rest
         try(file_write_or_close(line.items, line.len, fp));
     }
     try(file_close(fp));
-    return cmd_out_msg_append_lit__(out, "file written. ");
+    return cmd_out_msg_append(out, svl("file written. "));
 }
 
 Err cmd_textbuf_global(CmdParams p[_1_]) {
@@ -274,55 +274,55 @@ Err cmd_textbuf_global(CmdParams p[_1_]) {
 
 
 static Err
-_cmd_input_text_set_(Session session[_1_], LxbNode n[_1_], const char* line, CmdOut cout[_1_]) {
+_cmd_input_text_set_(Session session[_1_], DomNode n[_1_], const char* line, CmdOut cout[_1_]) {
     Err err = Ok;
     if (!*line) {
-        try( cmd_out_screen_append_lit__(cout, "> "));
+        try( cmd_out_screen_append(cout, svl("> ")));
         ArlOf(char) masked = (ArlOf(char)){0};
         err = readpass_term(&masked, true);
-        ok_then(err, lexbor_set_lit_attr__(lxbnode_node(n), "value", masked.items, masked.len));
+        ok_then(err, dom_node_set_attr(*n, svl("value"), sv(&masked)));
         arlfn(char, clean)(&masked);
     } else {
         if (*line == ' ' || *line == '=') ++line;
         size_t len = strlen(line);
         if (len && line[len-1] == '\n') --len;
-        err = lexbor_set_lit_attr__(lxbnode_node(n), "value", line, len);
+        err = dom_node_set_attr(*n, svl("value"), sv(line, len));
     }
     ok_then(err, session_doc_draw(session));
     return err;
 }
 
-static Err _cmd_input_select_set_(Session session[_1_], LxbNode n[_1_], const char* line) {
-    ArlOf(LxbNodePtr)* matches = &(ArlOf(LxbNodePtr)){0};
+static Err _cmd_input_select_set_(Session session[_1_], DomNode n[_1_], const char* line) {
+    ArlOf(DomNode)* matches = &(ArlOf(DomNode)){0};
     Err e = Ok;
 
-    lxb_dom_node_t* first = lxbnode_node(n)->first_child;
-    for(lxb_dom_node_t* it = first; it ; it = it->next) {
-        if (it->type == LXB_DOM_NODE_TYPE_ELEMENT && it->local_name == LXB_TAG_OPTION) {
-            StrView value = lexbor_get_lit_attr__(it, "value");
+    DomNode first = dom_node_first_child(*n);
+    for(DomNode it = first; !isnull(it) ; it = dom_node_next(it)) {
+        if (dom_node_type(it) == DOM_NODE_TYPE_ELEMENT && dom_node_tag(it) == HTML_TAG_OPTION) {
+            StrView value = dom_node_attr_value(it, svl("value"));
             size_t linelen = strlen(line);
             if (linelen <= value.len && value.items && !strncmp(line, value.items, linelen)) {
-                if (!arlfn(LxbNodePtr, append)(matches, &it)) {
+                if (!arlfn(DomNode, append)(matches, &it)) {
                     e = "error: arl append failure";
                     goto Clean_Matches;
                 }
             }
 
-            try_or_jump(e, Clean_Matches, lexbor_remove_lit_attr__(it, "selected"));
+            try_or_jump(e, Clean_Matches, dom_node_remove_attr(it, svl("selected")));
         }
     }
 
     if (len__(matches) == 0) e = "no matches";
     else if (len__(matches) == 1) {
         e = Ok;
-        LxbNodePtr* selected = arlfn(LxbNodePtr,at)(matches,0);
+        DomNode* selected = arlfn(DomNode,at)(matches,0);
         if (!selected) return "error: arlfn failure";
-        e = lexbor_set_lit_attr__(*selected, "selected", "", 0);
+        e = dom_node_set_attr(*selected, svl("selected"), svl(""));
         ok_then(e, session_doc_draw(session));
     } else e = "amiguous input";
 
 Clean_Matches:
-    arlfn(LxbNodePtr, clean)(matches);
+    arlfn(DomNode, clean)(matches);
     return e;
 }
 
@@ -331,18 +331,18 @@ Err _cmd_input_ix_set_(CmdParams p[_1_], const size_t ix) {
     Session* session = p->s;
     const char* ln   = p->ln;
     HtmlDoc* d;
-    LxbNode n = (LxbNode){0};
+    DomNode n = (DomNode){0};
     try( session_current_doc(session, &d));
-    try( _get_lexbor_node_ptr_by_ix(htmldoc_inputs(d), ix, &n.n));
+    try( _get_dom_node_at_(htmldoc_inputs(d), ix, &n));
 
-    if (lexbor_lit_attr_has_lit_value(&n, "type", "text"))
+    if (dom_node_attr_has_value( n, svl("type"), svl("text")))
         return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p));
-    else if (lexbor_lit_attr_has_lit_value(&n, "type", "search"))
+    else if (dom_node_attr_has_value(n, svl("type"), svl("search")))
         return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p)); //TODO: implement it properly
-    else if (lexbor_lit_attr_has_lit_value(&n, "type", "password"))
+    else if (dom_node_attr_has_value(n, svl("type"), svl("password")))
         return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p));
-    else if (lexbor_node_tag_is_select(&n)) return _cmd_input_select_set_(session, &n, ln);
-    else if (!lexbor_has_lit_attr__(&n, "type"))
+    else if (dom_node_tag(n) == HTML_TAG_SELECT) return _cmd_input_select_set_(session, &n, ln);
+    else if (!dom_node_has_attr(n, svl("type")))
         return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p));
 
     return "input set not supported for element";
@@ -350,21 +350,21 @@ Err _cmd_input_ix_set_(CmdParams p[_1_], const size_t ix) {
 
 /* image commands */
 
-Err _get_image_by_ix(Session session[_1_], size_t ix, lxb_dom_node_t* outnode[_1_]) {
+Err _get_image_by_ix(Session session[_1_], size_t ix, DomNode outnode[_1_]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
-    ArlOf(LxbNodePtr)* images = htmldoc_imgs(htmldoc);
-    LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(images, ix);
+    ArlOf(DomNode)* images = htmldoc_imgs(htmldoc);
+    DomNode* nodeptr = arlfn(DomNode, at)(images, ix);
     if (!nodeptr) return "image number invalid";
     *outnode = *nodeptr;
     return Ok;
 }
 
 Err _cmd_image_print(CmdParams p[_1_], size_t ix) {
-    lxb_dom_node_t* node;
+    DomNode node;
     try( _get_image_by_ix(p->s, ix, &node));
     Str* buf = &(Str){0};
-    Err err = lexbor_node_to_str(node, buf);
+    Err err = dom_node_to_str(node, buf);
     ok_then(err, cmd_out_msg_append_str(cmd_params_cmd_out(p), buf));
     str_clean(buf);
     return err;
@@ -372,13 +372,13 @@ Err _cmd_image_print(CmdParams p[_1_], size_t ix) {
 
 Err _cmd_image_save(CmdParams p[_1_], size_t ix) {
     const char* fname = p->ln;
-    lxb_dom_node_t* node;
+    DomNode node;
     try( _get_image_by_ix(p->s, ix, &node));
     HtmlDoc* htmldoc;
     try( session_current_doc(p->s, &htmldoc));
 
     Str urlstr = (Str){0};
-    try (lexbor_append_null_terminated_attr(node, "src", 3, &urlstr));
+    try (dom_node_append_null_terminated_attr_to_str(node, svl("src"), &urlstr));
 
     Err err = Ok;
     Request r;
@@ -388,7 +388,7 @@ Err _cmd_image_save(CmdParams p[_1_], size_t ix) {
 
     err = request_to_file(&r, session_url_client(p->s), fname);
 
-    ok_then(err, cmd_out_msg_append_lit__(cmd_params_cmd_out(p), "data saved\n"));
+    ok_then(err, cmd_out_msg_append(cmd_params_cmd_out(p), svl("data saved\n")));
 Clean_Request:
     request_clean(&r);
     return err;
@@ -400,22 +400,22 @@ Clean_Url_Str:
 
 /* anchor commands */
 
-static Err _get_anchor_by_ix(Session session[_1_], size_t ix, lxb_dom_node_t* outnode[_1_]) {
+static Err _get_anchor_by_ix(Session session[_1_], size_t ix, DomNode outnode[_1_]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
-    ArlOf(LxbNodePtr)* anchors = htmldoc_anchors(htmldoc);
-    LxbNodePtr* nodeptr = arlfn(LxbNodePtr, at)(anchors, ix);
+    ArlOf(DomNode)* anchors = htmldoc_anchors(htmldoc);
+    DomNode* nodeptr = arlfn(DomNode, at)(anchors, ix);
     if (!nodeptr) return "anchor number invalid";
     *outnode = *nodeptr;
     return Ok;
 }
 
 Err _cmd_anchor_print(CmdParams p[_1_], size_t linknum) {
-    lxb_dom_node_t* a;
+    DomNode a;
     try( _get_anchor_by_ix(p->s, linknum, &a));
     
     Str* buf = &(Str){0};
-    try( lexbor_node_to_str(a, buf));
+    try( dom_node_to_str(a, buf));
 
     //>< write to CmdOut
     Err err = cmd_out_msg_append_str(cmd_params_cmd_out(p), buf);
@@ -425,14 +425,13 @@ Err _cmd_anchor_print(CmdParams p[_1_], size_t linknum) {
 
 
 Err _cmd_anchor_save(Session session[_1_], size_t ix, const char* fname, CmdOut* out) {
-    (void)out;
-    lxb_dom_node_t* node;
+    DomNode node;
     try( _get_anchor_by_ix(session, ix, &node));
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
 
     Str urlstr = (Str){0};
-    try (lexbor_append_null_terminated_attr(node, "href", 4, &urlstr));
+    try (dom_node_append_null_terminated_attr_to_str(node, svl("href"), &urlstr));
 
     Err err = Ok;
     Request r;
@@ -442,7 +441,7 @@ Err _cmd_anchor_save(Session session[_1_], size_t ix, const char* fname, CmdOut*
 
     err = request_to_file(&r, session_url_client(session), fname);
 
-    ok_then(err, cmd_out_msg_append_lit__(out, "file saved\n"));
+    ok_then(err, cmd_out_msg_append(out, svl("file saved\n")));
 Clean_Request:
     request_clean(&r);
     return err;
@@ -452,11 +451,11 @@ Clean_Url_Str:
 }
 
 
-Err _cmd_lexbor_node_print_(ArlOf(LxbNodePtr) node_arl[_1_], size_t ix, CmdOut out[_1_]) {
-    lxb_dom_node_t* node;
-    try( _get_lexbor_node_ptr_by_ix(node_arl, ix, &node));
+Err _cmd_lexbor_node_print_(ArlOf(DomNode) node_arl[_1_], size_t ix, CmdOut out[_1_]) {
+    DomNode node;
+    try( _get_dom_node_at_(node_arl, ix, &node));
     Str* buf = &(Str){0};
-    Err err = lexbor_node_to_str(node, buf);
+    Err err = dom_node_to_str(node, buf);
 
     ok_then(err,  cmd_out_msg_append_str(out, buf));
     str_clean(buf);
@@ -471,10 +470,11 @@ Err bookmark_add_to_section(
 
     line = cstr_skip_space(line);
     bool create_section_if_not_found = true;
+    bool match_prefix                = false;
     if (*line == '/') {
-        ++line;
         create_section_if_not_found = false;
-        line = cstr_skip_space(line);
+        match_prefix                = true;
+        line                        = cstr_skip_space(++line);
     }
     if (!*line) return "not a valid bookmark section";
     Err err = Ok; 
@@ -482,36 +482,32 @@ Err bookmark_add_to_section(
     HtmlDoc bm;
     Str bm_path = (Str){0};
     try(resolve_bookmarks_file(items__(session_bookmarks_fname(s)), &bm_path));
-    /* Writer w; */
-    /* try_or_jump(err, Fail_Clean_Bm, session_msg_writer_init(&w, s)); */
     try_or_jump(err, Fail_Clean_Bm,
-            get_bookmarks_doc(url_client, strview__(&bm_path), cmd_out,  &bm));
+            get_bookmarks_doc(url_client, sv(&bm_path), cmd_out,  &bm));
 
     char* url;
     if ((err = url_cstr_malloc(htmldoc_url(d), &url))) goto Clean_Bm_Path_And_BmDoc;
 
-    lxb_dom_node_t* body;
+    DomNode body;
     if ((err = bookmark_sections_body(&bm, &body))) goto Free_Curl_Url;
 
     Str* title = &(Str){0};
-    if ((err = lxb_mk_title_or_url(d, url, title))) goto Free_Curl_Url;
+    if ((err = htmldoc_title_or_url(d, url, title))) goto Free_Curl_Url;
 
-    lxb_dom_element_t* bm_entry;
-    if ((err = bookmark_mk_entry(bm.lxbdoc, url, title, &bm_entry))) goto Clean_Title;
+    DomElem bm_entry;
+    if ((err = bookmark_mk_entry(bm.dom, url, title, &bm_entry))) goto Clean_Title;
 
-    lxb_dom_node_t* section_ul;
-    if ((err = bookmark_section_ul_get(body, line, &section_ul))) goto Clean_Title;
+    DomNode section_ul;
+    if ((err = bookmark_section_ul_get(body, line, &section_ul, match_prefix))) goto Clean_Title;
     //TODO: wrap this
-    if (section_ul) {
-        lxb_dom_node_insert_child(
-                lxb_dom_interface_node(section_ul), lxb_dom_interface_node(bm_entry)
-            );
+    if (!isnull(section_ul)) {
+        dom_node_insert_child(section_ul, bm_entry);
     } else if(create_section_if_not_found) {
-        err = bookmark_section_insert(&(bm.lxbdoc->dom_document), body, line, bm_entry);
+        err = bookmark_section_insert(bm.dom, body, line, bm_entry);
     } else err = "section not found in bookmarks file";
 
-    ok_then(err, bookmarks_save_to_disc(&bm, strview__(&bm_path)));
-    ok_then(err, cmd_out_msg_append_lit__(cmd_out, "bookmark added\n"));
+    ok_then(err, bookmarks_save_to_disc(&bm, sv(&bm_path)));
+    ok_then(err, cmd_out_msg_append(cmd_out, svl("bookmark added\n")));
 
 Clean_Title:
     str_clean(title);

@@ -5,14 +5,14 @@
 #include <limits.h>
 #include <strings.h>
 #include <curl/curl.h>
+
 #include "wrapper-curl.h"
+#include "dom.h"
 #include "utils.h"
 #include "config.h"
 #include "error.h"
 #include "url-client.h"
 
-//TODO: include only in one place
-#include <lexbor/html/html.h>
 
 typedef struct Session Session;
 
@@ -67,10 +67,11 @@ Err request_to_file(Request r[_1_], UrlClient url_client[_1_], const char* fname
 static inline Err request_query_append_key_value(
     Request r[_1_], const char*k, size_t klen, const char* v, size_t vlen
 ) {
+    //TODO1 manage errors properly
         Str* key = &(Str){0};
         Str* value = &(Str){0};
-        try(str_append(key, (char*)k, klen));
-        try(str_append(value, (char*)v, vlen));
+        try(str_append(key, sv(k, klen)));
+        try(str_append(value, sv(v, vlen)));
         if (!arlfn(Str,append)(request_query_keys(r), key) 
                 || !arlfn(Str,append)(request_query_values(r), value))
             return "error: arl append failure";
@@ -158,5 +159,5 @@ static inline Err curlu_scheme_is_https(CURLU* cu, bool out[_1_]) {
     return Ok;
 }
 
-Err mk_submit_request (lxb_dom_node_t* form, bool is_https, Request r[_1_]);
+Err mk_submit_request (DomNode form, bool is_https, Request r[_1_]);
 #endif

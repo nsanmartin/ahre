@@ -23,7 +23,7 @@ A hypertext reference www navigator or text web browser for linux.
 ## Build instructions
 ### Lexbor installation
 
-checkout v2.6.0 and follow [INSTALL.md](https://github.com/lexbor/lexbor/blob/master/INSTALL.md)
+checkout v3.0.0 and follow [INSTALL.md](https://github.com/lexbor/lexbor/blob/master/INSTALL.md)
 in lexbor repo. But basically:
 ```bash
 git clone https://github.com/lexbor/lexbor
