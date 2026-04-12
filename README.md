@@ -28,7 +28,7 @@ in lexbor repo. But basically:
 ```bash
 git clone https://github.com/lexbor/lexbor
 cd lexbor
-git checkout v2.6.0
+git checkout v3.0.0
 cmake .
 make
 sudo make install
