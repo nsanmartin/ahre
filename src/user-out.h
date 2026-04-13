@@ -4,7 +4,6 @@
 #include <errno.h>
 
 #include "utils.h"
-#include <curl/curl.h>
 #include "cmd-out.h"
 
 

@@ -3,7 +3,6 @@
 
 #include "cmd-out.h"
 #include "fetch-history.h"
-//#include "htmldoc.h"
 #include "reditline.h"
 #include "session-conf.h"
 #include "tabs.h"
@@ -212,4 +211,7 @@ Err session_flush_cmd_out_msg(Session s[_1_], CmdOut cout[_1_]);
 Err session_flush_cmd_out_screen(Session s[_1_], CmdOut cout[_1_]);
 Err session_flush_cmd_out(Session s[_1_], CmdOut cout[_1_]);
 Err session_htmldoc_redraw(HtmlDoc htmldoc[_1_], Session s[_1_]);
+Err session_doc_draw(Session session[_1_]);
+Err session_doc_js(Session session[_1_], CmdOut* out);
+Err session_doc_console(Session session[_1_], const char* line, CmdOut* out);
 #endif

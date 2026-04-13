@@ -12,7 +12,8 @@
 #include "dom.h"
 
 
-static inline Err draw_ctx_esc_code_pop(DrawCtx ctx[_1_]) {
+static inline
+Err draw_ctx_esc_code_pop(DrawCtx ctx[_1_]) {
     return arlfn(EscCode, pop)(draw_ctx_esc_code_stack(ctx)) ? Ok : "error: empty stack";
 }
 
@@ -21,11 +22,13 @@ static inline Err draw_ctx_esc_code_pop(DrawCtx ctx[_1_]) {
 #define READ_FROM_FILE_BUFFER_LEN 4096u
 #define LAZY_STR_BUF_LEN 1600u
 
-#define append_to_arlof_lxb_node__(ArrayList, NodePtr) \
+#define \
+append_to_arlof_lxb_node__(ArrayList, NodePtr) \
     (arlfn(DomNode,append)(ArrayList, (NodePtr)) ? Ok : "error: lip set")
 
 
-static size_t _strview_trim_left_count_newlines_(StrView s[_1_]) {
+static size_t 
+_strview_trim_left_count_newlines_(StrView s[_1_]) {
     size_t newlines = 0;
     while(s->len && isspace(*(items__(s)))) {
         newlines += *(items__(s)) == '\n';
@@ -65,33 +68,43 @@ typedef Err (*DrawEffectCb)(DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
 Err draw_rec(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
 static Err draw_rec_tag(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
 static Err draw_text(DomNode node,  DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
-static inline Err
-draw_list( DomNode it, DomNode last, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
-static inline Err
-draw_list_block( DomNode it, DomNode last, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
+static inline Err draw_list( DomNode it, DomNode last, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
+static inline Err draw_list_block( DomNode it, DomNode last, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
 
 
-static Err draw_iter_childs(DomNode n, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+static Err
+draw_iter_childs(DomNode n, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     return draw_list(dom_node_first_child(n), dom_node_last_child(n), ctx, text);
 }
 
-static Err draw_block_iter_childs(DomNode n, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+
+static Err
+draw_block_iter_childs(DomNode n, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     return draw_list_block(dom_node_first_child(n), dom_node_last_child(n), ctx, text);
 }
 
 
-static void draw_text_buf_trim_right(DrawTextBuf sub[_1_]) {
+static void
+draw_text_buf_trim_right(DrawTextBuf sub[_1_]) {
     StrView content = strview_from_mem(sub->buf.items, sub->buf.len);
     sub->right_newlines = _strview_trim_right_count_newlines_(&content);
     sub->buf.len = content.len;
 }
 
-static Str* draw_text_buf_buf(DrawTextBuf sub_text[_1_]) { return &sub_text->buf; }
-static TextBufMods* draw_text_buf_mods(DrawTextBuf text[_1_]) { return &text->mods; }
+static Str*
+draw_text_buf_buf(DrawTextBuf sub_text[_1_]) { return &sub_text->buf; }
+
+
+static TextBufMods*
+draw_text_buf_mods(DrawTextBuf text[_1_]) { return &text->mods; }
+
+
 static size_t*
 draw_text_buf_fragment_offset(DrawTextBuf text[_1_]) { return &text->fragment_offset; }
 
-static void draw_text_buf_clean(DrawTextBuf sub_text[_1_]) {
+
+static void
+draw_text_buf_clean(DrawTextBuf sub_text[_1_]) {
     /* std_free(sub->fragment); */
     buffn(char, clean)(&sub_text->buf);
     arlfn(ModAt, clean)(&sub_text->mods);
@@ -111,7 +124,8 @@ static Err draw_text_buf_append(DrawTextBuf text[_1_], StrView s) {
     return draw_text_buf_append_mem_mods(text, s.items, s.len, NULL);
 }
 
-#define draw_text_buf_append_lit__(Ctx, Str) \
+#define \
+draw_text_buf_append_lit__(Ctx, Str) \
     draw_text_buf_append_mem_mods(Ctx, Str, sizeof(Str)-1, NULL)
 
 static Err
@@ -158,13 +172,16 @@ draw_ctx_append_sub_text(DrawTextBuf text[_1_], DrawTextBuf sub[_1_]) {
 }
 
 
-static bool draw_text_buf_last_isalnum(DrawTextBuf text[_1_]) {
+static bool
+draw_text_buf_last_isalnum(DrawTextBuf text[_1_]) {
     Str* buf = draw_text_buf_buf(text);
     return len__(buf) 
         && isalnum(items__(buf)[len__(buf) - 1]);
 }
 
-static Err draw_text_buf_textmod(DrawCtx ctx[_1_], DrawTextBuf text[_1_], EscCode code) {
+
+static Err
+draw_text_buf_textmod(DrawCtx ctx[_1_], DrawTextBuf text[_1_], EscCode code) {
     if (draw_ctx_color(ctx)) 
         return textmod_append(
             draw_text_buf_mods(text), len__(draw_text_buf_buf(text)), esc_code_to_text_mod(code));
@@ -172,14 +189,15 @@ static Err draw_text_buf_textmod(DrawCtx ctx[_1_], DrawTextBuf text[_1_], EscCod
 }
 
 
-static inline Err
+static Err
 draw_ctx_esc_code_push(DrawCtx ctx[_1_], EscCode code) {
     if (arlfn(EscCode, append)(draw_ctx_esc_code_stack(ctx), &code)) return Ok;
     return "error: arlfn append failure";
 }
 
  
-static Err draw_text_buf_append_color_(DrawCtx ctx[_1_], DrawTextBuf text[_1_], EscCode code) {
+static Err
+draw_text_buf_append_color_(DrawCtx ctx[_1_], DrawTextBuf text[_1_], EscCode code) {
     if (draw_ctx_color(ctx)) {
         try( draw_ctx_esc_code_push(ctx, code));
         try( textmod_append(
@@ -189,7 +207,8 @@ static Err draw_text_buf_append_color_(DrawCtx ctx[_1_], DrawTextBuf text[_1_], 
 }
 
  
-static inline Err draw_ctx_reset_color(DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+static inline
+Err draw_ctx_reset_color(DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     if (draw_ctx_color(ctx)) {
         try( textmod_append(
                 draw_text_buf_mods(text),
@@ -257,12 +276,14 @@ static inline Err draw_ctx_color_light_green(DrawCtx ctx[_1_], DrawTextBuf text[
 }
 
 
-static inline Err draw_ctx_color_purple(DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+static inline Err
+draw_ctx_color_purple(DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     return draw_text_buf_append_color_(ctx, text, esc_code_purple);
 }
 
 
-static inline Err draw_text_buf_append_ui_base36_(DrawTextBuf text[_1_], uintmax_t ui) {
+static inline Err
+draw_text_buf_append_ui_base36_(DrawTextBuf text[_1_], uintmax_t ui) {
     Str* buf = draw_text_buf_buf(text);
     return str_append_ui_as_base36(buf, ui);
 }
@@ -271,11 +292,13 @@ static inline Err draw_text_buf_append_ui_base36_(DrawTextBuf text[_1_], uintmax
 /* end of DrawTextBuf */
 
 
-Err draw_tag_a(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
+static Err
+draw_tag_a(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
 Err draw_tag_pre(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
 
 
-static void draw_text_buf_trim_left(DrawTextBuf sub[_1_]) {
+static void
+draw_text_buf_trim_left(DrawTextBuf sub[_1_]) {
     StrView content = strview_from_mem(sub->buf.items, sub->buf.len);
     sub->left_newlines = _strview_trim_left_count_newlines_(&content);
     sub->left_trim = sub->buf.len-content.len;
@@ -283,7 +306,8 @@ static void draw_text_buf_trim_left(DrawTextBuf sub[_1_]) {
 }
 
 
-static Err _hypertext_id_open_(
+static Err
+_hypertext_id_open_(
     DrawCtx         ctx[_1_],
     DrawTextBuf     text[_1_],
     DrawEffectCb    visual_effect,
@@ -299,7 +323,8 @@ static Err _hypertext_id_open_(
 }
 
 
-static Err _hypertext_open_(
+static Err
+_hypertext_open_(
     DrawCtx         ctx[_1_],
     DrawTextBuf     text[_1_],
     DrawEffectCb    visual_effect,
@@ -311,7 +336,8 @@ static Err _hypertext_open_(
 }
 
 
-static Err _hypertext_id_close_(
+static Err
+_hypertext_id_close_(
     DrawCtx         ctx[_1_],
     DrawTextBuf     text[_1_],
     DrawEffectCb    visual_effect,
@@ -323,7 +349,8 @@ static Err _hypertext_id_close_(
 }
 
 
-static Err _hypertext_close_(
+static Err
+_hypertext_close_(
     DrawCtx         ctx[_1_],
     DrawTextBuf     text[_1_],
     DrawEffectCb    visual_effect,
@@ -335,7 +362,8 @@ static Err _hypertext_close_(
 }
 
 
-Err draw_rec(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+Err
+draw_rec(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     if (!isnull(node)) {
         switch(dom_node_type(node)) {
             case DOM_NODE_TYPE_ELEMENT: return draw_rec_tag(node, ctx, text);
@@ -469,19 +497,6 @@ draw_tag_form(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 }
 
 
-/* static bool _input_is_text_type_(const char* name, size_t len) { */
-/*     return !len */
-/*         || cstr_mem_eq_case("text", name, len) */
-/*         || cstr_mem_eq_case("search", name, len) */
-/*         ; */
-/* } */
-
-
-/* static bool _input_is_submit_type_(const char* name, size_t len) { */
-/*     return cstr_mem_eq_case("submit", name, len); */
-/* } */
-
-
 static Err
 draw_tag_button(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     HtmlDoc* d = draw_ctx_htmldoc(ctx);
@@ -513,7 +528,7 @@ static Err draw_tag_input(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_])
 
 
     /* submit */
-    if (strview_eq_case(type, svl("submit"))) {
+    if (str_eq_case(type, svl("submit"))) {
 
         StrView value = dom_node_attr_value(node, svl("value"));
 
@@ -529,12 +544,13 @@ static Err draw_tag_input(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_])
     try( _hypertext_id_open_(
         ctx, text, draw_ctx_color_red, input_text_open_str, &input_id, NULL));
 
-    if (strview_eq_case(svl("text"), type) || strview_eq_case(svl("search"), type)) {
+    /* "input" type is text | search */
+    if (str_eq_case(svl("text"), type) || str_eq_case(svl("search"), type)) {
         try( draw_text_buf_append_lit__(text, "="));
         StrView value = dom_node_attr_value(node, svl("value"));
         if (value.len) try( draw_text_buf_append(text, value));
 
-    } else if (strview_eq_case(svl("password"), type)) {
+    } else if (str_eq_case(svl("password"), type)) {
 
         StrView value = dom_node_attr_value(node, svl("value"));
         if (value.len) {
@@ -581,7 +597,6 @@ draw_tag_tr(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
 static Err
 draw_tag_ul(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
-    if(draw_ctx_hide_tags(ctx, HIDE_UL)) return Ok;
     return draw_block_iter_childs(node,  ctx, text);
 }
 
@@ -605,7 +620,8 @@ draw_tag_li(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 }
 
 
-static Err draw_tag_h(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+static Err
+draw_tag_h(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     DrawTextBuf sub = (DrawTextBuf){0};
 
     try( draw_block_iter_childs(node,  ctx, &sub));
@@ -622,7 +638,8 @@ static Err draw_tag_h(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 }
 
 
-static Err draw_tag_code(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+static Err
+draw_tag_code(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
     DrawTextBuf sub = (DrawTextBuf){0};
 
@@ -645,7 +662,8 @@ static Err draw_tag_code(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) 
 }
 
 
-static Err draw_tag_b(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+static Err
+draw_tag_b(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     if (!isnull(dom_node_prev(node)) && draw_text_buf_last_isalnum(text))
         try( draw_text_buf_append_lit__(text, " "));
     try(_hypertext_open_(ctx, text, draw_ctx_push_bold, space_str));
@@ -664,7 +682,8 @@ draw_tag_separating_with_space(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[
 }
 
 
-static Err draw_tag_em(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+static Err
+draw_tag_em(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     if (!isnull(dom_node_prev(node)) && draw_text_buf_last_isalnum(text))
         try( draw_text_buf_append_lit__(text, " "));
     try(_hypertext_open_(ctx, text, draw_ctx_push_underline, space_str));
@@ -693,14 +712,16 @@ draw_tag_blockquote(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 }
 
 
-static Err draw_tag_title(DomNode node, DrawCtx ctx[_1_]) {
+static Err
+draw_tag_title(DomNode node, DrawCtx ctx[_1_]) {
     HtmlDoc* d = draw_ctx_htmldoc(ctx);
     *htmldoc_title(d) = node;
     return Ok;
 }
 
 
-static Err draw_strview_skipping_space(StrView s, DomNode prev, DrawTextBuf text[_1_]) {
+static Err
+draw_strview_skipping_space(StrView s, DomNode prev, DrawTextBuf text[_1_]) {
     /* if it starts with a punctuation mark we undo the space added in draw space */
     if (!isnull(prev) && !ispunct(s.items[0])) try( draw_text_buf_append_lit__(text, " "));
     while(s.len) {
@@ -723,9 +744,10 @@ static Err draw_strview_skipping_space(StrView s, DomNode prev, DrawTextBuf text
  * draw.
  * 
  */
-static Err draw_rec_tag(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+static Err
+draw_rec_tag(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     if (ctx->fragment
-    && strview_eq_case(sv(ctx->fragment), dom_node_attr_value(node, svl("id")))) {
+    && str_eq_case(sv(ctx->fragment), dom_node_attr_value(node, svl("id")))) {
         *draw_text_buf_fragment_offset(text) = len__(draw_text_buf_buf(text));
     }
     switch(dom_node_tag(node)) {
@@ -770,6 +792,7 @@ static Err draw_rec_tag(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
         case HTML_TAG_TD: case HTML_TAG_TH: //TODO delete once table is implemented
         case HTML_TAG_TIME:
         case HTML_TAG_SAMP:
+        case HTML_TAG_SMALL:
         case HTML_TAG_SPAN:
         case HTML_TAG_STRONG:
         case HTML_TAG_VAR: { return draw_tag_separating_with_space(node, ctx, text); }
@@ -785,7 +808,8 @@ static Err draw_rec_tag(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 }
 
 
-static Err draw_text(DomNode node,  DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+static Err
+draw_text(DomNode node,  DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     StrView data = dom_node_text_view(node);
     if (!data.len) return Ok;
 
@@ -823,7 +847,8 @@ draw_list_block(DomNode it, DomNode last, DrawCtx ctx[_1_], DrawTextBuf text[_1_
 }
 
 
-Err draw_tag_pre(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+Err
+draw_tag_pre(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     draw_ctx_pre_set(ctx, true);
     try( draw_block_iter_childs(node, ctx, text));
     draw_ctx_pre_set(ctx, false);
@@ -832,7 +857,8 @@ Err draw_tag_pre(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
 
 /*TODO: decouple sesion and htmldoc here */
-Err _htmldoc_draw_with_flags_(HtmlDoc htmldoc[_1_], Session* s, unsigned flags) {
+Err
+htmldoc_draw_with_flags(HtmlDoc htmldoc[_1_], Session* s, unsigned flags) {
     if (!s) return "error: expecting not null Session";
     Dom dom = htmldoc_dom(htmldoc);
     DrawCtx     ctx;
@@ -849,16 +875,18 @@ Err _htmldoc_draw_with_flags_(HtmlDoc htmldoc[_1_], Session* s, unsigned flags) 
 }
 
 
-static Err _htmldoc_draw_(HtmlDoc htmldoc[_1_], Session s[_1_]) {
+static Err
+_htmldoc_draw_(HtmlDoc htmldoc[_1_], Session s[_1_]) {
     unsigned flags = draw_ctx_flags_from_session(s) | DRAW_CTX_FLAG_TITLE;
-    return _htmldoc_draw_with_flags_(htmldoc, s, flags);
+    return htmldoc_draw_with_flags(htmldoc, s, flags);
 }
 
 
 #define HTMLDOC_FLAG_JS 0x1u
 
 
-Err htmldoc_init_move_request(
+Err
+htmldoc_init_move_request(
     HtmlDoc   d[_1_],
     Request   r[_1_],
     UrlClient uc[_1_],
@@ -900,7 +928,8 @@ Failure:
 }
 
 
-Err htmldoc_init_bookmark_move_urlstr(HtmlDoc d[_1_], Str urlstr[_1_]) {
+Err
+htmldoc_init_bookmark_move_urlstr(HtmlDoc d[_1_], Str urlstr[_1_]) {
     Err e = Ok;
 
 
@@ -920,7 +949,8 @@ Failure_Lxb_Html_Document_Destroy:
 /* external linkage */
 
 
-void htmldoc_reset_draw(HtmlDoc htmldoc[_1_]) {
+void
+htmldoc_reset_draw(HtmlDoc htmldoc[_1_]) {
     textbuf_reset(htmldoc_textbuf(htmldoc));
     arlfn(DomNode,clean)(htmldoc_anchors(htmldoc));
     arlfn(DomNode,clean)(htmldoc_imgs(htmldoc));
@@ -929,7 +959,8 @@ void htmldoc_reset_draw(HtmlDoc htmldoc[_1_]) {
 }
 
 
-static void htmldoc_fetchcache_cleanup(HtmlDoc htmldoc[_1_]) {
+static void
+htmldoc_fetchcache_cleanup(HtmlDoc htmldoc[_1_]) {
     textbuf_cleanup(htmldoc_sourcebuf(htmldoc));
     arlfn(Str,clean)(htmldoc_head_scripts(htmldoc));
     arlfn(Str,clean)(htmldoc_body_scripts(htmldoc));
@@ -937,7 +968,8 @@ static void htmldoc_fetchcache_cleanup(HtmlDoc htmldoc[_1_]) {
 }
 
 
-static void htmldoc_drawcache_cleanup(HtmlDoc htmldoc[_1_]) {
+static void
+htmldoc_drawcache_cleanup(HtmlDoc htmldoc[_1_]) {
     textbuf_cleanup(htmldoc_textbuf(htmldoc));
     arlfn(DomNode,clean)(htmldoc_anchors(htmldoc));
     arlfn(DomNode,clean)(htmldoc_imgs(htmldoc));
@@ -949,13 +981,15 @@ static void htmldoc_drawcache_cleanup(HtmlDoc htmldoc[_1_]) {
 }
 
 
-void htmldoc_cache_cleanup(HtmlDoc htmldoc[_1_]) {
+void
+htmldoc_cache_cleanup(HtmlDoc htmldoc[_1_]) {
     htmldoc_drawcache_cleanup(htmldoc);
     htmldoc_fetchcache_cleanup(htmldoc);
 }
 
 
-void htmldoc_cleanup(HtmlDoc htmldoc[_1_]) {
+void
+htmldoc_cleanup(HtmlDoc htmldoc[_1_]) {
     http_header_clean(htmldoc_http_header(htmldoc));
     htmldoc_cache_cleanup(htmldoc);
     dom_cleanup(htmldoc_dom(htmldoc));
@@ -966,19 +1000,21 @@ void htmldoc_cleanup(HtmlDoc htmldoc[_1_]) {
 }
 
 
-void htmldoc_destroy(HtmlDoc* htmldoc) {
+void
+htmldoc_destroy(HtmlDoc* htmldoc) {
     htmldoc_cleanup(htmldoc);
     std_free(htmldoc);
 }
 
 
-Err htmldoc_A(Session* s, HtmlDoc d[_1_], CmdOut* out) {
+Err
+htmldoc_A(Session* s, HtmlDoc d[_1_], CmdOut* out) {
     if (!s) return "error: no session";
     cmd_out_msg_append(out, svl("<li><a href=\""));
     char* url_buf;
-    try( url_cstr_malloc(htmldoc_url(d), &url_buf));
+    try( url_cstr_malloc(*htmldoc_url(d), &url_buf));
     cmd_out_msg_append(out, url_buf);
-    curl_free(url_buf);
+    w_curl_free(url_buf);
     cmd_out_msg_append(out, svl("\">"));
     /* try( dom_get_title_text_line(*htmldoc_title(d), msg_str(cmd_out_msg(out)))); */
     try(strview_join_lines_to_str(
@@ -991,7 +1027,8 @@ Err htmldoc_A(Session* s, HtmlDoc d[_1_], CmdOut* out) {
 }
 
 
-Err htmldoc_print_info(HtmlDoc d[_1_], CmdOut* out) {
+Err
+htmldoc_print_info(HtmlDoc d[_1_], CmdOut* out) {
     Err err = Ok;
     DomNode* title = htmldoc_title(d);
 
@@ -1014,33 +1051,33 @@ Err htmldoc_print_info(HtmlDoc d[_1_], CmdOut* out) {
     try(cmd_out_msg_append(out, svl("\n")));
     
     char* url = NULL;
-    ok_then(err, url_cstr_malloc(htmldoc_url(d), &url));
+    ok_then(err, url_cstr_malloc(*htmldoc_url(d), &url));
     if (url) {
         ok_then(err, cmd_out_msg_append_ln(out, url));
-        curl_free(url);
+        w_curl_free(url);
     }
 
     Str* charset = htmldoc_http_charset(d);
     if (len__(charset))
-        ok_then(err, cmd_out_msg_append_str_ln(out, charset));
+        ok_then(err, cmd_out_msg_append_ln(out, charset));
 
     Str* content_type = htmldoc_http_content_type(d);
     if (len__(content_type))
-        ok_then(err, cmd_out_msg_append_str_ln(out, content_type));
+        ok_then(err, cmd_out_msg_append_ln(out, content_type));
 
     return err;
 }
 
 
-static bool _prev_is_separable_(DomNode n) {
+static bool
+_prev_is_separable_(DomNode n) {
     DomNode prev = dom_node_prev(n);
-    return !isnull(prev)
-        && dom_node_tag(prev) != HTML_TAG_LI
-        ;
+    return !isnull(prev) && dom_node_tag(prev) != HTML_TAG_LI ;
 }
 
 
-Err draw_tag_a(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+static Err
+draw_tag_a(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     /* https://html.spec.whatwg.org/multipage/links.html#attr-hyperlink-href
      * The href attribute on a and area elements is not required; when those
      * elements do not have href attributes they do not create hyperlinks. */
@@ -1089,7 +1126,8 @@ Err draw_tag_a(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 }
 
 
-static Err htmldoc_reparse_source(HtmlDoc d[_1_]) {
+static Err
+htmldoc_reparse_source(HtmlDoc d[_1_]) {
     Dom dom = htmldoc_dom(d);
     dom_reset(dom);
     Str* html = textbuf_buf(htmldoc_sourcebuf(d));
@@ -1097,7 +1135,8 @@ static Err htmldoc_reparse_source(HtmlDoc d[_1_]) {
 }
 
 
-Err htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[_1_]) {
+Err
+htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[_1_]) {
     if (!htmldoc_http_content_type_text_or_undef(d)) return Ok;
     const char* utf8s;
     size_t utf8slen;
@@ -1115,13 +1154,15 @@ Err htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[_1_]) {
 }
 
 
-Err htmldoc_console(HtmlDoc d[_1_], Session* s, const char* line, CmdOut* out) {
+Err
+htmldoc_console(HtmlDoc d[_1_], Session* s, const char* line, CmdOut* out) {
     if (!s) return "error: no session";
     return jse_eval(htmldoc_js(d), s, line, out);
 }
 
 
-static Err jse_eval_doc_scripts(Session* s, HtmlDoc d[_1_], CmdOut* out) {
+static Err
+jse_eval_doc_scripts(Session* s, HtmlDoc d[_1_], CmdOut* out) {
 
     for ( Str* it = arlfn(Str,begin)(htmldoc_head_scripts(d))
         ; it != arlfn(Str,end)(htmldoc_head_scripts(d))
@@ -1142,7 +1183,8 @@ static Err jse_eval_doc_scripts(Session* s, HtmlDoc d[_1_], CmdOut* out) {
 
 
 //TODO: make this fn not Err and rename it
-Err htmldoc_js_enable(HtmlDoc d[_1_], Session* s, CmdOut* out) {
+Err
+htmldoc_js_enable(HtmlDoc d[_1_], Session* s, CmdOut* out) {
     try( jse_init(d));
     Err e = jse_eval_doc_scripts(s, d, out);
     if (e) cmd_out_msg_append(out, (char*)e);
@@ -1150,7 +1192,8 @@ Err htmldoc_js_enable(HtmlDoc d[_1_], Session* s, CmdOut* out) {
 }
 
 
-void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[_1_], Session* s, CmdOut* out) {
+void
+htmldoc_eval_js_scripts_or_continue(HtmlDoc d[_1_], Session* s, CmdOut* out) {
     if (htmldoc_js_is_enabled(d)) {
         Err e = jse_eval_doc_scripts(s, d, out);
         if (e) cmd_out_msg_append(out, (char*)e);
@@ -1158,7 +1201,8 @@ void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[_1_], Session* s, CmdOut* out
 }
 
 
-static Err _htmldoc_scripts_range_from_parsed_range_(
+static Err
+_htmldoc_scripts_range_from_parsed_range_(
     HtmlDoc          h[_1_],
     RangeParse p[_1_],
     Range            r[_1_]
@@ -1202,7 +1246,8 @@ static Err _htmldoc_scripts_range_from_parsed_range_(
 }
 
 
-Err htmldoc_scripts_write(HtmlDoc h[_1_], RangeParse rp[_1_], Writer w[_1_]) {
+Err
+htmldoc_scripts_write(HtmlDoc h[_1_], RangeParse rp[_1_], Writer w[_1_]) {
     if (!htmldoc_js_is_enabled(h)) return "enable js to get the scripts";
 
     Range r;
@@ -1225,3 +1270,91 @@ Err htmldoc_scripts_write(HtmlDoc h[_1_], RangeParse rp[_1_], Writer w[_1_]) {
     }
     return Ok;
 }
+
+
+Err curl_lexbor_fetch_document(
+    UrlClient         url_client[_1_],
+    HtmlDoc           htmldoc[_1_],
+    CmdOut            out[_1_],
+    FetchHistoryEntry histentry[_1_]
+);
+
+Err
+htmldoc_fetch(HtmlDoc htmldoc[_1_], UrlClient url_client[_1_], CmdOut cmd_out[_1_], FetchHistoryEntry he[_1_]) {
+    return curl_lexbor_fetch_document(url_client, htmldoc, cmd_out, he);
+}
+
+
+Err
+htmldoc_script_at(HtmlDoc d[_1_], size_t ix, Str* sptr[_1_]) {
+    *sptr = arlfn(Str,at)(htmldoc_head_scripts(d), ix);
+    if (*sptr) return Ok;
+    *sptr = arlfn(Str,at)(htmldoc_body_scripts(d), ix - len__(htmldoc_head_scripts(d)));
+    if (*sptr) return Ok;
+    return err_fmt("not script at %d", ix);
+}
+
+
+Err
+htmldoc_input_at(HtmlDoc d[_1_], size_t ix, DomNode out[_1_]) {
+    DomNode* np = arlfn(DomNode, at)(htmldoc_inputs(d), ix);
+    if (!np) return  "link number invalid";
+    *out = *np;
+    return Ok;
+}
+
+
+
+Err
+htmldoc_title_or_url(HtmlDoc d[_1_], char* url, Str title[_1_]) {
+    Err err = Ok;
+    DomNode title_node;
+    try( dom_get_title_node(htmldoc_dom(d), &title_node));
+    if (!isnull(title_node)) err = dom_get_title_text_line(htmldoc_dom(d), title);
+    else if (!*url) err = "no title nor url";
+    else err = str_append(title, url);
+
+    return err;
+}
+
+
+void
+textmod_trim_left(TextBufMods mods[_1_], size_t n) {
+    if (n && len__(mods)) {
+        foreach__(ModAt,it,mods) {
+            if (it->offset < n) it->offset = 0;
+            else it->offset -= n;
+        }
+    }
+}
+
+
+Err
+htmldoc_switch_js(HtmlDoc htmldoc[_1_], Session* s, CmdOut* out) {
+    if (!s) return "error: NULL session";
+    JsEngine* js = htmldoc_js(htmldoc);
+    bool is_enabled = jse_rt(js);
+    if (is_enabled) jse_clean(js);
+    else try( htmldoc_js_enable(htmldoc, s, out));//TODO:REDRAW!
+   
+    return Ok;
+}
+
+
+bool
+htmldoc_http_charset_is_utf8(HtmlDoc d[_1_]) {
+    Str* from_charset = htmldoc_http_charset(d);
+    return !len__(from_charset) || str_eq_case(svl("UTF-8"), from_charset);
+}
+
+
+bool
+htmldoc_http_content_type_text_or_undef(HtmlDoc d[_1_]) {
+#define TXT_ "text/"
+    Str* content_type = htmldoc_http_content_type(d);
+    const size_t len = lit_len__(TXT_);
+    const size_t ctlen = len__(content_type);
+    return !ctlen || (ctlen > len && !strncmp(items__(content_type), TXT_, len));
+#undef TXT_
+}
+

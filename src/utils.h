@@ -17,7 +17,6 @@
 #define INT_TO_STR_BUFSZ    64
 
 #define isnull(StructPtr) (((StructPtr).ptr) == NULL)
-
 Err         parse_ll_err(const char* tk, intmax_t llp[_1_], const char* endptr[_1_]);
 Err         parse_size_t_err(const char* tk, size_t out[_1_], const char* endptr[_1_], int base);
 Err         parse_size_t_or_throw(const char** strptr, size_t* num, int base) ;

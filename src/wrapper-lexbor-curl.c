@@ -46,9 +46,9 @@ static Err _curl_set_http_method_(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_
 }
 
 
-Err curl_set_url(UrlClient url_client[_1_], Url url[_1_]) {
+Err w_curl_set_url(UrlClient url_client[_1_], Url url[_1_]) {
     char* url_str = NULL;
-    try( url_cstr_malloc(url, &url_str));
+    try( url_cstr_malloc(*url, &url_str));
     CURLcode code = curl_easy_setopt(url_client->curl, CURLOPT_URL, url_str);
     curl_free(url_str);
     if (CURLE_OK == code) return Ok;
@@ -64,18 +64,18 @@ Err curl_set_url(UrlClient url_client[_1_], Url url[_1_]) {
 }
 
 static Err _curl_set_curlu_(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]) {
-    return curl_set_url(url_client, htmldoc_url(htmldoc));
+    return w_curl_set_url(url_client, htmldoc_url(htmldoc));
 }
 
 static Err _curl_perform_error_( HtmlDoc htmldoc[_1_], CURLcode curl_code) {
     Url* url = htmldoc_url(htmldoc);
     char* u;
-    Err e = url_cstr_malloc(url, &u);
+    Err e = url_cstr_malloc(*url, &u);
     if (e) u = "and url could not be obtained due to another error :/";
     Err err = err_fmt(
         "curl failed to perform curl: %s (%s)", curl_easy_strerror(curl_code), u
     );
-    if (!e) curl_free(u);
+    if (!e) w_curl_free(u);
     return err;
 }
 
@@ -194,10 +194,10 @@ static Err curl_lexbor_fetch_scripts(
     try_or_jump(e, Clean_Head_Urls,
             _split_remote_local_(body_scripts, htmldoc_body_scripts(htmldoc), body_urls, cmd_out));
 
-    ArlOf(CurlPtr)*  easies = &(ArlOf(CurlPtr)){0};
-    ArlOf(CurlUPtr)* curlus = &(ArlOf(CurlUPtr)){0};
-    CURLM*           multi  = url_client_multi(url_client);
-    CURLU*           curlu  = url_cu(htmldoc_url(htmldoc));
+    ArlOf(CurlPtr)*    easies = &(ArlOf(CurlPtr)){0};
+    ArlOf(CurlUrlPtr)* curlus = &(ArlOf(CurlUrlPtr)){0};
+    CURLM*             multi  = url_client_multi(url_client);
+    CURLU*             curlu  = url_cu(htmldoc_url(htmldoc));
 
     e = url_client_multi_add_handles(
         url_client, curlu, head_urls, htmldoc_head_scripts(htmldoc), easies, curlus, cmd_out);
@@ -219,7 +219,7 @@ static Err curl_lexbor_fetch_scripts(
     w_curl_multi_remove_handles(multi, easies, cmd_out);
 
     arlfn(CurlPtr,clean)(easies);
-    arlfn(CurlUPtr,clean)(curlus);
+    arlfn(CurlUrlPtr,clean)(curlus);
 
     _map_append_nullchar_(htmldoc_head_scripts(htmldoc), cmd_out);
     _map_append_nullchar_(htmldoc_body_scripts(htmldoc), cmd_out);
@@ -237,6 +237,12 @@ Lxb_Array_Head_Destroy:
 
 
 
+Err curl_lexbor_fetch_document(
+    UrlClient         url_client[_1_],
+    HtmlDoc           htmldoc[_1_],
+    CmdOut            out[_1_],
+    FetchHistoryEntry histentry[_1_]
+);
 Err curl_lexbor_fetch_document(
     UrlClient         url_client[_1_],
     HtmlDoc           htmldoc[_1_],

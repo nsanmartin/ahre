@@ -68,7 +68,7 @@ static inline void url_client_cleanup(UrlClient* url_client) {
 }
 
 typedef struct Session Session;
-static inline void url_client_curl_free_cstr(char* s) { curl_free(s); }
+static inline void url_client_curl_free_cstr(char* s) { w_curl_free(s); }
 Err url_client_print_cookies(Session* s, UrlClient uc[_1_], CmdOut* out);
 Err url_client_reset(UrlClient url_client[_1_]);
 Err url_client_set_basic_options(UrlClient url_client[_1_]);
@@ -79,7 +79,7 @@ Err url_client_multi_add_handles(
     ArlOf(Str)       urls[_1_],
     ArlOf(Str)       scripts[_1_],
     ArlOf(CurlPtr)*  easies,
-    ArlOf(CurlUPtr)* curlus,
+    ArlOf(CurlUrlPtr)* curlus,
     CmdOut           cmd_out[_1_]
 );
 
@@ -92,7 +92,7 @@ Err w_curl_multi_add(
     const char*     urlstr,
     ArlOf(CurlPtr)  easies[_1_],
     ArlOf(Str)      destlist[_1_],
-    ArlOf(CurlUPtr) curlus[_1_]
+    ArlOf(CurlUrlPtr) curlus[_1_]
 );
 
 #endif

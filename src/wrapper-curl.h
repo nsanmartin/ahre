@@ -14,12 +14,14 @@ typedef CURL* CurlPtr;
 #define T CurlPtr
 #include <arl.h>
 
-typedef CURLU* CurlUPtr;
-static inline void curlu_ptr_clean(CurlUPtr* p) { curl_url_cleanup((void*)*p); }
-#define T CurlUPtr
+typedef CURLU* CurlUrlPtr;
+static inline void curlu_ptr_clean(CurlUrlPtr* p) { curl_url_cleanup((void*)*p); }
+#define T CurlUrlPtr
 #define TClean curlu_ptr_clean
 #include <arl.h>
 
+
+typedef curl_off_t w_curl_off_t;
 
 static inline Err err_from_curle(CURLcode code) {
     return code == CURLE_OK
@@ -49,27 +51,11 @@ static inline Err w_curl_multi_add_handle(CURLM* multi, CURL* easy) {
 }
 
 
-static inline Err w_curl_url_set(CURLU* u,  CURLUPart part, const char* cstr, unsigned flags) {
-    if (!cstr || !*cstr) return "error: no contents for CURLUPart";
-    CURLUcode code = curl_url_set(u, part, cstr, flags);
-    return code == CURLUE_OK 
-        ? Ok : err_fmt("error setting url with '%s': %s", cstr, curl_url_strerror(code));
-}
+Err w_curl_url_set(CURLU* u,  CURLUPart part, const char* cstr, unsigned flags);
 
 
 static inline Err w_curl_url_dup(CURLU* u, CURLU* dup[_1_]) {
     return (*dup = curl_url_dup(u)) ? Ok : "error: curl_url_dup failure";
-}
-
-
-static inline Err w_curl_url_get_malloc(CURLU* cu, CURLUPart part, char* out[_1_]) {
-/*
- * Get cu's part. The caller should curl_free out.
- */
-    CURLUcode code = curl_url_get(cu, part, out, 0);
-    if (code == CURLUE_OK)
-        return Ok;
-    return err_fmt("error getting url from CURLU: %s", curl_url_strerror(code));
 }
 
 
@@ -90,5 +76,10 @@ Err curlinfo_sz_download_incr(
     uintmax_t nptr[_1_]
 );
 
+
+CURLcode w_curl_global_init();
+void w_curl_global_cleanup();
+void w_curl_free(void* p);
+Err w_curl_url_get_malloc(CurlUrlPtr cu, CURLUPart part, char* out[_1_]);
 
 #endif

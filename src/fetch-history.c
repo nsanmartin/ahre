@@ -70,3 +70,29 @@ Err fetch_history_write_to_file(FetchHistoryEntry e[_1_], FILE* fp) {
     try(file_write_lit_sep(e->title.items, e->title.len, "\n", fp));
     return Ok;
 }
+
+
+Err fetch_history_entry_update_title(FetchHistoryEntry e[_1_], DomNode np[_1_]) {
+    StrView data = dom_node_text_view(*np);
+    if (data.len) {
+        try( str_append(&e->title, &data));
+        str_replace_char_inplace(&e->title, '\n', ' ');
+    }
+    return Ok;
+}
+
+
+Err fetch_history_entry_init(FetchHistoryEntry e[_1_]) {
+    *e = (FetchHistoryEntry){0};
+    if (TIME_UTC != timespec_get(&e->ts, TIME_UTC))
+        return "error: timespec_get failure";
+    return Ok;
+}
+
+
+void fetch_history_entry_clean(FetchHistoryEntry e[_1_]) {
+    str_clean(&e->title);
+    str_clean(&e->effective_url);
+    str_clean(&e->local_ip);
+    str_clean(&e->primary_ip);
+}

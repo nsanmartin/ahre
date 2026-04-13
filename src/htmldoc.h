@@ -7,7 +7,6 @@
 
 
 #include "constants.h"
-#include "doc-elem.h"
 #include "error.h"
 #include "mem.h"
 #include "session-conf.h"
@@ -21,19 +20,8 @@
 #include "fetch-history.h"
 #include "cmd-out.h"
 
-#define HIDE_OL 0x1u
-#define HIDE_UL 0x2u
-
 
 _Static_assert(sizeof(size_t) >= 2, "size_t type too small");
-_Static_assert(sizeof(size_t) >= sizeof(HIDE_OL), "size_t type too small");
-
-static inline size_t strview_to_hide_tag(StrView s) { 
-    if (!s.items || !s.len) return 0x0;
-    if (strncmp("ol", s.items, s.len) == 0) return HIDE_OL;
-    if (strncmp("ul", s.items, s.len) == 0) return HIDE_UL;
-    return 0x0;
-}
 
 
 typedef struct {
@@ -72,77 +60,36 @@ typedef struct HtmlDoc {
     Dom                  dom;
     DocFetchCache        fetch_cache;
     DocDrawCache         draw_cache;
-    size_t               hide_tags;
     HttpHeader           http_header;
     JsEngine             jsdoc;
 } HtmlDoc;
 
 /* getters */
-static inline Request* htmldoc_request(HtmlDoc h[_1_]) { return &h->req; }
-static inline HttpHeader* htmldoc_http_header(HtmlDoc h[_1_]) { return &h->http_header; }
-static inline Str*
-htmldoc_http_content_type(HtmlDoc h[_1_]) { return &htmldoc_http_header(h)->content_type; }
-static inline Str*
-htmldoc_http_charset(HtmlDoc h[_1_]) { return &htmldoc_http_header(h)->charset; }
-static inline size_t* htmldoc_hide_tags(HtmlDoc d[_1_]) { return &d->hide_tags; }
-static inline Dom htmldoc_dom(HtmlDoc d[_1_]) { return d->dom; }
-static inline Dom* htmldoc_dom_ptr(HtmlDoc d[_1_]) { return &d->dom; }
-static inline TextBuf* htmldoc_sourcebuf(HtmlDoc d[_1_]) { return &d->fetch_cache.sourcebuf; }
-static inline TextBuf* htmldoc_textbuf(HtmlDoc d[_1_]) { return &d->draw_cache.textbuf; }
-static inline Str* htmldoc_screen(HtmlDoc d[_1_]) { return &d->draw_cache.screen; }
-static inline ArlOf(DomNode)*
-htmldoc_anchors(HtmlDoc d[_1_]) { return &d->draw_cache.anchors; }
+static inline ArlOf(DomNode)* htmldoc_anchors(HtmlDoc d[_1_]) { return &d->draw_cache.anchors; }
+static inline ArlOf(DomNode)* htmldoc_forms(HtmlDoc d[_1_]) { return &d->draw_cache.forms; }
 static inline ArlOf(DomNode)* htmldoc_imgs(HtmlDoc d[_1_]) { return &d->draw_cache.imgs; }
 static inline ArlOf(DomNode)* htmldoc_inputs(HtmlDoc d[_1_]) { return &d->draw_cache.inputs; }
-static inline ArlOf(DomNode)* htmldoc_forms(HtmlDoc d[_1_]) { return &d->draw_cache.forms; }
-
-static inline ArlOf(Str)* htmldoc_head_scripts(HtmlDoc d[_1_])
-{ return &d->fetch_cache.head_scripts; }
-
-static inline ArlOf(Str)* htmldoc_body_scripts(HtmlDoc d[_1_])
-{ return &d->fetch_cache.body_scripts; }
-
-static inline uintmax_t*
-htmldoc_curlinfo_sz_download(HtmlDoc d[_1_]) { return &d->fetch_cache.curlinfo_sz_download; }
-
-static inline Err htmldoc_script_at(HtmlDoc d[_1_], size_t ix, Str* sptr[_1_]) {
-    *sptr = arlfn(Str,at)(htmldoc_head_scripts(d), ix);
-    if (*sptr) return Ok;
-    *sptr = arlfn(Str,at)(htmldoc_body_scripts(d), ix - len__(htmldoc_head_scripts(d)));
-    if (*sptr) return Ok;
-    return err_fmt("not script at %d", ix);
-}
-
+static inline ArlOf(Str)* htmldoc_body_scripts(HtmlDoc d[_1_]) { return &d->fetch_cache.body_scripts; }
+static inline ArlOf(Str)* htmldoc_head_scripts(HtmlDoc d[_1_]) { return &d->fetch_cache.head_scripts; }
+static inline Dom htmldoc_dom(HtmlDoc d[_1_]) { return d->dom; }
+static inline Dom* htmldoc_dom_ptr(HtmlDoc d[_1_]) { return &d->dom; }
 static inline DomNode* htmldoc_title(HtmlDoc d[_1_]) { return &d->draw_cache.title; }
-
-static inline Err htmldoc_input_at(HtmlDoc d[_1_], size_t ix, DomNode out[_1_]) {
-    DomNode* np = arlfn(DomNode, at)(htmldoc_inputs(d), ix);
-    if (!np) return  "link number invalid";
-    *out = *np;
-    return Ok;
-}
-
-static inline Url* htmldoc_url(HtmlDoc d[_1_]) { return &d->req.url; }
+static inline HttpHeader* htmldoc_http_header(HtmlDoc h[_1_]) { return &h->http_header; }
 static inline HttpMethod htmldoc_method(HtmlDoc d[_1_]) { return d->req.method; }
 static inline JsEngine* htmldoc_js(HtmlDoc d[_1_]) { return &d->jsdoc; }
+static inline Request* htmldoc_request(HtmlDoc h[_1_]) { return &h->req; }
+static inline Str* htmldoc_http_charset(HtmlDoc h[_1_]) { return &htmldoc_http_header(h)->charset; }
+static inline Str* htmldoc_http_content_type(HtmlDoc h[_1_]) { return &htmldoc_http_header(h)->content_type; }
+static inline Str* htmldoc_screen(HtmlDoc d[_1_]) { return &d->draw_cache.screen; }
+static inline TextBuf* htmldoc_sourcebuf(HtmlDoc d[_1_]) { return &d->fetch_cache.sourcebuf; }
+static inline TextBuf* htmldoc_textbuf(HtmlDoc d[_1_]) { return &d->draw_cache.textbuf; }
+static inline Url* htmldoc_url(HtmlDoc d[_1_]) { return &d->req.url; }
+static inline uintmax_t* htmldoc_curlinfo_sz_download(HtmlDoc d[_1_]) { return &d->fetch_cache.curlinfo_sz_download; }
+
+static inline bool htmldoc_js_is_enabled(HtmlDoc d[_1_]) { return jse_is_enabled(htmldoc_js(d)); }
+static inline void htmldoc_js_disable(HtmlDoc d[_1_]) { jse_clean(htmldoc_js(d)); }
 
 
-static inline bool htmldoc_http_charset_is_utf8(HtmlDoc d[_1_]) {
-    char* from_charset = items__(htmldoc_http_charset(d));
-    return (!from_charset || !strcasecmp(from_charset, "UTF-8"));
-}
-
-#define TXT_ "text/"
-static inline bool htmldoc_http_content_type_text_or_undef(HtmlDoc d[_1_]) {
-    Str* content_type = htmldoc_http_content_type(d);
-    const size_t len = lit_len__(TXT_);
-    const size_t ctlen = len__(content_type);
-    return !ctlen || (ctlen > len && !strncmp(items__(content_type), TXT_, len));
-}
-
-Err htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[_1_]);
-
-/* ctors */
 
 
 /* dtors */
@@ -153,106 +100,25 @@ void htmldoc_destroy(HtmlDoc* htmldoc) ;
 void htmldoc_cache_cleanup(HtmlDoc htmldoc[_1_]) ;
 
 
-/* external */
-Err curl_lexbor_fetch_document(
-    UrlClient         url_client[_1_],
-    HtmlDoc           htmldoc[_1_],
-    CmdOut            out[_1_],
-    FetchHistoryEntry histentry[_1_]
-);
 
-static inline bool htmldoc_js_is_enabled(HtmlDoc d[_1_]) {
-    return jse_is_enabled(htmldoc_js(d));
-}
-
-static inline void htmldoc_js_disable(HtmlDoc d[_1_]) { jse_clean(htmldoc_js(d)); }
-Err htmldoc_console(HtmlDoc d[_1_], Session* s, const char* line, CmdOut* out);
-Err htmldoc_js_enable(HtmlDoc d[_1_], Session* s, CmdOut* out);
-/**/
-
-// Err htmldoc_cache_buffer_summary(DocCache c[_1_], BufOf(char) buf[_1_]);
-
-
-Err lexbor_read_doc_from_file(HtmlDoc htmldoc[_1_]) ;
-
-
-static inline Err htmldoc_fetch(
-    HtmlDoc           htmldoc[_1_],
-    UrlClient         url_client[_1_],
-    CmdOut            cmd_out[_1_],
-    FetchHistoryEntry he[_1_]
-) {
-    return curl_lexbor_fetch_document(url_client, htmldoc, cmd_out, he);
-}
-
-
-#define serialize_lit_str(LitStr, CallBack, Context) \
- ((LXB_STATUS_OK != CallBack((lxb_char_t*)LitStr, sizeof(LitStr)-1, Context)) \
- ?  "error serializing literal string" : Ok)
-
-#define serialize_literal_color_str(EscSeq, CallBack, Context) \
-    (draw_ctx_color(Context) ? serialize_lit_str(EscSeq, CallBack, Context) : Ok)
-
-/* htmldoc_tag_a.c */
-
+Err htmldoc_draw_with_flags(HtmlDoc htmldoc[_1_], Session* s, unsigned flags);
 Err htmldoc_A(Session* s, HtmlDoc d[_1_], CmdOut* out);
-Err htmldoc_print_info(HtmlDoc d[_1_], CmdOut* out);
-
-
-static inline Err htmldoc_tags_str_reduce_size_t(const char* tags, size_t ts[_1_]) {
-    Err err = "no tags to reduce";
-    do {
-        StrView t = cstr_split_word(&tags);
-        if (!t.items || !t.len) return err;
-        size_t hide_tag = strview_to_hide_tag(t);
-        if (!hide_tag) return err_fmt("invalid tag: '%s'", t.items);
-        *ts |= hide_tag;
-        err = Ok;
-    } while (1);
-}
-
-
-static inline Err htmldoc_title_or_url(HtmlDoc d[_1_], char* url, Str title[_1_]) {
-    Err err = Ok;
-    DomNode title_node;
-    try( dom_get_title_node(htmldoc_dom(d), &title_node));
-    if (!isnull(title_node)) err = dom_get_title_text_line(htmldoc_dom(d), title);
-    else if (!*url) err = "no title nor url";
-    else err = str_append(title, url);
-
-    return err;
-}
-
-static inline void textmod_trim_left(TextBufMods mods[_1_], size_t n) {
-    if (n && len__(mods)) {
-        foreach__(ModAt,it,mods) {
-            if (it->offset < n) it->offset = 0;
-            else it->offset -= n;
-        }
-    }
-}
-
-static inline Err htmldoc_switch_js(HtmlDoc htmldoc[_1_], Session* s, CmdOut* out) {
-    if (!s) return "error: NULL session";
-    JsEngine* js = htmldoc_js(htmldoc);
-    bool is_enabled = jse_rt(js);
-    if (is_enabled) jse_clean(js);
-    else try( htmldoc_js_enable(htmldoc, s, out));//TODO:REDRAW!
-   
-    return Ok;
-}
-
-
-void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[_1_], Session* s, CmdOut* out);
-
-Err htmldoc_init_move_request(
-    HtmlDoc   d[_1_],
-    Request   r[_1_],
-    UrlClient uc[_1_],
-    Session*  s,
-    CmdOut*   out
-);
-Err htmldoc_scripts_write(HtmlDoc h[_1_], RangeParse rp[_1_], Writer w[_1_]);
+Err htmldoc_console(HtmlDoc d[_1_], Session* s, const char* line, CmdOut* out);
+Err htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[_1_]);
+Err htmldoc_fetch(HtmlDoc htmldoc[_1_], UrlClient url_client[_1_], CmdOut cmd_out[_1_], FetchHistoryEntry he[_1_]);
 Err htmldoc_init_bookmark_move_urlstr(HtmlDoc d[_1_], Str urlstr[_1_]);
-Err _htmldoc_draw_with_flags_(HtmlDoc htmldoc[_1_], Session* s, unsigned flags);
+Err htmldoc_init_move_request(HtmlDoc d[_1_], Request r[_1_], UrlClient uc[_1_], Session* s, CmdOut* out);
+Err htmldoc_input_at(HtmlDoc d[_1_], size_t ix, DomNode out[_1_]);
+Err htmldoc_js_enable(HtmlDoc d[_1_], Session* s, CmdOut* out);
+Err htmldoc_print_info(HtmlDoc d[_1_], CmdOut* out);
+Err htmldoc_script_at(HtmlDoc d[_1_], size_t ix, Str* sptr[_1_]);
+Err htmldoc_scripts_write(HtmlDoc h[_1_], RangeParse rp[_1_], Writer w[_1_]);
+Err htmldoc_switch_js(HtmlDoc htmldoc[_1_], Session* s, CmdOut* out);
+Err htmldoc_title_or_url(HtmlDoc d[_1_], char* url, Str title[_1_]);
+Err lexbor_read_doc_from_file(HtmlDoc htmldoc[_1_]) ;
+bool htmldoc_http_charset_is_utf8(HtmlDoc d[_1_]);
+bool htmldoc_http_content_type_text_or_undef(HtmlDoc d[_1_]);
+void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[_1_], Session* s, CmdOut* out);
+void textmod_trim_left(TextBufMods mods[_1_], size_t n);
+
 #endif

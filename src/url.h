@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <limits.h>
 #include <strings.h>
-#include <curl/curl.h>
 
 #include "wrapper-curl.h"
 #include "dom.h"
@@ -16,22 +15,17 @@
 
 typedef struct Session Session;
 
-/** CURL wrappers */
-Err curl_url_to_filename_append(CURLU* cu, Str out[_1_]);
-Err fopen_or_append_fopen(const char* fname, CURLU* cu, FILE* fp[_1_]);
-/* CURL wrappers **/
+typedef struct { CurlUrlPtr ptr; } Url;
 
-typedef struct {
-    CURLU* cu;
-} Url;
+Err curl_url_to_filename_append(Url u, Str out[_1_]);
+Err fopen_or_append_fopen(const char* fname, Url u, FILE* fp[_1_]);
 
-/* getters */
-static inline CURLU* url_cu(Url u[_1_]) { return u->cu; }
+static inline CurlUrlPtr url_cu(Url u[_1_]) { return u->ptr; }
 
 /* dtor */
 static inline void url_cleanup(Url u[_1_]) {
-    if (u->cu) curl_url_cleanup(u->cu);
-    u->cu = NULL;
+    if (u->ptr) curl_url_cleanup(u->ptr);
+    u->ptr = NULL;
 }
 //
 
@@ -97,12 +91,8 @@ request_init_move_urlstr(Request r[_1_], HttpMethod method, Str urlstr[_1_], Url
 /* req. */
 
 
-static inline Err url_cstr_malloc(Url u[_1_], char* out[_1_]) {
-    return w_curl_url_get_malloc(u->cu, CURLUPART_URL, out);
-}
-
 static inline Err url_fragment(Url u[_1_], char* out[_1_]) {
-    CURLUcode code = curl_url_get(u->cu, CURLUPART_FRAGMENT, out, 0);
+    CURLUcode code = curl_url_get(u->ptr, CURLUPART_FRAGMENT, out, 0);
     if (code == CURLUE_OK || code == CURLUE_NO_FRAGMENT)
         return Ok;
     return err_fmt("error getting url fragment from CURLU: %s", curl_url_strerror(code));
@@ -114,21 +104,22 @@ Err get_url_alias(Session* s, const char* cstr, BufOf(char)* out);
 
 /* ctor */
 
-static inline Err url_dup(Url u[_1_], Url out[_1_]) {
+static inline Err url_dup(Url u, Url out[_1_]) {
 /*
  * Duplicates in place. In case of failure it has no effect.
  */
-    CURLU* dup = curl_url_dup(url_cu(u));
+
+    CURLU* dup = curl_url_dup(u.ptr);
     if (!dup) return "error: curl_url_dup failure";
-    out->cu = dup;
+    out->ptr = dup;
     return Ok;
 }
 
 
 static inline Err url_init(Url u[_1_], Url* from) {
-    if (from) return url_dup(from, u);
-    *u = (Url){.cu=curl_url()};
-    if (!u->cu) return "error initializing CURLU";
+    if (from) return url_dup(*from, u);
+    *u = (Url){.ptr=curl_url()};
+    if (!u->ptr) return "error initializing CURLU";
     return Ok;
 }
 
@@ -148,16 +139,8 @@ static inline Err curlu_set_url_or_fragment(CURLU* u,  const char* cstr) {
     }
 }
 
-static inline Err curlu_scheme_is_https(CURLU* cu, bool out[_1_]) {
-    char *scheme;
-    CURLUcode rc = curl_url_get(cu, CURLUPART_SCHEME, &scheme, 0);
-    if(rc != CURLUE_OK)
-        return "error: curl url get failure";
-
-    *out = strcasecmp("https", scheme) == 0;
-    curl_free(scheme);
-    return Ok;
-}
 
 Err mk_submit_request (DomNode form, bool is_https, Request r[_1_]);
+Err url_cstr_malloc(Url u, char* out[_1_]);
+
 #endif

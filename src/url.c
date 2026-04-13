@@ -1,6 +1,8 @@
 #include <errno.h>
 #include <sys/stat.h>
 
+#include <curl/curl.h>
+
 #include "dom.h"
 #include "str.h"
 #include "utils.h"
@@ -8,13 +10,13 @@
 #include "session.h"
 
 
-Err curl_url_to_filename_append(CURLU* cu, Str out[_1_]) {
+Err curl_url_to_filename_append(Url u, Str out[_1_]) {
     char* url = NULL;
     char* schema = NULL;
-    try( w_curl_url_get_malloc(cu, CURLUPART_URL, &url));
-    Err err = w_curl_url_get_malloc(cu, CURLUPART_SCHEME, &schema);
+    try( w_curl_url_get_malloc(u.ptr, CURLUPART_URL, &url));
+    Err err = w_curl_url_get_malloc(u.ptr, CURLUPART_SCHEME, &schema);
     if (err) {
-        curl_free(url);
+        w_curl_free(url);
         return "error: could not get host from url";
     }
     char* fname = url;
@@ -23,11 +25,12 @@ Err curl_url_to_filename_append(CURLU* cu, Str out[_1_]) {
     if (!strncmp(fname, "://", 3)) fname += 3;
     cstr_replace_char_inplace(fname, '/', '_');
     err = str_append(out, sv(fname, strlen(fname) + 1));
-    curl_free(schema); curl_free(url);
+    w_curl_free(schema);
+    w_curl_free(url);
     return err;
 }
 
-static Err _append_fopen(const char* dirname, CURLU* cu, FILE* fp[_1_]) {
+static Err _append_fopen(const char* dirname, Url u, FILE* fp[_1_]) {
 /*
  * Append cu modified to dirname and open it in write mode.
  */
@@ -38,7 +41,7 @@ static Err _append_fopen(const char* dirname, CURLU* cu, FILE* fp[_1_]) {
     if (!last_char_p) { str_clean(path); return "error: unexpected out of range index"; }
     if (*last_char_p != '/') ok_then(err, str_append(path, svl("/")));
 
-    if ((err = curl_url_to_filename_append(cu, path)))
+    if ((err = curl_url_to_filename_append(u, path)))
     { str_clean(path); return "error: append failure"; }
     if ((err = str_append(path, svl("\0")))) { str_clean(path); return "error: append failure"; }
 
@@ -47,7 +50,7 @@ static Err _append_fopen(const char* dirname, CURLU* cu, FILE* fp[_1_]) {
     return err;
 }
 
-Err fopen_or_append_fopen(const char* fname, CURLU* cu, FILE* fp[_1_]) {
+Err fopen_or_append_fopen(const char* fname, Url u, FILE* fp[_1_]) {
 /*
  * If fname is the path of an existing dir, then modify cu to modcu and open fname/modcu.
  * Otherwise, open fname.
@@ -55,7 +58,7 @@ Err fopen_or_append_fopen(const char* fname, CURLU* cu, FILE* fp[_1_]) {
     struct stat st;
     if (!fname || !*fname) return "cannot open empty file name";
     *fp = NULL; 
-    if (stat(fname, &st) == 0 && S_ISDIR(st.st_mode)) try(_append_fopen(fname, cu, fp));
+    if (stat(fname, &st) == 0 && S_ISDIR(st.st_mode)) try(_append_fopen(fname, u, fp));
     else *fp = fopen(fname, "wa");
     if (!*fp) return err_fmt("could not open file '%s'", strerror(errno));
     return Ok;
@@ -247,7 +250,7 @@ _make_submit_get_request_rec_(DomNode node, Request r[_1_]) {
         StrView name = dom_node_attr_value(node, svl("name"));
         if (!name.len) return Ok;
 
-        if (strview_eq_case(name, svl("password")))
+        if (str_eq_case(name, svl("password")))
             return "warn: passwords not allowed in get requests";
 
         try(request_query_append_key_value(
@@ -294,7 +297,7 @@ static Err _request_append_lexbor_name_value_attrs_if_both_(
     StrView name = dom_node_attr_value(node, svl("name"));
     if (!name.len || !name.items) return Ok;
 
-    if (strview_eq_case(svl("password"), name) && !is_https)
+    if (str_eq_case(svl("password"), name) && !is_https)
         return "warn: passwords allowed only under https";
 
     return request_query_append_key_value(
@@ -316,7 +319,7 @@ static Err _make_submit_post_request_rec(
     }
 
     if (dom_node_has_tag_input(node)
-        && !strview_eq_case(svl("submit"), dom_node_attr_value(node, svl("type"))))
+        && !str_eq_case(svl("submit"), dom_node_attr_value(node, svl("type"))))
         return _request_append_lexbor_name_value_attrs_if_both_(node, is_https, r);
     else if (dom_node_has_tag_select(node)) {
         return _request_append_select_(node, r);
@@ -352,11 +355,11 @@ Err mk_submit_request (DomNode form, bool is_https, Request r[_1_]) {
         try(str_append_z(request_urlstr(r), &action));
 
 
-    if (!method.len || strview_eq_case(svl("get"), method)) {
+    if (!method.len || str_eq_case(svl("get"), method)) {
         r->method = http_get;
         return _make_submit_get_request_rec_(form, r);
     }
-    if (method.len && strview_eq_case(svl("post"), method)) {
+    if (method.len && str_eq_case(svl("post"), method)) {
         r->method = http_post;
         return _mk_submit_post_request_(form, is_https, r);
     }
@@ -397,11 +400,10 @@ Err request_to_file(Request r[_1_], UrlClient url_client[_1_], const char* fname
     /* try( url_client_set_basic_options(url_client)); */
     try( url_client_reset(url_client));/* why is this needed here while the htmldoc fetch does not? */
     try( curl_set_method_from_http_method(url_client, request_method(r)));
-    try( curl_set_url(url_client, request_url(r)));
+    try( w_curl_set_url(url_client, request_url(r)));
 
-    CURLU* curlu = url_cu(request_url(r));
     FILE* fp;
-    try(fopen_or_append_fopen(fname, curlu, &fp));
+    try(fopen_or_append_fopen(fname, *request_url(r), &fp));
     if (!fp) return err_fmt("error opening file '%s': %s\n", fname, strerror(errno));
     if (
        curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, fwrite)
@@ -416,5 +418,11 @@ Err request_to_file(Request r[_1_], UrlClient url_client[_1_], const char* fname
     /* try( url_client_reset(url_client)); */
     fclose(fp);
     return Ok;
+}
+
+
+Err
+url_cstr_malloc(Url u, char* out[_1_]) {
+    return w_curl_url_get_malloc(u.ptr, CURLUPART_URL, out);
 }
 

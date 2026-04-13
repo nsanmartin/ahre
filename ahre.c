@@ -1,6 +1,5 @@
 #include <stdbool.h>
 #include <stdio.h>
-#include <curl/curl.h>
 #include <lexbor/html/html.h>
  
 #include "src/ahre.h"
@@ -13,6 +12,7 @@
 #include "src/user-interface.h"
 #include "src/session.h"
 #include "src/reditline.h"
+#include "wrapper-curl.h"
 
 
 
@@ -63,7 +63,7 @@ Clean_Errors:
 
 
 int main(int argc, char **argv) {
-    curl_global_init(CURL_GLOBAL_DEFAULT);
+    w_curl_global_init();
     CliParams cparams = (CliParams){0};
     UserLine userln = (UserLine){0};
     Session session;
@@ -94,7 +94,7 @@ Clean_Session:
 Clean_Cparams:
     cparams_clean(&cparams);
 Clean_Curl:
-    curl_global_cleanup();
+    w_curl_global_cleanup();
 
     if (err) fprintf(stderr, "ahre: %s\n", err);
     return err ? EXIT_FAILURE : EXIT_SUCCESS;

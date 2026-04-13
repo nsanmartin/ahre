@@ -4,6 +4,7 @@
 
 /* internal linkage */
 
+CURLUcode w_curl_get_part(CurlUrlPtr cu, CURLUPart part, char** content, unsigned flags);
 
 /* external linkage */
 #define lit_match__(Lit, Mem, Len) (lit_len__(Lit) <= Len && !strncasecmp(Lit, Mem, lit_len__(Lit)))
@@ -124,7 +125,7 @@ Err w_curl_multi_add(
     const char*     urlstr,
     ArlOf(CurlPtr)  easies[_1_],
     ArlOf(Str)      destlist[_1_],
-    ArlOf(CurlUPtr) curlus[_1_]
+    ArlOf(CurlUrlPtr) curlus[_1_]
 ) {
     Err    e    = Ok;
     CURLU* dup;
@@ -154,7 +155,7 @@ Err w_curl_multi_add(
     }
 
 
-    if (!arlfn(CurlUPtr,append)(curlus, &dup)) {
+    if (!arlfn(CurlUrlPtr,append)(curlus, &dup)) {
         e = "error: arlfn(Str,append) failure";
         goto Pop_Easy;
     }
@@ -173,3 +174,40 @@ Clean_Dup:
 
     return e;
 }
+
+
+
+CURLcode
+w_curl_global_init() { return curl_global_init(CURL_GLOBAL_DEFAULT); }
+
+void
+w_curl_global_cleanup() { curl_global_cleanup(); }
+
+Err
+w_curl_url_get_malloc(CURLU* cu, CURLUPart part, char* out[_1_]) {
+/*
+ * Get cu's part. The caller should w_curl_free out.
+ */
+    CURLUcode code = w_curl_get_part(cu, part, out, 0);
+    if (code != CURLUE_OK)
+        return err_fmt("error getting url from CURLU: %s", curl_url_strerror(code));
+    if (!*out) return "error: curl_url_get returned NULL wioth no error";
+    return Ok;
+}
+
+void
+w_curl_free(void* p) { curl_free(p); } 
+
+
+CURLUcode w_curl_get_part(CURLU* cu, CURLUPart part, char** content, unsigned flags) {
+    return curl_url_get(cu, part, content, flags);
+}
+
+
+Err w_curl_url_set(CURLU* u,  CURLUPart part, const char* cstr, unsigned flags) {
+    if (!cstr || !*cstr) return "error: no contents for CURLUPart";
+    CURLUcode code = curl_url_set(u, part, cstr, flags);
+    return code == CURLUE_OK 
+        ? Ok : err_fmt("error setting url with '%s': %s", cstr, curl_url_strerror(code));
+}
+

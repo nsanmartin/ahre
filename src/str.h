@@ -37,6 +37,7 @@ typedef StrView (*StrViewProvider)(void);
 /* mem fns */
 
 Err         mem_fwrite(const char* mem, size_t len, FILE* stream);
+bool        mem_eq_case(const char* m1, size_t l1, const char* m2, size_t l2);
 bool        mem_is_all_space(const char* data, size_t len);
 bool        mem_skip_space_inplace(const char* data[_1_], size_t len[_1_]);
 char*       mem_is_whitespace(char* s, size_t len);
@@ -81,7 +82,6 @@ StrView     strview_from_str(Str s[_1_]);
 StrView     strview_from_strview(StrView s[_1_]);
 StrView     strview_split_line(StrView text[_1_]);
 StrView     strview_split_word(StrView s[_1_]);
-bool        strview_eq_case(StrView s, StrView t);
 bool        strview_is_empty(const StrView s[_1_]);
 bool        strview_skip_space_inplace(StrView s[_1_]);
 const char* strview_beg(const StrView s[_1_]);
@@ -159,6 +159,46 @@ bool str_append_cstr_2_(Str s[_1_], const char* cstr, StrView u);
     ? err_fmt("error: str_append_z failure ("__FILE__":%d)", __LINE__) : Ok))
 
 
-//TODO1: delete and replace usages with str_append(s, svl("lit"))
-#define str_append_lit__(StrPtr, Lit) str_append(StrPtr, Lit, lit_len__(Lit))
+bool str_str_eq_case                (Str s, Str t);
+bool str_str_ptr_eq_case            (Str s, Str t[_1_]);
+bool str_strview_eq_case            (Str s, StrView t);
+bool str_strview_ptr_eq_case        (Str s, StrView t[_1_]);
+bool str_ptr_str_eq_case            (Str s[_1_], Str t);
+bool str_ptr_str_ptr_eq_case        (Str s[_1_], Str t[_1_]);
+bool str_ptr_strview_eq_case        (Str s[_1_], StrView t);
+bool str_ptr_strview_ptr_eq_case    (Str s[_1_], StrView t[_1_]);
+bool strview_str_eq_case            (StrView s, Str t);
+bool strview_str_ptr_eq_case        (StrView s, Str t[_1_]);
+bool strview_strview_eq_case        (StrView s, StrView t);
+bool strview_strview_ptr_eq_case    (StrView s, StrView t[_1_]);
+bool strview_ptr_str_eq_case        (StrView s[_1_], Str t);
+bool strview_ptr_str_ptr_eq_case    (StrView s[_1_], Str t[_1_]);
+bool strview_ptr_strview_eq_case    (StrView s[_1_], StrView t);
+bool strview_ptr_strview_ptr_eq_case(StrView s[_1_], StrView t[_1_]);
+#define str_eq_case(S, T) _Generic((S),\
+    Str     : _Generic((T),\
+        Str     : str_str_eq_case,\
+        Str*    : str_str_ptr_eq_case,\
+        StrView : str_strview_eq_case,\
+        StrView*: str_strview_ptr_eq_case\
+    ),\
+    Str*    : _Generic((T),\
+        Str     : str_ptr_str_eq_case,\
+        Str*    : str_ptr_str_ptr_eq_case,\
+        StrView : str_ptr_strview_eq_case,\
+        StrView*: str_ptr_strview_ptr_eq_case\
+    ),\
+    StrView : _Generic((T),\
+        Str     : strview_str_eq_case,\
+        Str*    : strview_str_ptr_eq_case,\
+        StrView : strview_strview_eq_case,\
+        StrView*: strview_strview_ptr_eq_case\
+    ),\
+    StrView*: _Generic((T),\
+        Str     : strview_ptr_str_eq_case,\
+        Str*    : strview_ptr_str_ptr_eq_case,\
+        StrView : strview_ptr_strview_eq_case,\
+        StrView*: strview_ptr_strview_ptr_eq_case\
+    )\
+)(S,T)
 #endif

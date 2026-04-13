@@ -224,12 +224,17 @@ static SessionCmd _cmd_anchor_[] =
 
 /* input commands ({) */
 
-static Err cmd_input_info(CmdParams p[_1_])
-{ return _run_cmd_for_htmldoc_inputs_range__(p, _cmd_input_print); }
-static Err cmd_input_default(CmdParams p[_1_])
-{ return _run_cmd_for_htmldoc_inputs_range__(p, cmd_input_default_ix); }
-static Err cmd_input_submit(CmdParams p[_1_])
-{ return _run_cmd_for_htmldoc_inputs_range__(p, _cmd_input_submit_ix); }
+static Err cmd_input_info(CmdParams p[_1_]) {
+    return _run_cmd_for_htmldoc_inputs_range__(p, cmd_input_print);
+}
+
+static Err cmd_input_default(CmdParams p[_1_]) {
+    return _run_cmd_for_htmldoc_inputs_range__(p, cmd_input_default_ix);
+}
+
+static Err cmd_input_submit(CmdParams p[_1_]) {
+    return _run_cmd_for_htmldoc_inputs_range__(p, _cmd_input_submit_ix);
+}
 
 #define CMD_INPUT_SET \
     "{= [VALUE]\n\n"\
@@ -371,9 +376,6 @@ static SessionCmd _cmd_doc_[] =
     , {.name="draw",    .match=1, .fn=cmd_doc_draw,    .help=CMD_DOC_DRAW}
     , {.name="fetch",   .match=1, .fn=cmd_doc_fetch,   .help=CMD_DOC_DRAW}
     , {.name="js",      .match=1, .fn=cmd_doc_js,      .help=CMD_DOC_JS}
-    //, {.name="%", .fn=_cmd_doc_dbg_traversal,  .help=NULL, .flags=CMD_CHAR}
-    //, {.name="hide", .match=1, .fn=_cmd_doc_hide, .help="Hide <ul>"}
-    //, {.name="show", .match=1, .fn=_cmd_doc_show, .help="unhide <ul>"}
     , {0}
 };
 
@@ -382,8 +384,6 @@ static SessionCmd _cmd_doc_[] =
 static SessionCmd _cmd_textbuf_[] =
     { {.name="",            .fn=cmd_textbuf_print,        .help=NULL, .flags=CMD_EMPTY}
     , {.name="g", .match=1, .fn=cmd_textbuf_global,       .help=NULL}
-    , {.name="l", .match=1, .fn=cmd_textbuf_dbg_print_all_lines_nums, .help=NULL,
-        .flags=CMD_NO_PARAMS}
     , {.name="n", .match=1, .fn=cmd_textbuf_print_n,      .help=NULL,.flags=CMD_NO_PARAMS}
     , {.name="print", .match=1, .fn=cmd_textbuf_print,    .help=NULL,.flags=CMD_NO_PARAMS}
     , {.name="write", .match=1, .fn=cmd_textbuf_write,    .help=NULL }

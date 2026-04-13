@@ -86,7 +86,7 @@ static Err write_range_mod(
         it = mods_at_find_greater_or_eq(textbuf_mods(textbuf), it, line_off_beg);
 
         if (it >= arlfn(ModAt,end)(textbuf_mods(textbuf)) || line_off_end < it->offset) {
-            try( cmd_out_screen_append_str(cmd_out, &line));
+            try( cmd_out_screen_append(cmd_out, &line));
             continue;
         }
 
@@ -100,7 +100,7 @@ static Err write_range_mod(
             while (it < arlfn(ModAt,end)(textbuf_mods(textbuf)) && next == it->offset) {
                 StrView code_str;
                 try( esc_code_to_str(textmod_to_esc_code(it->tmod), &code_str));
-                try( cmd_out_screen_append_str(cmd_out, &code_str));
+                try( cmd_out_screen_append(cmd_out, &code_str));
                 ++it;
             }
         }
@@ -210,6 +210,29 @@ Err session_flush_cmd_out(Session s[_1_], CmdOut cout[_1_]) {
 Err session_htmldoc_redraw(HtmlDoc htmldoc[_1_], Session s[_1_]) {
     htmldoc_reset_draw(htmldoc);
     unsigned flags = draw_ctx_flags_from_session(s);
-    return _htmldoc_draw_with_flags_(htmldoc, s, flags);
+    return htmldoc_draw_with_flags(htmldoc, s, flags);
+}
+
+Err
+session_doc_draw(Session session[_1_]) {
+    HtmlDoc* htmldoc;
+    try( session_current_doc(session, &htmldoc));
+    return session_htmldoc_redraw(htmldoc, session);
+}
+
+
+Err
+session_doc_js(Session session[_1_], CmdOut* out) {
+    HtmlDoc* htmldoc;
+    try( session_current_doc(session, &htmldoc));
+    return htmldoc_switch_js(htmldoc, session, out);
+}
+
+
+Err
+session_doc_console(Session session[_1_], const char* line, CmdOut* out) {
+    HtmlDoc* htmldoc;
+    try( session_current_doc(session, &htmldoc));
+    return htmldoc_console(htmldoc, session, line, out);
 }
 

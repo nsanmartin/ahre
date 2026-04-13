@@ -8,10 +8,6 @@ static inline Str* msg_str(Msg m[_1_]) { return &m->s; }
 
 #define msg_append(Mptr, S)                str_append(msg_str(Mptr), S)
 #define msg_append_ln(Mptr, S)             str_append_ln(msg_str(Mptr), S)
-#define msg_append_lit__(Mptr, Lit)        str_append_lit__(msg_str(Mptr), Lit)
-
-#define msg_append_str(Mptr, S)            str_append(msg_str(Mptr), S)
-#define msg_append_str_ln(Mptr, S)         str_append_ln(msg_str(Mptr), S)
 
 #define msg_clean(Mptr) str_clean(msg_str(Mptr))
 #define msg_reset(Mptr) str_reset(msg_str(Mptr))
@@ -43,25 +39,15 @@ static inline void cmd_out_clean(CmdOut o[_1_]) {
 }
 
 /* Msg fns */
-#define cmd_out_msg_append_ln(M, S) msg_append_ln(cmd_out_msg(M), S)
-
-#define cmd_out_msg_append_lit__(M, S)  msg_append_lit__(cmd_out_msg(M), S)
-#define cmd_out_msg_append_str(M,S)     msg_append_str(cmd_out_msg(M), S)
-#define cmd_out_msg_append_str_ln(M, S) msg_append_str_ln(cmd_out_msg(M), S)
-#define cmd_out_msg_append(M, S)        msg_append (cmd_out_msg(M), S)
-
+#define cmd_out_msg_append_ln(M, S)          msg_append_ln(cmd_out_msg(M), S)
+#define cmd_out_msg_append(M, S)             msg_append (cmd_out_msg(M), S)
 #define cmd_out_msg_append_ui_as_base10(M,U) msg_append_ui_as_base10(cmd_out_msg(M), U)
 #define cmd_out_msg_append_ui_as_base36(M,U) msg_append_ui_as_base36(cmd_out_msg(M), U)
 
 
 /* std fns */
-#define cmd_out_screen_append(M, S)    str_append(cmd_out_screen(M), S)
-#define cmd_out_screen_append_ln(M, Items, Nitems) str_append_ln(cmd_out_screen(M), Items, Nitems)
-
-#define cmd_out_screen_append_lit__(M, S)  str_append_lit__(cmd_out_screen(M), S)
-#define cmd_out_screen_append_str(M,S)     str_append(cmd_out_screen(M), S)
-#define cmd_out_screen_append_str_ln(M, S) str_append_ln(cmd_out_screen(M), S)
-
+#define cmd_out_screen_append(M, S)             str_append(cmd_out_screen(M), S)
+#define cmd_out_screen_append_ln(M, S)          str_append_ln(cmd_out_screen(M), S)
 #define cmd_out_screen_append_ui_as_base10(M,U) str_append_ui_as_base10(cmd_out_screen(M), U)
 #define cmd_out_screen_append_ui_as_base36(M,U) str_append_ui_as_base36(cmd_out_screen(M), U)
 

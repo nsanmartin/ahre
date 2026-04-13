@@ -167,7 +167,7 @@ Err session_tab_node_print(
             ok_then(e, cmd_out_msg_append(out, svl("\n")));
     } else {
         char* buf;
-        Err e = url_cstr_malloc(htmldoc_url(d), &buf);
+        Err e = url_cstr_malloc(*htmldoc_url(d), &buf);
         if (e) {
             try( cmd_out_msg_append(out, svl("error: ")));
             try( cmd_out_msg_append(out, (char*)e));
@@ -175,7 +175,7 @@ Err session_tab_node_print(
         } else {
             e = cmd_out_msg_append(out, buf);
             ok_then(e, cmd_out_msg_append(out, svl("\n")));
-            curl_free(buf);
+            w_curl_free(buf);
             if (e) return e;
         }
     }

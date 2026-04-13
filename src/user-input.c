@@ -99,8 +99,8 @@ Err ui_vi_mode_read_input(Session* s, const char* prompt, char* out[_1_]) {
 
     while (!*out) {
         KeyCmd cmd = keycmd_null;
-        while (!cmd) { err = _ui_vi_read_vi_mode_keys_(s, &cmd); }
-        if (_is_cmd_char_(cmd)) ok_then(err,_raw_reditline_(cmd, session_input_history(s), out));
+        while (!err && !cmd) { err = _ui_vi_read_vi_mode_keys_(s, &cmd); }
+        if (!err && _is_cmd_char_(cmd)) ok_then(err,_raw_reditline_(cmd, session_input_history(s), out));
         else break;
     }
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &prev_termios) == -1) return "error: tcsetattr failure";

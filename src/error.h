@@ -8,16 +8,14 @@
 
 
 typedef const char* Err;
-//constexpr Err Ok = (Err)0x0;
 #define Ok ((Err)0x0)
 
 static inline Err err_skip(void) { return Ok; }
 
 static Err FATAL_ERROR_PREFIX = "error";
-static size_t FATAL_ERROR_PREFIX_LEN = sizeof(FATAL_ERROR_PREFIX) - 1;
 
 static inline bool fatal_error(Err e) {
-    return !strncmp(e, FATAL_ERROR_PREFIX, FATAL_ERROR_PREFIX_LEN);
+    return !strncmp(e, FATAL_ERROR_PREFIX, sizeof(FATAL_ERROR_PREFIX) - 1);
 }
 
 #define validate_err(Value) _Generic((Value), Err: Value)
@@ -35,16 +33,6 @@ static inline bool fatal_error(Err e) {
     ErrLval=validate_err((Expr));if (ErrLval) goto Label;}while(0)
 
 #define ok_then(Error, Expr) do{ if (!Error) { Error=validate_err((Expr));}} while(0) 
-
-#define trygotoerr(LV, Tag, ErrValue) if ((ErrValue)) do{ LV=ErrValue; goto Tag;}while(0)
-
-#define try_lxb(Value, RetVal) \
-    if ((LXB_STATUS_OK!=validate_uint(Value))) \
-        return RetVal
-
-#define try_nonzero(Value, RetVal) \
-    if ((!validate_size(Value))) \
-        return RetVal
 
 #define tryz(Expr) do{int ahre_ierr_=validate_int((Expr));if (ahre_ierr_) return ahre_ierr_;}while(0) 
 

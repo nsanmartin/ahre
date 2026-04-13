@@ -164,7 +164,7 @@ Err jse_eval(JsEngine js[_1_], Session* s, const char* script, CmdOut* out) {
 
     Str* consolebuf = jse_consolebuf(js);
     if (len__(consolebuf)) {
-        try(cmd_out_msg_append_str_ln(out, consolebuf));
+        try(cmd_out_msg_append_ln(out, consolebuf));
         str_reset(consolebuf);
     }
 

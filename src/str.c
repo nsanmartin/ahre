@@ -67,9 +67,10 @@ bool cstr_starts_with(const char* s, const char* t) {
 }
 
 
-bool cstr_mem_eq_case(const char* cstr, const char* mem, size_t len) { 
-    return cstr && mem && strlen(cstr) == len && !strncasecmp(cstr, mem, len);
+bool mem_eq_case(const char* m1, size_t l1, const char* m2, size_t l2) { 
+    return m1 && m2 && l1 == l2 && !strncasecmp(m1, m2, l1);
 }
+
 
 /* static Err mem_get_indexes_of(char* data, size_t len, size_t offset, char c, ArlOf(size_t)* indexes) { */
 /*     char* end = data + len; */
@@ -189,6 +190,7 @@ Err mem_convert_to_utf8(
     const char* outbuf[_1_],
     size_t outlen[_1_]
 ) {
+    if (!charset) return "error: cannot convert to utf8 from charsett NULL";
     if (!inlen || !inbuf || !*inbuf) {
         *outlen = 0;
         *outbuf = NULL;
@@ -370,10 +372,10 @@ strview_split_line(StrView text[_1_]) {
 }
 
 
-bool
-strview_eq_case(StrView s, StrView t) {
-    return s.len == t.len && strncasecmp(s.items, t.items, s.len) == 0;
-}
+/* bool */
+/* strview_eq_case(StrView s, StrView t) { */
+/*     return s.len == t.len && strncasecmp(s.items, t.items, s.len) == 0; */
+/* } */
 
 /* str fns*/
 
@@ -434,6 +436,30 @@ str_append_flip(const char* mem, size_t size, size_t nmemb, Str out[_1_]) {
     return 0;
 }
 
+#define eq_case_impl_oo_(S,T) mem_eq_case(S.items, S.len, T.items, T.len)
+#define eq_case_impl_op_(S,T) (T?mem_eq_case(S.items, S.len, items__(T), len__(T)):false)
+#define eq_case_impl_po_(S,T) mem_eq_case(items__(S), len__(S), T.items, T.len)
+#define eq_case_impl_pp_(S,T) (S&&T?mem_eq_case(items__(S), len__(S), items__(T), len__(T)):false)
+bool str_str_eq_case                (Str s, Str t)                   { return eq_case_impl_oo_(s,t); }
+bool str_str_ptr_eq_case            (Str s, Str t[_1_])              { return eq_case_impl_op_(s,t); }
+bool str_strview_eq_case            (Str s, StrView t)               { return eq_case_impl_oo_(s,t); }
+bool str_strview_ptr_eq_case        (Str s, StrView t[_1_])          { return eq_case_impl_op_(s,t); }
+bool str_ptr_str_eq_case            (Str s[_1_], Str t)              { return eq_case_impl_po_(s,t); }
+bool str_ptr_str_ptr_eq_case        (Str s[_1_], Str t[_1_])         { return eq_case_impl_pp_(s,t); }
+bool str_ptr_strview_eq_case        (Str s[_1_], StrView t)          { return eq_case_impl_po_(s,t); }
+bool str_ptr_strview_ptr_eq_case    (Str s[_1_], StrView t[_1_])     { return eq_case_impl_pp_(s,t); }
+bool strview_str_eq_case            (StrView s, Str t)               { return eq_case_impl_oo_(s,t); }
+bool strview_str_ptr_eq_case        (StrView s, Str t[_1_])          { return eq_case_impl_op_(s,t); }
+bool strview_strview_eq_case        (StrView s, StrView t)           { return eq_case_impl_oo_(s,t); }
+bool strview_strview_ptr_eq_case    (StrView s, StrView t[_1_])      { return eq_case_impl_op_(s,t); }
+bool strview_ptr_str_eq_case        (StrView s[_1_], Str t)          { return eq_case_impl_po_(s,t); }
+bool strview_ptr_str_ptr_eq_case    (StrView s[_1_], Str t[_1_])     { return eq_case_impl_pp_(s,t); }
+bool strview_ptr_strview_eq_case    (StrView s[_1_], StrView t)      { return eq_case_impl_po_(s,t); }
+bool strview_ptr_strview_ptr_eq_case(StrView s[_1_], StrView t[_1_]) { return eq_case_impl_pp_(s,t); }
+#undef eq_case_impl_oo_
+#undef eq_case_impl_op_
+#undef eq_case_impl_po_
+#undef eq_case_impl_pp_
 
 /* testing */
 #ifdef TESTING_FAILURES

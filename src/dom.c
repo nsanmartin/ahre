@@ -327,7 +327,7 @@ dom_node_attr_value(DomNode n, StrView attr) {
 bool
 dom_node_attr_has_value(DomNode n, StrView attr, StrView value) {
     StrView actual_value = dom_node_attr_value(n, attr);
-    return strview_eq_case(value, actual_value);
+    return str_eq_case(value, actual_value);
 }
 
 

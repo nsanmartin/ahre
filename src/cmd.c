@@ -120,11 +120,81 @@ Err cmd_set_session_input(CmdParams p[_1_]) {
 }
 
 
+/* curl commands */
+Err
+cmd_curl_cookies(CmdParams p[_1_]) {
+    return url_client_print_cookies(p->s, session_url_client(p->s), cmd_params_cmd_out(p));
+}
+
+Err
+cmd_curl_version(CmdParams p[_1_]) {
+    char* version = curl_version();
+    return cmd_out_msg_append(cmd_params_cmd_out(p), version);
+}
+
+
+/* doc commands */
+
+Err
+cmd_doc_draw(CmdParams p[_1_]) { return session_doc_draw(p->s); }
+
+Err
+cmd_doc_js(CmdParams p[_1_]) { return session_doc_js(p->s, cmd_params_cmd_out(p)); }
+
+Err
+cmd_doc_console(CmdParams p[_1_]) {
+    return session_doc_console(p->s, p->ln, cmd_params_cmd_out(p));
+}
+
+
 /* tabs commands */
-/* htmldoc commands */
+
+
+Err
+cmd_tabs_info(CmdParams p[_1_]) {
+    cmd_assert_no_params(p->ln);
+    TabList* f = session_tablist(p->s);
+    return tablist_info(f, cmd_params_cmd_out(p));
+}
+
+
+Err
+cmd_tabs_back(CmdParams p[_1_]) {
+    cmd_assert_no_params(p->ln);
+    TabList* f = session_tablist(p->s);
+    return tablist_back(f);
+}
+
+
+Err
+cmd_tabs_goto(CmdParams p[_1_]) {
+    TabList* f = session_tablist(p->s);
+    return tablist_move_to_node(f, p->ln);
+}
+/* HtmlDoc commands */
 /*
  * These commands require a valid document, the caller should check this condition before
  */
+
+Err cmd_doc_info(CmdParams p[_1_]) {
+    cmd_assert_no_params(p->ln);
+    HtmlDoc* d;
+    try( session_current_doc(p->s, &d));
+    return htmldoc_print_info(d, cmd_params_cmd_out(p));
+}
+
+
+Err cmd_doc_A(CmdParams p[_1_]) {
+    cmd_assert_no_params(p->ln);
+    HtmlDoc* d;
+    try( session_current_doc(p->s, &d));
+    return htmldoc_A(p->s, d, cmd_params_cmd_out(p));
+}
+
+
+Err cmd_doc_bookmark_add(CmdParams p[_1_]) {
+    return bookmark_add_to_section(p->s, p->ln, session_url_client(p->s), cmd_params_cmd_out(p));
+}
 
 
 Err cmd_fetch(Session session[_1_], CmdOut* out) {
@@ -188,25 +258,37 @@ Err shortcut_z(Session session[_1_], const char* rest, CmdOut cmd_out[_1_]) {
 /*     return "unknown cmd"; */
 /* } */
 
-/* textbuf commands */
 
-StrView parse_pattern(const char* tk) {
-    StrView res = {0};
-    char delim = '/';
-    if (!tk) { return res; }
-    tk = cstr_skip_space(tk);
-    if (*tk != delim) { return res; }
-    ++tk;
-    const char* end = strchr(tk, delim);
+/* TextBuf commands */
 
-    if (!end) res = (StrView){.items = tk, .len = strlen(tk)};
-    else      res = (StrView){.items = tk, .len = cast__(size_t)(end-tk)};
 
-    return res;
+Err cmd_textbuf_print(CmdParams p[_1_]) {
+    Range rng;
+    try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
+    return session_write_screen_range_mod(p->s, p->tb, &rng, cmd_params_cmd_out(p));
 }
 
 
-//
+Err cmd_textbuf_print_n(CmdParams p[_1_]) {
+    Range rng;
+    try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
+    return  _textbuf_print_n_(p->tb, &rng, p->ln, cmd_params_cmd_out(p));
+}
+
+
+Err cmd_textbuf_write(CmdParams p[_1_]) {
+//TODO: allow >/>> modes
+    const char* filename = cstr_trim_space((char*)p->ln);
+    if (range_parse_is_none(&p->rp)) {
+        try( textbuf_to_file(p->tb, filename, "w"));
+        return cmd_out_msg_append(cmd_params_cmd_out(p), svl("file written."));
+    }
+    Range rng;
+    try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
+    return _cmd_textbuf_write_impl(p->tb, &rng, filename, cmd_params_cmd_out(p));
+}
+
+
 //TODO: apply mods to text
 Err _textbuf_print_n_(TextBuf textbuf[_1_], Range range[_1_], const char* ln, CmdOut* out) {
     (void)ln;
@@ -224,22 +306,6 @@ Err _textbuf_print_n_(TextBuf textbuf[_1_], Range range[_1_], const char* ln, Cm
     return Ok;
 }
 
-
-Err dbg_print_all_lines_nums(TextBuf textbuf[_1_], Range r[_1_], const char* ln, CmdOut* out) {
-    (void)r;
-    cmd_assert_no_params(ln);
-    size_t lnum = 1;
-    StrView line;
-    for (;textbuf_get_line(textbuf, lnum, &line); ++lnum) {
-        try( cmd_out_screen_append_ui_as_base10(out, lnum));
-        try( cmd_out_screen_append(out, svl("\t`")));
-        if (line.len > 1) {
-            try( cmd_out_screen_append(out, sv(line.items, line.len-1)));
-        } 
-        try( cmd_out_screen_append(out, svl("'\n")));
-    }
-    return Ok;
-}
 
 
 Err _cmd_textbuf_write_impl(TextBuf textbuf[_1_], Range r[_1_], const char* rest, CmdOut* out) {
@@ -262,15 +328,94 @@ Err _cmd_textbuf_write_impl(TextBuf textbuf[_1_], Range r[_1_], const char* rest
     return cmd_out_msg_append(out, svl("file written. "));
 }
 
+
+static StrView parse_pattern(const char* tk) {
+    StrView res = {0};
+    char delim = '/';
+    if (!tk) { return res; }
+    tk = cstr_skip_space(tk);
+    if (*tk != delim) { return res; }
+    ++tk;
+    const char* end = strchr(tk, delim);
+
+    if (!end) res = (StrView){.items = tk, .len = strlen(tk)};
+    else      res = (StrView){.items = tk, .len = cast__(size_t)(end-tk)};
+
+    return res;
+}
+
+
 Err cmd_textbuf_global(CmdParams p[_1_]) {
     StrView pattern = parse_pattern(p->ln);
     if (!pattern.items || !pattern.len) { return "Could not read pattern"; }
-    printf("pattern: %s\n", pattern.items);
+    return err_fmt("TODO: :g/PATTERN..., pattern: '%s'", pattern.items);
+}
+
+/* input commands */
+
+
+Err
+_cmd_form_print(CmdParams p[_1_], size_t ix) {
+    HtmlDoc* d;
+    try( session_current_doc(p->s, &d));
+    return _cmd_lexbor_node_print_(htmldoc_forms(d), ix, cmd_params_cmd_out(p));
+}
+
+Err
+_cmd_input_submit_ix(CmdParams p[_1_], size_t ix) {
+    return session_press_submit(p->s, ix, cmd_params_cmd_out(p));
+}
+
+static
+Err cmd_select_elem_show_options(DomNode lbn[_1_], CmdOut out [_1_]) {
+    if (isnull(*lbn)) return "error: expecting lexbor node, not NULL";
+    for(DomNode it = dom_node_first_child(*lbn); !isnull(it) ; it = dom_node_next(it)) {
+        if (dom_node_tag(it) == HTML_TAG_OPTION) {
+
+            if (dom_node_has_attr(it, svl("selected"))) cmd_out_msg_append(out, svl(" *\t"));
+            else cmd_out_msg_append(out, svl("\t"));
+
+            cmd_out_msg_append(out, svl(" | value: ")); 
+            StrView value = dom_node_attr_value(it, svl("value"));
+            if (value.len) cmd_out_msg_append_ln(out, value);
+            else cmd_out_msg_append(out, svl("\"\"\n")); 
+
+        }
+    }
     return Ok;
 }
 
 
-/* input commands */
+Err
+cmd_input_default_ix(CmdParams p[_1_], size_t ix) {
+    TabNode* tab;
+    HtmlDoc* doc;
+    DomNode  lbn;
+    try( tablist_current_tab(session_tablist(p->s), &tab));
+    try( tab_node_current_doc(tab, &doc));
+    try( htmldoc_input_at(doc, ix, &lbn));
+
+    if (dom_node_tag(lbn) == HTML_TAG_INPUT
+    &&  dom_node_attr_has_value(lbn, svl("type"), svl("submit"))) 
+        return tab_node_tree_append_submit(tab , ix, session_url_client(p->s), p->s, cmd_params_cmd_out(p));
+    else if (dom_node_tag(lbn) == HTML_TAG_BUTTON
+    &&  (dom_node_attr_has_value(lbn, svl("type"), svl("submit"))
+        || !dom_node_has_attr(lbn, svl("type"))))
+        return tab_node_tree_append_submit(tab , ix, session_url_client(p->s), p->s, cmd_params_cmd_out(p));
+    else if (dom_node_tag(lbn) == HTML_TAG_SELECT)
+        return cmd_select_elem_show_options(&lbn, cmd_params_cmd_out(p));
+    
+    return "error: invalid input node";
+}
+
+
+static Err
+_get_dom_node_at_(ArlOf(DomNode) node_arl[_1_], size_t ix, DomNode outnode[_1_]) {
+    DomNode* nodeptr = arlfn(DomNode, at)(node_arl, ix);
+    if (!nodeptr) return "input element number invalid";
+    *outnode = *nodeptr;
+    return Ok;
+}
 
 
 static Err
@@ -291,6 +436,7 @@ _cmd_input_text_set_(Session session[_1_], DomNode n[_1_], const char* line, Cmd
     ok_then(err, session_doc_draw(session));
     return err;
 }
+
 
 static Err _cmd_input_select_set_(Session session[_1_], DomNode n[_1_], const char* line) {
     ArlOf(DomNode)* matches = &(ArlOf(DomNode)){0};
@@ -324,6 +470,14 @@ static Err _cmd_input_select_set_(Session session[_1_], DomNode n[_1_], const ch
 Clean_Matches:
     arlfn(DomNode, clean)(matches);
     return e;
+}
+
+
+Err
+cmd_input_print(CmdParams p[_1_], size_t ix) {
+    HtmlDoc* d;
+    try( session_current_doc(p->s, &d));
+    return _cmd_lexbor_node_print_(htmldoc_inputs(d), ix, cmd_params_cmd_out(p));
 }
 
 
@@ -365,7 +519,7 @@ Err _cmd_image_print(CmdParams p[_1_], size_t ix) {
     try( _get_image_by_ix(p->s, ix, &node));
     Str* buf = &(Str){0};
     Err err = dom_node_to_str(node, buf);
-    ok_then(err, cmd_out_msg_append_str(cmd_params_cmd_out(p), buf));
+    ok_then(err, cmd_out_msg_append(cmd_params_cmd_out(p), buf));
     str_clean(buf);
     return err;
 }
@@ -410,6 +564,12 @@ static Err _get_anchor_by_ix(Session session[_1_], size_t ix, DomNode outnode[_1
     return Ok;
 }
 
+
+Err _cmd_anchor_asterisk(Session session[_1_], size_t linknum, CmdOut* out) {
+    try( session_follow_ahref(session, linknum, out));
+    return Ok;
+}
+
 Err _cmd_anchor_print(CmdParams p[_1_], size_t linknum) {
     DomNode a;
     try( _get_anchor_by_ix(p->s, linknum, &a));
@@ -418,7 +578,7 @@ Err _cmd_anchor_print(CmdParams p[_1_], size_t linknum) {
     try( dom_node_to_str(a, buf));
 
     //>< write to CmdOut
-    Err err = cmd_out_msg_append_str(cmd_params_cmd_out(p), buf);
+    Err err = cmd_out_msg_append(cmd_params_cmd_out(p), buf);
     str_clean(buf);
     return err;
 }
@@ -457,67 +617,8 @@ Err _cmd_lexbor_node_print_(ArlOf(DomNode) node_arl[_1_], size_t ix, CmdOut out[
     Str* buf = &(Str){0};
     Err err = dom_node_to_str(node, buf);
 
-    ok_then(err,  cmd_out_msg_append_str(out, buf));
+    ok_then(err,  cmd_out_msg_append(out, buf));
     str_clean(buf);
     return err;
 }
 
-Err bookmark_add_to_section(
-    Session s[_1_], const char* line, UrlClient url_client[_1_], CmdOut cmd_out[_1_]
-) {
-    HtmlDoc* d;
-    try( session_current_doc(s, &d));
-
-    line = cstr_skip_space(line);
-    bool create_section_if_not_found = true;
-    bool match_prefix                = false;
-    if (*line == '/') {
-        create_section_if_not_found = false;
-        match_prefix                = true;
-        line                        = cstr_skip_space(++line);
-    }
-    if (!*line) return "not a valid bookmark section";
-    Err err = Ok; 
-    
-    HtmlDoc bm;
-    Str bm_path = (Str){0};
-    try(resolve_bookmarks_file(items__(session_bookmarks_fname(s)), &bm_path));
-    try_or_jump(err, Fail_Clean_Bm,
-            get_bookmarks_doc(url_client, sv(&bm_path), cmd_out,  &bm));
-
-    char* url;
-    if ((err = url_cstr_malloc(htmldoc_url(d), &url))) goto Clean_Bm_Path_And_BmDoc;
-
-    DomNode body;
-    if ((err = bookmark_sections_body(&bm, &body))) goto Free_Curl_Url;
-
-    Str* title = &(Str){0};
-    if ((err = htmldoc_title_or_url(d, url, title))) goto Free_Curl_Url;
-
-    DomElem bm_entry;
-    if ((err = bookmark_mk_entry(bm.dom, url, title, &bm_entry))) goto Clean_Title;
-
-    DomNode section_ul;
-    if ((err = bookmark_section_ul_get(body, line, &section_ul, match_prefix))) goto Clean_Title;
-    //TODO: wrap this
-    if (!isnull(section_ul)) {
-        dom_node_insert_child(section_ul, bm_entry);
-    } else if(create_section_if_not_found) {
-        err = bookmark_section_insert(bm.dom, body, line, bm_entry);
-    } else err = "section not found in bookmarks file";
-
-    ok_then(err, bookmarks_save_to_disc(&bm, sv(&bm_path)));
-    ok_then(err, cmd_out_msg_append(cmd_out, svl("bookmark added\n")));
-
-Clean_Title:
-    str_clean(title);
-Free_Curl_Url:
-    curl_free(url);
-Clean_Bm_Path_And_BmDoc:
-    htmldoc_cleanup(&bm);
-    str_clean(&bm_path);
-    return err;
-Fail_Clean_Bm:
-    str_clean(&bm_path);
-    return err;
-}

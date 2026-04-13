@@ -154,7 +154,7 @@ Err url_client_multi_add_handles(
     ArlOf(Str)       urls[_1_],
     ArlOf(Str)       scripts[_1_],
     ArlOf(CurlPtr)*  easies,
-    ArlOf(CurlUPtr)* curlus,
+    ArlOf(CurlUrlPtr)* curlus,
     CmdOut           cmd_out[_1_]
 ) {
 
