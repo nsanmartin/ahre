@@ -1126,6 +1126,98 @@ draw_tag_a(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 }
 
 
+/* Err */
+/* draw_tag_thead(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) { */
+/* } */
+
+
+static Err
+draw_tag_table (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+    DrawTextBuf* caption   = &(DrawTextBuf){0};
+    DomNode first_child = dom_node_first_child(node);
+    /* If included, the <caption> element must be the first child of its parent <table> element. */
+
+    if (dom_node_has_tag(first_child, HTML_TAG_CAPTION))
+        try( draw_rec_tag(first_child, ctx, caption));
+    return draw_iter_childs(node, ctx, text);
+
+}
+
+
+/*
+ * This implementation was a quick solution to just render the text parts without caring 
+ * too much about the DOM specification, and we started using a context to be able to pass
+ * some information to the recursive calls. It should be progressively replaced by functions
+ * that instead of calling the same draw_rec_tag, resolve only the element they are made to
+ * draw.
+ * 
+ */
+static Err
+draw_rec_tag(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+    if (ctx->fragment
+    && strview_eq_case(sv(ctx->fragment), dom_node_attr_value(node, svl("id")))) {
+        *draw_text_buf_fragment_offset(text) = len__(draw_text_buf_buf(text));
+    }
+    switch(dom_node_tag(node)) {
+        case HTML_TAG_A: { return draw_tag_a(node, ctx, text); }
+        case HTML_TAG_B: { return draw_tag_b(node, ctx, text); }
+        case HTML_TAG_BLOCKQUOTE: { return draw_tag_blockquote(node, ctx, text); }
+        case HTML_TAG_BR: { return draw_tag_br(node, ctx, text); }
+        case HTML_TAG_BUTTON: { return draw_tag_button(node, ctx, text); }
+        case HTML_TAG_CENTER: { return draw_tag_center(node, ctx, text); } 
+        case HTML_TAG_CODE: { return draw_tag_code(node, ctx, text); } 
+        case HTML_TAG_DIV: { return draw_tag_div(node, ctx, text); }
+        case HTML_TAG_DL: { return draw_block_iter_childs(node, ctx, text); }
+        case HTML_TAG_DT: { return draw_block_iter_childs(node, ctx, text); }
+        case HTML_TAG_EM: { return draw_tag_em(node, ctx, text); }
+        case HTML_TAG_FORM: { return draw_tag_form(node, ctx, text); }
+        case HTML_TAG_H1: case HTML_TAG_H2: case HTML_TAG_H3: case HTML_TAG_H4: case HTML_TAG_H5: case HTML_TAG_H6: { return draw_tag_h(node, ctx, text); }
+        case HTML_TAG_I: { return draw_tag_i(node, ctx, text); }
+        case HTML_TAG_INPUT: { return draw_tag_input(node, ctx, text); }
+        case HTML_TAG_IMAGE: case HTML_TAG_IMG: { return draw_tag_img(node, ctx, text); }
+        case HTML_TAG_LI: { return draw_tag_li(node, ctx, text); }
+        case HTML_TAG_META: { return Ok; }
+        case HTML_TAG_OL: { return draw_tag_ul(node, ctx, text); }
+        case HTML_TAG_P: { return draw_tag_p(node, ctx, text); }
+        case HTML_TAG_PRE: { return draw_tag_pre(node, ctx, text); }
+        case HTML_TAG_SCRIPT: {
+            return Ok; /*
+                          draw_tag_script(node, ctx, text);
+                          Here draw only body scripts
+                          */
+        } 
+        case HTML_TAG_SELECT: { return draw_tag_select(node, ctx, text); }
+        case HTML_TAG_STYLE: {
+            /* Does it make any sense that wo dosomething with this in ahre? */
+            return Ok;
+        } 
+        case HTML_TAG_TABLE: { return draw_tag_table(node, ctx, text); } 
+        case HTML_TAG_TITLE: { return draw_tag_title(node, ctx); } 
+        case HTML_TAG_TR: { return draw_tag_tr(node, ctx, text); }
+        case HTML_TAG_TT: { return draw_tag_code(node, ctx, text); }
+        case HTML_TAG_UL: { return draw_tag_ul(node, ctx, text); }
+        //TODO: implement all these tags, meanwhile we just add
+        // spaces when needed to separate from previous word
+        case HTML_TAG_TD: case HTML_TAG_TH: //TODO delete once table is implemented
+        case HTML_TAG_TIME:
+        case HTML_TAG_SAMP:
+        case HTML_TAG_SPAN:
+        case HTML_TAG_STRONG:
+        case HTML_TAG_VAR: { return draw_tag_separating_with_space(node, ctx, text); }
+        default: {
+            /* if (node->local_name >= HTML_TAG__LAST_ENTRY) */
+            /*     return err_fmt( */
+            /*         "error: node local name (TAG) greater than last entry: %lx\n", node->local_name */
+            /*     ); */
+            /* else TODO: "TAG 'NOT' IMPLEMENTED: %s", node->local_name */
+            return draw_iter_childs(node, ctx, text);
+        }
+    }
+}
+
+
+
+
 static Err
 htmldoc_reparse_source(HtmlDoc d[_1_]) {
     Dom dom = htmldoc_dom(d);
