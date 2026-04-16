@@ -150,15 +150,15 @@ static Err jse_add_document(JSContext* ctx, HtmlDoc d[_1_]) {
     return Ok;
 }
 
-Err jse_eval(JsEngine js[_1_], Session* s, const char* script, CmdOut* out) {
+Err jse_eval(JsEngine js[_1_], Session* s,  StrView script, CmdOut* out) {
     (void)s; //TODO: do not pass it anymore
-    if (!script) return "error: jse_eval cannot evaluate nullptr";
+    if (!script.len) return "error: jse_eval cannot evaluate nullptr";
 
     JSContext *ctx = jse_context(js);
 
     if (!ctx) return "no js context (js engine is enabled with .js)";
     
-    JSValue result = JS_Eval(ctx, script, strlen(script), NULL, JS_EVAL_TYPE_GLOBAL);
+    JSValue result = JS_Eval(ctx, script.items, script.len, NULL, JS_EVAL_TYPE_GLOBAL);
     
     Err err = Ok;
 

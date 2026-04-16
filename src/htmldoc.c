@@ -1157,7 +1157,7 @@ htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[_1_]) {
 Err
 htmldoc_console(HtmlDoc d[_1_], Session* s, const char* line, CmdOut* out) {
     if (!s) return "error: no session";
-    return jse_eval(htmldoc_js(d), s, line, out);
+    return jse_eval(htmldoc_js(d), s, sv(line), out);
 }
 
 
@@ -1167,14 +1167,14 @@ jse_eval_doc_scripts(Session* s, HtmlDoc d[_1_], CmdOut* out) {
     for ( Str* it = arlfn(Str,begin)(htmldoc_head_scripts(d))
         ; it != arlfn(Str,end)(htmldoc_head_scripts(d))
         ; ++it) {
-        Err e = jse_eval(htmldoc_js(d), s, items__(it), out);
+        Err e = jse_eval(htmldoc_js(d), s, sv(it), out);
         if (e) msg__(out, (char*)e);
     }
 
     for ( Str* it = arlfn(Str,begin)(htmldoc_body_scripts(d))
         ; it != arlfn(Str,end)(htmldoc_body_scripts(d))
         ; ++it) {
-        Err e = jse_eval(htmldoc_js(d), s, items__(it), out);
+        Err e = jse_eval(htmldoc_js(d), s, sv(it), out);
         if (e) msg__(out, (char*)e);
     }
 
