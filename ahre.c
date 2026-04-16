@@ -52,7 +52,7 @@ static Err run_cmds(Session s[_1_], UserLine userln[_1_]) {
     CmdOut* cout = &(CmdOut){0};
     while (!user_line_empty(userln) && !session_quit(s)) {
         if (!user_line_empty(userln)) err = session_consume_line(s, userln, cout);
-        if (err) try_or_jump(err, Clean_Errors, str_append_ln(&errors, (char*)err));
+        if (err) try_or_jump(err, Clean_Errors, str_append_ln(&errors, err));
     }
     if (errors.len) cmd_out_msg_append(cout, errors);
 Clean_Errors:

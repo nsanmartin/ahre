@@ -95,7 +95,7 @@ Err url_client_print_cookies(Session* s, UrlClient uc[_1_], CmdOut* out) {
 
     struct curl_slist* it = cookies;
     while (it) {
-        try(cmd_out_msg_append_ln(out, cast__(const char*)it->data));
+        try(msg_ln__(out, cast__(const char*)it->data));
         it = it->next;
     }
     curl_slist_free_all(cookies);
@@ -103,31 +103,19 @@ Err url_client_print_cookies(Session* s, UrlClient uc[_1_], CmdOut* out) {
 }
 
 
-static const char* _parse_opt(const char* line, CURLoption opt[_1_]) {
+static const char* _parse_opt(CmdParams p[_1_], CURLoption opt[_1_]) {
 
     const char* rest;
-    if ((rest = csubstr_match(line, "noprogress", 1))) { *opt=CURLOPT_NOPROGRESS; return rest; }
-    if ((rest = csubstr_match(line, "useragent", 1))) { *opt=CURLOPT_USERAGENT; return rest; }
-    if ((rest = csubstr_match(line, "verbose", 1))) { *opt=CURLOPT_VERBOSE; return rest; }
+    if ((rest = cmd_params_match(p, "noprogress", 1))) { *opt=CURLOPT_NOPROGRESS; return rest; }
+    if ((rest = cmd_params_match(p, "useragent", 1))) { *opt=CURLOPT_USERAGENT; return rest; }
+    if ((rest = cmd_params_match(p, "verbose", 1))) { *opt=CURLOPT_VERBOSE; return rest; }
     return NULL;
 }
 
 
-/* static Err _curl_setopt_cstr_(CURL* handle, CURLoption opt, const char* rest) { */
-/*     if (!rest) return "not value to setopt, expecting a string"; */
-/*     rest = cstr_skip_space(rest); */
-/*     if (!*rest) return "invalid opt, whitespace only"; */
-/*     CURLcode curl_code = curl_easy_setopt(handle, opt, rest); */
-/*     if (CURLE_OK != curl_code) { */
-/*         return err_fmt("could not set curlopt: %s", curl_easy_strerror(curl_code)); */
-/*     } */
-/*     return Ok; */
-/* } */
-
-
 Err cmd_curl_set(CmdParams p[_1_]) {
     CURLoption opt;
-    const char* rest = _parse_opt(p->ln, &opt);
+    const char* rest = _parse_opt(p, &opt);
     if (!rest) return "invalid curl opt";
 
     long value = -1;
@@ -169,8 +157,8 @@ Err url_client_multi_add_handles(
     for (Str* u = arlfn(Str,begin)(urls) ; u != arlfn(Str,end)(urls) ; ++u) {
         Err e = w_curl_multi_add(uc, curlu, items__(u), easies, scripts, curlus);
         if (e) {
-            try(cmd_out_msg_append(cmd_out, svl("couldn't get script: ")));
-            try(cmd_out_msg_append(cmd_out, (char*)e));
+            try(msg__(cmd_out, svl("couldn't get script: ")));
+            try(msg__(cmd_out, e));
         }
     }
     return Ok;

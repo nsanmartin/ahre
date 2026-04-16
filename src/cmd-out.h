@@ -27,6 +27,7 @@ typedef struct CmdOut {
     Msg msg;
 } CmdOut;
 
+static inline CmdOut* cmd_out_id(CmdOut o[_1_]) { return o; }
 static inline Str* cmd_out_screen(CmdOut o[_1_]) { return &o->std; }
 static inline Msg* cmd_out_msg(CmdOut o[_1_]) { return &o->msg; }
 static inline bool cmd_out_is_empty(CmdOut o[_1_]) {
@@ -39,8 +40,8 @@ static inline void cmd_out_clean(CmdOut o[_1_]) {
 }
 
 /* Msg fns */
-#define cmd_out_msg_append_ln(M, S)          msg_append_ln(cmd_out_msg(M), S)
-#define cmd_out_msg_append(M, S)             msg_append (cmd_out_msg(M), S)
+#define cmd_out_msg_append(M, S)             msg_append(cmd_out_msg(M), S)
+#define cmd_out_msg_append_ln(M, S)          msg_append_ln (cmd_out_msg(M), S)
 #define cmd_out_msg_append_ui_as_base10(M,U) msg_append_ui_as_base10(cmd_out_msg(M), U)
 #define cmd_out_msg_append_ui_as_base36(M,U) msg_append_ui_as_base36(cmd_out_msg(M), U)
 

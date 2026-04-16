@@ -33,11 +33,11 @@ Err tablist_info(TabList f[_1_], CmdOut* out) {
     TabNode* current_node;
     Err err = Ok;
     ok_then(err, tablist_current_node(f, &current_node));
-    ok_then(err, cmd_out_msg_append(out, svl("(")));
+    ok_then(err, msg__(out, svl("(")));
     ok_then(err, cmd_out_msg_append_ui_as_base10(out, f->tabs.len));
-    ok_then(err, cmd_out_msg_append(out, svl(" tab")));
-    if(f->tabs.len) ok_then(err, cmd_out_msg_append(out, svl("s")));
-    ok_then(err, cmd_out_msg_append(out, svl(")\n")));
+    ok_then(err, msg__(out, svl(" tab")));
+    if(f->tabs.len) ok_then(err, msg__(out, svl("s")));
+    ok_then(err, msg__(out, svl(")\n")));
 
     if (!err) {
         TabNode* it = arlfn(TabNode, begin)(&f->tabs);
@@ -50,6 +50,6 @@ Err tablist_info(TabList f[_1_], CmdOut* out) {
         }
     }
     arlfn(size_t, clean)(stack);
-    ok_then(err, cmd_out_msg_append(out, svl("\n")));
+    ok_then(err, msg__(out, svl("\n")));
     return Ok;
 }

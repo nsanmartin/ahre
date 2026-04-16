@@ -71,7 +71,7 @@ cmd_bookmarks(CmdParams p[_1_]) {
         if (!err) {
             BufOf(char)* it = arlfn(BufOf(char), begin)(&list);
             for (; it != arlfn(BufOf(char), end)(&list); ++it) {
-                try( cmd_out_msg_append_ln(cmd_params_cmd_out(p), it));
+                try( msg_ln__(cmd_params_cmd_out(p), it));
             }
         }
         arlfn(BufOf(char),clean)(&list);
@@ -82,7 +82,7 @@ cmd_bookmarks(CmdParams p[_1_]) {
         if (!isnull(section)) {
             StrView data = dom_node_text_view(dom_node_first_child(section));
             if (data.len) {
-                try(cmd_out_msg_append_ln(cmd_params_cmd_out(p), &data));
+                try(msg_ln__(cmd_params_cmd_out(p), &data));
             }
         } else err = "invalid section in bookmark";
     }
@@ -403,7 +403,7 @@ bookmark_add_to_section(Session s[_1_], const char* line, UrlClient url_client[_
     } else err = "section not found in bookmarks file";
 
     ok_then(err, bookmarks_save_to_disc(&bm, sv(&bm_path)));
-    ok_then(err, cmd_out_msg_append(cmd_out, svl("bookmark added\n")));
+    ok_then(err, msg__(cmd_out, svl("bookmark added\n")));
 
 Clean_Title:
     str_clean(title);

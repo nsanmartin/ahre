@@ -1010,19 +1010,19 @@ htmldoc_destroy(HtmlDoc* htmldoc) {
 Err
 htmldoc_A(Session* s, HtmlDoc d[_1_], CmdOut* out) {
     if (!s) return "error: no session";
-    cmd_out_msg_append(out, svl("<li><a href=\""));
+    msg__(out, svl("<li><a href=\""));
     char* url_buf;
     try( url_cstr_malloc(*htmldoc_url(d), &url_buf));
-    cmd_out_msg_append(out, url_buf);
+    msg__(out, url_buf);
     w_curl_free(url_buf);
-    cmd_out_msg_append(out, svl("\">"));
+    msg__(out, svl("\">"));
     /* try( dom_get_title_text_line(*htmldoc_title(d), msg_str(cmd_out_msg(out)))); */
     try(strview_join_lines_to_str(
         dom_node_text_view(*htmldoc_title(d)),
         msg_str(cmd_out_msg(out))
     ));
-    cmd_out_msg_append(out, svl("</a>"));
-    cmd_out_msg_append(out, svl("\n"));
+    msg__(out, svl("</a>"));
+    msg__(out, svl("\n"));
     return Ok;
 }
 
@@ -1032,38 +1032,38 @@ htmldoc_print_info(HtmlDoc d[_1_], CmdOut* out) {
     Err err = Ok;
     DomNode* title = htmldoc_title(d);
 
-    try (cmd_out_msg_append(out, svl("DOWNLOAD SIZE: ")));
+    try (msg__(out, svl("DOWNLOAD SIZE: ")));
     try (cmd_out_msg_append_ui_as_base10(out, *htmldoc_curlinfo_sz_download(d)));
-    try (cmd_out_msg_append(out, svl("\n")));
-    try (cmd_out_msg_append(out, svl("html size: ")));
+    try (msg__(out, svl("\n")));
+    try (msg__(out, svl("html size: ")));
     try (cmd_out_msg_append_ui_as_base10(out, htmldoc_sourcebuf(d)->buf.len));
-    try (cmd_out_msg_append(out, svl("\n")));
+    try (msg__(out, svl("\n")));
 
     if (title) {
         Str buf = (Str){0};
         try(strview_join_lines_to_str(dom_node_text_view(*htmldoc_title(d)), &buf));
-        if (!buf.len) err = cmd_out_msg_append(out,  svl("<NO TITLE>"));
-        else err = cmd_out_msg_append(out, buf);
+        if (!buf.len) err = msg__(out,  svl("<NO TITLE>"));
+        else err = msg__(out, buf);
         str_clean(&buf);
         try(err);
     }
 
-    try(cmd_out_msg_append(out, svl("\n")));
+    try(msg__(out, svl("\n")));
     
     char* url = NULL;
     ok_then(err, url_cstr_malloc(*htmldoc_url(d), &url));
     if (url) {
-        ok_then(err, cmd_out_msg_append_ln(out, url));
+        ok_then(err, msg_ln__(out, url));
         w_curl_free(url);
     }
 
     Str* charset = htmldoc_http_charset(d);
     if (len__(charset))
-        ok_then(err, cmd_out_msg_append_ln(out, charset));
+        ok_then(err, msg_ln__(out, charset));
 
     Str* content_type = htmldoc_http_content_type(d);
     if (len__(content_type))
-        ok_then(err, cmd_out_msg_append_ln(out, content_type));
+        ok_then(err, msg_ln__(out, content_type));
 
     return err;
 }
@@ -1168,14 +1168,14 @@ jse_eval_doc_scripts(Session* s, HtmlDoc d[_1_], CmdOut* out) {
         ; it != arlfn(Str,end)(htmldoc_head_scripts(d))
         ; ++it) {
         Err e = jse_eval(htmldoc_js(d), s, items__(it), out);
-        if (e) cmd_out_msg_append(out, (char*)e);
+        if (e) msg__(out, (char*)e);
     }
 
     for ( Str* it = arlfn(Str,begin)(htmldoc_body_scripts(d))
         ; it != arlfn(Str,end)(htmldoc_body_scripts(d))
         ; ++it) {
         Err e = jse_eval(htmldoc_js(d), s, items__(it), out);
-        if (e) cmd_out_msg_append(out, (char*)e);
+        if (e) msg__(out, (char*)e);
     }
 
     return Ok;
@@ -1187,7 +1187,7 @@ Err
 htmldoc_js_enable(HtmlDoc d[_1_], Session* s, CmdOut* out) {
     try( jse_init(d));
     Err e = jse_eval_doc_scripts(s, d, out);
-    if (e) cmd_out_msg_append(out, (char*)e);
+    if (e) msg__(out, (char*)e);
     return Ok;
 }
 
@@ -1196,7 +1196,7 @@ void
 htmldoc_eval_js_scripts_or_continue(HtmlDoc d[_1_], Session* s, CmdOut* out) {
     if (htmldoc_js_is_enabled(d)) {
         Err e = jse_eval_doc_scripts(s, d, out);
-        if (e) cmd_out_msg_append(out, (char*)e);
+        if (e) msg__(out, (char*)e);
     }
 }
 

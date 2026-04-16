@@ -22,7 +22,6 @@ typedef struct SessionCmd {
     SessionCmd* subcmds;
 } SessionCmd ;
 
-
 /*
  * Session commands
  */

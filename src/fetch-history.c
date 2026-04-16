@@ -30,7 +30,7 @@ Err fetch_history_entry_update_curl(
 
     if (c !=CURLE_OK ) {
         const char* cerr = curl_easy_strerror(c);
-        try(cmd_out_msg_append(cmd_out,(char*)cerr)); 
+        try(msg__(cmd_out,(char*)cerr)); 
     } else {
         str_append(&e->effective_url, (char*)effective_url);
         str_append(&e->local_ip,      (char*)local_ip);

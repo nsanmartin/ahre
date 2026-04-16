@@ -60,13 +60,11 @@ Err         mem_convert_to_utf8(
 StrView     cstr_split_word(const char* s[_1_]);
 bool        cstr_mem_eq_case(const char* cstr, const char* mem, size_t len);
 bool        cstr_starts_with(const char* s, const char* t);
-bool        substr_match_all(const char* s, size_t len, const char* cmd);
 const char* cstr_cat_dup(const char* s, const char* t);
 const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen);
 const char* cstr_next_space(const char* l);
 const char* cstr_skip_space(const char* s);
 const char* cstr_trim_space(char* s);
-const char* csubstr_match(const char* s, const char* cmd, size_t len);
 const char* csubword_match(const char* s, const char* cmd, size_t len);
 void        cstr_replace_char_inplace(char* s, char from, char to);
 
@@ -78,8 +76,10 @@ StrView     strview_from_arl_of_char(ArlOf(char) a[_1_]);
 StrView     strview_from_cstr(const char* s);
 StrView     strview_from_mem(const char* s, size_t len);
 StrView     strview_from_mem_trim(const char* s, size_t len);
-StrView     strview_from_str(Str s[_1_]);
-StrView     strview_from_strview(StrView s[_1_]);
+StrView     strview_from_str(Str s);
+StrView     strview_from_str_ptr(Str s[_1_]);
+StrView     strview_from_strview_ptr(StrView s[_1_]);
+StrView     strview_id(StrView v);
 StrView     strview_split_line(StrView text[_1_]);
 StrView     strview_split_word(StrView s[_1_]);
 bool        strview_is_empty(const StrView s[_1_]);
@@ -92,18 +92,18 @@ void        strview_trim_space_left(StrView s[_1_]);
 
 #define svl(LitStr) _Generic((LitStr), char*: strview_from_mem(LitStr, lit_len__(LitStr)))
 
-#define _strview_from_onep(P) _Generic((P),\
-    Str*        : strview_from_str,\
-    StrView*    : strview_from_strview,\
+#define strview_from__(P) _Generic((P),\
+    Str         : strview_from_str,\
+    Str*        : strview_from_str_ptr,\
+    StrView     : strview_id,\
+    StrView*    : strview_from_strview_ptr,\
     ArlOf(char)*: strview_from_arl_of_char,\
     const char* : strview_from_cstr,\
     char*       : strview_from_cstr\
 )(P)
 
 #define sv(...) \
-    GET_MACRO__(NULL,__VA_ARGS__,strview_from_mem,_strview_from_onep,skip__)(__VA_ARGS__)
-
-
+    GET_MACRO__(NULL,__VA_ARGS__,strview_from_mem,strview_from__,skip__)(__VA_ARGS__)
 
 
 /* str fns */
@@ -124,81 +124,23 @@ void   str_trim_space(StrView* l);
 #define str_reset buffn(char,reset)
 #define str_at buffn(char,at)
 
-//TODO:
-//  consider passing the get macro an extrea parameter such like:
-// (GET_MACRO__(NULL,__VA_ARGS__,str_append_mem_z_,str_append_z_from_ptr__,skip__)(S,__VA_ARGS__,T))
-//
-// where T can be svl("\0"), svl("\n") or svl("") (this last one resolved as a nop)
 
-
-bool str_append_str_2_(Str s[_1_], Str t, StrView u);
-bool str_append_str_ptr_2_(Str s[_1_], Str t[_1_], StrView u);
-bool str_append_strview_ptr_2_(Str s[_1_], StrView t[_1_], StrView u);
 bool str_append_strview_2_(Str s[_1_], StrView t, StrView u);
-bool str_append_cstr_2_(Str s[_1_], const char* cstr, StrView u);
-
-#define str_append_impl_(S, P, V) _Generic((P),\
-    Str*        : str_append_str_ptr_2_,\
-    Str         : str_append_str_2_,\
-    StrView*    : str_append_strview_ptr_2_,\
-    StrView     : str_append_strview_2_,\
-    char*       : str_append_cstr_2_,\
-    const char* : str_append_cstr_2_\
-)(S,P,V)
 
 #define str_append(S,P) (\
-    (str_append_impl_(S,P,svl(""))\
+    (str_append_strview_2_(S,sv(P),svl(""))\
     ? err_fmt("error: str_append failure ("__FILE__":%d)", __LINE__) : Ok))
 
 #define str_append_z(S,P) (\
-    (str_append_impl_(S,P,svl("\0"))\
+    (str_append_strview_2_(S,sv(P),svl("\0"))\
     ? err_fmt("error: str_append_z failure ("__FILE__":%d)", __LINE__) : Ok))
 
 #define str_append_ln(S,P) (\
-    (str_append_impl_(S,P,svl("\n"))\
+    (str_append_strview_2_(S,sv(P),svl("\n"))\
     ? err_fmt("error: str_append_z failure ("__FILE__":%d)", __LINE__) : Ok))
 
 
-bool str_str_eq_case                (Str s, Str t);
-bool str_str_ptr_eq_case            (Str s, Str t[_1_]);
-bool str_strview_eq_case            (Str s, StrView t);
-bool str_strview_ptr_eq_case        (Str s, StrView t[_1_]);
-bool str_ptr_str_eq_case            (Str s[_1_], Str t);
-bool str_ptr_str_ptr_eq_case        (Str s[_1_], Str t[_1_]);
-bool str_ptr_strview_eq_case        (Str s[_1_], StrView t);
-bool str_ptr_strview_ptr_eq_case    (Str s[_1_], StrView t[_1_]);
-bool strview_str_eq_case            (StrView s, Str t);
-bool strview_str_ptr_eq_case        (StrView s, Str t[_1_]);
-bool strview_strview_eq_case        (StrView s, StrView t);
-bool strview_strview_ptr_eq_case    (StrView s, StrView t[_1_]);
-bool strview_ptr_str_eq_case        (StrView s[_1_], Str t);
-bool strview_ptr_str_ptr_eq_case    (StrView s[_1_], Str t[_1_]);
-bool strview_ptr_strview_eq_case    (StrView s[_1_], StrView t);
-bool strview_ptr_strview_ptr_eq_case(StrView s[_1_], StrView t[_1_]);
-#define str_eq_case(S, T) _Generic((S),\
-    Str     : _Generic((T),\
-        Str     : str_str_eq_case,\
-        Str*    : str_str_ptr_eq_case,\
-        StrView : str_strview_eq_case,\
-        StrView*: str_strview_ptr_eq_case\
-    ),\
-    Str*    : _Generic((T),\
-        Str     : str_ptr_str_eq_case,\
-        Str*    : str_ptr_str_ptr_eq_case,\
-        StrView : str_ptr_strview_eq_case,\
-        StrView*: str_ptr_strview_ptr_eq_case\
-    ),\
-    StrView : _Generic((T),\
-        Str     : strview_str_eq_case,\
-        Str*    : strview_str_ptr_eq_case,\
-        StrView : strview_strview_eq_case,\
-        StrView*: strview_strview_ptr_eq_case\
-    ),\
-    StrView*: _Generic((T),\
-        Str     : strview_ptr_str_eq_case,\
-        Str*    : strview_ptr_str_ptr_eq_case,\
-        StrView : strview_ptr_strview_eq_case,\
-        StrView*: strview_ptr_strview_ptr_eq_case\
-    )\
-)(S,T)
+bool strview_strview_eq_case (StrView s, StrView t);
+#define str_eq_case(S, T) strview_strview_eq_case(sv(S), sv(T))
+
 #endif

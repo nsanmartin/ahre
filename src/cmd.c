@@ -7,6 +7,7 @@
 
 #define MsgLastLine EscCodePurple "%{- last line -}%" EscCodeReset
 
+
 Err _get_image_by_ix(Session session[_1_], size_t ix, DomNode outnode[_1_]);
 
 static bool _is_url_alias_(const char* cmd) { return *cmd == '\\'; }
@@ -57,11 +58,11 @@ Err cmd_set_session_winsz(CmdParams p[_1_]) {
     *session_ncols(p->s) = ncols;
     
     CmdOut* out = cmd_params_cmd_out(p);
-    try( cmd_out_msg_append(out, svl("win: nrows = "))); 
+    try( msg__(out, svl("win: nrows = "))); 
     try( cmd_out_msg_append_ui_as_base10(out, nrows));
-    try( cmd_out_msg_append(out, svl(", ncols = ")));
+    try( msg__(out, svl(", ncols = ")));
     try( cmd_out_msg_append_ui_as_base10(out, ncols));
-    try( cmd_out_msg_append(out, svl("\n")));
+    try( msg__(out, svl("\n")));
     return Ok;
 }
 
@@ -78,6 +79,7 @@ Err cmd_set_session_monochrome(CmdParams p[_1_]) {
     if (*p->ln == '0') session_monochrome_set(p->s, false);
     else if (*p->ln == '1') session_monochrome_set(p->s, true);
     else return "monochrome option should be '0' or '1'";
+    msg_ln__(p, svl("session colors updated"));
     return Ok;
 }
 
@@ -86,13 +88,14 @@ Err cmd_set_session_js(CmdParams p[_1_]) {
     if (*p->ln == '0') session_js_set(p->s, false);
     else if (*p->ln == '1') session_js_set(p->s, true);
     else return "js option should be '0' or '1'";
+    msg_ln__(p, svl("js updated"));
     return Ok;
 }
 
 Err cmd_set_session_forms(CmdParams p[_1_]) {
     p->ln = cstr_skip_space(p->ln);
     char c = p->ln[0]; 
-    if (c != '0' && c != '1') return "js option should be '0' or '1'";
+    if (c != '0' && c != '1') return "set forms option should be '0' or '1'";
     session_conf_show_forms_set(session_conf(p->s), c == '1');
     return Ok;
 }
@@ -111,9 +114,9 @@ Err cmd_set_session_input(CmdParams p[_1_]) {
     p->ln = cstr_skip_space(p->ln);
     UserInterface ui;
     const char* rest;
-    if ((rest = csubstr_match(p->ln, "fgets", 1)) && !*rest) ui = ui_fgets();
-    else if ((rest = csubstr_match(p->ln, "isocline", 1)) && !*rest) ui = ui_isocline();
-    else if ((rest = csubstr_match(p->ln, "visual", 1)) && !*rest) ui = ui_vi_mode();
+    if ((rest = cmd_params_match(p, "fgets", 1)) && !*rest) ui = ui_fgets();
+    else if ((rest = cmd_params_match(p, "isocline", 1)) && !*rest) ui = ui_isocline();
+    else if ((rest = cmd_params_match(p, "visual", 1)) && !*rest) ui = ui_vi_mode();
     else return "input option should be 'getline', 'isocline' or 'visual'";
     ui_switch(session_ui(p->s), &ui);
     return Ok;
@@ -129,7 +132,7 @@ cmd_curl_cookies(CmdParams p[_1_]) {
 Err
 cmd_curl_version(CmdParams p[_1_]) {
     char* version = curl_version();
-    return cmd_out_msg_append(cmd_params_cmd_out(p), version);
+    return msg__(cmd_params_cmd_out(p), version);
 }
 
 
@@ -245,18 +248,6 @@ Err shortcut_z(Session session[_1_], const char* rest, CmdOut cmd_out[_1_]) {
     return Ok;
 }
 
-/* //TODO: use it or delete it */
-/* Err _cmd_misc(Session session[_1_], const char* line, CmdOut cout[_1_]) { */
-/*     const char* rest = 0x0; */
-/*     line = cstr_skip_space(line); */
-/*     if ((rest = csubstr_match(line, "attr", 2))) { return "TODO: attr"; } */
-/*     if ((rest = csubstr_match(line, "class", 3))) { return "TODO: class"; } */
-/*     ///if ((rest = csubstr_match(line, "clear", 3))) { return cmd_clear(session); } */
-/*     /1* if ((rest = csubstr_match(line, "fetch", 1))) { return _cmd_fetch(session); } *1/ */
-/*     if ((rest = csubstr_match(line, "tag", 2))) { return _cmd_misc_tag(rest, session); } */
-/*     if ((rest = csubword_match(line, "z", 1))) { return shortcut_z(session, rest, cout); } */
-/*     return "unknown cmd"; */
-/* } */
 
 
 /* TextBuf commands */
@@ -281,7 +272,7 @@ Err cmd_textbuf_write(CmdParams p[_1_]) {
     const char* filename = cstr_trim_space((char*)p->ln);
     if (range_parse_is_none(&p->rp)) {
         try( textbuf_to_file(p->tb, filename, "w"));
-        return cmd_out_msg_append(cmd_params_cmd_out(p), svl("file written."));
+        return msg__(cmd_params_cmd_out(p), svl("file written."));
     }
     Range rng;
     try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
@@ -297,12 +288,12 @@ Err _textbuf_print_n_(TextBuf textbuf[_1_], Range range[_1_], const char* ln, Cm
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
         try( cmd_out_screen_append_ui_as_base10(out, linum));
-        try( cmd_out_screen_append(out, svl("\t")));
-        if (line.len) try( cmd_out_screen_append(out, line));
-        else try( cmd_out_screen_append(out, svl("\n")));
+        try( screen__(out, svl("\t")));
+        if (line.len) try( screen__(out, line));
+        else try( screen__(out, svl("\n")));
     }
 
-    if (textbuf_line_count(textbuf) == range->end) try( cmd_out_screen_append(out, svl("\n")));
+    if (textbuf_line_count(textbuf) == range->end) try( screen__(out, svl("\n")));
     return Ok;
 }
 
@@ -325,7 +316,7 @@ Err _cmd_textbuf_write_impl(TextBuf textbuf[_1_], Range r[_1_], const char* rest
         try(file_write_or_close(line.items, line.len, fp));
     }
     try(file_close(fp));
-    return cmd_out_msg_append(out, svl("file written. "));
+    return msg__(out, svl("file written. "));
 }
 
 
@@ -372,13 +363,13 @@ Err cmd_select_elem_show_options(DomNode lbn[_1_], CmdOut out [_1_]) {
     for(DomNode it = dom_node_first_child(*lbn); !isnull(it) ; it = dom_node_next(it)) {
         if (dom_node_tag(it) == HTML_TAG_OPTION) {
 
-            if (dom_node_has_attr(it, svl("selected"))) cmd_out_msg_append(out, svl(" *\t"));
-            else cmd_out_msg_append(out, svl("\t"));
+            if (dom_node_has_attr(it, svl("selected"))) msg__(out, svl(" *\t"));
+            else msg__(out, svl("\t"));
 
-            cmd_out_msg_append(out, svl(" | value: ")); 
+            msg__(out, svl(" | value: ")); 
             StrView value = dom_node_attr_value(it, svl("value"));
-            if (value.len) cmd_out_msg_append_ln(out, value);
-            else cmd_out_msg_append(out, svl("\"\"\n")); 
+            if (value.len) msg_ln__(out, value);
+            else msg__(out, svl("\"\"\n")); 
 
         }
     }
@@ -422,7 +413,7 @@ static Err
 _cmd_input_text_set_(Session session[_1_], DomNode n[_1_], const char* line, CmdOut cout[_1_]) {
     Err err = Ok;
     if (!*line) {
-        try( cmd_out_screen_append(cout, svl("> ")));
+        try( screen__(cout, svl("> ")));
         ArlOf(char) masked = (ArlOf(char)){0};
         err = readpass_term(&masked, true);
         ok_then(err, dom_node_set_attr(*n, svl("value"), sv(&masked)));
@@ -519,7 +510,7 @@ Err _cmd_image_print(CmdParams p[_1_], size_t ix) {
     try( _get_image_by_ix(p->s, ix, &node));
     Str* buf = &(Str){0};
     Err err = dom_node_to_str(node, buf);
-    ok_then(err, cmd_out_msg_append(cmd_params_cmd_out(p), buf));
+    ok_then(err, msg__(cmd_params_cmd_out(p), buf));
     str_clean(buf);
     return err;
 }
@@ -542,7 +533,7 @@ Err _cmd_image_save(CmdParams p[_1_], size_t ix) {
 
     err = request_to_file(&r, session_url_client(p->s), fname);
 
-    ok_then(err, cmd_out_msg_append(cmd_params_cmd_out(p), svl("data saved\n")));
+    ok_then(err, msg__(cmd_params_cmd_out(p), svl("data saved\n")));
 Clean_Request:
     request_clean(&r);
     return err;
@@ -578,7 +569,7 @@ Err _cmd_anchor_print(CmdParams p[_1_], size_t linknum) {
     try( dom_node_to_str(a, buf));
 
     //>< write to CmdOut
-    Err err = cmd_out_msg_append(cmd_params_cmd_out(p), buf);
+    Err err = msg__(cmd_params_cmd_out(p), buf);
     str_clean(buf);
     return err;
 }
@@ -601,7 +592,7 @@ Err _cmd_anchor_save(Session session[_1_], size_t ix, const char* fname, CmdOut*
 
     err = request_to_file(&r, session_url_client(session), fname);
 
-    ok_then(err, cmd_out_msg_append(out, svl("file saved\n")));
+    ok_then(err, msg__(out, svl("file saved\n")));
 Clean_Request:
     request_clean(&r);
     return err;
@@ -617,7 +608,7 @@ Err _cmd_lexbor_node_print_(ArlOf(DomNode) node_arl[_1_], size_t ix, CmdOut out[
     Str* buf = &(Str){0};
     Err err = dom_node_to_str(node, buf);
 
-    ok_then(err,  cmd_out_msg_append(out, buf));
+    ok_then(err,  msg__(out, buf));
     str_clean(buf);
     return err;
 }

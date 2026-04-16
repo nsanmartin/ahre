@@ -4,6 +4,7 @@
 #include "error.h"
 #include "bookmark.h"
 #include "cmd.h"
+#include "cmd-out.h"
 #include "constants.h"
 #include "mem.h"
 #include "ranges.h"
@@ -49,25 +50,10 @@ static inline bool _no_params_match_(SessionCmd* cmd, CmdParams p[_1_]) {
 
 static inline bool _any_match_(SessionCmd* cmd) { return cmd->flags & CMD_ANY; }
 
-static const char* _name_match_impl_(SessionCmd* cmd, CmdParams p[_1_]) {
-    const char* s = p->ln;
-    const char* name = cmd->name;
-    size_t len = cmd->len;
-    if (!*s || !isalpha(*s)) { return 0x0; }
-	for (; *s && isalpha(*s); ++s, ++name, (len?--len:len)) {
-		if (*s != *name) { return 0x0; }
-	}
-    if (len) { 
-        try(cmd_out_msg_append(cmd_params_cmd_out(p), svl("...")));
-        try(cmd_out_msg_append(cmd_params_cmd_out(p), (char*)cmd->name));
-        try(cmd_out_msg_append(cmd_params_cmd_out(p), svl("?\n")));
-        return 0x0;
-    }
-	return cstr_skip_space(s);
-}
+
 static inline bool _name_match_(SessionCmd* cmd, CmdParams p[_1_]) {
     const char* rest;
-    if ((rest = _name_match_impl_(cmd,p))) {
+    if ((rest = cmd_params_match(p, cmd->name, cmd->match))) {
         p->ln = rest;
         return true;
     }
@@ -85,23 +71,23 @@ static Err run_cmd_help(SessionCmd cmd[_1_], CmdOut out[_1_]) {
     "Not documented command.\n"\
     "TODO: document it.\n"
     if (!cmd->help && !cmd->subcmds) 
-        try(cmd_out_msg_append(out, svl(RUN_CMD_DOC_TODO_MSG)));
+        try(msg__(out, svl(RUN_CMD_DOC_TODO_MSG)));
     if (cmd->help)
-        try(cmd_out_msg_append(out, (char*)cmd->help));
+        try(msg__(out, (char*)cmd->help));
     if (cmd->subcmds) {
-        cmd_out_msg_append(out, svl("sub commands:\n"));
+        msg__(out, svl("sub commands:\n"));
         for (SessionCmd* sub = cmd->subcmds; sub->name ; ++sub) {
             if (sub->flags & CMD_CHAR) {
-                cmd_out_msg_append(out, svl("  '"));
-                cmd_out_msg_append_ln(out, (char*)sub->name);
+                msg__(out, svl("  '"));
+                msg_ln__(out, sub->name);
             } else if (sub->flags & CMD_EMPTY) {
-                cmd_out_msg_append(out, svl("  <empty>\n"));
+                msg__(out, svl("  <empty>\n"));
             } else if (sub->flags & CMD_ANY) {
-                cmd_out_msg_append(out, svl("  <any> "));
-                cmd_out_msg_append_ln(out, (char*)sub->name);
+                msg__(out, svl("  <any> "));
+                msg_ln__(out, (char*)sub->name);
             } else if (sub->name) {
-                cmd_out_msg_append(out, svl("  "));
-                cmd_out_msg_append_ln(out, (char*)sub->name);
+                msg__(out, svl("  "));
+                msg_ln__(out, (char*)sub->name);
             }
         }
     }
@@ -183,15 +169,6 @@ static Err run_cmd_on_range__(CmdParams p[_1_], SessionCmd cmdlist[], int base) 
 #define CMD_ANCHOR_PRINT_DOC "Print anchor range info"
 static Err cmd_anchor_print(CmdParams p[_1_]) {
     return _run_cmd_for_htmldoc_anchors_range__(p, _cmd_anchor_print);
-    /* Range r; */
-    /* HtmlDoc* h; */
-    /* try(session_current_doc(p->s, &h)); */
-    /* try(basic_range_from_parse(&p->rp, 0, len__(htmldoc_anchors(h)), &r)); */
-    /* if (r.end <= r.beg) return "error: bad range"; */
-    /* for (size_t i = r.beg; i < r.end; ++i) */
-    /*     try( _cmd_anchor_print(p->s, i)); */
-
-    /* return Ok; */
 }
 
 
@@ -296,11 +273,11 @@ static Err cmd_doc_scripts_list(CmdParams p[_1_]) {
     size_t body_scripts_count = len__(htmldoc_body_scripts(h));
 
     CmdOut* out = cmd_params_cmd_out(p);
-    try(cmd_out_msg_append(out, svl("head script count: ")));
+    try(msg__(out, svl("head script count: ")));
     try(cmd_out_msg_append_ui_as_base10(out, head_scripts_count));
-    try(cmd_out_msg_append(out, svl("\nbody script count: ")));
+    try(msg__(out, svl("\nbody script count: ")));
     try(cmd_out_msg_append_ui_as_base10(out, body_scripts_count));
-    try(cmd_out_msg_append(out, svl("\n")));
+    try(msg__(out, svl("\n")));
     return Ok;
 }
 
@@ -314,7 +291,7 @@ static Err cmd_doc_scripts_save(CmdParams p[_1_]) {
     try_or_jump(e, Failure, file_writer_init(&w, fp));
     try_or_jump(e, Failure, htmldoc_scripts_write(h, &p->rp, &w));
     e = file_close(fp);
-    ok_then(e, cmd_out_msg_append(cmd_params_cmd_out(p), svl("script(s) saved\n")));
+    ok_then(e, msg__(cmd_params_cmd_out(p), svl("script(s) saved\n")));
     return Ok;
 Failure:
     file_close(fp);
@@ -418,7 +395,7 @@ static SessionCmd _cmd_image_[] =
 #define CMD_ECHO_DOC "Prints in the message area the received parameters.\n"
 static Err cmd_echo (CmdParams p[_1_]) { 
     if (p->s && p->ln && *p->ln)
-        cmd_out_msg_append_ln(cmd_params_cmd_out(p), (char*)p->ln);
+        msg_ln__(cmd_params_cmd_out(p), p->ln);
     return Ok;
 }
 

@@ -141,40 +141,40 @@ Err session_tab_node_print(
     for(size_t* it = arlfn(size_t, begin)(stack); it != arlfn(size_t, end)(stack); ++it) {
         if (it == arlfn(size_t, begin)(stack)) {
             if (n == current_node) {
-                try( cmd_out_msg_append(out, svl("[+] ")));
+                try( msg__(out, svl("[+] ")));
                 try( cmd_out_msg_append_ui_as_base10(out, *it));
-                try( cmd_out_msg_append(out, svl(".")));
+                try( msg__(out, svl(".")));
             } else if (tab_node_is_current_in_tab(n)) {
-                try( cmd_out_msg_append(out, svl("[ ] ")));
+                try( msg__(out, svl("[ ] ")));
                 try( cmd_out_msg_append_ui_as_base10(out, *it));
-                try( cmd_out_msg_append(out, svl(".")));
+                try( msg__(out, svl(".")));
             } else {
-                try( cmd_out_msg_append(out, svl("    ")));
+                try( msg__(out, svl("    ")));
                 try( cmd_out_msg_append_ui_as_base10(out, *it));
-                try( cmd_out_msg_append(out, svl(".")));
+                try( msg__(out, svl(".")));
             } } else { 
                 try( cmd_out_msg_append_ui_as_base10(out, *it));
-                try( cmd_out_msg_append(out, svl(".")));
+                try( msg__(out, svl(".")));
             }
     }
-    try( cmd_out_msg_append(out, svl(" ")));
+    try( msg__(out, svl(" ")));
     DomNode title = *htmldoc_title(d);
     if (!isnull(title)) {
             Err e = strview_join_lines_to_str(
                 dom_node_text_view(dom_node_first_child(title)),
                 msg_str(cmd_out_msg(out))
             );
-            ok_then(e, cmd_out_msg_append(out, svl("\n")));
+            ok_then(e, msg__(out, svl("\n")));
     } else {
         char* buf;
         Err e = url_cstr_malloc(*htmldoc_url(d), &buf);
         if (e) {
-            try( cmd_out_msg_append(out, svl("error: ")));
-            try( cmd_out_msg_append(out, (char*)e));
-            try( cmd_out_msg_append(out, svl("\n")));
+            try( msg__(out, svl("error: ")));
+            try( msg__(out, (char*)e));
+            try( msg__(out, svl("\n")));
         } else {
-            e = cmd_out_msg_append(out, buf);
-            ok_then(e, cmd_out_msg_append(out, svl("\n")));
+            e = msg__(out, buf);
+            ok_then(e, msg__(out, svl("\n")));
             w_curl_free(buf);
             if (e) return e;
         }

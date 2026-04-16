@@ -110,18 +110,6 @@ cstr_replace_char_inplace(char* s, char from, char to) {
     while ((p=strchr(s,from))) *p = to;
 }
 
-const char* csubstr_match(const char* s, const char* cmd, size_t len) {
-    if (!*s || !isalpha(*s)) { return 0x0; }
-	for (; *s && isalpha(*s); ++s, ++cmd, (len?--len:len)) {
-		if (*s != *cmd) { return 0x0; }
-	}
-    if (len) { 
-        //TODO: use msg
-        printf("...%s?\n", cmd);
-        return 0x0;
-    }
-	return cstr_skip_space(s);
-}
 
 const char* csubword_match(const char* s, const char* cmd, size_t len) {
     if (!*s || !isalpha(*s)) { return 0x0; }
@@ -178,10 +166,6 @@ const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen) {
     return buf;
 }
 
-
-bool substr_match_all(const char* s, size_t len, const char* cmd) {
-    return (s=csubstr_match(s, cmd, len)) && !*cstr_skip_space(s);
-}
 
 Err mem_convert_to_utf8(
     const char* inbuf,
@@ -287,7 +271,8 @@ Err str_append_ui_as_base36(Str buf[_1_], uintmax_t ui) {
 /* strview fns */
 
 StrView strview_from_mem(const char* s, size_t len) {return (StrView){.items=s, .len=len};}
-StrView strview_from_strview(StrView s[_1_]) { return *s; }
+StrView strview_from_strview_ptr(StrView s[_1_]) { return *s; }
+StrView strview_id(StrView v) { return v; }
 bool strview_is_empty(const StrView s[_1_]) { return !s->items || s->len == 0; }
 const char* strview_beg(const StrView s[_1_]) { return s->items; }
 const char* strview_end(const StrView s[_1_]) { return s->items + s->len; }
@@ -341,8 +326,10 @@ Err strview_join_lines_to_str(StrView view, Str out[_1_]) {
 }
 
 StrView
-strview_from_str(Str s[_1_]) {return strview_from_mem(items__(s), len__(s));}
+strview_from_str_ptr(Str s[_1_]) {return strview_from_mem(items__(s), len__(s));}
 
+StrView
+strview_from_str(Str s) {return strview_from_mem(s.items, s.len);}
 
 StrView
 strview_from_arl_of_char(ArlOf(char) a[_1_]) {
@@ -372,31 +359,13 @@ strview_split_line(StrView text[_1_]) {
 }
 
 
-/* bool */
-/* strview_eq_case(StrView s, StrView t) { */
-/*     return s.len == t.len && strncasecmp(s.items, t.items, s.len) == 0; */
-/* } */
-
 /* str fns*/
 
 #define append_mem_(B,S,T) (!buffn(char,append)(B, (char*)S, T))
 #define append_(B,S) (append_mem_(B, items__(S), len__(S)))
 #define append_if_(B,S) (len__(S)?append_mem_(B, items__(S), len__(S)):false)
-bool str_append_str_ptr_2_(Str s[_1_], Str t[_1_], StrView u) {
-    return append_(s, t) || append_if_(s,&u);
-}
-bool str_append_str_2_(Str s[_1_], Str t, StrView u) {
-    return append_(s, &t) || append_if_(s,&u);
-}
-#define append_cstr_(B,Cstr) (!buffn(char,append)(B, (char*)Cstr, strlen(Cstr)))
-bool str_append_strview_ptr_2_(Str s[_1_], StrView t[_1_], StrView u) {
-    return append_(s, t) || append_if_(s,&u);
-}
 bool str_append_strview_2_(Str s[_1_], StrView t, StrView u) {
     return append_(s, &t) || append_if_(s,&u);
-}
-bool str_append_cstr_2_(Str s[_1_], const char* cstr, StrView u) {
-    return append_cstr_(s,cstr) || append_if_(s,&u);
 }
 #undef append_mem_
 #undef append_
@@ -436,30 +405,7 @@ str_append_flip(const char* mem, size_t size, size_t nmemb, Str out[_1_]) {
     return 0;
 }
 
-#define eq_case_impl_oo_(S,T) mem_eq_case(S.items, S.len, T.items, T.len)
-#define eq_case_impl_op_(S,T) (T?mem_eq_case(S.items, S.len, items__(T), len__(T)):false)
-#define eq_case_impl_po_(S,T) mem_eq_case(items__(S), len__(S), T.items, T.len)
-#define eq_case_impl_pp_(S,T) (S&&T?mem_eq_case(items__(S), len__(S), items__(T), len__(T)):false)
-bool str_str_eq_case                (Str s, Str t)                   { return eq_case_impl_oo_(s,t); }
-bool str_str_ptr_eq_case            (Str s, Str t[_1_])              { return eq_case_impl_op_(s,t); }
-bool str_strview_eq_case            (Str s, StrView t)               { return eq_case_impl_oo_(s,t); }
-bool str_strview_ptr_eq_case        (Str s, StrView t[_1_])          { return eq_case_impl_op_(s,t); }
-bool str_ptr_str_eq_case            (Str s[_1_], Str t)              { return eq_case_impl_po_(s,t); }
-bool str_ptr_str_ptr_eq_case        (Str s[_1_], Str t[_1_])         { return eq_case_impl_pp_(s,t); }
-bool str_ptr_strview_eq_case        (Str s[_1_], StrView t)          { return eq_case_impl_po_(s,t); }
-bool str_ptr_strview_ptr_eq_case    (Str s[_1_], StrView t[_1_])     { return eq_case_impl_pp_(s,t); }
-bool strview_str_eq_case            (StrView s, Str t)               { return eq_case_impl_oo_(s,t); }
-bool strview_str_ptr_eq_case        (StrView s, Str t[_1_])          { return eq_case_impl_op_(s,t); }
-bool strview_strview_eq_case        (StrView s, StrView t)           { return eq_case_impl_oo_(s,t); }
-bool strview_strview_ptr_eq_case    (StrView s, StrView t[_1_])      { return eq_case_impl_op_(s,t); }
-bool strview_ptr_str_eq_case        (StrView s[_1_], Str t)          { return eq_case_impl_po_(s,t); }
-bool strview_ptr_str_ptr_eq_case    (StrView s[_1_], Str t[_1_])     { return eq_case_impl_pp_(s,t); }
-bool strview_ptr_strview_eq_case    (StrView s[_1_], StrView t)      { return eq_case_impl_po_(s,t); }
-bool strview_ptr_strview_ptr_eq_case(StrView s[_1_], StrView t[_1_]) { return eq_case_impl_pp_(s,t); }
-#undef eq_case_impl_oo_
-#undef eq_case_impl_op_
-#undef eq_case_impl_po_
-#undef eq_case_impl_pp_
+bool strview_strview_eq_case (StrView s, StrView t) { return mem_eq_case(s.items, s.len, t.items, t.len); }
 
 /* testing */
 #ifdef TESTING_FAILURES

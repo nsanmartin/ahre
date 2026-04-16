@@ -164,7 +164,7 @@ Err jse_eval(JsEngine js[_1_], Session* s, const char* script, CmdOut* out) {
 
     Str* consolebuf = jse_consolebuf(js);
     if (len__(consolebuf)) {
-        try(cmd_out_msg_append_ln(out, consolebuf));
+        try(msg_ln__(out, consolebuf));
         str_reset(consolebuf);
     }
 
@@ -177,9 +177,9 @@ Err jse_eval(JsEngine js[_1_], Session* s, const char* script, CmdOut* out) {
     } else {
         const char* str = JS_ToCString(ctx, result);
         size_t str_len  = strlen(str);
-        try(cmd_out_msg_append(out,  svl("  => ")));
-        if (str && str_len) try(cmd_out_msg_append_ln(out, str));
-        else try(cmd_out_msg_append(out,  svl("\\0")));
+        try(msg__(out,  svl("  => ")));
+        if (str && str_len) try(msg_ln__(out, str));
+        else try(msg__(out,  svl("\\0")));
         JS_FreeCString(ctx, str);
     }
     

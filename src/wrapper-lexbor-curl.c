@@ -144,12 +144,12 @@ static Err _split_remote_local_(
                 e = _fetch_tag_script_from_text_(it, scripts);
                if (e || it == node->last_child) break;
                else try(
-                   cmd_out_msg_append(cmd_out,  svl("script elem with more than one child??]n")));
+                   msg__(cmd_out,  svl("script elem with more than one child??]n")));
                //Q? can script elem have mode that one (text) child?
             }
         }
 
-        if (e) try(cmd_out_msg_append(cmd_out, (char*)e));
+        if (e) try(msg__(cmd_out, (char*)e));
     }
     return Ok;
 }
@@ -161,8 +161,8 @@ static void _map_append_nullchar_(ArlOf(Str) strlist[_1_], CmdOut cmd_out[_1_]) 
         Err e0 = str_append(sp, svl("\0"));
         if (e0) {
             str_reset(sp);
-            /*ignore e*/ cmd_out_msg_append(cmd_out, svl("could not append \\0 to str: "));
-            /*ignore e*/ cmd_out_msg_append(cmd_out, (char*)e0);
+            /*ignore e*/ msg__(cmd_out, svl("could not append \\0 to str: "));
+            /*ignore e*/ msg__(cmd_out, (char*)e0);
         }
     }
 }
@@ -202,14 +202,14 @@ static Err curl_lexbor_fetch_scripts(
     e = url_client_multi_add_handles(
         url_client, curlu, head_urls, htmldoc_head_scripts(htmldoc), easies, curlus, cmd_out);
     if (e) {
-        try(cmd_out_msg_append(cmd_out, svl("could not add head handles: ")));
-        try(cmd_out_msg_append(cmd_out, (char*)e));
+        try(msg__(cmd_out, svl("could not add head handles: ")));
+        try(msg__(cmd_out, (char*)e));
     }
     e = url_client_multi_add_handles(
         url_client, curlu, body_urls, htmldoc_body_scripts(htmldoc), easies, curlus, cmd_out);
     if (e) {
-        try(cmd_out_msg_append(cmd_out, svl("could not add head handles: ")));
-        try(cmd_out_msg_append(cmd_out, (char*)e));
+        try(msg__(cmd_out, svl("could not add head handles: ")));
+        try(msg__(cmd_out, (char*)e));
     }
 
     e = w_curl_multi_perform_poll(multi);
@@ -264,7 +264,7 @@ Err curl_lexbor_fetch_document(
         return _curl_perform_error_(htmldoc, curl_code);
 
     if (histentry->size_download_t < 0)
-        try(cmd_out_msg_append(cmd_out, svl("CURLINFO_SIZE_DOWNLOAD_T is negative")));
+        try(msg__(cmd_out, svl("CURLINFO_SIZE_DOWNLOAD_T is negative")));
     else *htmldoc_curlinfo_sz_download(htmldoc) = histentry->size_download_t;
 
     try( _lexbor_parse_chunk_end_(htmldoc));

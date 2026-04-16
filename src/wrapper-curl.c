@@ -62,10 +62,10 @@ Err curlinfo_sz_download_incr(
     CURLcode curl_code = curl_easy_getinfo(curl, CURLINFO_SIZE_DOWNLOAD_T, &nbytes);
     if (curl_code!=CURLE_OK) {
         const char* cerr = curl_easy_strerror(curl_code);
-        try(cmd_out_msg_append(cmd_out,(char*)cerr)); 
+        try(msg__(cmd_out,(char*)cerr)); 
     } else {
         if (nbytes < 0)
-            try(cmd_out_msg_append(cmd_out, svl("CURLINFO_SIZE_DOWNLOAD_T is negative")));
+            try(msg__(cmd_out, svl("CURLINFO_SIZE_DOWNLOAD_T is negative")));
         else *nptr += nbytes;
     }
     return Ok;
@@ -110,10 +110,10 @@ void w_curl_multi_remove_handles(
     for (CurlPtr* cup = arlfn(CurlPtr,begin)(easies) ; cup != arlfn(CurlPtr,end)(easies) ; ++cup) {
         CURLMcode code = curl_multi_remove_handle(multi, *cup);
         if (code != CURLM_OK) {
-            /*ignore e*/cmd_out_msg_append(
+            /*ignore e*/msg__(
                     cmd_out, svl("error: couldn't remove easy handle from multy "));
             char* msg = (char*)curl_multi_strerror(code); 
-            /*ignore e*/cmd_out_msg_append(cmd_out, msg);
+            /*ignore e*/msg__(cmd_out, msg);
         }
         curl_easy_cleanup(*cup);
     }
