@@ -174,7 +174,7 @@ bookmark_section_ul_get(DomNode body, const char* q, DomNode out[_1_], bool matc
     try( bookmark_section_get(body, q, &section, match_prefix));
     if (!isnull(section)) {
         if (isnull(dom_node_next(section))) return "error: expecting section's next (TEXT)";
-        DomNode ul = dom_node_next(dom_node_next(section));//section->next->next;
+        DomNode ul = dom_node_next(dom_node_next(section));
         if (isnull(ul)) return "error: expecting section's next next";
         if (!dom_node_has_tag(ul, HTML_TAG_UL))
             return "error: expecting section's next next to be ul";
@@ -189,11 +189,16 @@ bookmark_mk_anchor (Dom dom, char* href, Str text[_1_], DomElem out[_1_]) {
     try(dom_elem_init(out, dom, svl("a")));
     try(dom_elem_set_attr(*out, svl("href"), sv(href, strlen(href))));
     DomText dom_text;
-    try(dom_text_init(&dom_text, dom, sv(text)));
-    if (isnull(dom_text)) return "error: lxb text create failure";//TODO: clean *out
+    Err err = Ok;
+    try_or_jump(err, Clean_Elem, dom_text_init(&dom_text, dom, sv(text)));
+    if (isnull(dom_text)) { err = "error: lxb text create failure"; goto Clean_Elem; }
 
     dom_node_insert_child((*out), dom_text);
     return Ok;
+
+Clean_Elem:
+    dom_elem_cleanup(*out);
+    return err;
 }
 
 
