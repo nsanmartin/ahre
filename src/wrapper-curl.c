@@ -71,7 +71,7 @@ Err curlinfo_sz_download_incr(
     return Ok;
 }
 
-Err w_curl_multi_perform_poll(CURLM* multi){
+Err w_curl_multi_perform_poll(CURLM* multi, ArlOf(CurlPtr) failed[_1_]) {
     int running;
     Err err = Ok;
     do {
@@ -85,6 +85,17 @@ Err w_curl_multi_perform_poll(CURLM* multi){
             err = err_fmt("error: curl_multi_poll failed: %s", curl_multi_strerror(code));
             break;
         }
+
+        CURLMsg *msg;
+        int msgs_left;
+        while ((msg = curl_multi_info_read(multi, &msgs_left))) {
+            if (msg->msg == CURLMSG_DONE) {
+                if (msg->data.result != CURLE_OK) {
+                    if (!arlfn(CurlPtr, append)(failed,msg->easy_handle))
+                        return "error: arl append failed";
+                }
+            }
+    }
     } while (running);
     return err;
 }

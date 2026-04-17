@@ -1164,18 +1164,17 @@ htmldoc_console(HtmlDoc d[_1_], Session* s, const char* line, CmdOut* out) {
 static Err
 jse_eval_doc_scripts(Session* s, HtmlDoc d[_1_], CmdOut* out) {
 
-    for ( Str* it = arlfn(Str,begin)(htmldoc_head_scripts(d))
-        ; it != arlfn(Str,end)(htmldoc_head_scripts(d))
-        ; ++it) {
-        Err e = jse_eval(htmldoc_js(d), s, sv(it), out);
-        if (e) msg__(out, (char*)e);
+    foreach__(Str, it, htmldoc_head_scripts(d)) {
+        if (len__(it)) {
+            Err e = jse_eval(htmldoc_js(d), s, sv(it), out);
+            if (e) msg__(out, e);
+        }
     }
-
-    for ( Str* it = arlfn(Str,begin)(htmldoc_body_scripts(d))
-        ; it != arlfn(Str,end)(htmldoc_body_scripts(d))
-        ; ++it) {
-        Err e = jse_eval(htmldoc_js(d), s, sv(it), out);
-        if (e) msg__(out, (char*)e);
+    foreach__(Str, it, htmldoc_body_scripts(d)) {
+        if (len__(it)) {
+            Err e = jse_eval(htmldoc_js(d), s, sv(it), out);
+            if (e) msg__(out, e);
+        }
     }
 
     return Ok;

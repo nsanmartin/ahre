@@ -152,7 +152,7 @@ static Err jse_add_document(JSContext* ctx, HtmlDoc d[_1_]) {
 
 Err jse_eval(JsEngine js[_1_], Session* s,  StrView script, CmdOut* out) {
     (void)s; //TODO: do not pass it anymore
-    if (!script.len) return "error: jse_eval cannot evaluate nullptr";
+    if (!script.len) return "error: jse_eval cannot evaluate nullptr\n";
 
     JSContext *ctx = jse_context(js);
 
@@ -171,7 +171,7 @@ Err jse_eval(JsEngine js[_1_], Session* s,  StrView script, CmdOut* out) {
     if (JS_IsException(result)) {
         JSValue error = JS_GetException(ctx);
         const char *error_str = JS_ToCString(ctx, error);
-        err = err_fmt("error evaluating js: %s\n", error_str ? error_str : "(unknown error)");
+        err = err_fmt("warn: evaluating js: %s\n", error_str ? error_str : "(unknown error)");
         JS_FreeCString(ctx, error_str);
         JS_FreeValue(ctx, error);
     } else {

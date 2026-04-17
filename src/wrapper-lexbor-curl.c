@@ -149,7 +149,7 @@ static Err _split_remote_local_(
             }
         }
 
-        if (e) try(msg__(cmd_out, (char*)e));
+        if (e) try(msg__(cmd_out, e));
     }
     return Ok;
 }
@@ -158,14 +158,38 @@ static Err _split_remote_local_(
 
 static void _map_append_nullchar_(ArlOf(Str) strlist[_1_], CmdOut cmd_out[_1_]) {
     for ( Str* sp = arlfn(Str,begin)(strlist) ; sp != arlfn(Str,end)(strlist) ; ++sp) {
-        Err e0 = str_append(sp, svl("\0"));
-        if (e0) {
-            str_reset(sp);
-            /*ignore e*/ msg__(cmd_out, svl("could not append \\0 to str: "));
-            /*ignore e*/ msg__(cmd_out, (char*)e0);
+        if (len__(sp)) {
+            Err e0 = str_append(sp, svl("\0"));
+            if (e0) {
+                str_reset(sp);
+                /*ignore e*/ msg__(cmd_out, svl("could not append \\0 to str: "));
+                /*ignore e*/ msg__(cmd_out, e0);
+            } else {
+                --sp->len;
+            }
         }
     }
 }
+
+
+//TODO0: althoug we expect small lengths, this may be done more inefficiently.
+static Err
+get_failed_indexed(ArlOf(CurlPtr) easies[_1_], ArlOf(CurlPtr) failed[_1_], ArlOf(size_t) indexes[_1_]) {
+    CurlPtr* first_easy = arlfn(CurlPtr,begin)(easies);
+    foreach__(CurlPtr, f, failed) {
+        foreach__(CurlPtr, easy, easies) {
+            if (*f == *easy) {
+                size_t ix = easy - first_easy;
+                if(!arlfn(size_t, append)(indexes, &ix)) {
+                    arlfn(size_t, clean)(indexes);
+                    return "error: arl append failure";
+                }
+            }
+        }
+    }
+    return Ok;
+}
+
 
 static Err curl_lexbor_fetch_scripts(
     HtmlDoc        htmldoc[_1_],
@@ -203,22 +227,43 @@ static Err curl_lexbor_fetch_scripts(
         url_client, curlu, head_urls, htmldoc_head_scripts(htmldoc), easies, curlus, cmd_out);
     if (e) {
         try(msg__(cmd_out, svl("could not add head handles: ")));
-        try(msg__(cmd_out, (char*)e));
+        try(msg__(cmd_out, e));
     }
     e = url_client_multi_add_handles(
         url_client, curlu, body_urls, htmldoc_body_scripts(htmldoc), easies, curlus, cmd_out);
     if (e) {
         try(msg__(cmd_out, svl("could not add head handles: ")));
-        try(msg__(cmd_out, (char*)e));
+        try(msg__(cmd_out, e));
     }
 
-    e = w_curl_multi_perform_poll(multi);
+    ArlOf(CurlPtr)* failed = &(ArlOf(CurlPtr)){0};
+    e = w_curl_multi_perform_poll(multi, failed);
+    if (!e) {
+        size_t n = len__(failed);
+        if (n) {
+            msg__(cmd_out, err_fmt("warn: %d script%s could not be downloaded\n", n, (n>1?"s":"")));
+            ArlOf(size_t)* indexes = &(ArlOf(size_t)){0};
+            if (!get_failed_indexed(easies, failed, indexes)) {
+                foreach__(size_t, ix, indexes) {
+
+                    Str* script;
+                     /* url_client_multi_add_handles pushed the empty buffers for all scripts
+                     * so I can assume indexes will match.
+                     * */
+                    e = htmldoc_script_at(htmldoc, *ix, &script);
+                    if (e) break;
+                    str_reset(script);
+                }
+            }
+        }
+    }
 
     for_htmldoc_size_download_append(
         easies, cmd_out, url_client_curl(url_client), htmldoc_curlinfo_sz_download(htmldoc));
     w_curl_multi_remove_handles(multi, easies, cmd_out);
 
     arlfn(CurlPtr,clean)(easies);
+    arlfn(CurlPtr,clean)(failed);
     arlfn(CurlUrlPtr,clean)(curlus);
 
     _map_append_nullchar_(htmldoc_head_scripts(htmldoc), cmd_out);

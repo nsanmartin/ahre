@@ -11,10 +11,13 @@
 size_t curl_header_callback(char *buffer, size_t size, size_t nitems, void *htmldoc);
 
 typedef CURL* CurlPtr;
+typedef CURLU* CurlUrlPtr;
+typedef CURLM* CurlMuliPtr;
+
+
 #define T CurlPtr
 #include <arl.h>
 
-typedef CURLU* CurlUrlPtr;
 static inline void curlu_ptr_clean(CurlUrlPtr* p) { curl_url_cleanup((void*)*p); }
 #define T CurlUrlPtr
 #define TClean curlu_ptr_clean
@@ -62,7 +65,7 @@ static inline Err w_curl_url_dup(CURLU* u, CURLU* dup[_1_]) {
 
 void w_curl_multi_remove_handles(CURLM* multi, ArlOf(CurlPtr)  easies[_1_], CmdOut cmd_out[_1_]);
 
-Err w_curl_multi_perform_poll(CURLM* multi);
+Err w_curl_multi_perform_poll(CURLM* multi, ArlOf(CurlPtr) failed[_1_]);
 
 Err for_htmldoc_size_download_append(
     ArlOf(CurlPtr) easies[_1_],
