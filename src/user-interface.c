@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <stdlib.h>
 
+#include "sys.h"
 #include "error.h"
 #include "bookmark.h"
 #include "cmd.h"
@@ -187,15 +188,19 @@ static Err cmd_anchor_save(CmdParams p[_1_]) {
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
     try(basic_range_from_parse(&p->rp, 0, len__(htmldoc_anchors(h)), &r));
-    if (r.beg + 1 != r.end) return "TODO: implement anchor > for ranges";
-    return _cmd_anchor_save(p->s, r.beg, p->ln, cmd_params_cmd_out(p));
+    CmdOut* out = cmd_params_cmd_out(p);
+
+    if (r.beg + 1 != r.end) return _cmd_anchor_range_save_to_dir(p->s, &r, p->ln, out);
+    return _cmd_anchor_save(p->s, r.beg, p->ln, out);
 }
 
+//TODO1;
+//
 static SessionCmd _cmd_anchor_[] =
     { {.name="\"", .fn=cmd_anchor_print,    .help=CMD_ANCHOR_PRINT_DOC, .flags=CMD_CHAR}
     , {.name="",   .fn=cmd_anchor_asterisk, .help=NULL,                 .flags=CMD_EMPTY}
     , {.name="*",  .fn=cmd_anchor_asterisk, .help=NULL,                 .flags=CMD_CHAR}
-    , {.name=">",  .fn=cmd_anchor_save,     .help=NULL,                 .flags=CMD_CHAR}
+    , {.name="save", .fn=cmd_anchor_save,     .help=NULL,              .match=1}
     , {0}
     };
 
@@ -309,9 +314,9 @@ static Err cmd_doc_scripts_msg(CmdParams p[_1_]) {
 /* doc scripts commands */
 static SessionCmd _cmd_doc_scripts_[] =
     { {.name="",   .fn=cmd_doc_scripts_msg, .help=NULL, .flags=CMD_EMPTY}
-    , {.name="w",  .fn=cmd_doc_scripts_save, .help=NULL, .flags=CMD_CHAR}
     , {.name="'",  .fn=cmd_doc_scripts_list, .help=NULL, .flags=CMD_CHAR}
     , {.name="\"", .fn=cmd_doc_scripts_msg, .help=NULL, .flags=CMD_CHAR}
+    , {.name="save", .fn=cmd_doc_scripts_save, .help=NULL, .match=1}
     , {0}
 };
 
@@ -377,7 +382,7 @@ static Err cmd_image_save(CmdParams p[_1_])
 
 static SessionCmd _cmd_image_[] =
     { {.name="\"", .fn=cmd_image_info,  .help=NULL, .flags=CMD_CHAR}
-    , {.name=">",  .fn=cmd_image_save,  .help=NULL, .flags=CMD_CHAR}
+    , {.name="s",  .fn=cmd_image_save,  .help=NULL, .flags=CMD_CHAR}
     , {0}
     };
 

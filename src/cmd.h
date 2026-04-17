@@ -133,6 +133,9 @@ Err cmd_textbuf_write(CmdParams p[_1_]);
 Err _cmd_anchor_asterisk(Session session[_1_], size_t linknum, CmdOut* out);
 Err _cmd_anchor_print(CmdParams p[_1_], size_t linknum);
 Err _cmd_anchor_save(Session session[_1_], size_t ix, const char* fname, CmdOut* out);
+Err _cmd_anchor_range_save_to_dir(
+    Session session[_1_], Range r[_1_], const char* dirname, CmdOut* out
+);
 
 
 /*

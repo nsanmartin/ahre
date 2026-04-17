@@ -1,5 +1,6 @@
 #include <errno.h>
 
+#include "sys.h"
 #include "textbuf.h"
 #include "generic.h"
 #include "range-parse.h"

@@ -3,63 +3,6 @@
 #include "utils.h"
 
 
-/* file utils */
-
-Err file_open(const char* filename, const char* mode, FILE* fpp[_1_]) {
-    *fpp = fopen(filename, mode);
-    if (!*fpp)
-        return err_fmt("error opening file '%s': %s", filename, strerror(errno));
-    return Ok;
-}
-
-Err _file_write_(const char* mem, size_t len, FILE* fp, const char* caller) {
-    if (len && fwrite(mem, 1, len, fp) != len)
-        return err_fmt("(%s) error writing to file: %s", caller, strerror(errno));
-    return Ok;
-} 
-
-Err _file_write_sep_(
-    const char* mem, size_t len, const char* sep, size_t seplen, FILE* fp, const char* caller
-) {
-    if (len && fwrite(mem, 1, len, fp) != len)
-        return err_fmt("(%s) error writing to file: %s", caller, strerror(errno));
-    if (seplen && fwrite(sep, 1, seplen, fp) != seplen)
-        return err_fmt("(%s) error writing to file: %s", caller, strerror(errno));
-    return Ok;
-} 
-
-
-Err _file_write_int_sep_(intmax_t i, const char* sep, size_t seplen, FILE* fp, const char* caller) {
-    char buf [INT_TO_STR_BUFSZ];
-    size_t len;
-    try( int_to_str(i, buf, sizeof buf, &len));
-    return _file_write_sep_(buf, len, sep, seplen, fp, caller);
-}
-                
-
-Err _file_write_or_close_(const char* mem, size_t len, FILE* fp, const char* caller) {
-    if (len && fwrite(mem, 1, len, fp) != len) {
-        const char* fwrite_strerr = strerror(errno);
-        bool close_err = fclose(fp);
-        if (close_err) {
-            const char* fclose_strerr = strerror(errno);
-            return err_fmt(
-                "error: both fwrite (%s) and fclose (%s) failed (%s)",
-                fwrite_strerr, fclose_strerr, caller
-            );
-        }
-        return err_fmt("error: fwrite failed: %s (%s)", fwrite_strerr, caller);
-    }
-    return Ok;
-} 
-
-Err file_close(FILE* fp) {
-    if (fclose(fp)) return err_fmt("error closing file: %s", strerror(errno));
-    return Ok;
-}
-
-// file utils
-
 const char _base36digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 

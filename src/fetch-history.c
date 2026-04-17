@@ -1,3 +1,4 @@
+#include "sys.h"
 #include "fetch-history.h"
 
 Err fetch_history_entry_update_curl(

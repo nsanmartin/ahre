@@ -1,8 +1,8 @@
 #include <errno.h>
-#include <sys/stat.h>
 
 #include <curl/curl.h>
 
+#include "sys.h"
 #include "dom.h"
 #include "str.h"
 #include "utils.h"
@@ -24,44 +24,47 @@ Err curl_url_to_filename_append(Url u, Str out[_1_]) {
     if (!strncmp(fname, schema, strlen(schema))) fname += schema_len;
     if (!strncmp(fname, "://", 3)) fname += 3;
     cstr_replace_char_inplace(fname, '/', '_');
-    err = str_append(out, sv(fname, strlen(fname) + 1));
+    err = str_append_z(out, sv(fname, strlen(fname) + 1));
     w_curl_free(schema);
     w_curl_free(url);
     return err;
 }
 
-static Err _append_fopen(const char* dirname, Url u, FILE* fp[_1_]) {
+static Err _append_fopen(Str path[_1_], Url u, FILE* fp[_1_]) {
 /*
  * Append cu modified to dirname and open it in write mode.
  */
     Err err = Ok;
-    Str* path = &(Str){0};
-    try( str_append(path, (char*)dirname));
     char* last_char_p = str_at(path, len__(path)-1);
-    if (!last_char_p) { str_clean(path); return "error: unexpected out of range index"; }
+    if (!last_char_p) { return "error: unexpected out of range index"; }
     if (*last_char_p != '/') ok_then(err, str_append(path, svl("/")));
 
-    if ((err = curl_url_to_filename_append(u, path)))
-    { str_clean(path); return "error: append failure"; }
-    if ((err = str_append(path, svl("\0")))) { str_clean(path); return "error: append failure"; }
+    if ((err = curl_url_to_filename_append(u, path))) { return "error: append failure"; }
 
     *fp = fopen(items__(path), "wa");
-    str_clean(path);
     return err;
 }
 
-Err fopen_or_append_fopen(const char* fname, Url u, FILE* fp[_1_]) {
+Err fopen_or_append_fopen(const char* fname, Url u, FILE* fp[_1_], Str actual_path[_1_]) {
 /*
  * If fname is the path of an existing dir, then modify cu to modcu and open fname/modcu.
  * Otherwise, open fname.
  */
-    struct stat st;
     if (!fname || !*fname) return "cannot open empty file name";
+    bool path_exists;
+    Err err = Ok;
     *fp = NULL; 
-    if (stat(fname, &st) == 0 && S_ISDIR(st.st_mode)) try(_append_fopen(fname, u, fp));
-    else *fp = fopen(fname, "wa");
-    if (!*fp) return err_fmt("could not open file '%s'", strerror(errno));
-    return Ok;
+    try( resolve_path(fname, &path_exists, actual_path));
+    if (path_exists && path_is_dir(actual_path->items))
+        try_or_jump(err, Clean_Actual_Path,  _append_fopen(actual_path, u, fp));
+    else *fp = fopen(actual_path->items, "wa");
+    if (!*fp) err = err_fmt("could not open file '%s': %s\n", actual_path->items, strerror(errno));
+    else
+        return Ok;
+
+Clean_Actual_Path:
+    str_clean(actual_path);
+    return err;
 }
 
 static Err _url_fill_postfields_(
@@ -396,15 +399,13 @@ Err get_url_alias(Session* s, const char* cstr, BufOf(char)* out) {
     return err_fmt("not a url alias: %s", cstr);
 }
 
-Err request_to_file(Request r[_1_], UrlClient url_client[_1_], const char* fname) {
+Err request_to_file(Request r[_1_], UrlClient url_client[_1_], FILE* fp) {
+    if (!fp) return "error: expectinf FILE* received NULL";
     /* try( url_client_set_basic_options(url_client)); */
     try( url_client_reset(url_client));/* why is this needed here while the htmldoc fetch does not? */
     try( curl_set_method_from_http_method(url_client, request_method(r)));
     try( w_curl_set_url(url_client, request_url(r)));
 
-    FILE* fp;
-    try(fopen_or_append_fopen(fname, *request_url(r), &fp));
-    if (!fp) return err_fmt("error opening file '%s': %s\n", fname, strerror(errno));
     if (
        curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, fwrite)
     || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, fp)
@@ -416,7 +417,6 @@ Err request_to_file(Request r[_1_], UrlClient url_client[_1_], const char* fname
     if (curl_code!=CURLE_OK) 
         return err_fmt("curl failed to perform curl: %s", curl_easy_strerror(curl_code));
     /* try( url_client_reset(url_client)); */
-    fclose(fp);
     return Ok;
 }
 

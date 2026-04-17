@@ -11,6 +11,7 @@ s
 .gdbinit
 
 tmp
+err
 html
 txt
 samples

@@ -18,7 +18,7 @@ typedef struct Session Session;
 typedef struct { CurlUrlPtr ptr; } Url;
 
 Err curl_url_to_filename_append(Url u, Str out[_1_]);
-Err fopen_or_append_fopen(const char* fname, Url u, FILE* fp[_1_]);
+Err fopen_or_append_fopen(const char* fname, Url u, FILE* fp[_1_], Str actual_path[_1_]);
 
 static inline CurlUrlPtr url_cu(Url u[_1_]) { return u->ptr; }
 
@@ -56,7 +56,7 @@ static inline void request_clean(Request r[_1_]) {
 }
 
 Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method);
-Err request_to_file(Request r[_1_], UrlClient url_client[_1_], const char* fname);
+Err request_to_file(Request r[_1_], UrlClient url_client[_1_], FILE* fp);
 
 static inline Err request_query_append_key_value(
     Request r[_1_], const char*k, size_t klen, const char* v, size_t vlen

@@ -19,7 +19,7 @@ size_t mock_fwrite_called_with(const void* ptr, size_t size, size_t nmemb, FILE 
 #define fwrite mock_fwrite_called_with
 #define fclose mock_fclose
 #include "../src/cmd.c"
-#include "../src/utils.c"
+#include "../src/sys.c"
 #include "../src/textbuf.c"
 
 

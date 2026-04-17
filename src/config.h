@@ -42,7 +42,7 @@ static inline Err append_bookmark_filename(const char* fname, Str out[_1_]) {
         return str_append_z(out, fname);
     }
 
-    return str_append(out, svl("/" "bookmark.html" "\0"));
+    return str_append_z(out, svl("/" "bookmark.html"));
 }
 Err create_or_get_confdir(Str confdir[_1_]);
 

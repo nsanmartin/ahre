@@ -1,3 +1,4 @@
+#include "sys.h"
 #include "htmldoc.h"
 #include "draw.h" 
 #include "bookmark.h"

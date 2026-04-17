@@ -1,8 +1,10 @@
+#include "sys.h"
 #include "bookmark.h"
 #include "cmd.h"
 #include "draw.h"
 #include "range-parse.h"
 #include "readpass.h"
+#include "url.h"
 
 
 #define MsgLastLine EscCodePurple "%{- last line -}%" EscCodeReset
@@ -300,12 +302,8 @@ Err _textbuf_print_n_(TextBuf textbuf[_1_], Range range[_1_], const char* ln, Cm
 
 
 Err _cmd_textbuf_write_impl(TextBuf textbuf[_1_], Range r[_1_], const char* rest, CmdOut* out) {
-    (void)out;
-    if (!rest || !*rest) { return "cannot write without file arg"; }
-    rest = cstr_trim_space((char*)rest);
-    if (!*rest) return "invalid url name";
-    FILE* fp = fopen(rest, "w");
-    if (!fp) return err_fmt("%s: could not open file: %s", __func__, rest); 
+    FILE* fp;
+    try(file_open(rest, "w", &fp));
 
     for (size_t linum = r->beg; linum <= r->end; ++linum) {
         StrView line;
@@ -515,6 +513,8 @@ Err _cmd_image_print(CmdParams p[_1_], size_t ix) {
     return err;
 }
 
+
+//TODO0: this duplcates _cmd_anchor_save
 Err _cmd_image_save(CmdParams p[_1_], size_t ix) {
     const char* fname = p->ln;
     DomNode node;
@@ -531,9 +531,20 @@ Err _cmd_image_save(CmdParams p[_1_], size_t ix) {
         request_init_move_urlstr(&r,http_get, &urlstr, htmldoc_url(htmldoc)));
     try_or_jump(err, Clean_Request, url_from_request(&r, session_url_client(p->s)));
 
-    err = request_to_file(&r, session_url_client(p->s), fname);
+    FILE* fp          = NULL;
+    Str   actual_path = (Str){0};
+    try_or_jump(err, Clean_Request,
+        fopen_or_append_fopen(fname, *request_url(&r), &fp, &actual_path));
 
-    ok_then(err, msg__(cmd_params_cmd_out(p), svl("data saved\n")));
+    try_or_jump(err, Clean_Actual_Path, request_to_file(&r, session_url_client(p->s), fp));
+
+    file_close(fp);
+
+    ok_then(err, msg__(cmd_params_cmd_out(p), svl("data saved: ")));
+    ok_then(err, msg_ln__(cmd_params_cmd_out(p), actual_path));
+
+Clean_Actual_Path:
+    str_clean(&actual_path);
 Clean_Request:
     request_clean(&r);
     return err;
@@ -575,6 +586,20 @@ Err _cmd_anchor_print(CmdParams p[_1_], size_t linknum) {
 }
 
 
+Err _cmd_anchor_range_save_to_dir(
+    Session session[_1_], Range r[_1_], const char* dirname, CmdOut* out
+) {
+    bool path_exists;
+    Str path = (Str){0};
+    try( resolve_path(dirname, &path_exists, &path));
+    for (size_t i = r->beg; i < r->end; ++i) {
+        Err err = _cmd_anchor_save(session, i, path.items, out);
+        if (err) msg_ln__(out, err);
+    }
+    str_clean(&path);
+    return Ok;
+}
+
 Err _cmd_anchor_save(Session session[_1_], size_t ix, const char* fname, CmdOut* out) {
     DomNode node;
     try( _get_anchor_by_ix(session, ix, &node));
@@ -590,9 +615,20 @@ Err _cmd_anchor_save(Session session[_1_], size_t ix, const char* fname, CmdOut*
         request_init_move_urlstr(&r, http_get, &urlstr, htmldoc_url(htmldoc)));
     try_or_jump(err, Clean_Request, url_from_request(&r, session_url_client(session)));
 
-    err = request_to_file(&r, session_url_client(session), fname);
+    FILE* fp          = NULL;
+    Str   actual_path = (Str){0};
+    try_or_jump(err, Clean_Request,
+        fopen_or_append_fopen(fname, *request_url(&r), &fp, &actual_path));
 
-    ok_then(err, msg__(out, svl("file saved\n")));
+    try_or_jump(err, Clean_Actual_Path, request_to_file(&r, session_url_client(session), fp));
+
+    file_close(fp);
+
+    ok_then(err, msg__(out, svl("file saved: ")));
+    ok_then(err, msg_ln__(out, sv(actual_path)));
+
+Clean_Actual_Path:
+    str_clean(&actual_path);
 Clean_Request:
     request_clean(&r);
     return err;

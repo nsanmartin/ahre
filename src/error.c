@@ -7,7 +7,7 @@
 #include "utils.h"
 
 //static constexpr size_t MAX_MSG_LEN = 512;
-#define MAX_MSG_LEN 1024u
+#define MAX_MSG_LEN 4096u
 #define TRUNC_ERR "TRERR:"
 
 /* _Thread_local */ size_t ERR_MSG_LEN = 0;

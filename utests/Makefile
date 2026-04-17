@@ -41,7 +41,7 @@ test_range: $(AHRE_UTESTS)/test_range.c $(AHRE_BUILD)/isocline.o \
 		$^ \
 		-lcurl -llexbor -lm
 
-test_buf: $(AHRE_UTESTS)/test_buf.c $(AHRE_BUILD)/str.o
+test_buf: $(AHRE_UTESTS)/test_buf.c $(AHRE_BUILD)/str.o $(AHRE_BUILD)/sys.o
 	$(CC) $(AHRE_CFLAGS) $(SANITIZE_FLAGS) $(AHRE_INCLUDE) -I. -I$(AHRE_UTESTS) \
 		-o $(AHRE_BUILD)/$@ $^ \
 		-lcurl -llexbor
@@ -52,8 +52,8 @@ test_error: $(AHRE_UTESTS)/test_error.c
 		-lcurl -llexbor
 
 test_ed_write: $(AHRE_UTESTS)/test_ed_write.c \
-	$(AHRE_BUILD)/error.o $(AHRE_BUILD)/str.o $(AHRE_BUILD)/range-parse.o \
-	$(AHRE_BUILD)/config.o $(AHRE_BUILD)/re.o  $(AHRE_BUILD)/url-client.o $(AHRE_BUILD)/sys.o \
+	$(AHRE_BUILD)/error.o $(AHRE_BUILD)/str.o $(AHRE_BUILD)/range-parse.o $(AHRE_BUILD)/utils.o \
+	$(AHRE_BUILD)/config.o $(AHRE_BUILD)/re.o  $(AHRE_BUILD)/url-client.o \
 	$(AHRE_BUILD)/wrapper-lexbor-curl.o $(AHRE_BUILD)/wrapper-lexbor.o \
 	$(AHRE_BUILD)/session.o $(AHRE_BUILD)/htmldoc.o \
 	$(AHRE_BUILD)/tab-node.o  $(AHRE_BUILD)/readpass.o $(AHRE_BUILD)/reditline.o \

@@ -133,7 +133,7 @@ bool str_append_strview_2_(Str s[_1_], StrView t, StrView u);
 
 #define str_append_z(S,P) (\
     (str_append_strview_2_(S,sv(P),svl("\0"))\
-    ? err_fmt("error: str_append_z failure ("__FILE__":%d)", __LINE__) : Ok))
+    ? err_fmt("error: str_append_z failure ("__FILE__":%d)", __LINE__) : (--(S)->len,Ok)))
 
 #define str_append_ln(S,P) (\
     (str_append_strview_2_(S,sv(P),svl("\n"))\

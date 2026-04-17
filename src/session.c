@@ -1,6 +1,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include "sys.h"
 #include "generic.h"
 #include "session.h"
 #include "user-interface.h"
