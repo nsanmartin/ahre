@@ -90,8 +90,8 @@ Err file_close(FILE* fp) {
 
 Err expand_path(const char *path, Str out[_1_]) {
     wordexp_t result = {0};
-
-    switch (wordexp (path, &result, WRDE_NOCMD | WRDE_UNDEF)) {
+    int rv = wordexp (path, &result, WRDE_NOCMD | WRDE_UNDEF);
+    switch (rv) {
         case 0: break;
         case WRDE_BADVAL: 
             wordfree (&result);
@@ -99,6 +99,13 @@ Err expand_path(const char *path, Str out[_1_]) {
         case WRDE_NOSPACE:
             wordfree (&result);
             return "error: out of memory parsing path";
+        case WRDE_CMDSUB:
+            return "Command substitution requested, but the WRDE_NOCMD flag told us to consider this an error.";
+        case WRDE_SYNTAX:
+             return "Shell syntax error, such as unbalanced parentheses or unmatched quotes.";
+        case WRDE_BADCHAR:
+             return "Illegal occurrence of newline or one of |, &, ;, <, >, (, ), {, }.";
+
         default: return "invalid path, wordexp could not parse";
     }
 

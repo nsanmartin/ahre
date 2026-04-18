@@ -145,4 +145,12 @@ Err tab_node_init_move_request(
     CmdOut*     out
 );
 
+Err tab_node_tree_append_ahref_from_node(
+    TabNode   t[_1_],
+    DomNode   a,
+    UrlClient url_client[_1_],
+    Session*  s,
+    CmdOut*   out
+);
+
 #endif

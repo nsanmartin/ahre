@@ -4,12 +4,12 @@
 
 #include "../src/error.c"
 
-static const char* _mock_fopen_pathname_param = NULL;
+static Str* _mock_fopen_pathname_param = NULL;
 static unsigned _curl_free_calls = 0;
 
 static inline FILE* _mock_fopen_with(const char *restrict pathname, const char *restrict mode) {
     utest_ignore_params(mode);
-    if (strcmp(_mock_fopen_pathname_param, pathname)) return NULL;
+    if (strcmp(items__(_mock_fopen_pathname_param), pathname)) return NULL;
     return (FILE*)-1;
 }
 
@@ -200,18 +200,20 @@ fail:
     return 1;
 }
 
-Err _append_fopen(const char* dirname, Url u, FILE* fp[_1_]);
+Err _append_fopen(Str path[_1_], Url u, FILE* fp[_1_]);
 
 int test__append_fopen(void) {
-    const char* dirname = "foo";
-    Url u               = (Url){0};
-    FILE* fp          = 0x0;
+    Str   dirname = (Str){};
+    Url   u       = (Url){0};
+    FILE* fp      = 0x0;
 
+    str_append_z(&dirname, svl("foo"));
     _mock_curl_url_get_ncall = 0;
     _mock_curl_url_get_content = (char*[]){ "foo", (char[]){'/','\0'}};
     _mock_curl_url_get_ = mock_curl_url_get_1;
-    _mock_fopen_pathname_param = dirname;
-    Err e = _append_fopen(dirname, u, &fp);
+    _mock_fopen_pathname_param = &dirname;
+    Err e = _append_fopen(&dirname, u, &fp);
+    str_clean(&dirname);
     utest_assert(!e, fail);
 
     return 0;

@@ -130,9 +130,9 @@ Err cmd_textbuf_write(CmdParams p[_1_]);
  * Anchor commands
  */
 
-Err _cmd_anchor_asterisk(Session session[_1_], size_t linknum, CmdOut* out);
-Err _cmd_anchor_print(CmdParams p[_1_], size_t linknum);
-Err _cmd_anchor_save(Session session[_1_], size_t ix, const char* fname, CmdOut* out);
+Err cmd_anchor_asterisk(CmdParams p[_1_], DomNode n);
+Err cmd_anchor_print(CmdParams p[_1_], DomNode n);
+Err cmd_anchor_save(CmdParams p[_1_], DomNode n);
 Err _cmd_anchor_range_save_to_dir(
     Session session[_1_], Range r[_1_], const char* dirname, CmdOut* out
 );
@@ -158,8 +158,8 @@ Err cmd_input_default_ix(CmdParams p[_1_], size_t ix);
 */
 
 Err cmd_image(CmdParams p[_1_]);
-Err _cmd_image_print(CmdParams p[_1_], size_t ix);
-Err _cmd_image_save(CmdParams p[_1_], size_t ix);
+Err cmd_image_print(CmdParams p[_1_], DomNode node);
+Err cmd_image_save(CmdParams p[_1_], DomNode node);
 
 
 /*

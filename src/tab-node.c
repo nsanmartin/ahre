@@ -25,6 +25,38 @@ Err tab_node_init_move_request(
 }
 
 
+Err tab_node_tree_append_ahref_from_node(
+    TabNode   t[_1_],
+    DomNode   a,
+    UrlClient url_client[_1_],
+    Session*  s,
+    CmdOut*   out
+) {
+    if (!s) return "error: expecting a session";
+    TabNode* n;
+    HtmlDoc* d;
+    try(  tab_node_current_node(t, &n));
+    try(  tab_node_current_doc(t, &d));
+
+    Str urlstr   = (Str){0};
+    StrView html = dom_node_attr_value(a, svl("href"));
+    try( str_append_z(&urlstr, &html));
+    Request r;
+    try(request_init_move_urlstr(&r,http_get, &urlstr, htmldoc_url(d)));
+
+    TabNode newnode;
+    Err e = Ok;
+    try_or_jump(e, Clean_Url_Str,
+        tab_node_init_move_request(&newnode, n, url_client, &r, s, out));
+    try_or_jump(e, Failure_New_Node_Cleanup, tab_node_append_move_child(n, &newnode));
+    goto Clean_Url_Str;
+Failure_New_Node_Cleanup:
+    tab_node_cleanup(&newnode);
+Clean_Url_Str:
+    request_clean(&r);
+    return e;
+}
+
 Err tab_node_tree_append_ahref(
     TabNode   t[_1_],
     size_t    linknum,

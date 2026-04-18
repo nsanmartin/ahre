@@ -34,6 +34,8 @@ inline static bool range_parse_is_none(RangeParse rp[_1_]) {
     return rp->beg.tag == range_addr_none_tag && rp->end.tag == range_addr_none_tag;
 }
 
+inline static size_t range_len(Range r[_1_]) { return r->end - r->beg; }
+
 static inline Err basic_size_t_from_addr(
     RangeAddr addr[_1_],
     size_t min,

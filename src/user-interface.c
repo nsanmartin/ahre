@@ -28,9 +28,19 @@
 
 
 typedef Err indexedCmdCallback (CmdParams p[_1_], size_t ix);
+typedef Err nodeCmdCallback (CmdParams p[_1_], DomNode n);
+typedef ArlOf(DomNode)* nodeCollectionCallback (HtmlDoc h[_1_]);
 
 
 /* internal linkage */
+
+static Err
+get_range_and_nodes(CmdParams p[_1_], Range r[_1_], ArlOf(DomNode)* collection[_1_], nodeCollectionCallback cb) {
+    HtmlDoc* h;
+    try(session_current_doc(p->s, &h));
+    *collection = cb(h);
+    return basic_range_from_parse(&p->rp, 0, len__(*collection), r);
+}
 
 static inline bool _char_cmd_match_(SessionCmd* cmd, CmdParams p[_1_]) {
     if (cmd->flags & CMD_CHAR && p->ln && cmd->name[0] == p->ln[0]) {
@@ -96,6 +106,18 @@ static Err run_cmd_help(SessionCmd cmd[_1_], CmdOut out[_1_]) {
 }
 
 
+static Err
+run_cmd_for_dom_node_range(CmdParams p[_1_], Range r[_1_], ArlOf(DomNode) collection[_1_], nodeCmdCallback cb) {
+    if (r->end <= r->beg) return "error: bad range";
+    for (size_t i = r->beg; i < r->end; ++i) {
+        DomNode* nodeptr = arlfn(DomNode, at)(collection, i);
+        if (!nodeptr) return "error: node number invalid";
+        try( cb(p, *nodeptr));
+    }
+    return Ok;
+}
+
+
 static Err _run_cmd_for_basic_range__(CmdParams p[_1_], size_t bound, indexedCmdCallback cb) {
     Range r;
     try(basic_range_from_parse(&p->rp, 0, bound, &r));
@@ -107,14 +129,6 @@ static Err _run_cmd_for_basic_range__(CmdParams p[_1_], size_t bound, indexedCmd
 }
 
 
-static Err _run_cmd_for_htmldoc_anchors_range__(CmdParams p[_1_], indexedCmdCallback cb) {
-    HtmlDoc* h;
-    try(session_current_doc(p->s, &h));
-    const size_t bound = len__(htmldoc_anchors(h));
-    return _run_cmd_for_basic_range__(p, bound, cb);
-}
-
-
 static Err _run_cmd_for_htmldoc_inputs_range__(CmdParams p[_1_], indexedCmdCallback cb) {
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
@@ -122,13 +136,6 @@ static Err _run_cmd_for_htmldoc_inputs_range__(CmdParams p[_1_], indexedCmdCallb
     return _run_cmd_for_basic_range__(p, bound, cb);
 }
 
-
-static Err _run_cmd_for_htmldoc_imgs_range__(CmdParams p[_1_], indexedCmdCallback cb) {
-    HtmlDoc* h;
-    try(session_current_doc(p->s, &h));
-    const size_t bound = len__(htmldoc_imgs(h));
-    return _run_cmd_for_basic_range__(p, bound, cb);
-}
 
 static Err _run_cmd_for_htmldoc_forms_range__(CmdParams p[_1_], indexedCmdCallback cb) {
     HtmlDoc* h;
@@ -168,39 +175,44 @@ static Err run_cmd_on_range__(CmdParams p[_1_], SessionCmd cmdlist[], int base) 
 /* anchor commands */
 
 #define CMD_ANCHOR_PRINT_DOC "Print anchor range info"
-static Err cmd_anchor_print(CmdParams p[_1_]) {
-    return _run_cmd_for_htmldoc_anchors_range__(p, _cmd_anchor_print);
+static Err cmd_anchor_print_range(CmdParams p[_1_]) {
+    ArlOf(DomNode)* anchors;
+    Range r;
+    try(get_range_and_nodes(p, &r, &anchors, htmldoc_anchors));
+    return run_cmd_for_dom_node_range(p, &r, anchors, cmd_anchor_print);
 }
 
 
-static Err cmd_anchor_asterisk(CmdParams p[_1_]) {
+static Err cmd_anchor_asterisk_range(CmdParams p[_1_]) {
     Range r;
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
-    try(basic_range_from_parse(&p->rp, 0, len__(htmldoc_anchors(h)), &r));
-    if (r.beg + 1 != r.end) return "TODO: implement anchor * for ranges";
-    return _cmd_anchor_asterisk(p->s, r.beg, cmd_params_cmd_out(p));
+    ArlOf(DomNode)* anchors;
+    try(get_range_and_nodes(p, &r, &anchors, htmldoc_anchors));
+    //TODO1: both cases should call cmd_anchor_asterisk, but we need to pass the information
+    //of whther it is a range or a single url since if it is range we o not "follow" and go back
+    //immediately isntead
+    if (range_len(&r) > 1)
+        return run_cmd_for_dom_node_range(p, &r, anchors, cmd_anchor_asterisk);
+    return session_follow_ahref(p->s, r.beg, cmd_params_cmd_out(p));
 }
 
 
-static Err cmd_anchor_save(CmdParams p[_1_]) {
+static Err cmd_anchor_save_range(CmdParams p[_1_]) {
+    ArlOf(DomNode)* anchors;
     Range r;
-    HtmlDoc* h;
-    try(session_current_doc(p->s, &h));
-    try(basic_range_from_parse(&p->rp, 0, len__(htmldoc_anchors(h)), &r));
-    CmdOut* out = cmd_params_cmd_out(p);
-
-    if (r.beg + 1 != r.end) return _cmd_anchor_range_save_to_dir(p->s, &r, p->ln, out);
-    return _cmd_anchor_save(p->s, r.beg, p->ln, out);
+    try(get_range_and_nodes(p, &r, &anchors, htmldoc_anchors));
+    if (range_len(&r) > 1 && !path_is_dir(p->ln)) 
+        return err_fmt("image ranges only can be saved to existing directoriesm not: %s\n", p->ln);
+    return run_cmd_for_dom_node_range(p, &r, anchors, cmd_anchor_save);
 }
 
-//TODO1;
-//
+
 static SessionCmd _cmd_anchor_[] =
-    { {.name="\"", .fn=cmd_anchor_print,    .help=CMD_ANCHOR_PRINT_DOC, .flags=CMD_CHAR}
-    , {.name="",   .fn=cmd_anchor_asterisk, .help=NULL,                 .flags=CMD_EMPTY}
-    , {.name="*",  .fn=cmd_anchor_asterisk, .help=NULL,                 .flags=CMD_CHAR}
-    , {.name="save", .fn=cmd_anchor_save,     .help=NULL,              .match=1}
+    { {.name="\"", .fn=cmd_anchor_print_range,    .help=CMD_ANCHOR_PRINT_DOC, .flags=CMD_CHAR}
+    , {.name="",   .fn=cmd_anchor_asterisk_range, .help=NULL,                 .flags=CMD_EMPTY}
+    , {.name="*",  .fn=cmd_anchor_asterisk_range, .help=NULL,                 .flags=CMD_CHAR}
+    , {.name="save", .fn=cmd_anchor_save_range,     .help=NULL,              .match=1}
     , {0}
     };
 
@@ -374,15 +386,27 @@ static SessionCmd _cmd_textbuf_[] =
 
 /* image commands (() */
 
-static Err
-cmd_image_info(CmdParams p[_1_]) { return _run_cmd_for_htmldoc_imgs_range__(p, _cmd_image_print); }
 
-static Err cmd_image_save(CmdParams p[_1_])
-{ return _run_cmd_for_htmldoc_imgs_range__(p, _cmd_image_save); }
+static Err
+cmd_image_info(CmdParams p[_1_]) {
+    ArlOf(DomNode)* images;
+    Range r;
+    try(get_range_and_nodes(p, &r, &images, htmldoc_imgs));
+    return run_cmd_for_dom_node_range(p, &r, images, cmd_image_print);
+}
+
+static Err cmd_image_save_range(CmdParams p[_1_]) {
+    ArlOf(DomNode)* images;
+    Range r;
+    try(get_range_and_nodes(p, &r, &images, htmldoc_imgs));
+    if (range_len(&r) > 1 && !path_is_dir(p->ln)) 
+        return err_fmt("image ranges only can be saved to existing directoriesm not: %s\n", p->ln);
+    return run_cmd_for_dom_node_range(p, &r, images, cmd_image_save);
+}
 
 static SessionCmd _cmd_image_[] =
-    { {.name="\"", .fn=cmd_image_info,  .help=NULL, .flags=CMD_CHAR}
-    , {.name="s",  .fn=cmd_image_save,  .help=NULL, .flags=CMD_CHAR}
+    { {.name="\"", .fn=cmd_image_info,       .help=NULL, .flags=CMD_CHAR}
+    , {.name="s",  .fn=cmd_image_save_range, .help=NULL, .flags=CMD_CHAR}
     , {0}
     };
 

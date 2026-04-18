@@ -41,7 +41,6 @@ static inline bool fatal_error(Err e) {
 Err err_prepend_char(Err err, char c);
 
 Err _err_fmt_vsnprinf_(Err fmt, ...);
-Err _err_fmt_while_(Err fmt, ...);
 
 #define err_fmt(Fmt, ...) _err_fmt_vsnprinf_(Fmt,__VA_ARGS__)
 

@@ -503,9 +503,7 @@ Err _get_image_by_ix(Session session[_1_], size_t ix, DomNode outnode[_1_]) {
     return Ok;
 }
 
-Err _cmd_image_print(CmdParams p[_1_], size_t ix) {
-    DomNode node;
-    try( _get_image_by_ix(p->s, ix, &node));
+Err cmd_image_print(CmdParams p[_1_], DomNode node) {
     Str* buf = &(Str){0};
     Err err = dom_node_to_str(node, buf);
     ok_then(err, msg__(cmd_params_cmd_out(p), buf));
@@ -514,11 +512,7 @@ Err _cmd_image_print(CmdParams p[_1_], size_t ix) {
 }
 
 
-//TODO0: this duplcates _cmd_anchor_save
-Err _cmd_image_save(CmdParams p[_1_], size_t ix) {
-    const char* fname = p->ln;
-    DomNode node;
-    try( _get_image_by_ix(p->s, ix, &node));
+Err cmd_image_save(CmdParams p[_1_], DomNode node) {
     HtmlDoc* htmldoc;
     try( session_current_doc(p->s, &htmldoc));
 
@@ -531,6 +525,7 @@ Err _cmd_image_save(CmdParams p[_1_], size_t ix) {
         request_init_move_urlstr(&r,http_get, &urlstr, htmldoc_url(htmldoc)));
     try_or_jump(err, Clean_Request, url_from_request(&r, session_url_client(p->s)));
 
+    const char* fname = p->ln;
     FILE* fp          = NULL;
     Str   actual_path = (Str){0};
     try_or_jump(err, Clean_Request,
@@ -556,55 +551,37 @@ Clean_Url_Str:
 
 /* anchor commands */
 
-static Err _get_anchor_by_ix(Session session[_1_], size_t ix, DomNode outnode[_1_]) {
-    HtmlDoc* htmldoc;
-    try( session_current_doc(session, &htmldoc));
-    ArlOf(DomNode)* anchors = htmldoc_anchors(htmldoc);
-    DomNode* nodeptr = arlfn(DomNode, at)(anchors, ix);
-    if (!nodeptr) return "anchor number invalid";
-    *outnode = *nodeptr;
-    return Ok;
+
+Err cmd_anchor_asterisk(CmdParams p[_1_], DomNode node) {
+    Session*  s = p->s;
+    if (!s) return "error: expecting a session";
+    CmdOut* out = cmd_params_cmd_out(p);
+    TabNode* current_tab;
+    try( tablist_current_tab(session_tablist(s), &current_tab));
+    if(current_tab) {
+        try( tab_node_tree_append_ahref_from_node(current_tab , node, session_url_client(s), s, out));
+        //TODO: the will depend on whther is a single url or a range
+        return tablist_back(session_tablist(s));
+    }
+    
+    return "error: where is the href if current tree is empty?";
 }
 
-
-Err _cmd_anchor_asterisk(Session session[_1_], size_t linknum, CmdOut* out) {
-    try( session_follow_ahref(session, linknum, out));
-    return Ok;
-}
-
-Err _cmd_anchor_print(CmdParams p[_1_], size_t linknum) {
-    DomNode a;
-    try( _get_anchor_by_ix(p->s, linknum, &a));
+Err cmd_anchor_print(CmdParams p[_1_], DomNode node) {
     
     Str* buf = &(Str){0};
-    try( dom_node_to_str(a, buf));
+    try( dom_node_to_str(node, buf));
 
-    //>< write to CmdOut
     Err err = msg__(cmd_params_cmd_out(p), buf);
     str_clean(buf);
     return err;
 }
 
 
-Err _cmd_anchor_range_save_to_dir(
-    Session session[_1_], Range r[_1_], const char* dirname, CmdOut* out
-) {
-    bool path_exists;
-    Str path = (Str){0};
-    try( resolve_path(dirname, &path_exists, &path));
-    for (size_t i = r->beg; i < r->end; ++i) {
-        Err err = _cmd_anchor_save(session, i, path.items, out);
-        if (err) msg_ln__(out, err);
-    }
-    str_clean(&path);
-    return Ok;
-}
-
-Err _cmd_anchor_save(Session session[_1_], size_t ix, const char* fname, CmdOut* out) {
-    DomNode node;
-    try( _get_anchor_by_ix(session, ix, &node));
+Err cmd_anchor_save(CmdParams p[_1_], DomNode node) {
+    CmdOut* out = cmd_params_cmd_out(p);
     HtmlDoc* htmldoc;
-    try( session_current_doc(session, &htmldoc));
+    try( session_current_doc(p->s, &htmldoc));
 
     Str urlstr = (Str){0};
     try (dom_node_append_null_terminated_attr_to_str(node, svl("href"), &urlstr));
@@ -613,14 +590,14 @@ Err _cmd_anchor_save(Session session[_1_], size_t ix, const char* fname, CmdOut*
     Request r;
     try_or_jump(err, Clean_Url_Str,
         request_init_move_urlstr(&r, http_get, &urlstr, htmldoc_url(htmldoc)));
-    try_or_jump(err, Clean_Request, url_from_request(&r, session_url_client(session)));
+    try_or_jump(err, Clean_Request, url_from_request(&r, session_url_client(p->s)));
 
     FILE* fp          = NULL;
     Str   actual_path = (Str){0};
     try_or_jump(err, Clean_Request,
-        fopen_or_append_fopen(fname, *request_url(&r), &fp, &actual_path));
+        fopen_or_append_fopen(p->ln, *request_url(&r), &fp, &actual_path));
 
-    try_or_jump(err, Clean_Actual_Path, request_to_file(&r, session_url_client(session), fp));
+    try_or_jump(err, Clean_Actual_Path, request_to_file(&r, session_url_client(p->s), fp));
 
     file_close(fp);
 

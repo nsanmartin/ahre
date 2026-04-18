@@ -33,10 +33,9 @@ void fwrite_params_queue_push(MockFwriteParams expected) {
 
 
 static Err _check_write_str_(char* str, size_t len) {
-    const char rest[] = "("__FILE__")rest";
+    const char rest[] = "_"__FILE__"_rest";
     TextBuf* tb = &(TextBuf){.buf={.items=str, .len=len}};
     fwrite_params_queue_push((MockFwriteParams){.ptr=str,.size=1,.nmemb=len});
-    /* return _cmd_textbuf_write_impl(&s, tb, &r, rest); */
     return textbuf_to_file(tb, rest, "w");
 }
 
