@@ -412,6 +412,7 @@ _cmd_input_text_set_(Session session[_1_], DomNode n[_1_], const char* line, Cmd
     Err err = Ok;
     if (!*line) {
         try( screen__(cout, svl("> ")));
+        try( session_flush_cmd_out(session, cout));
         ArlOf(char) masked = (ArlOf(char)){0};
         err = readpass_term(&masked, true);
         ok_then(err, dom_node_set_attr(*n, svl("value"), sv(&masked)));
