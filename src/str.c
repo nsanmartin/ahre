@@ -396,6 +396,9 @@ str_startswith_mem(Str s[_1_], const char* mem, size_t len) {
 }
 
 
+bool str_startswith(Str s[_1_], StrView v) { return str_startswith_mem(s, v.items, v.len); }
+
+
 size_t
 str_append_flip(const char* mem, size_t size, size_t nmemb, Str out[_1_]) {
     size_t len = size * nmemb;

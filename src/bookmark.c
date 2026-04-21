@@ -19,11 +19,10 @@ Err get_bookmarks_doc(
     HtmlDoc     htmldoc_out[_1_]
 ) {
     Str* bm_url = &(Str){0};
-    Err err = str_append(bm_url, svl("file://"));
+    Err err = str_append_z(bm_url, svl("file://"));
     try(err);
-    try_or_jump(err, Clean_Bm_Url, str_append(bm_url, bm_path));
-    try_or_jump(err, Clean_Bm_Url,
-        htmldoc_init_bookmark_move_urlstr(htmldoc_out, bm_url));
+    try_or_jump(err, Clean_Bm_Url, str_append_z(bm_url, bm_path));
+    try_or_jump(err, Clean_Bm_Url, htmldoc_init_bookmark_move_urlstr(htmldoc_out, bm_url));
     FetchHistoryEntry e = (FetchHistoryEntry){0};
     err = _htmldoc_fetch_bookmark_(htmldoc_out, url_client, cmd_out, &e);
     fetch_history_entry_clean(&e);

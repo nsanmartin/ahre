@@ -158,8 +158,13 @@ Clean_Url:
 }
 
 #define FILE_SCHEMA "file://"
+#define HTTP_SCHEMA "http://"
+#define HTTPS_SCHEMA "https://"
 static Err _prepend_file_schema_if_file_exists_(Str url[_1_], Str out[_1_]) {
     if (!len__(url)) return Ok;
+    if (str_startswith(url, svl(FILE_SCHEMA))) return Ok;
+    if (str_startswith(url, svl(HTTP_SCHEMA))) return Ok;
+    if (str_startswith(url, svl(HTTPS_SCHEMA))) return Ok;
     try(str_append(out, svl(FILE_SCHEMA)));
 
     const char* path = items__(url);
@@ -178,8 +183,9 @@ static Err _prepend_file_schema_if_file_exists_(Str url[_1_], Str out[_1_]) {
 }
 
 Err url_from_get_request(Request r[_1_]) {
-    try(url_init(&r->url, r->urlview));
-    CURLU* cu = url_cu(&r->url);
+    Url u = (Url){0};
+    try(url_init(&u, r->urlview));
+    CURLU* cu = url_cu(&u);
     Err err = Ok;
     Str file = (Str){0};
     if (len__(request_urlstr(r))) {
@@ -222,11 +228,12 @@ Err url_from_get_request(Request r[_1_]) {
     }
     str_reset(request_postfields(r));
     str_clean(&file);
+    r->url = u;
 
     return err;
 Failure_Clean_File_Url:
     str_clean(&file);
-    url_cleanup(request_url(r));
+    url_cleanup(&u);
     return err;
 }
 
