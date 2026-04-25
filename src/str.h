@@ -25,6 +25,10 @@
 
 
 #define Str BufOf(char)
+#define T ArlOf(Str)
+#define TClean arlfn(Str,clean)
+// #define TCmp buf_of_char_cmp
+#include <arl.h>
 
 typedef struct {
 	const char* items;

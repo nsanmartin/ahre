@@ -43,5 +43,7 @@ Err err_prepend_char(Err err, char c);
 Err _err_fmt_vsnprinf_(Err fmt, ...);
 
 #define err_fmt(Fmt, ...) _err_fmt_vsnprinf_(Fmt,__VA_ARGS__)
-
+#define to_lit__impl__(X) #X
+#define to_lit__(X) to_lit__impl__(X)
+#define err_jump(E,Tag) do{E="error: " __FILE__ ":" to_lit__(__LINE__); goto Tag;}while(0)
 #endif

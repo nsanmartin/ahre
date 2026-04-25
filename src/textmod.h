@@ -28,6 +28,8 @@ typedef struct { size_t offset; TextMod tmod; } ModAt;
 #include <arl.h>
 typedef ArlOf(ModAt) TextBufMods;
 
+
+
 static inline ModAt*
 mods_at_find_greater_or_eq(TextBufMods* mods, ModAt it[_1_], size_t offset) {
     //TODO: use binsearch
@@ -40,6 +42,12 @@ mods_at_find_greater_or_eq(TextBufMods* mods, ModAt it[_1_], size_t offset) {
 static inline Err textmod_append(TextBufMods* mods, size_t offset, TextMod m) {
     if (!arlfn(ModAt, append)(mods, &(ModAt){.offset=offset,.tmod=m})) return "error: arl failure";
     return Ok;
+}
+
+static inline Err
+textmod_append_left_displaced(TextBufMods mods[_1_], ModAt m, size_t displacement) {
+    if (m.offset < displacement) return "error: bad text mod displacement";
+    return textmod_append(mods, m.offset - displacement, m.tmod);
 }
 
 static inline TextMod esc_code_to_text_mod(EscCode code) { return (TextMod)code; }
