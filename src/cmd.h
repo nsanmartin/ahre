@@ -142,7 +142,7 @@ Err _cmd_anchor_range_save_to_dir(
  * Input commands
  */
 Err _cmd_input_ix_set_(CmdParams p[_1_], const size_t ix);
-
+Err cmd_input_save_node(CmdParams p[_1_], DomNode node);
 
 
 Err _cmd_lexbor_node_print_(ArlOf(DomNode) node_arl[_1_], size_t ix, CmdOut out[_1_]);

@@ -85,4 +85,5 @@ void w_curl_global_cleanup();
 void w_curl_free(void* p);
 Err w_curl_url_get_malloc(CurlUrlPtr cu, CURLUPart part, char* out[_1_]);
 
+size_t skip_header_callback(char *buffer, size_t size, size_t nitems, void *htmldoc) ;
 #endif

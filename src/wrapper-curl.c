@@ -7,6 +7,12 @@
 CURLUcode w_curl_get_part(CurlUrlPtr cu, CURLUPart part, char** content, unsigned flags);
 
 /* external linkage */
+size_t skip_header_callback(char *buffer, size_t size, size_t nitems, void *htmldoc) {
+    (void) buffer;
+    (void) htmldoc;
+    return size * nitems;
+}
+
 #define lit_match__(Lit, Mem, Len) (lit_len__(Lit) <= Len && !strncasecmp(Lit, Mem, lit_len__(Lit)))
 size_t curl_header_callback(char *buffer, size_t size, size_t nitems, void *htmldoc) {
     /* received header is nitems * size long in 'buffer' NOT ZERO TERMINATED */

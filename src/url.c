@@ -408,15 +408,17 @@ Err get_url_alias(Session* s, const char* cstr, BufOf(char)* out) {
 
 Err request_to_file(Request r[_1_], UrlClient url_client[_1_], FILE* fp) {
     if (!fp) return "error: expectinf FILE* received NULL";
-    /* try( url_client_set_basic_options(url_client)); */
-    try( url_client_reset(url_client));/* why is this needed here while the htmldoc fetch does not? */
+    try( url_client_set_basic_options(url_client));
     try( curl_set_method_from_http_method(url_client, request_method(r)));
     try( w_curl_set_url(url_client, request_url(r)));
 
     if (
-       curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, fwrite)
+       curl_easy_setopt(url_client->curl, CURLOPT_HEADERDATA, NULL)
+    || curl_easy_setopt(url_client->curl, CURLOPT_HEADERFUNCTION, skip_header_callback)
+    || curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, fwrite)
     || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, fp)
     ) return "error configuring curl write fn/data";
+    str_reset(url_client_postdata(url_client));
 
     CURLcode curl_code = curl_easy_perform(url_client->curl);
 

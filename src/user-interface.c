@@ -26,7 +26,7 @@
 #define CMD_EMPTY 0x4
 #define CMD_ANY 0x8
 
-
+//TODO1: replace indexed command by node commands
 typedef Err indexedCmdCallback (CmdParams p[_1_], size_t ix);
 typedef Err nodeCmdCallback (CmdParams p[_1_], DomNode n);
 typedef ArlOf(DomNode)* nodeCollectionCallback (HtmlDoc h[_1_]);
@@ -39,7 +39,9 @@ get_range_and_nodes(CmdParams p[_1_], Range r[_1_], ArlOf(DomNode)* collection[_
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
     *collection = cb(h);
-    return basic_range_from_parse(&p->rp, 0, len__(*collection), r);
+    try( basic_range_from_parse(&p->rp, 0, len__(*collection), r));
+    if (r->end <= r->beg) return "error: bad range";
+    return Ok;
 }
 
 static inline bool _char_cmd_match_(SessionCmd* cmd, CmdParams p[_1_]) {
@@ -112,7 +114,8 @@ run_cmd_for_dom_node_range(CmdParams p[_1_], Range r[_1_], ArlOf(DomNode) collec
     for (size_t i = r->beg; i < r->end; ++i) {
         DomNode* nodeptr = arlfn(DomNode, at)(collection, i);
         if (!nodeptr) return "error: node number invalid";
-        try( cb(p, *nodeptr));
+        Err err = cb(p, *nodeptr);
+        if (err) msg_ln__(cmd_params_cmd_out(p), err);
     }
     return Ok;
 }
@@ -126,6 +129,18 @@ static Err _run_cmd_for_basic_range__(CmdParams p[_1_], size_t bound, indexedCmd
         try( cb(p, i));
 
     return Ok;
+}
+
+
+static Err run_cmd_for_htmldoc_single_input_node(CmdParams p[_1_], nodeCmdCallback cb) {
+    ArlOf(DomNode)* inputs;
+    Range r;
+    try(get_range_and_nodes(p, &r, &inputs, htmldoc_inputs));
+    if (range_len(&r) != 1) return "range must have len==1 for requested command";
+
+    DomNode* n = arlfn(DomNode,at)(inputs,r.beg);
+    if (!n) return "error: input id invalid";
+    return cb(p, *n);
 }
 
 
@@ -203,7 +218,7 @@ static Err cmd_anchor_save_range(CmdParams p[_1_]) {
     Range r;
     try(get_range_and_nodes(p, &r, &anchors, htmldoc_anchors));
     if (range_len(&r) > 1 && !path_is_dir(p->ln)) 
-        return err_fmt("image ranges only can be saved to existing directoriesm not: %s\n", p->ln);
+        return err_fmt("anchor ranges only can be saved to existing directoriesm not: %s\n", p->ln);
     return run_cmd_for_dom_node_range(p, &r, anchors, cmd_anchor_save);
 }
 
@@ -238,11 +253,16 @@ static Err cmd_input_set(CmdParams p[_1_])
 { return _run_cmd_for_htmldoc_inputs_range__(p, _cmd_input_ix_set_); }
 
 
+
+#define CMD_INPUT_SAVE "{ID save [FILENAME].\n"
+static Err cmd_input_save(CmdParams p[_1_]) { return run_cmd_for_htmldoc_single_input_node(p, cmd_input_save_node); }
+
 static SessionCmd _cmd_input_[] =
     { {.name="\"", .fn=cmd_input_info,    .help=NULL,          .flags=CMD_CHAR}
     , {.name="",   .fn=cmd_input_default, .help=NULL,          .flags=CMD_EMPTY}
     , {.name="*",  .fn=cmd_input_submit,  .help=NULL,          .flags=CMD_CHAR}
     , {.name="=",  .fn=cmd_input_set,     .help=CMD_INPUT_SET, .flags=CMD_CHAR}
+    , {.name="save",.fn=cmd_input_save,.help=NULL,.match=1}
     , {0}
     };
 
@@ -380,7 +400,7 @@ static SessionCmd _cmd_textbuf_[] =
     , {.name="g", .match=1, .fn=cmd_textbuf_global,       .help=NULL}
     , {.name="n", .match=1, .fn=cmd_textbuf_print_n,      .help=NULL,.flags=CMD_NO_PARAMS}
     , {.name="print", .match=1, .fn=cmd_textbuf_print,    .help=NULL,.flags=CMD_NO_PARAMS}
-    , {.name="write", .match=1, .fn=cmd_textbuf_write,    .help=NULL }
+    , {.name="save", .match=1, .fn=cmd_textbuf_write,    .help=NULL }
     , {0}
 };
 
@@ -406,7 +426,7 @@ static Err cmd_image_save_range(CmdParams p[_1_]) {
 
 static SessionCmd _cmd_image_[] =
     { {.name="\"", .fn=cmd_image_info,       .help=NULL, .flags=CMD_CHAR}
-    , {.name="s",  .fn=cmd_image_save_range, .help=NULL, .flags=CMD_CHAR}
+    , {.name="s",  .fn=cmd_image_save_range, .help=NULL, .flags=CMD_CHAR}//TODO1 save, not s
     , {0}
     };
 

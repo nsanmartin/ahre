@@ -11,6 +11,7 @@
 
 
 Err _get_image_by_ix(Session session[_1_], size_t ix, DomNode outnode[_1_]);
+static Err save_request_to_file(CmdParams p[_1_], Request r[_1_]);
 
 static bool _is_url_alias_(const char* cmd) { return *cmd == '\\'; }
 
@@ -492,6 +493,25 @@ Err _cmd_input_ix_set_(CmdParams p[_1_], const size_t ix) {
     return "input set not supported for element";
 }
 
+
+Err cmd_input_save_node(CmdParams p[_1_], DomNode node) {
+    if (!dom_node_attr_has_value(node, svl("type"), svl("submit")))
+        return "warn: save command only applicable to submit inputs\n";
+
+    HtmlDoc* htmldoc;
+    try( session_current_doc(p->s, &htmldoc));
+    DomNode form = dom_node_find_parent_form(node);
+    if (isnull(form)) return "expected form, not found";
+    Request r = (Request){.urlview=htmldoc_url(htmldoc)};
+    try( mk_submit_request(form, true, &r));
+
+    Err err = save_request_to_file(p, &r);
+    request_clean(&r);
+
+    return err;
+}
+
+
 /* image commands */
 
 Err _get_image_by_ix(Session session[_1_], size_t ix, DomNode outnode[_1_]) {
@@ -579,8 +599,8 @@ Err cmd_anchor_print(CmdParams p[_1_], DomNode node) {
 }
 
 
+
 Err cmd_anchor_save(CmdParams p[_1_], DomNode node) {
-    CmdOut* out = cmd_params_cmd_out(p);
     HtmlDoc* htmldoc;
     try( session_current_doc(p->s, &htmldoc));
 
@@ -591,22 +611,9 @@ Err cmd_anchor_save(CmdParams p[_1_], DomNode node) {
     Request r;
     try_or_jump(err, Clean_Url_Str,
         request_init_move_urlstr(&r, http_get, &urlstr, htmldoc_url(htmldoc)));
-    try_or_jump(err, Clean_Request, url_from_request(&r, session_url_client(p->s)));
 
-    FILE* fp          = NULL;
-    Str   actual_path = (Str){0};
-    try_or_jump(err, Clean_Request,
-        fopen_or_append_fopen(p->ln, *request_url(&r), &fp, &actual_path));
+    try_or_jump(err, Clean_Request, save_request_to_file(p, &r));
 
-    try_or_jump(err, Clean_Actual_Path, request_to_file(&r, session_url_client(p->s), fp));
-
-    file_close(fp);
-
-    ok_then(err, msg__(out, svl("file saved: ")));
-    ok_then(err, msg_ln__(out, sv(actual_path)));
-
-Clean_Actual_Path:
-    str_clean(&actual_path);
 Clean_Request:
     request_clean(&r);
     return err;
@@ -624,6 +631,28 @@ Err _cmd_lexbor_node_print_(ArlOf(DomNode) node_arl[_1_], size_t ix, CmdOut out[
 
     ok_then(err,  msg__(out, buf));
     str_clean(buf);
+    return err;
+}
+
+
+static Err save_request_to_file(CmdParams p[_1_], Request r[_1_]) {
+    FILE*   fp          = NULL;
+    Str     actual_path = (Str){0};
+    Err     err         = Ok;
+    CmdOut* out         = cmd_params_cmd_out(p);
+
+    try(url_from_request(r, session_url_client(p->s)));
+    try(fopen_or_append_fopen(p->ln, *request_url(r), &fp, &actual_path));
+
+    try_or_jump(err, Close_Flie, request_to_file(r, session_url_client(p->s), fp));
+
+
+    ok_then(err, msg__(out, svl("file saved: ")));
+    ok_then(err, msg_ln__(out, sv(actual_path)));
+
+Close_Flie:
+    file_close(fp);
+    str_clean(&actual_path);
     return err;
 }
 
