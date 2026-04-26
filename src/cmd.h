@@ -131,7 +131,7 @@ Err cmd_textbuf_write(CmdParams p[_1_]);
  */
 
 Err cmd_anchor_asterisk(CmdParams p[_1_], DomNode n);
-Err cmd_anchor_print(CmdParams p[_1_], DomNode n);
+Err cmd_anchor_print_node(CmdParams p[_1_], DomNode n);
 Err cmd_anchor_save(CmdParams p[_1_], DomNode n);
 Err _cmd_anchor_range_save_to_dir(
     Session session[_1_], Range r[_1_], const char* dirname, CmdOut* out
@@ -141,8 +141,10 @@ Err _cmd_anchor_range_save_to_dir(
 /*
  * Input commands
  */
-Err _cmd_input_ix_set_(CmdParams p[_1_], const size_t ix);
+Err cmd_input_set_node(CmdParams p[_1_], DomNode node);
 Err cmd_input_save_node(CmdParams p[_1_], DomNode node);
+Err cmd_input_info_node(CmdParams p[_1_], DomNode n);
+Err cmd_input_default_node(CmdParams p[_1_], DomNode n);
 
 
 Err _cmd_lexbor_node_print_(ArlOf(DomNode) node_arl[_1_], size_t ix, CmdOut out[_1_]);
@@ -176,4 +178,5 @@ Err cmd_image_save(CmdParams p[_1_], DomNode node);
 
 Err cmd_fetch(Session session[_1_], CmdOut* out);
 Err cmd_set_session_forms(CmdParams p[_1_]);
+Err cmd_print_node(CmdParams p[_1_], DomNode node);
 #endif

@@ -351,10 +351,6 @@ _cmd_form_print(CmdParams p[_1_], size_t ix) {
     return _cmd_lexbor_node_print_(htmldoc_forms(d), ix, cmd_params_cmd_out(p));
 }
 
-Err
-_cmd_input_submit_ix(CmdParams p[_1_], size_t ix) {
-    return session_press_submit(p->s, ix, cmd_params_cmd_out(p));
-}
 
 static
 Err cmd_select_elem_show_options(DomNode lbn[_1_], CmdOut out [_1_]) {
@@ -377,23 +373,19 @@ Err cmd_select_elem_show_options(DomNode lbn[_1_], CmdOut out [_1_]) {
 
 
 Err
-cmd_input_default_ix(CmdParams p[_1_], size_t ix) {
+cmd_input_default_node(CmdParams p[_1_], DomNode node) {
     TabNode* tab;
-    HtmlDoc* doc;
-    DomNode  lbn;
     try( tablist_current_tab(session_tablist(p->s), &tab));
-    try( tab_node_current_doc(tab, &doc));
-    try( htmldoc_input_at(doc, ix, &lbn));
 
-    if (dom_node_tag(lbn) == HTML_TAG_INPUT
-    &&  dom_node_attr_has_value(lbn, svl("type"), svl("submit"))) 
-        return tab_node_tree_append_submit(tab , ix, session_url_client(p->s), p->s, cmd_params_cmd_out(p));
-    else if (dom_node_tag(lbn) == HTML_TAG_BUTTON
-    &&  (dom_node_attr_has_value(lbn, svl("type"), svl("submit"))
-        || !dom_node_has_attr(lbn, svl("type"))))
-        return tab_node_tree_append_submit(tab , ix, session_url_client(p->s), p->s, cmd_params_cmd_out(p));
-    else if (dom_node_tag(lbn) == HTML_TAG_SELECT)
-        return cmd_select_elem_show_options(&lbn, cmd_params_cmd_out(p));
+    if (dom_node_tag(node) == HTML_TAG_INPUT
+    &&  dom_node_attr_has_value(node, svl("type"), svl("submit"))) 
+        return tab_node_tree_append_submit_input_node(tab , node, session_url_client(p->s), p->s, cmd_params_cmd_out(p));
+    else if (dom_node_tag(node) == HTML_TAG_BUTTON
+    &&  (dom_node_attr_has_value(node, svl("type"), svl("submit"))
+        || !dom_node_has_attr(node, svl("type"))))
+        return tab_node_tree_append_submit_input_node(tab , node, session_url_client(p->s), p->s, cmd_params_cmd_out(p));
+    else if (dom_node_tag(node) == HTML_TAG_SELECT)
+        return cmd_select_elem_show_options(&node, cmd_params_cmd_out(p));
     
     return "error: invalid input node";
 }
@@ -465,30 +457,28 @@ Clean_Matches:
 
 
 Err
-cmd_input_print(CmdParams p[_1_], size_t ix) {
-    HtmlDoc* d;
-    try( session_current_doc(p->s, &d));
-    return _cmd_lexbor_node_print_(htmldoc_inputs(d), ix, cmd_params_cmd_out(p));
+cmd_input_info_node(CmdParams p[_1_], DomNode n) {
+    Str* buf = &(Str){0};
+    Err err = dom_node_to_str(n, buf);
+    ok_then(err,  msg__(cmd_params_cmd_out(p), buf));
+    str_clean(buf);
+    return err;
 }
 
 
-Err _cmd_input_ix_set_(CmdParams p[_1_], const size_t ix) {
+Err cmd_input_set_node(CmdParams p[_1_], DomNode node) {
     Session* session = p->s;
     const char* ln   = p->ln;
-    HtmlDoc* d;
-    DomNode n = (DomNode){0};
-    try( session_current_doc(session, &d));
-    try( _get_dom_node_at_(htmldoc_inputs(d), ix, &n));
 
-    if (dom_node_attr_has_value( n, svl("type"), svl("text")))
-        return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p));
-    else if (dom_node_attr_has_value(n, svl("type"), svl("search")))
-        return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p)); //TODO: implement it properly
-    else if (dom_node_attr_has_value(n, svl("type"), svl("password")))
-        return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p));
-    else if (dom_node_tag(n) == HTML_TAG_SELECT) return _cmd_input_select_set_(session, &n, ln);
-    else if (!dom_node_has_attr(n, svl("type")))
-        return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p));
+    if (dom_node_attr_has_value( node, svl("type"), svl("text")))
+        return _cmd_input_text_set_(session, &node, ln, cmd_params_cmd_out(p));
+    else if (dom_node_attr_has_value(node, svl("type"), svl("search")))
+        return _cmd_input_text_set_(session, &node, ln, cmd_params_cmd_out(p)); //TODO: implement it properly
+    else if (dom_node_attr_has_value(node, svl("type"), svl("password")))
+        return _cmd_input_text_set_(session, &node, ln, cmd_params_cmd_out(p));
+    else if (dom_node_tag(node) == HTML_TAG_SELECT) return _cmd_input_select_set_(session, &node, ln);
+    else if (!dom_node_has_attr(node, svl("type")))
+        return _cmd_input_text_set_(session, &node, ln, cmd_params_cmd_out(p));
 
     return "input set not supported for element";
 }
@@ -588,17 +578,6 @@ Err cmd_anchor_asterisk(CmdParams p[_1_], DomNode node) {
     return "error: where is the href if current tree is empty?";
 }
 
-Err cmd_anchor_print(CmdParams p[_1_], DomNode node) {
-    
-    Str* buf = &(Str){0};
-    try( dom_node_to_str(node, buf));
-
-    Err err = msg__(cmd_params_cmd_out(p), buf);
-    str_clean(buf);
-    return err;
-}
-
-
 
 Err cmd_anchor_save(CmdParams p[_1_], DomNode node) {
     HtmlDoc* htmldoc;
@@ -622,6 +601,14 @@ Clean_Url_Str:
     return err;
 }
 
+
+Err cmd_print_node(CmdParams p[_1_], DomNode node) {
+    Str* buf = &(Str){0};
+    Err err = dom_node_to_str(node, buf);
+    ok_then(err,  msg__(cmd_params_cmd_out(p), buf));
+    str_clean(buf);
+    return err;
+}
 
 Err _cmd_lexbor_node_print_(ArlOf(DomNode) node_arl[_1_], size_t ix, CmdOut out[_1_]) {
     DomNode node;

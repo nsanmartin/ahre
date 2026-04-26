@@ -94,43 +94,39 @@ Clean_Url_Str:
 }
 
 
-Err tab_node_tree_append_submit(
+Err tab_node_tree_append_submit_input_node(
     TabNode t[_1_],
-    size_t ix,
+    DomNode  input_node,
     UrlClient url_client[_1_],
     Session s[_1_],
     CmdOut* out
 ) {
-    TabNode* n;
+    TabNode* tab_node;
     HtmlDoc* d;
-    DomNode  lbn;
-    try( tab_node_current_node(t, &n));
+    try( tab_node_current_node(t, &tab_node));
     try( tab_node_current_doc(t, &d));
-    try( htmldoc_input_at(d, ix, &lbn));
-    if (!dom_node_attr_has_value(lbn, svl("type"), svl("submit")))
-        return "warn: not submit input";
 
     Err e = Ok;
-    DomNode form = dom_node_find_parent_form(lbn);
-    if (!isnull(form)) {
-        Request r = (Request){.urlview=htmldoc_url(d)};
-        try( mk_submit_request(form, true, &r));
-        TabNode newnode;
-        try_or_jump(e, Failure_Clean_Request,
-            tab_node_init_move_request(&newnode, n, url_client, &r, s, out));
-        try_or_jump(e, Failure_New_Node_Cleanup, tab_node_append_move_child(n, &newnode));
-        return Ok;
+    DomNode form = dom_node_find_parent_form(input_node);
+    if (isnull(form)) { return "expected form, not found"; }
+
+    Request r = (Request){.urlview=htmldoc_url(d)};
+    try( mk_submit_request(form, true, &r));
+    TabNode newnode;
+    try_or_jump(e, Failure_Clean_Request,
+        tab_node_init_move_request(&newnode, tab_node, url_client, &r, s, out));
+    try_or_jump(e, Failure_New_Node_Cleanup, tab_node_append_move_child(tab_node, &newnode));
+    return Ok;
 
 Failure_Clean_Request:
-        request_clean(&r);
-        return e;
+    request_clean(&r);
+    return e;
 Failure_New_Node_Cleanup:
-        tab_node_cleanup(&newnode);
-        return e;
-
-    } else { return "expected form, not found"; }
-
+    tab_node_cleanup(&newnode);
+    return e;
 }
+
+
 
 
 void tab_node_cleanup(TabNode n[_1_]) {

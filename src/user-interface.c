@@ -26,8 +26,6 @@
 #define CMD_EMPTY 0x4
 #define CMD_ANY 0x8
 
-//TODO1: replace indexed command by node commands
-typedef Err indexedCmdCallback (CmdParams p[_1_], size_t ix);
 typedef Err nodeCmdCallback (CmdParams p[_1_], DomNode n);
 typedef ArlOf(DomNode)* nodeCollectionCallback (HtmlDoc h[_1_]);
 
@@ -110,7 +108,6 @@ static Err run_cmd_help(SessionCmd cmd[_1_], CmdOut out[_1_]) {
 
 static Err
 run_cmd_for_dom_node_range(CmdParams p[_1_], Range r[_1_], ArlOf(DomNode) collection[_1_], nodeCmdCallback cb) {
-    if (r->end <= r->beg) return "error: bad range";
     for (size_t i = r->beg; i < r->end; ++i) {
         DomNode* nodeptr = arlfn(DomNode, at)(collection, i);
         if (!nodeptr) return "error: node number invalid";
@@ -121,14 +118,11 @@ run_cmd_for_dom_node_range(CmdParams p[_1_], Range r[_1_], ArlOf(DomNode) collec
 }
 
 
-static Err _run_cmd_for_basic_range__(CmdParams p[_1_], size_t bound, indexedCmdCallback cb) {
+static Err run_cmd_for_indep_dom_node_range(CmdParams p[_1_], nodeCollectionCallback arlcb, nodeCmdCallback nodecb) {
+    ArlOf(DomNode)* nodes;
     Range r;
-    try(basic_range_from_parse(&p->rp, 0, bound, &r));
-    if (r.end <= r.beg) return "error: bad range";
-    for (size_t i = r.beg; i < r.end; ++i)
-        try( cb(p, i));
-
-    return Ok;
+    try(get_range_and_nodes(p, &r, &nodes, arlcb));
+    return run_cmd_for_dom_node_range(p, &r, nodes, nodecb);
 }
 
 
@@ -143,21 +137,6 @@ static Err run_cmd_for_htmldoc_single_input_node(CmdParams p[_1_], nodeCmdCallba
     return cb(p, *n);
 }
 
-
-static Err _run_cmd_for_htmldoc_inputs_range__(CmdParams p[_1_], indexedCmdCallback cb) {
-    HtmlDoc* h;
-    try(session_current_doc(p->s, &h));
-    const size_t bound = len__(htmldoc_inputs(h));
-    return _run_cmd_for_basic_range__(p, bound, cb);
-}
-
-
-static Err _run_cmd_for_htmldoc_forms_range__(CmdParams p[_1_], indexedCmdCallback cb) {
-    HtmlDoc* h;
-    try(session_current_doc(p->s, &h));
-    const size_t bound = len__(htmldoc_forms(h));
-    return _run_cmd_for_basic_range__(p, bound, cb);
-}
 
 static Err run_cmd__(CmdParams p[_1_], SessionCmd cmdlist[]) {
     p->ln = cstr_skip_space(p->ln);
@@ -180,9 +159,7 @@ static Err run_cmd_on_range__(CmdParams p[_1_], SessionCmd cmdlist[], int base) 
     p->ln = cstr_skip_space(p->ln);
     const char* endptr;
     try(parse_range(p->ln, &p->rp, &endptr, base));
-    p->ln = endptr;
-
-    p->ln = cstr_skip_space(p->ln);
+    p->ln = cstr_skip_space(endptr);
     return run_cmd__(p, cmdlist);
 }
 
@@ -191,10 +168,7 @@ static Err run_cmd_on_range__(CmdParams p[_1_], SessionCmd cmdlist[], int base) 
 
 #define CMD_ANCHOR_PRINT_DOC "Print anchor range info"
 static Err cmd_anchor_print_range(CmdParams p[_1_]) {
-    ArlOf(DomNode)* anchors;
-    Range r;
-    try(get_range_and_nodes(p, &r, &anchors, htmldoc_anchors));
-    return run_cmd_for_dom_node_range(p, &r, anchors, cmd_anchor_print);
+    return run_cmd_for_indep_dom_node_range(p, htmldoc_anchors, cmd_print_node);
 }
 
 
@@ -233,24 +207,20 @@ static SessionCmd _cmd_anchor_[] =
 
 /* input commands ({) */
 
-static Err cmd_input_info(CmdParams p[_1_]) {
-    return _run_cmd_for_htmldoc_inputs_range__(p, cmd_input_print);
-}
+static Err cmd_input_info(CmdParams p[_1_]) { return run_cmd_for_indep_dom_node_range(p, htmldoc_inputs, cmd_print_node); }
 
-static Err cmd_input_default(CmdParams p[_1_]) {
-    return _run_cmd_for_htmldoc_inputs_range__(p, cmd_input_default_ix);
-}
 
 static Err cmd_input_submit(CmdParams p[_1_]) {
-    return _run_cmd_for_htmldoc_inputs_range__(p, _cmd_input_submit_ix);
+    return run_cmd_for_indep_dom_node_range(p, htmldoc_inputs, cmd_input_default_node); 
 }
 
 #define CMD_INPUT_SET \
     "{= [VALUE]\n\n"\
     "If VALUE is given, sets the value of an input element.\n"\
     "If not, user's input is hidden (useful for passwords).\n"
-static Err cmd_input_set(CmdParams p[_1_])
-{ return _run_cmd_for_htmldoc_inputs_range__(p, _cmd_input_ix_set_); }
+static Err cmd_input_set(CmdParams p[_1_]) { 
+    return run_cmd_for_indep_dom_node_range(p, htmldoc_inputs, cmd_input_set_node); 
+}
 
 
 
@@ -259,7 +229,7 @@ static Err cmd_input_save(CmdParams p[_1_]) { return run_cmd_for_htmldoc_single_
 
 static SessionCmd _cmd_input_[] =
     { {.name="\"", .fn=cmd_input_info,    .help=NULL,          .flags=CMD_CHAR}
-    , {.name="",   .fn=cmd_input_default, .help=NULL,          .flags=CMD_EMPTY}
+    , {.name="",   .fn=cmd_input_submit, .help=NULL,           .flags=CMD_EMPTY}
     , {.name="*",  .fn=cmd_input_submit,  .help=NULL,          .flags=CMD_CHAR}
     , {.name="=",  .fn=cmd_input_set,     .help=CMD_INPUT_SET, .flags=CMD_CHAR}
     , {.name="save",.fn=cmd_input_save,.help=NULL,.match=1}
@@ -296,14 +266,14 @@ static Err cmd_session_set(CmdParams p[_1_]) { return run_cmd__(p, _cmd_session_
 /* tab commands (|) */
 
 static SessionCmd _cmd_tabs_[] =
-    { {.name="-", .fn=cmd_tabs_back, .help=NULL, .flags=CMD_CHAR}
-    , {.name="",  .fn=cmd_tabs_info, .help=NULL, .flags=CMD_EMPTY}
-    , {.name="goto",  .fn=cmd_tabs_goto, .help=NULL, .flags=CMD_ANY}
+    { {.name="-",    .fn=cmd_tabs_back, .help=NULL, .flags=CMD_CHAR}
+    , {.name="",     .fn=cmd_tabs_info, .help=NULL, .flags=CMD_EMPTY}
+    , {.name="goto", .fn=cmd_tabs_goto, .help=NULL, .flags=CMD_ANY}
     , {0}
 };
 
-static Err cmd_doc_scripts_list(CmdParams p[_1_]) {
 
+static Err cmd_doc_scripts_list(CmdParams p[_1_]) {
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
     size_t head_scripts_count = len__(htmldoc_head_scripts(h));
@@ -317,6 +287,7 @@ static Err cmd_doc_scripts_list(CmdParams p[_1_]) {
     try(msg__(out, svl("\n")));
     return Ok;
 }
+
 
 static Err cmd_doc_scripts_save(CmdParams p[_1_]) {
     Err e = Ok;
@@ -335,6 +306,7 @@ Failure:
     return e;
 }
 
+
 static Err cmd_doc_scripts_msg(CmdParams p[_1_]) {
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
@@ -342,6 +314,7 @@ static Err cmd_doc_scripts_msg(CmdParams p[_1_]) {
     try(msg_writer_init(&w, cmd_out_msg(cmd_params_cmd_out(p))));
     return htmldoc_scripts_write(h, &p->rp, &w);
 }
+
 
 /* doc scripts commands */
 static SessionCmd _cmd_doc_scripts_[] =
@@ -396,11 +369,11 @@ static SessionCmd _cmd_doc_[] =
 /* texbuf commands */
 
 static SessionCmd _cmd_textbuf_[] =
-    { {.name="",            .fn=cmd_textbuf_print,        .help=NULL, .flags=CMD_EMPTY}
-    , {.name="g", .match=1, .fn=cmd_textbuf_global,       .help=NULL}
-    , {.name="n", .match=1, .fn=cmd_textbuf_print_n,      .help=NULL,.flags=CMD_NO_PARAMS}
-    , {.name="print", .match=1, .fn=cmd_textbuf_print,    .help=NULL,.flags=CMD_NO_PARAMS}
-    , {.name="save", .match=1, .fn=cmd_textbuf_write,    .help=NULL }
+    { {.name="",                .fn=cmd_textbuf_print,   .help=NULL, .flags=CMD_EMPTY}
+    , {.name="g",     .match=1, .fn=cmd_textbuf_global,  .help=NULL}
+    , {.name="n",     .match=1, .fn=cmd_textbuf_print_n, .help=NULL, .flags=CMD_NO_PARAMS}
+    , {.name="print", .match=1, .fn=cmd_textbuf_print,   .help=NULL, .flags=CMD_NO_PARAMS}
+    , {.name="save",  .match=1, .fn=cmd_textbuf_write,   .help=NULL }
     , {0}
 };
 
@@ -420,13 +393,13 @@ static Err cmd_image_save_range(CmdParams p[_1_]) {
     Range r;
     try(get_range_and_nodes(p, &r, &images, htmldoc_imgs));
     if (range_len(&r) > 1 && !path_is_dir(p->ln)) 
-        return err_fmt("image ranges only can be saved to existing directoriesm not: %s\n", p->ln);
+        return err_fmt("image ranges only can be saved to existing directories, not: %s\n", p->ln);
     return run_cmd_for_dom_node_range(p, &r, images, cmd_image_save);
 }
 
 static SessionCmd _cmd_image_[] =
-    { {.name="\"", .fn=cmd_image_info,       .help=NULL, .flags=CMD_CHAR}
-    , {.name="s",  .fn=cmd_image_save_range, .help=NULL, .flags=CMD_CHAR}//TODO1 save, not s
+    { {.name="\"",   .fn=cmd_image_info,       .help=NULL, .flags=CMD_CHAR}
+    , {.name="save", .fn=cmd_image_save_range, .help=NULL, .match=1}
     , {0}
     };
 
@@ -487,8 +460,14 @@ static Err cmd_sourcebuf(CmdParams p[_1_]) {
     "'{' commands are applied to the input elements present in the document.\n"
 static Err cmd_input(CmdParams p[_1_]) { return run_cmd_on_range__(p, _cmd_input_, 36); }
 
-static Err cmd_form_print(CmdParams p[_1_])
-{ return _run_cmd_for_htmldoc_forms_range__(p, _cmd_form_print); }
+
+static Err cmd_form_print(CmdParams p[_1_]) {
+    p->ln = cstr_skip_space(p->ln);
+    const char* endptr;
+    try(parse_range(p->ln, &p->rp, &endptr, 36));
+    p->ln = cstr_skip_space(endptr);
+    return run_cmd_for_indep_dom_node_range(p, htmldoc_forms, cmd_print_node);
+}
 
 
 #define CMD_IMAGE_DOC \
