@@ -1,6 +1,7 @@
 #include "str.h"
 #include "htmldoc.h"
 #include "wrapper-curl.h"
+#include "generic.h"
 
 /* internal linkage */
 

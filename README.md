@@ -12,7 +12,7 @@ A hypertext reference www navigator or text web browser for linux.
 
 ## External dependencies
 
-+ [libcutl](https://curl.se/libcurl/) https://github.com/curl/curl
++ [libcurl](https://curl.se/libcurl/) https://github.com/curl/curl
 + [lexbor](https://lexbor.com/) https://github.com/lexbor/lexbor
 
 ## Git submodules:

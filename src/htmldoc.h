@@ -101,7 +101,7 @@ void htmldoc_cache_cleanup(HtmlDoc htmldoc[_1_]) ;
 
 
 
-Err htmldoc_draw_with_flags(HtmlDoc htmldoc[_1_], Session* s, unsigned flags);
+Err htmldoc_draw_with_flags(HtmlDoc htmldoc[_1_], Session* s, unsigned flags, CmdOut cmd_out[_1_]);
 Err htmldoc_A(Session* s, HtmlDoc d[_1_], CmdOut* out);
 Err htmldoc_console(HtmlDoc d[_1_], Session* s, const char* line, CmdOut* out);
 Err htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[_1_]);

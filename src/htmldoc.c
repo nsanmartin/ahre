@@ -1,3 +1,4 @@
+#include "generic.h"
 #include "constants.h"
 #include "draw.h"
 #include "error.h"
@@ -95,6 +96,12 @@ draw_text_buf_trim_right(DrawTextBuf sub[_1_]) {
 
 static Str*
 draw_text_buf_buf(DrawTextBuf sub_text[_1_]) { return &sub_text->buf; }
+
+
+static StrView strview_from_draw_text_buf(DrawTextBuf dtb[_1_]) {
+    Str* buf = draw_text_buf_buf(dtb);
+    return (StrView){.items=buf->items + dtb->left_trim, .len=buf->len - dtb->left_trim};
+}
 
 
 static TextBufMods*
@@ -788,12 +795,12 @@ draw_tag_pre(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
 /*TODO: decouple sesion and htmldoc here */
 Err
-htmldoc_draw_with_flags(HtmlDoc htmldoc[_1_], Session* s, unsigned flags) {
+htmldoc_draw_with_flags(HtmlDoc htmldoc[_1_], Session* s, unsigned flags, CmdOut cmd_out[_1_]) {
     if (!s) return "error: expecting not null Session";
     Dom dom = htmldoc_dom(htmldoc);
     DrawCtx     ctx;
     DrawTextBuf text = (DrawTextBuf){0};
-    Err err = draw_ctx_init(&ctx, htmldoc, s, flags);
+    Err err = draw_ctx_init(&ctx, htmldoc, s, flags, cmd_out);
     try(err);
     ok_then(err, draw_rec(dom_root(dom), &ctx, &text));
     ok_then(err, draw_text_buf_commit(&ctx, &text));
@@ -806,9 +813,9 @@ htmldoc_draw_with_flags(HtmlDoc htmldoc[_1_], Session* s, unsigned flags) {
 
 
 static Err
-_htmldoc_draw_(HtmlDoc htmldoc[_1_], Session s[_1_]) {
+_htmldoc_draw_(HtmlDoc htmldoc[_1_], Session s[_1_], CmdOut cmd_out[_1_]) {
     unsigned flags = draw_ctx_flags_from_session(s) | DRAW_CTX_FLAG_TITLE;
-    return htmldoc_draw_with_flags(htmldoc, s, flags);
+    return htmldoc_draw_with_flags(htmldoc, s, flags, cmd_out);
 }
 
 
@@ -841,7 +848,7 @@ htmldoc_init_move_request(
 
     try_or_jump(e, Failure, htmldoc_fetch(d, uc, cmd_out, arlfn(FetchHistoryEntry,back)(hist)));
     htmldoc_eval_js_scripts_or_continue(d, s, cmd_out);
-    try_or_jump( e, Failure, _htmldoc_draw_(d, s));
+    try_or_jump( e, Failure, _htmldoc_draw_(d, s, cmd_out));
     try_or_jump( e, Failure,
         fetch_history_entry_update_title(arlfn(FetchHistoryEntry,back)(hist),htmldoc_title(d)));
 
@@ -1216,43 +1223,31 @@ typedef ArlOf(SplittedRow) SplittedTable;
 /********************************/
 
 
-/* static size_t compute_table_width(DrawTable table[_1_]) { */
-/*     size_t width = 0; */
-/*     size_t ncols = 0; */
-/*     foreach__(DrawRow, row, table) if (len__(row) > ncols) ncols += len__(row); */ 
+typedef struct  { size_t w,ix,splits; } ColWidth;
+#define T ColWidth
+#include <arl.h>
+static int colwidth_cmp_inv(const void* a, const void* b) {
+    const ColWidth* A = a;
+    const ColWidth* B = b;
+    return B->w - A->w;
+}
 
-/*     for (size_t c = 0; c < ncols; ++c) { */
-/*         size_t collen = 0; */
-/*         foreach__(DrawRow, row, table) { */
-/*             DrawTextBuf* cell = arlfn(DrawTextBuf,at)(row, c); */
-/*             if (cell) { */
-/*                 StrView buf = sv(draw_text_buf_buf(cell)); */
-/*                 for (;buf.len;) { */
-/*                     StrView line = strview_split_line(&buf); */
-/*                     if (line.len > collen) collen = line.len; */
-/*                 } */
-/*             } */
-/*         } */
-/*         width += collen; */
-/*     } */
-/*     return width; */
-/* } */
-
-
-static Err get_columns_widths(DrawTable table[_1_], ArlOf(size_t) out[_1_]) {
-    /* arlfn(size_t,reset)(out); */
+static Err get_columns_widths(DrawTable table[_1_], ArlOf(ColWidth) out[_1_]) {
     foreach__(DrawRow, row, table) {
         foreach__(DrawTextBuf, cell, row) {
             size_t ncol = cell - arlfn(DrawTextBuf,begin)(row);
-            if (len__(out) < ncol) return "error";
-            size_t* collen = arlfn(size_t,at)(out,ncol);
-            if (!collen) collen = arlfn(size_t,append)(out,&(size_t){0});
-            if (!collen) return "error";
+            if (len__(out) < ncol) return err_msg("error");
+            ColWidth* cw = arlfn(ColWidth,at)(out,ncol);
+            if (!cw) cw = arlfn(ColWidth,append)(out,&(ColWidth){0});
+            if (!cw) return err_msg("error");
 
-            StrView buf = sv(draw_text_buf_buf(cell));
+            StrView buf = strview_from_draw_text_buf(cell);
             for (;buf.len;) {
                 StrView line = strview_split_line(&buf);
-                if (line.len > *collen) *collen = line.len;
+                if (line.len > cw->w) {
+                    cw->w  = line.len;
+                    cw->ix = ncol;
+                }
             }
         }
     }
@@ -1260,31 +1255,97 @@ static Err get_columns_widths(DrawTable table[_1_], ArlOf(size_t) out[_1_]) {
 }
 
 
-static Err adjust_table(DrawTable table[_1_], size_t maxwidth) {
+#define col_width__(C) _Generic((C),ColWidth*: (C)->w / (1+(C)->splits))
+static Err split_column(DrawTable table[_1_], ColWidth cw[_1_]) {
+    foreach__(DrawRow, row, table) {
+        DrawTextBuf* cell = arlfn(DrawTextBuf,at)(row, cw->ix);
+        if (!cell) continue;
+        size_t length  = col_width__(cw);
+        StrView buf = strview_from_draw_text_buf(cell);
+        while (buf.len > length) {
+
+            const char* nl = memchr(buf.items, '\n', buf.len);
+            if (nl && cast__(size_t)(nl - buf.items) <= length) {
+                strview_split_line(&buf);
+                continue;
+            }
+
+            /* StrView line = strview_split_line(&buf); */
+            /* if (line.len <= col_width__(cw)) continue; */
+            char* p = (char*)buf.items + length - 1;//TODO0? -1
+            while (p > buf.items && !isspace(*p)) p--;
+            if (p == buf.items) {
+                if (buf.len <=3) return "TODO: cannot split line :p";
+                p = (char*)buf.items + length - 1;
+            }
+            *p = '\n';
+            strview_split_line(&buf);
+        }
+    }
+    return Ok;
+}
+
+static Err err_could_not_fit_the_table =  "could not fit table in screen";
+
+static Err split_colums(DrawTable table[_1_], ArlOf(ColWidth) ws[_1_], size_t exceeding_screen_cols) {
+
+    ColWidth* it  = arlfn(ColWidth,begin)(ws);
+    ColWidth* end = arlfn(ColWidth,end)(ws);
+    if (!it) err_msg("error");
+
+    while (exceeding_screen_cols && it < end) {
+        size_t prev_col_width = col_width__(it);
+        if (it + 1 == end || prev_col_width > col_width__(it+1) ) {
+            if (it->w < 2 * it->splits) return err_could_not_fit_the_table;
+            ++it->splits;
+            size_t reduction = prev_col_width - col_width__(it);
+            if (reduction <= exceeding_screen_cols) exceeding_screen_cols -= reduction;
+            else {
+                it->w      = prev_col_width - exceeding_screen_cols;
+                it->splits = 0;
+                break;
+            }
+        } else ++it;
+    }
+
+    foreach__(ColWidth,split_it,ws) try(split_column(table, split_it));
+    return Ok;
+}
+#undef col_width__
+
+
+static Err fit_table_to_screen(DrawTable table[_1_], size_t screen_width) {
     Err err                 = Ok;
-    ArlOf(size_t) colwidths = (ArlOf(size_t)){0};
+    ArlOf(ColWidth) colwidths = (ArlOf(ColWidth)){0};
 
     try_or_jump(err, Clean, get_columns_widths(table, &colwidths));
 
-    size_t width = 0;
-    foreach__(size_t,w,&colwidths) width+=*w;
-    if (width > maxwidth) { err="table too wide"; goto Clean; }
-        foreach__(DrawRow, row, table) {}
+    size_t totalwidth  = 0;
+
+    foreach__(ColWidth,w,&colwidths) totalwidth += w->w + 1;
+
+    if (totalwidth <= screen_width) goto Clean;
+    size_t exceeding_screen_cols = totalwidth - screen_width;
+
+    qsort(colwidths.items, colwidths.len, sizeof(*colwidths.items), colwidth_cmp_inv);
+    err = split_colums(table, &colwidths, exceeding_screen_cols);
 
 Clean:
-    arlfn(size_t,clean)(&colwidths);
+    arlfn(ColWidth,clean)(&colwidths);
     return err;
 }
 
 
 static Err draw_text_buf_split(DrawTextBuf b[_1_], SplittedCell textviews[_1_]) {
     TextBufMods partmods = (TextBufMods){0};
-    StrView     buf      = sv(draw_text_buf_buf(b));
+    StrView     buf      = strview_from_draw_text_buf(b);
     size_t      offset   = 0;
     ModAt*      modbeg   = arlfn(ModAt,begin)(draw_text_buf_mods(b));
     ModAt*      modend   = arlfn(ModAt,end)(draw_text_buf_mods(b));
     ModAt*      mod      = modbeg;
     Err         err      = Ok;
+
+    if (!buf.len) return Ok;
 
     for (;buf.len;) {
         StrView line = strview_split_line(&buf);
@@ -1313,7 +1374,7 @@ static Err draw_text_buf_split(DrawTextBuf b[_1_], SplittedCell textviews[_1_]) 
     }
 
     //Checks:
-    if ( offset - 1 != len__(draw_text_buf_buf(b))) 
+    if ( offset - 1 != strview_from_draw_text_buf(b).len) 
     { err="error: splitting cell did not keet the offset"; goto ErrClean; }
     if ( mod != modend) { err="error: splitting cell did not apply all mods"; goto ErrClean; }
 
@@ -1371,6 +1432,7 @@ static Err dom_read_table_row(DomNode n, DrawCtx ctx[_1_], DrawRow r[_1_]) {
     if (!dom_node_has_tag(n, HTML_TAG_TR)) return "error: expecting a tr tag";
 
     for (DomNode it = dom_node_first_elem_child(n); !isnull(it); it = dom_node_next_elem(it)) {
+        if (!dom_node_has_type(it, DOM_NODE_TYPE_ELEMENT)) continue; //TODO0 log this?
         switch(dom_node_tag(it)) {
             case HTML_TAG_TH:
             case HTML_TAG_TD: {
@@ -1378,11 +1440,12 @@ static Err dom_read_table_row(DomNode n, DrawCtx ctx[_1_], DrawRow r[_1_]) {
                 for (DomNode txt = dom_node_first_child(it); !isnull(txt); txt = dom_node_next(txt)) {
                     try( draw_rec(txt, ctx, &cell));
                 }
-
+                draw_text_buf_trim_left(&cell);
+                draw_text_buf_trim_right(&cell);
                 try( draw_row_append(r, &cell));
                 break;
             }
-            default: { return "error: expevting either th or td"; }
+            default: { return "error: expecting either th or td"; } 
         }
     }
     return Ok;
@@ -1421,7 +1484,6 @@ ErrClean:
 
 static Err
 draw_tag_table (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
-    /* size_t        nrows                   = *session_nrows(draw_ctx_session(ctx)); */
     Err           err                     = Ok;
     DrawTextBuf*  caption                 = &(DrawTextBuf){0};
     DrawTable     table                   = (DrawTable){0};
@@ -1429,6 +1491,8 @@ draw_tag_table (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     SplittedTable splitted_table          = (SplittedTable){0};
     ArlOf(size_t) rows_vertical_lengths   = (ArlOf(size_t)){0};
     ArlOf(size_t) cols_horizontal_lengths = (ArlOf(size_t)){0};
+
+    if (isnull(it)) return Ok;
 
     /* If included, the <caption> element must be the first child of its parent <table> element. */
     if (dom_node_has_tag(it, HTML_TAG_CAPTION)) {
@@ -1438,6 +1502,7 @@ draw_tag_table (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
 
     for (; !isnull(it); it = dom_node_next_elem(it)) {
+        if (!dom_node_has_type(it, DOM_NODE_TYPE_ELEMENT)) continue; //TODO0 log this?
         switch(dom_node_tag(it)) {
             case HTML_TAG_THEAD: /*TODO1: differentiate head, bofy and foot */
             case HTML_TAG_TBODY:
@@ -1459,12 +1524,10 @@ draw_tag_table (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     draw_text_buf_append(caption, svl("\n"));
     draw_ctx_append_sub_text(text, caption);
 
-    adjust_table(&table,  *session_nrows(draw_ctx_session(ctx)));
-    /* try_or_jump(err, Clean, get_columns_widths(&table, &colwidths)); */
 
-    /* size_t width = 0; */
-    /* foreach__(size_t,w,&colwidths) width+=*w; */
-    /* if (width > nrows) { err="table too wide"; goto Clean; } */
+    try_or_msg(err, Clean, err_could_not_fit_the_table, ctx,
+            fit_table_to_screen(&table,  *session_ncols(draw_ctx_session(ctx))));
+
 
     try_or_jump(err, Clean, draw_table_to_splitted_view(&table, &splitted_table));
     try_or_jump(err, Clean, splitted_table_row_vertical_lengths(&splitted_table, &rows_vertical_lengths));
@@ -1487,7 +1550,7 @@ draw_tag_table (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
                 CellPart* part = arlfn(CellPart,at)(cell, subrow);
                 size_t cp_horizontal_len = 0;
-                if (part && len__(draw_text_buf_buf(part))) {
+                if (part && strview_from_draw_text_buf(part).len) {
                     try_or_jump(err, Clean, draw_ctx_append_sub_text(text, part));
                     cp_horizontal_len = cell_part_horizontal_len(part);
                 }

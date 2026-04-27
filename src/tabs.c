@@ -1,4 +1,5 @@
 #include "tabs.h"
+#include "generic.h"
 #include "session.h"
 
 

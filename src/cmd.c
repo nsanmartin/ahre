@@ -5,6 +5,7 @@
 #include "range-parse.h"
 #include "readpass.h"
 #include "url.h"
+#include "generic.h"
 
 
 #define MsgLastLine EscCodePurple "%{- last line -}%" EscCodeReset
@@ -142,7 +143,7 @@ cmd_curl_version(CmdParams p[_1_]) {
 /* doc commands */
 
 Err
-cmd_doc_draw(CmdParams p[_1_]) { return session_doc_draw(p->s); }
+cmd_doc_draw(CmdParams p[_1_]) { return session_doc_draw(p->s, cmd_params_cmd_out(p)); }
 
 Err
 cmd_doc_js(CmdParams p[_1_]) { return session_doc_js(p->s, cmd_params_cmd_out(p)); }
@@ -416,12 +417,12 @@ _cmd_input_text_set_(Session session[_1_], DomNode n[_1_], const char* line, Cmd
         if (len && line[len-1] == '\n') --len;
         err = dom_node_set_attr(*n, svl("value"), sv(line, len));
     }
-    ok_then(err, session_doc_draw(session));
+    ok_then(err, session_doc_draw(session, cout));
     return err;
 }
 
 
-static Err _cmd_input_select_set_(Session session[_1_], DomNode n[_1_], const char* line) {
+static Err _cmd_input_select_set_(Session session[_1_], DomNode n[_1_], const char* line, CmdOut cmd_out[_1_]) {
     ArlOf(DomNode)* matches = &(ArlOf(DomNode)){0};
     Err e = Ok;
 
@@ -447,7 +448,7 @@ static Err _cmd_input_select_set_(Session session[_1_], DomNode n[_1_], const ch
         DomNode* selected = arlfn(DomNode,at)(matches,0);
         if (!selected) return "error: arlfn failure";
         e = dom_node_set_attr(*selected, svl("selected"), svl(""));
-        ok_then(e, session_doc_draw(session));
+        ok_then(e, session_doc_draw(session, cmd_out));
     } else e = "amiguous input";
 
 Clean_Matches:
@@ -476,7 +477,7 @@ Err cmd_input_set_node(CmdParams p[_1_], DomNode node) {
         return _cmd_input_text_set_(session, &node, ln, cmd_params_cmd_out(p)); //TODO: implement it properly
     else if (dom_node_attr_has_value(node, svl("type"), svl("password")))
         return _cmd_input_text_set_(session, &node, ln, cmd_params_cmd_out(p));
-    else if (dom_node_tag(node) == HTML_TAG_SELECT) return _cmd_input_select_set_(session, &node, ln);
+    else if (dom_node_tag(node) == HTML_TAG_SELECT) return _cmd_input_select_set_(session, &node, ln, cmd_params_cmd_out(p));
     else if (!dom_node_has_attr(node, svl("type")))
         return _cmd_input_text_set_(session, &node, ln, cmd_params_cmd_out(p));
 

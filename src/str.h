@@ -20,7 +20,6 @@
 #include <strings.h>
 
 #include "error.h"
-#include "generic.h"
 #include "utils.h"
 
 

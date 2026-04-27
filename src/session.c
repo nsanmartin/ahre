@@ -208,17 +208,17 @@ Err session_flush_cmd_out(Session s[_1_], CmdOut cout[_1_]) {
     return Ok;
 }
 
-Err session_htmldoc_redraw(HtmlDoc htmldoc[_1_], Session s[_1_]) {
+Err session_htmldoc_redraw(HtmlDoc htmldoc[_1_], Session s[_1_], CmdOut cmd_out[_1_]) {
     htmldoc_reset_draw(htmldoc);
     unsigned flags = draw_ctx_flags_from_session(s);
-    return htmldoc_draw_with_flags(htmldoc, s, flags);
+    return htmldoc_draw_with_flags(htmldoc, s, flags, cmd_out);
 }
 
 Err
-session_doc_draw(Session session[_1_]) {
+session_doc_draw(Session session[_1_], CmdOut cmd_out[_1_]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
-    return session_htmldoc_redraw(htmldoc, session);
+    return session_htmldoc_redraw(htmldoc, session, cmd_out);
 }
 
 

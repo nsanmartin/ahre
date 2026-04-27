@@ -1,6 +1,7 @@
 #include "user-out.h"
 #include "session.h"
 
+#include "generic.h"
 /*
  * Line mode
  */
@@ -66,6 +67,7 @@ static Err ui_vi_show_session_default(Session* s) {
             try( msg__(default_out, svl(EMPTY_BUFFER_MSG_)));
             err = session_flush_cmd_out_msg(s, default_out);
         } else {
+
 
             size_t line = textbuf_current_line(tb);
             if (!line) return "error: expecting current line number, not found";

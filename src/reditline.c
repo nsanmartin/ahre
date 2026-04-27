@@ -1,5 +1,6 @@
 #include "escape-codes.h"
 #include "reditline.h"
+#include "nongeneric.h"
 
 #define RL_DEFAULT_LINE_CAPACITY 256u
 

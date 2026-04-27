@@ -3,6 +3,7 @@
 #include "draw.h" 
 #include "bookmark.h"
 #include "session.h"
+#include "generic.h"
 
 static Err _bm_to_source_rec_tag_(DomNode node, Str out[_1_]);
 static Err _bm_to_source_append_text_(DomNode node, Str out[_1_]);

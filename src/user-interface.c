@@ -19,6 +19,7 @@
 #include "range-parse.h"
 #include "htmldoc.h"
 #include "writer.h"
+#include "generic.h"
 
 
 #define CMD_NO_PARAMS 0x1

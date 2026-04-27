@@ -1,6 +1,7 @@
 #include "tab-node.h"
 #include "session.h"
 #include "dom.h"
+#include "generic.h"
 
 
 Err tab_node_init_move_request(
