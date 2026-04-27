@@ -1216,22 +1216,92 @@ typedef ArlOf(SplittedRow) SplittedTable;
 /********************************/
 
 
+/* static size_t compute_table_width(DrawTable table[_1_]) { */
+/*     size_t width = 0; */
+/*     size_t ncols = 0; */
+/*     foreach__(DrawRow, row, table) if (len__(row) > ncols) ncols += len__(row); */ 
+
+/*     for (size_t c = 0; c < ncols; ++c) { */
+/*         size_t collen = 0; */
+/*         foreach__(DrawRow, row, table) { */
+/*             DrawTextBuf* cell = arlfn(DrawTextBuf,at)(row, c); */
+/*             if (cell) { */
+/*                 StrView buf = sv(draw_text_buf_buf(cell)); */
+/*                 for (;buf.len;) { */
+/*                     StrView line = strview_split_line(&buf); */
+/*                     if (line.len > collen) collen = line.len; */
+/*                 } */
+/*             } */
+/*         } */
+/*         width += collen; */
+/*     } */
+/*     return width; */
+/* } */
+
+
+static Err get_columns_widths(DrawTable table[_1_], ArlOf(size_t) out[_1_]) {
+    /* arlfn(size_t,reset)(out); */
+    foreach__(DrawRow, row, table) {
+        foreach__(DrawTextBuf, cell, row) {
+            size_t ncol = cell - arlfn(DrawTextBuf,begin)(row);
+            if (len__(out) < ncol) return "error";
+            size_t* collen = arlfn(size_t,at)(out,ncol);
+            if (!collen) collen = arlfn(size_t,append)(out,&(size_t){0});
+            if (!collen) return "error";
+
+            StrView buf = sv(draw_text_buf_buf(cell));
+            for (;buf.len;) {
+                StrView line = strview_split_line(&buf);
+                if (line.len > *collen) *collen = line.len;
+            }
+        }
+    }
+    return Ok;
+}
+
+
+static Err adjust_table(DrawTable table[_1_], size_t maxwidth) {
+    Err err                 = Ok;
+    ArlOf(size_t) colwidths = (ArlOf(size_t)){0};
+
+    try_or_jump(err, Clean, get_columns_widths(table, &colwidths));
+
+    size_t width = 0;
+    foreach__(size_t,w,&colwidths) width+=*w;
+    if (width > maxwidth) { err="table too wide"; goto Clean; }
+        foreach__(DrawRow, row, table) {}
+
+Clean:
+    arlfn(size_t,clean)(&colwidths);
+    return err;
+}
+
+
 static Err draw_text_buf_split(DrawTextBuf b[_1_], SplittedCell textviews[_1_]) {
     TextBufMods partmods = (TextBufMods){0};
     StrView     buf      = sv(draw_text_buf_buf(b));
     size_t      offset   = 0;
-    ModAt*      mod      = arlfn(ModAt,begin)(draw_text_buf_mods(b));
+    ModAt*      modbeg   = arlfn(ModAt,begin)(draw_text_buf_mods(b));
     ModAt*      modend   = arlfn(ModAt,end)(draw_text_buf_mods(b));
+    ModAt*      mod      = modbeg;
     Err         err      = Ok;
 
     for (;buf.len;) {
         StrView line = strview_split_line(&buf);
 
+        if (mod > modbeg) {
+            ModAt* prevmod = mod - 1;
+            for(; prevmod > modbeg && prevmod->tmod != text_mod_reset; --prevmod)
+                ;
+
+            for(;prevmod <= mod - 1; ++prevmod)
+                try_or_jump(err, ErrClean, textmod_append(&partmods, 0, prevmod->tmod));
+        }
+        
         for (;mod && mod < modend && mod->offset <= offset + line.len; ++mod) 
             try_or_jump(err, ErrClean, textmod_append_left_displaced(&partmods, *mod, offset));
 
         try_or_jump(err, ErrClean, textmod_append(&partmods, line.len, text_mod_reset));
-        //TODO0: apply beginning mods for pending mods in previous cels
 
         /* not setting capacity since it is a view, but it is not tidy, maybe i'd change it*/
         CellPart part = (DrawTextBuf){ .buf={.items=(char*)line.items, .len=line.len}, .mods=partmods }; 
@@ -1331,7 +1401,6 @@ static Err draw_table_to_splitted_view(DrawTable table[_1_], SplittedTable table
     SplittedRow  splitted_row  = (SplittedRow){0};
 
     foreach__(DrawRow, row, table) {
-
         foreach__(DrawTextBuf, cell, row) {
             splitted_cell = (SplittedCell){0};
             try_or_jump(err, ErrClean, draw_text_buf_split(cell, &splitted_cell));
@@ -1349,8 +1418,10 @@ ErrClean:
     return err;
 }
 
+
 static Err
 draw_tag_table (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+    /* size_t        nrows                   = *session_nrows(draw_ctx_session(ctx)); */
     Err           err                     = Ok;
     DrawTextBuf*  caption                 = &(DrawTextBuf){0};
     DrawTable     table                   = (DrawTable){0};
@@ -1364,8 +1435,6 @@ draw_tag_table (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
         try_or_jump(err, Clean, draw_rec_tag(it, ctx, caption));
         it = dom_skip_text(dom_node_next(it));
     }
-
-    
 
 
     for (; !isnull(it); it = dom_node_next_elem(it)) {
@@ -1390,9 +1459,17 @@ draw_tag_table (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     draw_text_buf_append(caption, svl("\n"));
     draw_ctx_append_sub_text(text, caption);
 
+    adjust_table(&table,  *session_nrows(draw_ctx_session(ctx)));
+    /* try_or_jump(err, Clean, get_columns_widths(&table, &colwidths)); */
+
+    /* size_t width = 0; */
+    /* foreach__(size_t,w,&colwidths) width+=*w; */
+    /* if (width > nrows) { err="table too wide"; goto Clean; } */
+
     try_or_jump(err, Clean, draw_table_to_splitted_view(&table, &splitted_table));
     try_or_jump(err, Clean, splitted_table_row_vertical_lengths(&splitted_table, &rows_vertical_lengths));
     try_or_jump(err, Clean, splitted_table_col_horizonal_lengths(&splitted_table, &cols_horizontal_lengths));
+
 
     foreach__(SplittedRow, row, &splitted_table) {
         size_t nrow = row - arlfn(SplittedRow,begin)(&splitted_table);
