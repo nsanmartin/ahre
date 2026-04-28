@@ -134,8 +134,15 @@ Err ui_vi_show_err(Session* s, char* err, size_t len) {
     (void)s;
     FILE* stream = stdout;
     if (err) {
-        if (mem_fwrite(err, len, stream)
-        || lit_write__("{type enter}", stream)) {
+        if (internal_error(err)) {
+            int suberr = mem_fwrite(EscCodeRed, lit_len__(EscCodeRed), stream)
+                      || mem_fwrite(INTERNAL_ERROR_PREFIX, lit_len__(INTERNAL_ERROR_PREFIX), stream)
+                      || mem_fwrite(EscCodeReset, lit_len__(EscCodeRed), stream)
+                      || mem_fwrite(err + lit_len__(INTERNAL_ERROR_PREFIX), len - lit_len__(INTERNAL_ERROR_PREFIX), stream)
+                      || lit_write__("{type enter}", stream)
+                      ;
+            if (suberr) return EscCodeRed"error: fprintf failure while attempting to show an error :/"EscCodeReset;
+        } else if (mem_fwrite(err, len, stream) || lit_write__("{type enter}", stream)) {
             return "error: fprintf failure while attempting to show an error :/";
         }
 

@@ -1236,10 +1236,10 @@ static Err get_columns_widths(DrawTable table[_1_], ArlOf(ColWidth) out[_1_]) {
     foreach__(DrawRow, row, table) {
         foreach__(DrawTextBuf, cell, row) {
             size_t ncol = cell - arlfn(DrawTextBuf,begin)(row);
-            if (len__(out) < ncol) return err_msg("error");
+            if (len__(out) < ncol) return err_internal("expecting col width calculated already");
             ColWidth* cw = arlfn(ColWidth,at)(out,ncol);
             if (!cw) cw = arlfn(ColWidth,append)(out,&(ColWidth){0});
-            if (!cw) return err_msg("error");
+            if (!cw) return err_internal("arl append failure");
 
             StrView buf = strview_from_draw_text_buf(cell);
             for (;buf.len;) {
@@ -1286,12 +1286,21 @@ static Err split_column(DrawTable table[_1_], ColWidth cw[_1_]) {
 }
 
 static Err err_could_not_fit_the_table =  "could not fit table in screen";
+#define ERRMSG__ "unexpected tag in table: 0x" 
+static char err_unexpected_tag_in_table[ sizeof(ERRMSG__) + sizeof(HtmlTag) ] = {  ERRMSG__ };
+
+static Err err_from_unexpected_tag_in_table(HtmlTag tag) {
+    size_t len;
+    try(int_to_str(tag, err_unexpected_tag_in_table + lit_len__(ERRMSG__), sizeof(HtmlTag), &len));
+    err_unexpected_tag_in_table[lit_len__(ERRMSG__) + len] = '\0';
+    return err_unexpected_tag_in_table;
+}
 
 static Err split_colums(DrawTable table[_1_], ArlOf(ColWidth) ws[_1_], size_t exceeding_screen_cols) {
 
     ColWidth* it  = arlfn(ColWidth,begin)(ws);
     ColWidth* end = arlfn(ColWidth,end)(ws);
-    if (!it) err_msg("error");
+    if (!it) err_internal("unexpected empty arl of column widths");
 
     while (exceeding_screen_cols && it < end) {
         size_t prev_col_width = col_width__(it);
@@ -1482,8 +1491,50 @@ ErrClean:
 }
 
 
+static
+Err draw_splitted_table(
+    SplittedTable splitted_table[_1_],
+    ArlOf(size_t) rows_vertical_lengths[_1_],
+    ArlOf(size_t) cols_horizontal_lengths[_1_],
+    DrawTextBuf   text[_1_]
+) {
+    foreach__(SplittedRow, row, splitted_table) {
+        size_t nrow = row - arlfn(SplittedRow,begin)(splitted_table);
+        size_t* row_vertical_len = arlfn(size_t,at)(rows_vertical_lengths,nrow);
+        if (!row_vertical_len) return err_internal("unexpected empty arl");
+
+        size_t subrow = 0;
+        for (; subrow < *row_vertical_len; ++subrow) {
+
+            foreach__(SplittedCell, cell, row) {
+                size_t ncol = cell - arlfn(SplittedCell,begin)(row);
+                size_t* col_horizontal_len = arlfn(size_t,at)(cols_horizontal_lengths,ncol);
+                if (!col_horizontal_len) return err_internal("arl to short");
+
+
+                CellPart* part = arlfn(CellPart,at)(cell, subrow);
+                size_t cp_horizontal_len = 0;
+                if (part && strview_from_draw_text_buf(part).len) {
+                    try(draw_ctx_append_sub_text(text, part));
+                    cp_horizontal_len = cell_part_horizontal_len(part);
+                }
+
+                if (*col_horizontal_len < cp_horizontal_len) err_internal("column length computation failed");
+                size_t spaces = *col_horizontal_len - cp_horizontal_len;
+                if (spaces)
+                    try(draw_text_buf_append(text, whitespace(spaces)));
+
+                if (1 + cell - arlfn(SplittedCell,end)(row)) try(draw_text_buf_append(text, svl(" ")));
+                else  try(draw_text_buf_append(text, svl("\n")));
+            }
+        }
+    }
+    return Ok;
+}
+
+
 static Err
-draw_tag_table (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     Err           err                     = Ok;
     DrawTextBuf*  caption                 = &(DrawTextBuf){0};
     DrawTable     table                   = (DrawTable){0};
@@ -1516,55 +1567,23 @@ draw_tag_table (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
             }
             break;
             case HTML_TAG_TABLE: break;
-            default: return err_fmt("unexpected tag: %x", dom_node_tag(it));
+            case HTML_TAG_COLGROUP: continue;
+            default: { err = err_from_unexpected_tag_in_table(dom_node_tag(it)); goto Clean; }
         }
     }
 
-
-    draw_text_buf_append(caption, svl("\n"));
-    draw_ctx_append_sub_text(text, caption);
-
-
     try_or_msg(err, Clean, err_could_not_fit_the_table, ctx,
             fit_table_to_screen(&table,  *session_ncols(draw_ctx_session(ctx))));
-
 
     try_or_jump(err, Clean, draw_table_to_splitted_view(&table, &splitted_table));
     try_or_jump(err, Clean, splitted_table_row_vertical_lengths(&splitted_table, &rows_vertical_lengths));
     try_or_jump(err, Clean, splitted_table_col_horizonal_lengths(&splitted_table, &cols_horizontal_lengths));
 
+    draw_text_buf_append(caption, svl("\n"));
+    draw_ctx_append_sub_text(text, caption);
 
-    foreach__(SplittedRow, row, &splitted_table) {
-        size_t nrow = row - arlfn(SplittedRow,begin)(&splitted_table);
-        size_t* row_vertical_len = arlfn(size_t,at)(&rows_vertical_lengths,nrow);
-        if (!row_vertical_len) err_jump(err,Clean);
-
-        size_t subrow = 0;
-        for (; subrow < *row_vertical_len; ++subrow) {
-
-            foreach__(SplittedCell, cell, row) {
-                size_t ncol = cell - arlfn(SplittedCell,begin)(row);
-                size_t* col_horizontal_len = arlfn(size_t,at)(&cols_horizontal_lengths,ncol);
-                if (!col_horizontal_len) err_jump(err,Clean);
-
-
-                CellPart* part = arlfn(CellPart,at)(cell, subrow);
-                size_t cp_horizontal_len = 0;
-                if (part && strview_from_draw_text_buf(part).len) {
-                    try_or_jump(err, Clean, draw_ctx_append_sub_text(text, part));
-                    cp_horizontal_len = cell_part_horizontal_len(part);
-                }
-
-                if (*col_horizontal_len < cp_horizontal_len) err_jump(err, Clean);
-                size_t spaces = *col_horizontal_len - cp_horizontal_len;
-                if (spaces)
-                    try_or_jump(err, Clean, draw_text_buf_append(text, whitespace(spaces)));
-
-                if (1 + cell - arlfn(SplittedCell,end)(row)) try_or_jump(err, Clean, draw_text_buf_append(text, svl(" ")));
-                else  try_or_jump(err, Clean, draw_text_buf_append(text, svl("\n")));
-            }
-        }
-    }
+    try_or_jump(err, Clean,
+        draw_splitted_table(&splitted_table, &rows_vertical_lengths, &cols_horizontal_lengths, text));
 Clean:
     arlfn(size_t,clean)(&cols_horizontal_lengths);
     arlfn(size_t,clean)(&rows_vertical_lengths);
@@ -1575,8 +1594,13 @@ Clean:
 }
 
 
-
-
+static Err
+draw_tag_table (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+    Err err = draw_tag_table_impl(node, ctx, text);
+    if (err != err_unexpected_tag_in_table) return err;
+    try(msg_ln__(get_cmd_out_(ctx), err));
+    return draw_iter_childs(node, ctx, text);
+}
 
 
 static Err

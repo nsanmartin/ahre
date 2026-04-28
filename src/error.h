@@ -12,10 +12,10 @@ typedef const char* Err;
 
 static inline Err err_skip(void) { return Ok; }
 
-static Err FATAL_ERROR_PREFIX = "error";
+static Err INTERNAL_ERROR_PREFIX = "error";
 
-static inline bool fatal_error(Err e) {
-    return !strncmp(e, FATAL_ERROR_PREFIX, sizeof(FATAL_ERROR_PREFIX) - 1);
+static inline bool internal_error(Err e) {
+    return !strncmp(e, INTERNAL_ERROR_PREFIX, sizeof(INTERNAL_ERROR_PREFIX) - 1);
 }
 
 #define validate_err(Value) _Generic((Value), Err: Value)
@@ -47,5 +47,6 @@ Err _err_fmt_vsnprinf_(Err fmt, ...);
 #define to_lit__(X) to_lit__impl__(X)
 #define err_jump(E,Tag) do{E="error: " __FILE__ ":" to_lit__(__LINE__); goto Tag;}while(0)
 #define file_line__  __FILE__ ":" to_lit__(__LINE__)
-#define err_msg(Msg) err_fmt("%s: %s", Msg, file_line__)
+
+#define err_internal(Msg) err_fmt("error: %s\n%s", Msg, file_line__)
 #endif
