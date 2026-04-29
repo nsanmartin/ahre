@@ -11,5 +11,6 @@
 
 #include <stddef.h>
 static inline size_t min_size_t(size_t x, size_t y) { return x < y ? x : y; }
+static inline unsigned min_unsigned(unsigned x, unsigned y) { return x < y ? x : y; }
 
 #endif

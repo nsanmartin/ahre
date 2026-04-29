@@ -172,7 +172,7 @@ static void _map_append_nullchar_(ArlOf(Str) strlist[_1_], CmdOut cmd_out[_1_]) 
 }
 
 
-//TODO0: althoug we expect small lengths, this may be done more inefficiently.
+//TODO0: althoug we expect small lengths, this may be done more efficiently.
 static Err
 get_failed_indexed(ArlOf(CurlPtr) easies[_1_], ArlOf(CurlPtr) failed[_1_], ArlOf(size_t) indexes[_1_]) {
     CurlPtr* first_easy = arlfn(CurlPtr,begin)(easies);

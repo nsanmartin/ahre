@@ -13,7 +13,7 @@
 
 /* mem fns */
 char* mem_is_whitespace(char* s, size_t len) {
-    while(len && *s && !isspace(*s)) { ++s; --len; }
+    while(len && *s && !isspace(*s)) { ++s; --len; } //TODO1: why !
     return len ? s : NULL;
 }
 
@@ -70,22 +70,6 @@ bool cstr_starts_with(const char* s, const char* t) {
 bool mem_eq_case(const char* m1, size_t l1, const char* m2, size_t l2) { 
     return m1 && m2 && l1 == l2 && !strncasecmp(m1, m2, l1);
 }
-
-
-/* static Err mem_get_indexes_of(char* data, size_t len, size_t offset, char c, ArlOf(size_t)* indexes) { */
-/*     char* end = data + len; */
-/*     char* it = data; */
-
-/*     for(; it < end;) { */
-/*         it = memchr(it, c, end-it); */
-/*         if (!it || it >= end) { break; } */
-/*         size_t off = offset + (it - data); */
-/*         if(NULL == arlfn(size_t, append)(indexes, &off)) { return "arlfn append failed"; } */
-/*         ++it; */
-/*     } */
-
-/*     return Ok; */
-/* } */
 
 
 /* cstr fns */
@@ -290,14 +274,14 @@ void strview_trim_space_in_place(StrView s[_1_]) {
 
 StrView strview_split_word(StrView s[_1_]) {
     StrView word = (StrView){.items=items__(s)};
-    while(s->len && !isspace(*(items__(s)))) { ++word.len; ++s->items; --s->len; }
+    while(s->len && is_visible(*(items__(s)))) { ++word.len; ++s->items; --s->len; }
     return word;
 }
 
 StrView cstr_split_word(const char* s[_1_]) {
     StrView word = (StrView){.items=*s};
-    while(**s && !isspace(**s)) { ++(*s); ++word.len; }
-    while(**s && isspace(**s)) { ++(*s); }
+    while(**s && is_visible(**s)) { ++(*s); ++word.len; }
+    while(**s && !is_visible(**s)) { ++(*s); }
     return word;
 }
 
@@ -308,7 +292,7 @@ StrView strview_from_mem_trim(const char* s, size_t len) {
 }
 
 bool strview_skip_space_inplace(StrView s[_1_]) {
-    for(; s->len && isspace(*s->items); --(s->len), ++(s->items))
+    for(; s->len && !is_visible(*s->items); --(s->len), ++(s->items))
         ;
     return s->len != 0;
 }
@@ -347,6 +331,7 @@ strview_from_cstr(const char* s) {
 StrView
 strview_split_line(StrView text[_1_]) {
     StrView line = *text;
+    if (!line.len) return line;
     const char* nl = memchr(line.items, '\n', line.len);
     if (nl) {
         line.len = nl - line.items;

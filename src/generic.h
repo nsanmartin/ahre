@@ -9,6 +9,13 @@
 #error "AHRE: generic.h cannot be included in other header file"
 #endif
 
+
+#define typeof_is_unsigned__(X) _Generic((X),\
+    int     : false,\
+    size_t  : true,\
+    unsigned: true\
+)
+
 #include "cmd-params.h"
 #include "draw.h"
 
@@ -23,10 +30,6 @@
 #define msg_ln__(P,M)    cmd_out_msg_append_ln(get_cmd_out_(P),M)
 #define screen__(P,M)    cmd_out_screen_append(get_cmd_out_(P),M)
 #define screen_ln__(P,M) cmd_out_screen_append_ln(get_cmd_out_(P),M)
-
-#define min__(X, Y) _Generic((X),\
-    size_t:_Generic((Y), size_t:min_size_t)\
-    )((X),(Y))
 
 
 

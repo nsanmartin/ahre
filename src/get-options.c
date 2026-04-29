@@ -56,7 +56,7 @@ static Err _session_conf_from_options_(int argc, char* argv[], CliParams cparams
 
     *sconf = (SessionConf) {
         .ui             = ui_vi_mode(), //ui_isocline(),
-        .ncols          = 88 > ncols ? ncols : 88,
+        .ncols          = ncols,
         .nrows          = nrows
     };
 

@@ -12,7 +12,7 @@ typedef const char* Err;
 
 static inline Err err_skip(void) { return Ok; }
 
-static Err INTERNAL_ERROR_PREFIX = "error";
+#define INTERNAL_ERROR_PREFIX "error"
 
 static inline bool internal_error(Err e) {
     return !strncmp(e, INTERNAL_ERROR_PREFIX, sizeof(INTERNAL_ERROR_PREFIX) - 1);
@@ -48,5 +48,5 @@ Err _err_fmt_vsnprinf_(Err fmt, ...);
 #define err_jump(E,Tag) do{E="error: " __FILE__ ":" to_lit__(__LINE__); goto Tag;}while(0)
 #define file_line__  __FILE__ ":" to_lit__(__LINE__)
 
-#define err_internal(Msg) err_fmt("error: %s\n%s", Msg, file_line__)
+#define err_internal(Msg) err_fmt("error: %s  %s\n", Msg, file_line__)
 #endif

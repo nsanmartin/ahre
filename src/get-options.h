@@ -8,6 +8,7 @@
 #include "url.h"
 
 #define T Request
+#define TClean request_clean
 #include <arl.h>
 
 typedef struct {

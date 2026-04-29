@@ -7,7 +7,7 @@
 #include "cmd-params.h"
 #include "bookmark.h"
 
-#define cmd_assert_no_params(Ln) do{ if(*Ln) return "error: expecting no params"; }while(0)
+#define cmd_assert_no_params(Ln) do{ if(*Ln) return "expecting no params"; }while(0)
 
 
 typedef Err (*SessionCmdFn)(CmdParams p[_1_]);
