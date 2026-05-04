@@ -37,7 +37,7 @@ typedef struct {
 typedef StrView (*StrViewProvider)(void);
 
 /* char fn */
-static inline bool is_visible(char c) { return isprint(c) && !isspace(c); }
+static inline bool is_visible(char c) { return !isspace(c); }
 
 /* mem fns */
 
