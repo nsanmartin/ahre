@@ -33,7 +33,6 @@ static bool is_trim_visible(char c) { return isprint(c) && !isspace(c); }
 static size_t 
 _strview_trim_left_count_newlines_(StrView s[_1_]) {
     size_t newlines = 0;
-    /* while(s->len && (!isprint(*(items__(s))) || !is_visible(*(items__(s))))) { */
     while(s->len && !is_trim_visible(*(items__(s)))) {
         newlines += *(items__(s)) == '\n';
         ++s->items;
@@ -1489,48 +1488,46 @@ split_colspan_columns(DrawTable table[_1_], ArlOf(ColWidth) colwidths[_1_], ColS
 static Err
 expand_columns_for_colspans(DrawTable table[_1_], size_t screen_width, ColSpan colspan[_1_], ArlOf(size_t) cols_hlen[_1_]) {
     Err err = Ok;
+    if (!len__(cols_hlen)) return Ok;//TODO1 is this possible and acceptable?
+    size_t col_count   = len__(cols_hlen);
+    size_t borders_len = col_count - 1;
     ArlOf(size_t) col_increases = (ArlOf(size_t)){0};
-    if (arlfn(size_t,init_reserve)(&col_increases, len__(cols_hlen))) return err_internal("arl reserve failure");
+    if (arlfn(size_t,init_reserve)(&col_increases, col_count)) return err_internal("arl reserve failure");
     col_increases.len = col_increases.capacity;
-    //TODO0: implement reserve in arl
-
 
     size_t totalwidth = 0;
-    foreach__(size_t,hl,cols_hlen) totalwidth += *hl + 1;
-    if (totalwidth > screen_width) { err=err_could_not_fit_the_table; goto Clean; }
-    size_t remaining_width = screen_width - totalwidth;
+    foreach__(size_t,chl,cols_hlen) totalwidth += *chl;
+    if (totalwidth + borders_len > screen_width) { err=err_could_not_fit_the_table; goto Clean; }
+    size_t remaining_width = screen_width - (totalwidth + borders_len);
 
     foreach__(Coordinates,coord, colspan_lst(colspan)) {
         unsigned* span = colspan_get(colspan,coord);
         if (!span || *span < 2) { err=err_internal("ColSpan precondition failure"); goto Clean; }
 
-        size_t* hl = arlfn(size_t,at)(cols_hlen,coord->col);
-        if (!hl) { err=err_internal("expecting column in arl"); goto Clean; }
+        size_t* chl = arlfn(size_t,at)(cols_hlen,coord->col);
+        if (!chl) { err=err_internal("expecting column in arl"); goto Clean; }
 
 
         DrawTextBuf* cell;
         try( draw_table_get_coords(table, coord, &cell));
         size_t cell_hlen = draw_text_buf_hlen(cell);
 
-        if (cell_hlen < *hl) continue;
+        if (cell_hlen <= *chl) continue;
 
         size_t spanlen = 0;
         size_t* it = arlfn(size_t,at)(cols_hlen,coord->col);
-        size_t* end   = arlfn(size_t,at)(cols_hlen,coord->col + cast__(size_t)span);
+        size_t* end   = arlfn(size_t,at)(cols_hlen,coord->col + *span);
         if (!it) { err=err_internal("expecting col at index"); goto Clean; }
         if (!end) end = arlfn(size_t,end)(cols_hlen);
         for (; it < end; ++it) spanlen += *it;
 
         /* column horizontal len is not zero and text fits the span */
-        if (*hl && cell_hlen < spanlen) continue;
+        if (*chl && cell_hlen <= spanlen) continue;
 
-        size_t newwidth = size_t_min(spanlen-*hl, cell_hlen);
-        if (newwidth > *hl) { //TODO: this could not be.
-            size_t incr = newwidth - *hl;
-            if (incr > remaining_width) {err=err_could_not_fit_the_table; }
-            remaining_width -= incr;
-            *hl              = newwidth;
-        }
+        size_t incr = cell_hlen - spanlen;
+        if (incr > remaining_width) {err=err_could_not_fit_the_table; }
+        remaining_width -= incr;
+        *chl            += incr;
     }
 Clean:
     arlfn(size_t,clean)(&col_increases);
@@ -1613,16 +1610,16 @@ ErrClean:
 static size_t splitted_celL_vertical_len(SplittedCell c[_1_]) { return len__(c); }
 static size_t cell_part_horizontal_len(CellPart c[_1_]) { return c->buf.len; }
 
-static Err splitted_table_row_vertical_lengths(SplittedTable t[_1_], ArlOf(size_t) rows_vertical_lengths[_1_]) {
+static Err splitted_table_row_vertical_lengths(SplittedTable t[_1_], ArlOf(size_t) rows_vlengths[_1_]) {
     SplittedRow* table_beg = arlfn(SplittedRow,begin)(t);
     foreach__(SplittedRow, row, t) {
         size_t nrow = row - table_beg;
 
-        if (len__(rows_vertical_lengths) < nrow) return "error: missing row lenght";
-        if (len__(rows_vertical_lengths) == nrow && !arlfn(size_t,append)(rows_vertical_lengths, &((size_t){0})))
+        if (len__(rows_vlengths) < nrow) return "error: missing row lenght";
+        if (len__(rows_vlengths) == nrow && !arlfn(size_t,append)(rows_vlengths, &((size_t){0})))
             return "error: arl append failure";
 
-        size_t* maxlen = arlfn(size_t,at)(rows_vertical_lengths, nrow);
+        size_t* maxlen = arlfn(size_t,at)(rows_vlengths, nrow);
         if (!maxlen) return "error: could noit compute vrow vertical lengths";
 
         foreach__(SplittedCell,cell, row)
@@ -1633,7 +1630,7 @@ static Err splitted_table_row_vertical_lengths(SplittedTable t[_1_], ArlOf(size_
 
 
 static Err
-splitted_table_col_horizonal_lengths(SplittedTable t[_1_], ColSpan colspan[_1_], ArlOf(size_t) cols_horizontal_lengths[_1_]) {
+splitted_table_col_horizonal_lengths(SplittedTable t[_1_], ColSpan colspan[_1_], ArlOf(size_t) cols_hlengths[_1_]) {
 
     foreach__(SplittedRow, row, t) {
         SplittedCell* row_beg = arlfn(SplittedCell,begin)(row);
@@ -1641,14 +1638,14 @@ splitted_table_col_horizonal_lengths(SplittedTable t[_1_], ColSpan colspan[_1_],
 
         foreach__(SplittedCell,cell, row) {
             size_t ncol = cell - row_beg;
-            if (len__(cols_horizontal_lengths) < ncol) return err_internal("missing row length");
-            if (len__(cols_horizontal_lengths) == ncol
-            && !arlfn(size_t,append)(cols_horizontal_lengths, &((size_t){0})))
+            if (len__(cols_hlengths) < ncol) return err_internal("missing row length");
+            if (len__(cols_hlengths) == ncol
+            && !arlfn(size_t,append)(cols_hlengths, &((size_t){0})))
                 return err_internal("arl append failure");
 
             if (colspan_get_interpreted(colspan, (Coordinates){.row=nrow,.col=ncol}) > 1) { continue; }
 
-            size_t* maxlen = arlfn(size_t,at)(cols_horizontal_lengths, ncol);
+            size_t* maxlen = arlfn(size_t,at)(cols_hlengths, ncol);
 
             foreach__(CellPart,cellpart,cell) {
                 if (cell_part_horizontal_len(cellpart) > *maxlen) *maxlen = cell_part_horizontal_len(cellpart);
@@ -1760,7 +1757,7 @@ ErrClean:
 
 static Err
 get_cell_horizontal_len(size_t ncol, size_t span, ArlOf(size_t) cols_hlengths[_1_], size_t out[_1_]) {
-    *out = span - 1;
+    *out = 0;
     size_t last_col = min_size_t(ncol + span, len__(cols_hlengths));
     for (size_t col = ncol; col < last_col; ++col) {
         size_t* clen = arlfn(size_t,at)(cols_hlengths, col);
@@ -1773,14 +1770,14 @@ get_cell_horizontal_len(size_t ncol, size_t span, ArlOf(size_t) cols_hlengths[_1
 static Err
 draw_splitted_table(
     SplittedTable splitted_table[_1_],
-    ArlOf(size_t) rows_vertical_lengths[_1_],
-    ArlOf(size_t) cols_horizontal_lengths[_1_],
+    ArlOf(size_t) rows_vlengths[_1_],
+    ArlOf(size_t) cols_hlengths[_1_],
     ColSpan       colspan[_1_],
     DrawTextBuf   text[_1_]
 ) {
     foreach__(SplittedRow, row, splitted_table) {
         size_t nrow = row - arlfn(SplittedRow,begin)(splitted_table);
-        size_t* row_vertical_len = arlfn(size_t,at)(rows_vertical_lengths,nrow);
+        size_t* row_vertical_len = arlfn(size_t,at)(rows_vlengths,nrow);
         if (!row_vertical_len) return err_internal("unexpected empty arl");
 
         size_t subrow = 0;
@@ -1793,7 +1790,7 @@ draw_splitted_table(
                 if (!span_value) continue;
 
                 size_t col_hlen;
-                try(get_cell_horizontal_len(ncol, span_value, cols_horizontal_lengths, &col_hlen));
+                try(get_cell_horizontal_len(ncol, span_value, cols_hlengths, &col_hlen));
 
                 CellPart* part = arlfn(CellPart,at)(cell, subrow);
                 size_t cell_part_hlen = 0;
@@ -1834,8 +1831,8 @@ draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     DrawTable     table                   = (DrawTable){0};
     DomNode       it                      = dom_skip_text(dom_node_first_child(node));
     SplittedTable splitted_table          = (SplittedTable){0};
-    ArlOf(size_t) rows_vertical_lengths   = (ArlOf(size_t)){0};
-    ArlOf(size_t) cols_horizontal_lengths = (ArlOf(size_t)){0};
+    ArlOf(size_t) rows_vlengths   = (ArlOf(size_t)){0};
+    ArlOf(size_t) cols_hlengths = (ArlOf(size_t)){0};
     ColSpan       colspan                 = (ColSpan){0};
     DrawRow       r                       = (DrawRow){0};
     size_t        screen_width            = *session_ncols(draw_ctx_session(ctx));
@@ -1881,10 +1878,10 @@ draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
 
     try_or_jump(err, Clean, draw_table_to_splitted_view(&table, &splitted_table));
-    try_or_jump(err, Clean, splitted_table_row_vertical_lengths(&splitted_table, &rows_vertical_lengths));
-    try_or_jump(err, Clean, splitted_table_col_horizonal_lengths(&splitted_table, &colspan, &cols_horizontal_lengths));
+    try_or_jump(err, Clean, splitted_table_row_vertical_lengths(&splitted_table, &rows_vlengths));
+    try_or_jump(err, Clean, splitted_table_col_horizonal_lengths(&splitted_table, &colspan, &cols_hlengths));
     try_or_jump(err, Clean, _expecting_err_could_not_fit_the_table(
-        expand_columns_for_colspans(&table, screen_width, &colspan, &cols_horizontal_lengths),
+        expand_columns_for_colspans(&table, screen_width, &colspan, &cols_hlengths),
         strview_from_draw_text_buf(caption),
         ctx
     ));
@@ -1894,12 +1891,12 @@ draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
     if (!ends_with_newline(strview_from_draw_text_buf(text))) draw_text_buf_append(text, svl("\n"));
     try_or_jump(err, Clean,
-        draw_splitted_table(&splitted_table, &rows_vertical_lengths, &cols_horizontal_lengths, &colspan, text));
+        draw_splitted_table(&splitted_table, &rows_vlengths, &cols_hlengths, &colspan, text));
 Clean:
     arlfn(DrawTextBuf,clean)(&r);
     colspan_clean(&colspan);
-    arlfn(size_t,clean)(&cols_horizontal_lengths);
-    arlfn(size_t,clean)(&rows_vertical_lengths);
+    arlfn(size_t,clean)(&cols_hlengths);
+    arlfn(size_t,clean)(&rows_vlengths);
     splitted_table_clean(&splitted_table);
     draw_table_clean(&table);
     draw_text_buf_clean(caption);

@@ -16,19 +16,33 @@
 #include "generic.h"
 
 
-static Err _fetch_many_urls_(Session session[_1_], ArlOf(Request) urls[_1_], CmdOut cout[_1_]) {
+static void warn_cmd_out_to_stderr(CmdOut cout[_1_]) {
+    Msg*    msg  = cmd_out_msg(cout);
+    if (!len__(msg_str(msg))) return;
+    StrView warn = svl("ahre warn: ");
+    mem_fwrite(warn.items, warn.len, stderr);
+    mem_fwrite(msg_items(msg), msg_len(msg), stderr);
+    fflush(stderr);
+    msg_clean(msg);
+}
+
+
+static Err fetch_params(Session session[_1_], ArlOf(Request) urls[_1_], CmdOut cout[_1_]) {
     foreach__(Request,r,urls) {
         Err err = session_fetch_request(session, r, session_url_client(session), cout);
         if (err) {
-            if (r->urlstr.len) {
-                StrView msg   = svl("ahre: fetching url ");
-                StrView url   = sv(r->urlstr);
-                StrView colon = svl(": ");
-                fwrite(msg.items, 1, msg.len, stderr);
-                fwrite(url.items, 1, url.len, stderr);
-                fwrite(colon.items, 1, colon.len, stderr);
+            Str     buf = (Str){0};
+            StrView url = sv(r->urlstr);
+
+            if (url.len) {
+                if (url.items[url.len-1] == '\0') --url.len;
+                else url = svl("UNKNOWN_PARAM");
+                Err append_err = str_append_z(&buf, sv(err));
+                if (!append_err) err = err_fmt("ahre (processing url '%s'): %s", url.items, buf.items);
+
+                request_clean(r);
+                str_clean(&buf);
             }
-            request_clean(r);
             return err;
         }
     }
@@ -89,11 +103,12 @@ int main(int argc, char **argv) {
         user_line_cleanup(&userln);
     }
     CmdOut* cout = &(CmdOut){0};
-    try_or_jump(err, Clean_Session, _fetch_many_urls_(&session, cparams_requests(&cparams), cout));
+    try_or_jump(err, Clean_Session, fetch_params(&session, cparams_requests(&cparams), cout));
 
     err = _loop_(&session, &userln, cout);
-    cmd_out_clean(cout);
 Clean_Session:
+    warn_cmd_out_to_stderr(cout);
+    cmd_out_clean(cout);
     session_close(&session);
     session_cleanup(&session);
 Clean_Cparams:
