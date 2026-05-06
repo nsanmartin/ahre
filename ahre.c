@@ -13,16 +13,21 @@
 #include "src/session.h"
 #include "src/reditline.h"
 #include "wrapper-curl.h"
-
+#include "generic.h"
 
 
 static Err _fetch_many_urls_(Session session[_1_], ArlOf(Request) urls[_1_], CmdOut cout[_1_]) {
-    for (Request* r = arlfn(Request,begin)(urls)
-        ; r != arlfn(Request,end)(urls)
-        ; ++r
-    ) {
+    foreach__(Request,r,urls) {
         Err err = session_fetch_request(session, r, session_url_client(session), cout);
         if (err) {
+            if (r->urlstr.len) {
+                StrView msg   = svl("ahre: fetching url ");
+                StrView url   = sv(r->urlstr);
+                StrView colon = svl(": ");
+                fwrite(msg.items, 1, msg.len, stderr);
+                fwrite(url.items, 1, url.len, stderr);
+                fwrite(colon.items, 1, colon.len, stderr);
+            }
             request_clean(r);
             return err;
         }
@@ -96,6 +101,6 @@ Clean_Cparams:
 Clean_Curl:
     w_curl_global_cleanup();
 
-    if (err) fprintf(stderr, "ahre: %s\n", err);
+    if (err) fprintf(stderr, "%s\n", err);
     return err ? EXIT_FAILURE : EXIT_SUCCESS;
 }

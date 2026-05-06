@@ -73,24 +73,38 @@ typedef struct { size_t col, row; } Coordinates;
 #include "lip.h"
 
 typedef LipOf(Coordinates,unsigned) CoordToUint;
-static Err coord_to_uint_init(CoordToUint map[_1_]) {
-    if (lipfn(Coordinates,unsigned,init)(map, (LipInitArgs){.sz=4}))
-        return "error: lip init";
+typedef struct { CoordToUint map; ArlOf(Coordinates) lst; } ColSpan;
+
+static inline CoordToUint* colspan_map(ColSpan cs[_1_]) { return &cs->map; }
+static inline ArlOf(Coordinates)* colspan_lst(ColSpan cs[_1_]) { return &cs->lst; }
+
+static Err colspan_init(ColSpan cs[_1_]) {
+    *cs              = (ColSpan){0};
+    if (lipfn(Coordinates,unsigned,init)(colspan_map(cs), (LipInitArgs){.sz=4}))
+        return err_internal("lip init failure)");
     return Ok;
 }
 
-static Err coord_to_uint_set(CoordToUint map[_1_], Coordinates k, unsigned v) {
-    if (lipfn(Coordinates,unsigned,set)(map, &k, &v))
-        return "error: lip set";
+static inline void colspan_clean(ColSpan cs[_1_]) {
+    lipfn(Coordinates,unsigned,clean)(colspan_map(cs));
+    arlfn(Coordinates,clean)(colspan_lst(cs));
+}
+
+static Err colspan_set(ColSpan cs[_1_], Coordinates k, unsigned v) {
+    if (lipfn(Coordinates,unsigned,set)(&cs->map, &k, &v))
+        return err_internal("lip set failure");
+
+    if ( v > 1 && !arlfn(Coordinates,append)(&cs->lst, &k))
+        return err_internal("arl append failure");
     return Ok;
 }
 
-static unsigned* coord_to_uint_get(CoordToUint map[_1_], Coordinates k[_1_]) {
-    return lipfn(Coordinates,unsigned,get)(map, k);
+static unsigned* colspan_get(ColSpan cs[_1_], Coordinates k[_1_]) {
+    return lipfn(Coordinates,unsigned,get)(&cs->map, k);
 }
 
-static unsigned colspan_get(CoordToUint map[_1_], Coordinates k) {
-    unsigned* v = coord_to_uint_get(map, &k);
+static unsigned colspan_get_interpreted(ColSpan cs[_1_], Coordinates k) {
+    unsigned* v = colspan_get(cs, &k);
     if (!v) return 1;
     return *v;
 }
@@ -137,9 +151,19 @@ static StrView strview_from_draw_text_buf(DrawTextBuf dtb[_1_]) {
     return (StrView){
         .items = buf->items + dtb->left_trim,
         .len   = buf->len - size_t_min(buf->len,dtb->left_trim)
-};
+    };
 }
 
+static size_t
+draw_text_buf_hlen(DrawTextBuf text[_1_]) {
+    size_t res = 0;
+    StrView buf = strview_from_draw_text_buf(text);
+    for (;buf.len;) {
+        StrView line = strview_split_line(&buf);
+        if (line.len > res) res = line.len;
+    }
+    return res;
+}
 
 static TextBufMods*
 draw_text_buf_mods(DrawTextBuf text[_1_]) { return &text->mods; }
@@ -1204,6 +1228,14 @@ typedef ArlOf(DrawTextBuf) DrawRow;
 typedef ArlOf(DrawRow) DrawTable;
 #define draw_table_clean arlfn(DrawRow,clean)
 #define draw_table_append(T,R) ((!arlfn(DrawRow,append)(T,R)) ? "error: draw_table_append failure":Ok)
+static Err draw_table_get_coords(DrawTable t[_1_], Coordinates coord[_1_], DrawTextBuf* out[_1_]) {
+    DrawRow* r = arlfn(DrawRow,at)(t,coord->row);
+    if (!r) return err_internal("expecting row at index");
+    DrawTextBuf* cell = arlfn(DrawTextBuf,at)(r,coord->col);
+    if (!cell) return err_internal("expecting col at row index");
+    *out = cell; 
+    return Ok;
+}
 
 /********************************/
 
@@ -1294,8 +1326,8 @@ static size_t compute_colspan_len(size_t ncol, size_t span, ArlOf(ColWidth) cwid
     return res;
 }
 
-static size_t colspan_get_actual_length(CoordToUint map[_1_], Coordinates coord, ColWidth cw[_1_], ArlOf(ColWidth) cwidths[_1_]) {
-    unsigned span = colspan_get(map, coord);
+static size_t colspan_get_actual_length(ColSpan cs[_1_], Coordinates coord, ColWidth cw[_1_], ArlOf(ColWidth) cwidths[_1_]) {
+    unsigned span = colspan_get_interpreted(cs, coord);
     switch (span) {
         case 0 : return len__(cwidths);
         case 1 : return col_width__(cw);
@@ -1306,7 +1338,7 @@ static size_t colspan_get_actual_length(CoordToUint map[_1_], Coordinates coord,
 
 
 /*
- * Computes the maximum line inside each columns and assigns it that width. If the cell spans other columns,
+ * Computes the maximum line inside each columns and assigns the column that width. If the cell spans other columns,
  * it is ignored and computed in a posterior pass.
  */
 #define nrow__(T,R) (R)-arlfn(DrawRow,begin)(T)
@@ -1314,25 +1346,17 @@ static size_t colspan_get_actual_length(CoordToUint map[_1_], Coordinates coord,
 static Err
 get_unsplitted_columns_widths(
     DrawTable          table[_1_],
-    CoordToUint        colspan[_1_],
-    ArlOf(Coordinates) cspancoords[_1_],
     ArlOf(ColWidth)    out[_1_]
 ) {
 #define mk_coordinates(R,C) (Coordinates){.row=(R),.col=(C)}
     foreach__(DrawRow, row, table) {
         foreach__(DrawTextBuf, cell, row) {
-            size_t nrow = nrow__(table, row);
             size_t ncol = ncol__(row, cell);
             if (len__(out) < ncol) return err_internal("expecting col width calculated already");
             ColWidth* cw = arlfn(ColWidth,at)(out,ncol);
             if (!cw) cw = arlfn(ColWidth,append)(out,&(ColWidth){.ix=ncol});
             if (!cw) return "arl append failure";
 
-            Coordinates coord = mk_coordinates(nrow,ncol);
-            if (colspan_get(colspan, coord) > 1) {
-                if (!arlfn(Coordinates,append)(cspancoords,&coord)) return err_internal("arl failure");
-                continue;
-            }
 
             if (cw->ix != ncol) return err_internal("expecting index match ncol here");
             StrView buf = strview_from_draw_text_buf(cell);
@@ -1352,7 +1376,9 @@ get_unsplitted_columns_widths(
 static Err err_could_not_fit_the_table =  "could not fit table in screen";
 #define ERRMSG__ "unexpected tag in table: 0x" 
 
-static Err split_cell(size_t length, DrawTextBuf cell[_1_]) {
+static Err
+split_cell(size_t length, DrawTextBuf cell[_1_]) {
+    if (!length) return err_internal("not expecting zero length cell");
     StrView buf = strview_from_draw_text_buf(cell);
     while (buf.len > length) {
 
@@ -1377,34 +1403,14 @@ static Err split_cell(size_t length, DrawTextBuf cell[_1_]) {
 }
 
 static Err
-split_column(DrawTable table[_1_], ColWidth cw[_1_], ArlOf(ColWidth) cwidths[_1_], CoordToUint colspan[_1_]) {
+split_column(DrawTable table[_1_], ColWidth cw[_1_], ArlOf(ColWidth) cwidths[_1_], ColSpan colspan[_1_]) {
     foreach__(DrawRow, row, table) {
         size_t ncol = cw->ix;
         size_t nrow = nrow__(table,row);
         DrawTextBuf* cell = arlfn(DrawTextBuf,at)(row, cw->ix);
         if (!cell) continue;
         size_t length  = colspan_get_actual_length(colspan, (Coordinates){.row=nrow, .col=ncol}, cw, cwidths);
-        split_cell(length, cell);
-        /* StrView buf = strview_from_draw_text_buf(cell); */
-        /* while (buf.len > length) { */
-
-        /*     const char* nl = memchr(buf.items, '\n', buf.len); */
-        /*     if (nl && cast__(size_t)(nl - buf.items) <= length) { */
-        /*         strview_split_line(&buf); */
-        /*         continue; */
-        /*     } */
-
-        /*     char* p = (char*)buf.items + size_t_min(buf.len, length - 1); */
-        /*     while (p > buf.items && is_visible(*p)) p--; */
-        /*     if (p < buf.items) return err_internal("why?"); */
-        /*     if (p == buf.items) { */
-        /*         if (buf.len <=3) return err_could_not_fit_the_table; */
-        /*         if (buf.len < length) return err_internal("this was not expected"); */
-        /*         p = (char*)buf.items + length - 1; */
-        /*     } */
-        /*     *p = '\n'; */
-        /*     strview_split_line(&buf); */
-        //}
+        try(split_cell(length, cell));
     }
     return Ok;
 }
@@ -1425,7 +1431,7 @@ static Err err_from_unexpected_tag_in_table(HtmlTag tag) {
  * accordinly, ie, insert newlines (not *insert* but replace spaces by them).
  */ 
 static Err
-split_columns(DrawTable table[_1_], size_t exceeding_screen_cols, CoordToUint colspan[_1_], ArlOf(ColWidth) ws[_1_]) {
+split_columns(DrawTable table[_1_], size_t exceeding_screen_cols, ColSpan colspan[_1_], ArlOf(ColWidth) ws[_1_]) {
     static size_t MIN_COL_WIDTH = 3;
 
     if (!len__(ws)) return Ok;
@@ -1459,14 +1465,15 @@ split_columns(DrawTable table[_1_], size_t exceeding_screen_cols, CoordToUint co
 
 
 static Err
-split_colspan_columns(
-    DrawTable table[_1_], ArlOf(ColWidth) colwidths[_1_], CoordToUint colspan[_1_], ArlOf(Coordinates) cspancoords[_1_]
-) {
-    foreach__(Coordinates,coord,cspancoords) {
-        unsigned* v = coord_to_uint_get(colspan, coord);
+split_colspan_columns(DrawTable table[_1_], ArlOf(ColWidth) colwidths[_1_], ColSpan colspan[_1_]) {
+    foreach__(Coordinates,coord, colspan_lst(colspan)) {
+        unsigned* v = colspan_get(colspan, coord);
         if (!v) return err_internal("expecting colspan for coord");
         if (*v < 2) return err_internal("expecting colspan gt 2");
         size_t length = compute_colspan_len(coord->col, *v, colwidths);
+
+        if (!length) return Ok;
+
         DrawRow* row  = arlfn(DrawRow,at)(table, coord->row);
         if (!row) return err_internal("arl failure: empty at");
         DrawTextBuf* cell = arlfn(DrawTextBuf,at)(row, coord->col);
@@ -1479,13 +1486,64 @@ split_colspan_columns(
 }
 
 
-static Err fit_table_to_screen(DrawTable table[_1_], size_t screen_width, CoordToUint colspan[_1_]) {
+static Err
+expand_columns_for_colspans(DrawTable table[_1_], size_t screen_width, ColSpan colspan[_1_], ArlOf(size_t) cols_hlen[_1_]) {
+    Err err = Ok;
+    ArlOf(size_t) col_increases = (ArlOf(size_t)){0};
+    if (arlfn(size_t,init_reserve)(&col_increases, len__(cols_hlen))) return err_internal("arl reserve failure");
+    col_increases.len = col_increases.capacity;
+    //TODO0: implement reserve in arl
+
+
+    size_t totalwidth = 0;
+    foreach__(size_t,hl,cols_hlen) totalwidth += *hl + 1;
+    if (totalwidth > screen_width) { err=err_could_not_fit_the_table; goto Clean; }
+    size_t remaining_width = screen_width - totalwidth;
+
+    foreach__(Coordinates,coord, colspan_lst(colspan)) {
+        unsigned* span = colspan_get(colspan,coord);
+        if (!span || *span < 2) { err=err_internal("ColSpan precondition failure"); goto Clean; }
+
+        size_t* hl = arlfn(size_t,at)(cols_hlen,coord->col);
+        if (!hl) { err=err_internal("expecting column in arl"); goto Clean; }
+
+
+        DrawTextBuf* cell;
+        try( draw_table_get_coords(table, coord, &cell));
+        size_t cell_hlen = draw_text_buf_hlen(cell);
+
+        if (cell_hlen < *hl) continue;
+
+        size_t spanlen = 0;
+        size_t* it = arlfn(size_t,at)(cols_hlen,coord->col);
+        size_t* end   = arlfn(size_t,at)(cols_hlen,coord->col + cast__(size_t)span);
+        if (!it) { err=err_internal("expecting col at index"); goto Clean; }
+        if (!end) end = arlfn(size_t,end)(cols_hlen);
+        for (; it < end; ++it) spanlen += *it;
+
+        /* column horizontal len is not zero and text fits the span */
+        if (*hl && cell_hlen < spanlen) continue;
+
+        size_t newwidth = size_t_min(spanlen-*hl, cell_hlen);
+        if (newwidth > *hl) { //TODO: this could not be.
+            size_t incr = newwidth - *hl;
+            if (incr > remaining_width) {err=err_could_not_fit_the_table; }
+            remaining_width -= incr;
+            *hl              = newwidth;
+        }
+    }
+Clean:
+    arlfn(size_t,clean)(&col_increases);
+    return err;
+}
+
+
+static Err
+fit_table_to_screen(DrawTable table[_1_], size_t screen_width, ColSpan colspan[_1_]) {
     Err err                 = Ok;
     ArlOf(ColWidth) colwidths = (ArlOf(ColWidth)){0};
 
-    ArlOf(Coordinates) cspancoords = (ArlOf(Coordinates)){0};
-    try_or_jump(err, Clean, get_unsplitted_columns_widths(table, colspan, &cspancoords, &colwidths));
-
+    try_or_jump(err, Clean, get_unsplitted_columns_widths(table, &colwidths));
     size_t totalwidth  = 0;
 
     foreach__(ColWidth,w,&colwidths) totalwidth += w->w + 1;
@@ -1495,9 +1553,8 @@ static Err fit_table_to_screen(DrawTable table[_1_], size_t screen_width, CoordT
         try_or_jump(err, Clean, split_columns(table, exceeding_screen_cols, colspan, &colwidths));
     }
 
-    err = split_colspan_columns(table, &colwidths, colspan, &cspancoords);
+    err = split_colspan_columns(table, &colwidths, colspan);
 Clean:
-    arlfn(Coordinates,clean)(&cspancoords);
     arlfn(ColWidth,clean)(&colwidths);
     return err;
 }
@@ -1541,7 +1598,7 @@ draw_text_buf_split(DrawTextBuf b[_1_], SplittedCell textviews[_1_]) {
         offset += line.len + 1;
     }
 
-    //Checks:
+    /* Checks: */
     if ( offset - 1 != strview_from_draw_text_buf(b).len) 
     { err="error: splitting cell did not keet the offset"; goto ErrClean; }
     if ( mod != modend) { err="error: splitting cell did not apply all mods"; goto ErrClean; }
@@ -1576,9 +1633,7 @@ static Err splitted_table_row_vertical_lengths(SplittedTable t[_1_], ArlOf(size_
 
 
 static Err
-splitted_table_col_horizonal_lengths(
-    SplittedTable t[_1_], CoordToUint colspan[_1_], ArlOf(size_t) cols_horizontal_lengths[_1_]
-) {
+splitted_table_col_horizonal_lengths(SplittedTable t[_1_], ColSpan colspan[_1_], ArlOf(size_t) cols_horizontal_lengths[_1_]) {
 
     foreach__(SplittedRow, row, t) {
         SplittedCell* row_beg = arlfn(SplittedCell,begin)(row);
@@ -1586,10 +1641,12 @@ splitted_table_col_horizonal_lengths(
 
         foreach__(SplittedCell,cell, row) {
             size_t ncol = cell - row_beg;
-            if (len__(cols_horizontal_lengths) < ncol) return "error: missing row length";
-            if (len__(cols_horizontal_lengths) == ncol && !arlfn(size_t,append)(cols_horizontal_lengths, &((size_t){0})))
-                return "error: arl append failure";
-            if (colspan_get(colspan, (Coordinates){.row=nrow,.col=ncol}) > 1) { continue; }
+            if (len__(cols_horizontal_lengths) < ncol) return err_internal("missing row length");
+            if (len__(cols_horizontal_lengths) == ncol
+            && !arlfn(size_t,append)(cols_horizontal_lengths, &((size_t){0})))
+                return err_internal("arl append failure");
+
+            if (colspan_get_interpreted(colspan, (Coordinates){.row=nrow,.col=ncol}) > 1) { continue; }
 
             size_t* maxlen = arlfn(size_t,at)(cols_horizontal_lengths, ncol);
 
@@ -1637,7 +1694,7 @@ Clean:
  *   the colspan entry in the colspan map
  */
 static Err
-dom_read_table_row(DomNode n, DrawCtx ctx[_1_], DrawRow r[_1_], CoordToUint colspan[_1_], size_t nrow) {
+dom_read_table_row(DomNode n, DrawCtx ctx[_1_], DrawRow r[_1_], ColSpan colspan[_1_], size_t nrow) {
     if (!dom_node_has_tag(n, HTML_TAG_TR)) return "error: expecting a tr tag";
 
 
@@ -1648,12 +1705,12 @@ dom_read_table_row(DomNode n, DrawCtx ctx[_1_], DrawRow r[_1_], CoordToUint cols
             case HTML_TAG_TD: {
                 size_t   ncol = len__(r); /* cell is about to be appended */
                 unsigned span = parse_colspan(it);
-                if (span > 1) try(coord_to_uint_set(colspan, (Coordinates){.row=nrow,.col=ncol}, span));
+                if (span > 1) try(colspan_set(colspan, (Coordinates){.row=nrow,.col=ncol}, span));
 
                 try(draw_tag_td(it, ctx, r));
 
                 for (size_t i = 1; i < span; ++i) {
-                    try(coord_to_uint_set(colspan, (Coordinates){.row=nrow, .col=ncol + i}, 0));
+                    try(colspan_set(colspan, (Coordinates){.row=nrow, .col=ncol + i}, 0));
                     try(draw_row_append(r, &(DrawTextBuf){0}));
                 }
                 break;
@@ -1718,7 +1775,7 @@ draw_splitted_table(
     SplittedTable splitted_table[_1_],
     ArlOf(size_t) rows_vertical_lengths[_1_],
     ArlOf(size_t) cols_horizontal_lengths[_1_],
-    CoordToUint   colspan[_1_],
+    ColSpan       colspan[_1_],
     DrawTextBuf   text[_1_]
 ) {
     foreach__(SplittedRow, row, splitted_table) {
@@ -1732,7 +1789,7 @@ draw_splitted_table(
             foreach__(SplittedCell, cell, row) {
                 size_t ncol = cell - arlfn(SplittedCell,begin)(row);
 
-                unsigned span_value = colspan_get(colspan, (Coordinates){.row=nrow,.col=ncol});
+                unsigned span_value = colspan_get_interpreted(colspan, (Coordinates){.row=nrow,.col=ncol});
                 if (!span_value) continue;
 
                 size_t col_hlen;
@@ -1761,6 +1818,15 @@ draw_splitted_table(
 
 static bool ends_with_newline(StrView v) { return !v.len || v.items[v.len-1] == '\n'; }
 
+static Err _expecting_err_could_not_fit_the_table(Err expr, StrView caption, DrawCtx ctx[_1_]) {
+    if (expr == err_could_not_fit_the_table) { 
+        msg__(ctx, sv(err_could_not_fit_the_table));
+        if (caption.len) msg_ln__(ctx, caption);
+        else  msg_ln__(ctx, svl(": <TABLE WITH NO CAPTION>"));
+        return Ok;
+    } else return expr;
+}
+
 static Err
 draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     Err           err                     = Ok;
@@ -1770,25 +1836,26 @@ draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     SplittedTable splitted_table          = (SplittedTable){0};
     ArlOf(size_t) rows_vertical_lengths   = (ArlOf(size_t)){0};
     ArlOf(size_t) cols_horizontal_lengths = (ArlOf(size_t)){0};
-    CoordToUint   colspan                 = (LipOf(Coordinates,unsigned)){0};
+    ColSpan       colspan                 = (ColSpan){0};
     DrawRow       r                       = (DrawRow){0};
+    size_t        screen_width            = *session_ncols(draw_ctx_session(ctx));
 
     if (isnull(it)) return Ok;
 
-    try(coord_to_uint_init(&colspan));
+    try(colspan_init(&colspan));
 
     /* If included, the <caption> element must be the first child of its parent <table> element. */
     if (dom_node_has_tag(it, HTML_TAG_CAPTION)) {
         try_or_jump(err, Clean, draw_rec_tag(it, ctx, caption));
         it = dom_skip_text(dom_node_next(it));
     }
-    size_t caption_len = strview_from_draw_text_buf(caption).len;
+    /* size_t caption_len = strview_from_draw_text_buf(caption).len; */
 
 
     for (; !isnull(it); it = dom_node_next_elem(it)) {
         if (!dom_node_has_type(it, DOM_NODE_TYPE_ELEMENT)) continue; //TODO0 log this?
         switch(dom_node_tag(it)) {
-            case HTML_TAG_THEAD: /*TODO1: differentiate head, bofy and foot */
+            case HTML_TAG_THEAD: /*TODO1: differentiate head, body and foot */
             case HTML_TAG_TBODY:
             case HTML_TAG_TFOOT:
             {
@@ -1806,17 +1873,21 @@ draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
         }
     }
 
-    Err err_fit = fit_table_to_screen(&table,  *session_ncols(draw_ctx_session(ctx)), &colspan);
-    if (err_fit == err_could_not_fit_the_table) { 
-        msg__(ctx, sv(err_could_not_fit_the_table));
-        if (caption_len) msg_ln__(ctx, strview_from_draw_text_buf(caption));
-        else  msg_ln__(ctx, svl(" <NO CAPTION>"));
-    } else try_or_jump(err, Clean, err_fit);
+    try_or_jump(err, Clean, _expecting_err_could_not_fit_the_table(
+        fit_table_to_screen(&table, screen_width, &colspan),
+        strview_from_draw_text_buf(caption),
+        ctx
+    ));
 
 
     try_or_jump(err, Clean, draw_table_to_splitted_view(&table, &splitted_table));
     try_or_jump(err, Clean, splitted_table_row_vertical_lengths(&splitted_table, &rows_vertical_lengths));
     try_or_jump(err, Clean, splitted_table_col_horizonal_lengths(&splitted_table, &colspan, &cols_horizontal_lengths));
+    try_or_jump(err, Clean, _expecting_err_could_not_fit_the_table(
+        expand_columns_for_colspans(&table, screen_width, &colspan, &cols_horizontal_lengths),
+        strview_from_draw_text_buf(caption),
+        ctx
+    ));
 
     draw_text_buf_append(caption, svl("\n"));
     draw_ctx_append_sub_text(text, caption);
@@ -1826,7 +1897,7 @@ draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
         draw_splitted_table(&splitted_table, &rows_vertical_lengths, &cols_horizontal_lengths, &colspan, text));
 Clean:
     arlfn(DrawTextBuf,clean)(&r);
-    lipfn(Coordinates,unsigned,clean)(&colspan);
+    colspan_clean(&colspan);
     arlfn(size_t,clean)(&cols_horizontal_lengths);
     arlfn(size_t,clean)(&rows_vertical_lengths);
     splitted_table_clean(&splitted_table);

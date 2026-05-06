@@ -26,6 +26,7 @@ const char* parse_ull(const char* tk, uintmax_t* ullp);
 
 static inline bool   file_exists(const char* filename) { return !access(filename, F_OK); }
 static inline size_t size_t_min(size_t x, size_t y) { return x <= y ? x : y; }
+static inline size_t size_t_max(size_t x, size_t y) { return x >= y ? x : y; }
 
 
 #define cast__(T) (T)
