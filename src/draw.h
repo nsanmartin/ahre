@@ -34,6 +34,7 @@ static inline unsigned draw_ctx_flags_from_session(Session s[_1_]) {
     return flags;
 }
 
+StrView draw_ctx_url_strview(DrawCtx ctx[_1_]);
 static inline CmdOut* draw_ctx_cmd_out(DrawCtx ctx[_1_]) { return ctx->cmd_out; }
 static inline ArlOf(EscCode)* draw_ctx_esc_code_stack(DrawCtx ctx[_1_]) { return &ctx->esc_code_stack; }
 static inline HtmlDoc* draw_ctx_htmldoc(DrawCtx ctx[_1_]) { return ctx->htmldoc; }

@@ -208,8 +208,8 @@ w_curl_url_get_malloc(CURLU* cu, CURLUPart part, char* out[_1_]) {
  */
     CURLUcode code = w_curl_get_part(cu, part, out, 0);
     if (code != CURLUE_OK)
-        return err_fmt("error getting url from CURLU: %s", curl_url_strerror(code));
-    if (!*out) return "error: curl_url_get returned NULL wioth no error";
+        return err_fmt("warn: getting url from CURLU: %s", curl_url_strerror(code));
+    if (!*out) return "error: curl_url_get returned NULL with no error";
     return Ok;
 }
 
@@ -226,6 +226,6 @@ Err w_curl_url_set(CURLU* u,  CURLUPart part, const char* cstr, unsigned flags) 
     if (!cstr || !*cstr) return "error: no contents for CURLUPart";
     CURLUcode code = curl_url_set(u, part, cstr, flags);
     return code == CURLUE_OK 
-        ? Ok : err_fmt("error setting url with '%s': %s", cstr, curl_url_strerror(code));
+        ? Ok : err_fmt("warn: setting url with '%s': %s", cstr, curl_url_strerror(code));
 }
 

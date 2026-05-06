@@ -9,7 +9,7 @@ static unsigned _curl_free_calls = 0;
 
 static inline FILE* _mock_fopen_with(const char *restrict pathname, const char *restrict mode) {
     utest_ignore_params(mode);
-    if (strcmp(items__(_mock_fopen_pathname_param), pathname)) return NULL;
+    if (strcmp((_mock_fopen_pathname_param)->items, pathname)) return NULL;
     return (FILE*)-1;
 }
 

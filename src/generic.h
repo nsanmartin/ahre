@@ -5,7 +5,7 @@
 #ifndef __GENERIC_AHRE_H__
 #define __GENERIC_AHRE_H__
 
-#if __INCLUDE_LEVEL__ > 1
+#if !AHRE_UTEST && __INCLUDE_LEVEL__ > 1
 #error "AHRE: generic.h cannot be included in other header file"
 #endif
 

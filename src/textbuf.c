@@ -80,7 +80,7 @@ _insert_missing_newlines_(TextBuf tb[_1_], size_t maxlen, ArlOf(size_t) insertio
     Str* buf = &(BufOf(char)){0};
     while (textbuf_get_line(tb, n++, &line)) {
         Err err;
-        if (line.len && line.len <= maxlen) {
+        if (line.len && strview_count_utf8(line) <= maxlen) {
             /* line includes the '\n' */
             err = str_append(buf, line);
         } else {

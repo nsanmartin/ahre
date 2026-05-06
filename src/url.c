@@ -126,7 +126,7 @@ static Err _url_from_post_request_(Request r[_1_], UrlClient uc[_1_]) {
     if (len__(request_urlstr(r))) {
         CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, items__(request_urlstr(r)), CURLU_DEFAULT_SCHEME);
         if (curl_code != CURLUE_OK) {
-            err = err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
+            err = err_fmt("warn: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
             goto Clean_Url;
         }
     }
@@ -194,7 +194,7 @@ Err url_from_get_request(Request r[_1_]) {
         const char* url_str = file.len ? file.items : items__(request_urlstr(r));
         CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, url_str, CURLU_DEFAULT_SCHEME);
         if (curl_code != CURLUE_OK) {
-            err = err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
+            err = err_fmt("warn: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
             goto Failure_Clean_File_Url;
         }
     }
@@ -222,7 +222,7 @@ Err url_from_get_request(Request r[_1_]) {
             CURLU_APPENDQUERY | CURLU_URLENCODE
         );
         if (curl_code != CURLUE_OK) {
-            err = err_fmt("error: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
+            err = err_fmt("warn: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
             goto Failure_Clean_File_Url;
         }
     }

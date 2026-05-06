@@ -66,7 +66,8 @@ static Err _session_conf_from_options_(int argc, char* argv[], CliParams cparams
         // read positional parameter
         if (*arg != '-') {
             Str urlstr = (Str){0};
-            try(str_append(&urlstr, sv(arg, strlen(arg) + 1)));
+            size_t arg_len = strlen(arg);
+            if (arg_len) try(str_append_z(&urlstr, sv(arg, arg_len)));
             Request r;
             Err err = request_init_move_urlstr(&r, http_get, &urlstr, NULL);
             if (err) { str_clean(&urlstr); return err; }

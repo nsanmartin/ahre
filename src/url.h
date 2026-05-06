@@ -34,7 +34,7 @@ typedef struct {
     HttpMethod method;
     Url*       urlview;
     Url        url;
-    Str        urlstr;
+    StrZ       urlstr;
     ArlOf(Str) keys;
     ArlOf(Str) values;
     Str        postfields; /* used for post field and quey */
@@ -42,7 +42,7 @@ typedef struct {
 
 
 static inline HttpMethod request_method(Request r[_1_]) { return r->method; }
-static inline Str* request_urlstr(Request r[_1_]) { return &r->urlstr; }
+static inline StrZ* request_urlstr(Request r[_1_]) { return &r->urlstr; }
 static inline Url* request_url(Request r[_1_]) { return &r->url; }
 static inline Str* request_postfields(Request r[_1_]) { return &r->postfields; }
 static inline ArlOf(Str)* request_query_keys(Request r[_1_]) { return &r->keys; }
@@ -77,7 +77,7 @@ Err url_from_request(Request r[_1_], UrlClient* uc);
 
 
 static inline Err
-request_init_move_urlstr(Request r[_1_], HttpMethod method, Str urlstr[_1_], Url* url) {
+request_init_move_urlstr(Request r[_1_], HttpMethod method, StrZ urlstr[_1_], Url* url) {
     (void)url;
     *r = (Request) {
         .method=method,
@@ -95,7 +95,7 @@ static inline Err url_fragment(Url u[_1_], char* out[_1_]) {
     CURLUcode code = curl_url_get(u->ptr, CURLUPART_FRAGMENT, out, 0);
     if (code == CURLUE_OK || code == CURLUE_NO_FRAGMENT)
         return Ok;
-    return err_fmt("error getting url fragment from CURLU: %s", curl_url_strerror(code));
+    return err_fmt("warn: getting url fragment from CURLU: %s", curl_url_strerror(code));
 }
 
 

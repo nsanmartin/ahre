@@ -24,6 +24,7 @@
 
 
 #define Str BufOf(char)
+
 #define T ArlOf(Str)
 #define TClean arlfn(Str,clean)
 // #define TCmp buf_of_char_cmp
@@ -36,6 +37,11 @@ typedef struct {
 
 typedef StrView (*StrViewProvider)(void);
 
+/* This just "documents" that the underlying string ir null-terminated at s[len].
+ * TODO: wrap it like typedef struct { Str s;}  StrZ; and raise error in str_append,
+ * allowing only str_append_z
+ * */
+typedef Str StrZ;
 /* char fn */
 static inline bool is_visible(char c) { return !isspace(c); }
 
@@ -56,6 +62,7 @@ Err         mem_convert_to_utf8(
     const char* outbuf[_1_],
     size_t outlen[_1_]
 );
+size_t mem_count_utf8(const char* s, size_t len);
 
 #define lit_write__(Lit, Stream) mem_fwrite(Lit,lit_len__(Lit), Stream)
 
@@ -68,6 +75,7 @@ bool        cstr_starts_with(const char* s, const char* t);
 bool        str_startswith(Str s[_1_], StrView v);
 const char* cstr_cat_dup(const char* s, const char* t);
 const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen);
+//TODO1: replace all space functions by uspace (unicode) space functions
 const char* cstr_next_space(const char* l);
 const char* cstr_skip_space(const char* s);
 const char* cstr_trim_space(char* s);
@@ -95,6 +103,9 @@ const char* strview_end(const StrView s[_1_]);
 size_t      strview_len(const StrView s[_1_]);
 void        strview_trim_space_in_place(StrView s[_1_]);
 void        strview_trim_space_left(StrView s[_1_]);
+size_t      strview_trim_left_utf8_space(StrView s[_1_]);
+static inline
+size_t      strview_count_utf8(StrView s) { return mem_count_utf8(s.items, s.len); }
 
 #define svl(LitStr) _Generic((LitStr), char*: strview_from_mem(LitStr, lit_len__(LitStr)))
 

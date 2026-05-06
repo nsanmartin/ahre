@@ -35,8 +35,6 @@ static Err fetch_params(Session session[_1_], ArlOf(Request) urls[_1_], CmdOut c
             StrView url = sv(r->urlstr);
 
             if (url.len) {
-                if (url.items[url.len-1] == '\0') --url.len;
-                else url = svl("UNKNOWN_PARAM");
                 Err append_err = str_append_z(&buf, sv(err));
                 if (!append_err) err = err_fmt("ahre (processing url '%s'): %s", url.items, buf.items);
 
@@ -83,10 +81,12 @@ Clean_Errors:
 
 int main(int argc, char **argv) {
     w_curl_global_init();
+
+    Err       err     = Ok;
+    CmdOut*   cout    = &(CmdOut){0};
+    UserLine  userln  = (UserLine){0};
     CliParams cparams = (CliParams){0};
-    UserLine userln = (UserLine){0};
-    Session session;
-    Err err = Ok;
+    Session   session = (Session){0};
 
     try_or_jump(err, Clean_Curl, session_conf_from_options(argc, argv, &cparams));
     if (*cparams_help(&cparams)) { print_help(argv[0]); goto Clean_Cparams; }
@@ -102,7 +102,6 @@ int main(int argc, char **argv) {
         try_or_jump(err, Clean_Session, run_cmds(&session, &userln));
         user_line_cleanup(&userln);
     }
-    CmdOut* cout = &(CmdOut){0};
     try_or_jump(err, Clean_Session, fetch_params(&session, cparams_requests(&cparams), cout));
 
     err = _loop_(&session, &userln, cout);

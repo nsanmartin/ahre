@@ -28,26 +28,19 @@ Err draw_ctx_esc_code_pop(DrawCtx ctx[_1_]) {
 append_to_arlof_lxb_node__(ArrayList, NodePtr) \
     (arlfn(DomNode,append)(ArrayList, (NodePtr)) ? Ok : "error: lip set")
 
-static bool is_trim_visible(char c) { return isprint(c) && !isspace(c); }
-
-static size_t 
-_strview_trim_left_count_newlines_(StrView s[_1_]) {
-    size_t newlines = 0;
-    while(s->len && !is_trim_visible(*(items__(s)))) {
-        newlines += *(items__(s)) == '\n';
-        ++s->items;
-        --s->len;
-    }
-    return newlines;
-}
 
 static size_t _strview_trim_right_count_newlines_(StrView s[_1_]) {
+#define last_char__(S) items__(S)[len__(S)-1]
+//TODO1: use unicode space
+#define is_space_or_not_print__(C) (isspace(C) || !isprint(C))
     size_t newlines = 0;
-    while(s->len && !is_trim_visible(items__(s)[len__(s)-1])) {
-        newlines += items__(s)[s->len-1] == '\n';
+    while(s->len && is_space_or_not_print__(last_char__(s))) {
+        newlines += last_char__(s) == '\n';
         --s->len;
     }
     return newlines;
+#undef is_space_or_not_print__
+#undef last_char__
 }
 
 
@@ -57,7 +50,7 @@ typedef struct {
     TextBufMods mods;
     size_t      flags;
     size_t      fragment_offset;
-    size_t      left_newlines;
+    bool        left_newlines;
     size_t      left_trim;
     size_t      right_newlines;
 } DrawTextBuf;
@@ -159,7 +152,9 @@ draw_text_buf_hlen(DrawTextBuf text[_1_]) {
     StrView buf = strview_from_draw_text_buf(text);
     for (;buf.len;) {
         StrView line = strview_split_line(&buf);
-        if (line.len > res) res = line.len;
+        strview_trim_left_utf8_space(&line);
+        size_t utf8len = strview_count_utf8(line);
+        if (utf8len > res) res = utf8len;
     }
     return res;
 }
@@ -371,8 +366,9 @@ Err draw_tag_pre(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
 static Err
 draw_text_buf_trim_left(DrawTextBuf sub[_1_]) {
     StrView content    = sv(sub->buf);
-    if (sub->buf.len < content.len) return err_internal("buffer smaller thanm its content?");
-    sub->left_newlines = _strview_trim_left_count_newlines_(&content);
+    if (sub->buf.len < content.len) return err_internal("buffer smaller than its content?");
+    size_t skipped     = strview_trim_left_utf8_space(&content);
+    sub->left_newlines = memchr(sub->buf.items, '\n', skipped) != NULL;
     sub->left_trim     = sub->buf.len - content.len;
     textmod_trim_left(&sub->mods, sub->left_trim);
     return Ok;
@@ -1254,7 +1250,6 @@ typedef DrawTextBuf CellPart;
 /* This function does not clean buf since it does not owns it */
 static void cell_part_clean(DrawTextBuf c[_1_]) { arlfn(ModAt, clean)(&c->mods); }
 
-
 /*
  * SplittedCell == ArlOf(CellPart) == ArlOf(DrawTextBuf)
  */
@@ -1343,10 +1338,7 @@ static size_t colspan_get_actual_length(ColSpan cs[_1_], Coordinates coord, ColW
 #define nrow__(T,R) (R)-arlfn(DrawRow,begin)(T)
 #define ncol__(R,C) (C)-arlfn(DrawTextBuf,begin)(R)
 static Err
-get_unsplitted_columns_widths(
-    DrawTable          table[_1_],
-    ArlOf(ColWidth)    out[_1_]
-) {
+get_unsplitted_columns_widths(DrawTable table[_1_], ArlOf(ColWidth) out[_1_]) {
 #define mk_coordinates(R,C) (Coordinates){.row=(R),.col=(C)}
     foreach__(DrawRow, row, table) {
         foreach__(DrawTextBuf, cell, row) {
@@ -1359,10 +1351,13 @@ get_unsplitted_columns_widths(
 
             if (cw->ix != ncol) return err_internal("expecting index match ncol here");
             StrView buf = strview_from_draw_text_buf(cell);
+            strview_trim_left_utf8_space(&buf);
             for (;buf.len;) {
                 StrView line = strview_split_line(&buf);
-                if (line.len > cw->w) {
-                    cw->w  = line.len;
+                strview_trim_left_utf8_space(&line);
+                size_t utf8len = strview_count_utf8(line);
+                if (utf8len > cw->w) {
+                    cw->w  = utf8len;
                     cw->ix = ncol;
                 }
             }
@@ -1372,14 +1367,37 @@ get_unsplitted_columns_widths(
 #undef coordinates_for_cell
 }
 
-static Err err_could_not_fit_the_table =  "could not fit table in screen";
-#define ERRMSG__ "unexpected tag in table: 0x" 
+#define ERR_FIT_MSG__ "could not fit table in screen at " __FILE__ ":"
+static char err_could_not_fit_the_table__[ sizeof(ERR_FIT_MSG__) +  /*linenum*/ INT_TO_STR_BUFSZ + 2 ] = {
+    ERR_FIT_MSG__
+};
+
+static Err err_could_not_fit_the_table_impl(int linenum) {
+    size_t len;
+    try(int_to_str(linenum, err_could_not_fit_the_table__ + lit_len__(ERR_FIT_MSG__), INT_TO_STR_BUFSZ, &len));
+    err_could_not_fit_the_table__[lit_len__(ERR_FIT_MSG__) + len] = '\0';
+    return err_could_not_fit_the_table__;
+}
+
+#define err_could_not_fit_the_table err_could_not_fit_the_table_impl(__LINE__)
+
+
+#define ERR_TAG_MSG__ "unexpected tag in table: 0x" 
+#define TAG_STR_MAX_LEN sizeof(HtmlTag) 
+static char err_unexpected_tag_in_table[ sizeof(ERR_TAG_MSG__) + TAG_STR_MAX_LEN ] = {  ERR_TAG_MSG__ };
+static Err err_from_unexpected_tag_in_table(HtmlTag tag) {
+    size_t len;
+    try(int_to_str(tag, err_unexpected_tag_in_table + lit_len__(ERR_TAG_MSG__), TAG_STR_MAX_LEN, &len));
+    err_unexpected_tag_in_table[lit_len__(ERR_TAG_MSG__) + len] = '\0';
+    return err_unexpected_tag_in_table;
+}
+
 
 static Err
 split_cell(size_t length, DrawTextBuf cell[_1_]) {
     if (!length) return err_internal("not expecting zero length cell");
     StrView buf = strview_from_draw_text_buf(cell);
-    while (buf.len > length) {
+    while (strview_count_utf8(buf) > length) {
 
         const char* nl = memchr(buf.items, '\n', buf.len);
         if (nl && cast__(size_t)(nl - buf.items) <= length) {
@@ -1416,14 +1434,6 @@ split_column(DrawTable table[_1_], ColWidth cw[_1_], ArlOf(ColWidth) cwidths[_1_
 #undef ncol__
 #undef nrow__
 
-static char err_unexpected_tag_in_table[ sizeof(ERRMSG__) + sizeof(HtmlTag) ] = {  ERRMSG__ };
-
-static Err err_from_unexpected_tag_in_table(HtmlTag tag) {
-    size_t len;
-    try(int_to_str(tag, err_unexpected_tag_in_table + lit_len__(ERRMSG__), sizeof(HtmlTag), &len));
-    err_unexpected_tag_in_table[lit_len__(ERRMSG__) + len] = '\0';
-    return err_unexpected_tag_in_table;
-}
 
 /*
  * Resize the column widths so that the column fits the screen and "split" the cells
@@ -1522,10 +1532,10 @@ expand_columns_for_colspans(DrawTable table[_1_], size_t screen_width, ColSpan c
         for (; it < end; ++it) spanlen += *it;
 
         /* column horizontal len is not zero and text fits the span */
-        if (*chl && cell_hlen <= spanlen) continue;
+        if (cell_hlen <= spanlen) continue;
 
         size_t incr = cell_hlen - spanlen;
-        if (incr > remaining_width) {err=err_could_not_fit_the_table; }
+        if (remaining_width < incr) { err=err_could_not_fit_the_table; goto Clean; }
         remaining_width -= incr;
         *chl            += incr;
     }
@@ -1608,7 +1618,12 @@ ErrClean:
 }
 
 static size_t splitted_celL_vertical_len(SplittedCell c[_1_]) { return len__(c); }
-static size_t cell_part_horizontal_len(CellPart c[_1_]) { return c->buf.len; }
+static size_t cell_part_horizontal_len(CellPart c[_1_]) {
+    StrView part = sv(c->buf);
+    strview_trim_left_utf8_space(&part);
+    return strview_count_utf8(part);
+
+}
 
 static Err splitted_table_row_vertical_lengths(SplittedTable t[_1_], ArlOf(size_t) rows_vlengths[_1_]) {
     SplittedRow* table_beg = arlfn(SplittedRow,begin)(t);
@@ -1767,6 +1782,12 @@ get_cell_horizontal_len(size_t ncol, size_t span, ArlOf(size_t) cols_hlengths[_1
     return Ok;
 }
 
+
+static size_t
+is_last_column(size_t ncols, SplittedCell cell[_1_], SplittedRow row[_1_], size_t span) {
+    return cast__(size_t)(cell - arlfn(SplittedCell,begin)(row)) + span >= ncols;
+}
+
 static Err
 draw_splitted_table(
     SplittedTable splitted_table[_1_],
@@ -1800,12 +1821,12 @@ draw_splitted_table(
                 }
 
                 if (col_hlen < cell_part_hlen) return err_internal("column length computation failed");
-                size_t spaces = col_hlen - cell_part_hlen;
+                size_t spaces = (span_value-1) + col_hlen - cell_part_hlen;
                 if (spaces)
                     try(draw_text_buf_append(text, whitespace(spaces)));
 
-                if (1 + cell - arlfn(SplittedCell,end)(row)) try(draw_text_buf_append(text, svl(" ")));
-                else  try(draw_text_buf_append(text, svl("\n")));
+                if (is_last_column(len__(cols_hlengths), cell, row, span_value)) try(draw_text_buf_append(text, svl("\n")));
+                else try(draw_text_buf_append(text, svl(" ")));
             }
         }
     }
@@ -1816,13 +1837,20 @@ draw_splitted_table(
 static bool ends_with_newline(StrView v) { return !v.len || v.items[v.len-1] == '\n'; }
 
 static Err _expecting_err_could_not_fit_the_table(Err expr, StrView caption, DrawCtx ctx[_1_]) {
-    if (expr == err_could_not_fit_the_table) { 
-        msg__(ctx, sv(err_could_not_fit_the_table));
+    if (expr == err_could_not_fit_the_table__) { 
+        StrView url = draw_ctx_url_strview(ctx);
+        if (url.len) {
+            msg__(ctx, svl("drawing "));
+            msg__(ctx, url);
+            msg__(ctx, svl(": "));
+        }
+        msg__(ctx, sv(expr));
         if (caption.len) msg_ln__(ctx, caption);
         else  msg_ln__(ctx, svl(": <TABLE WITH NO CAPTION>"));
         return Ok;
     } else return expr;
 }
+
 
 static Err
 draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {

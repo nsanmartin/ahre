@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "../src/utils.h"
+#define AHRE_UTEST 1
 #include "../src/error.h"
 
 #define RESET   "\033[0m"
