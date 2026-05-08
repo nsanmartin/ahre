@@ -67,17 +67,6 @@ static Err _curl_set_curlu_(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]) {
     return w_curl_set_url(url_client, htmldoc_url(htmldoc));
 }
 
-static Err _curl_perform_error_( HtmlDoc htmldoc[_1_], CURLcode curl_code) {
-    Url* url = htmldoc_url(htmldoc);
-    char* u;
-    Err e = url_cstr_malloc(*url, &u);
-    if (e) u = "and url could not be obtained due to another error :/";
-    Err err = err_fmt(
-        "curl failed to perform curl: %s (%s)", curl_easy_strerror(curl_code), u
-    );
-    if (!e) w_curl_free(u);
-    return err;
-}
 
 
 static Err _set_htmldoc_url_with_effective_url_(
@@ -174,16 +163,13 @@ static void _map_append_nullchar_(ArlOf(Str) strlist[_1_], CmdOut cmd_out[_1_]) 
 
 //TODO0: althoug we expect small lengths, this may be done more efficiently.
 static Err
-get_failed_indexed(ArlOf(CurlPtr) easies[_1_], ArlOf(CurlPtr) failed[_1_], ArlOf(size_t) indexes[_1_]) {
+get_failed_indexed(ArlOf(CurlPtr) easies[_1_], ArlOf(CurlMultiSgPtr) failed[_1_], ArlOf(size_t) indexes[_1_]) {
     CurlPtr* first_easy = arlfn(CurlPtr,begin)(easies);
-    foreach__(CurlPtr, f, failed) {
+    foreach__(CurlMultiSgPtr, f, failed) {
         foreach__(CurlPtr, easy, easies) {
-            if (*f == *easy) {
+            if ((*f)->easy_handle == *easy) {
                 size_t ix = easy - first_easy;
-                if(!arlfn(size_t, append)(indexes, &ix)) {
-                    arlfn(size_t, clean)(indexes);
-                    return "error: arl append failure";
-                }
+                if(!arlfn(size_t, append)(indexes, &ix)) return "error: arl append failure";
             }
         }
     }
@@ -236,14 +222,15 @@ static Err curl_lexbor_fetch_scripts(
         try(msg__(cmd_out, e));
     }
 
-    ArlOf(CurlPtr)* failed = &(ArlOf(CurlPtr)){0};
+    ArlOf(CurlMultiSgPtr)* failed = &(ArlOf(CurlMultiSgPtr)){0};
     e = w_curl_multi_perform_poll(multi, failed);
     if (!e) {
         size_t n = len__(failed);
         if (n) {
             msg__(cmd_out, err_fmt("warn: %d script%s could not be downloaded\n", n, (n>1?"s":"")));
             ArlOf(size_t)* indexes = &(ArlOf(size_t)){0};
-            if (!get_failed_indexed(easies, failed, indexes)) {
+            e = get_failed_indexed(easies, failed, indexes);
+            if (!e) {
                 foreach__(size_t, ix, indexes) {
 
                     Str* script;
@@ -255,6 +242,7 @@ static Err curl_lexbor_fetch_scripts(
                     str_reset(script);
                 }
             }
+            arlfn(size_t, clean)(indexes);
         }
     }
 
@@ -263,7 +251,7 @@ static Err curl_lexbor_fetch_scripts(
     w_curl_multi_remove_handles(multi, easies, cmd_out);
 
     arlfn(CurlPtr,clean)(easies);
-    arlfn(CurlPtr,clean)(failed);
+    arlfn(CurlMultiSgPtr,clean)(failed);
     arlfn(CurlUrlPtr,clean)(curlus);
 
     _map_append_nullchar_(htmldoc_head_scripts(htmldoc), cmd_out);
@@ -302,11 +290,10 @@ Err curl_lexbor_fetch_document(
     try( _curl_set_curlu_(url_client, htmldoc));
 
     try( fetch_history_entry_init(histentry));
-    CURLcode curl_code = curl_easy_perform(url_client->curl);
-    fetch_history_entry_update_curl(histentry, url_client->curl, cmd_out);
+    Err err = url_client_perform_with_cancel(url_client);
     str_reset(url_client_postdata(url_client));
-    if (curl_code!=CURLE_OK) 
-        return _curl_perform_error_(htmldoc, curl_code);
+    try(err);
+    try(fetch_history_entry_update_curl(histentry, url_client->curl, cmd_out));
 
     if (histentry->size_download_t < 0)
         try(msg__(cmd_out, svl("CURLINFO_SIZE_DOWNLOAD_T is negative")));

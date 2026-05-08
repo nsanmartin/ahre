@@ -46,6 +46,7 @@ static inline char* url_client_user_agent(UrlClient uc[_1_]) { return (char*)uc-
 static inline bool url_client_verbose(UrlClient uc[_1_]) { return uc->flags & URL_CLIENT_FLAG_VERBOSE; }
 
 void url_client_set_verbose(UrlClient uc[_1_], bool value);
+Err url_client_perform_with_cancel(UrlClient uc[_1_]);
 /* ctor */
 Err url_client_init(
     UrlClient url_client[_1_],

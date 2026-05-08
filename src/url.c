@@ -420,13 +420,7 @@ Err request_to_file(Request r[_1_], UrlClient url_client[_1_], FILE* fp) {
     ) return "error configuring curl write fn/data";
     str_reset(url_client_postdata(url_client));
 
-    CURLcode curl_code = curl_easy_perform(url_client->curl);
-
-    /* curl_easy_reset(url_client->curl); */
-    if (curl_code!=CURLE_OK) 
-        return err_fmt("curl failed to perform curl: %s", curl_easy_strerror(curl_code));
-    /* try( url_client_reset(url_client)); */
-    return Ok;
+    return url_client_perform_with_cancel(url_client);
 }
 
 

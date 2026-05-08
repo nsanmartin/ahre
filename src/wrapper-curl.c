@@ -1,3 +1,4 @@
+#include "sys.h"
 #include "str.h"
 #include "htmldoc.h"
 #include "wrapper-curl.h"
@@ -78,34 +79,47 @@ Err curlinfo_sz_download_incr(
     return Ok;
 }
 
-Err w_curl_multi_perform_poll(CURLM* multi, ArlOf(CurlPtr) failed[_1_]) {
+static char curl_perform_canceled_by_user[] = { "curl perform canceled by user\n" };
+Err w_curl_multi_perform_poll(CURLM* multi, ArlOf(CurlMultiSgPtr) failed[_1_]) {
+    struct sigaction interrupt_action = get_interrupt_action();
+    struct sigaction old_action = {0};
+    sigaction(SIGINT,&interrupt_action, &old_action);
+
     int running;
     Err err = Ok;
     do {
-        CURLMcode code = curl_multi_perform(multi, &running);
-        if (code != CURLM_OK) {
-            err = "error: curl_multi_perform failed";
-            break;
-        }
-        code = curl_multi_poll(multi, NULL, 0, 1000, NULL);
-        if (code != CURLM_OK) {
-            err = err_fmt("error: curl_multi_poll failed: %s", curl_multi_strerror(code));
+        if (interrupt_flag()) {
+            err = curl_perform_canceled_by_user;
             break;
         }
 
-        CURLMsg *msg;
+        CURLMcode code = curl_multi_perform(multi, &running);
+        if (code != CURLM_OK) {
+            err = err_fmt("curl_multi_perform failed: %s", curl_multi_strerror(code));
+            break;
+        }
+        code = curl_multi_poll(multi, NULL, 0, 100, NULL);
+        if (code != CURLM_OK) {
+            err = err_fmt("curl_multi_poll failed: %s", curl_multi_strerror(code));
+            break;
+        }
+
+        CurlMultiSgPtr msg;
         int msgs_left;
         while ((msg = curl_multi_info_read(multi, &msgs_left))) {
             if (msg->msg == CURLMSG_DONE) {
                 if (msg->data.result != CURLE_OK) {
-                    if (!arlfn(CurlPtr, append)(failed,msg->easy_handle))
-                        return "error: arl append failed";
+                    if (!arlfn(CurlMultiSgPtr, append)(failed,&msg))
+                        return err_internal("while processing curl failure, arl append failed");
                 }
             }
-    }
+        }
     } while (running);
+
+    sigaction(SIGINT, &old_action, NULL);
     return err;
 }
+
 
 Err for_htmldoc_size_download_append(
     ArlOf(CurlPtr) easies[_1_],
@@ -136,6 +150,7 @@ void w_curl_multi_remove_handles(
         curl_easy_cleanup(*cup);
     }
 }
+
 
 Err w_curl_multi_add(
     UrlClient       uc[_1_],
@@ -227,5 +242,20 @@ Err w_curl_url_set(CURLU* u,  CURLUPart part, const char* cstr, unsigned flags) 
     CURLUcode code = curl_url_set(u, part, cstr, flags);
     return code == CURLUE_OK 
         ? Ok : err_fmt("warn: setting url with '%s': %s", cstr, curl_url_strerror(code));
+}
+
+
+Err w_curl_perform_with_cancel(CurlMuliPtr multi, CurlPtr easy) {
+    ArlOf(CurlMultiSgPtr)* failed = &(ArlOf(CurlMultiSgPtr)){0};
+    try(w_curl_multi_add_handle(multi, easy));
+    Err err = w_curl_multi_perform_poll(multi, failed);
+
+    CurlMultiSgPtr* f = arlfn(CurlMultiSgPtr,at)(failed,0);
+    if (f) err = err_fmt("curl failed to fetch: %s\n", curl_easy_strerror((*f)->data.result));
+
+    CURLMcode code = curl_multi_remove_handle(multi, easy);
+    if (code != CURLM_OK) err = err_fmt("error: curl multi remove habdle failure: %s", curl_multi_strerror(code));
+    arlfn(CurlMultiSgPtr,clean)(failed);
+    return err;
 }
 

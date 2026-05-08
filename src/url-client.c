@@ -4,6 +4,7 @@
 #include "session.h"
 #include "url-client.h"
 #include "cmd.h"
+#include "error.h"
 
 
 #define url_client_setopt(Uc, Opt, Val) w_curl_easy_setopt((Uc)->curl, Opt, Val)
@@ -174,5 +175,10 @@ Err curl_set_method_from_http_method(UrlClient url_client[_1_], HttpMethod m) {
     if (curl_easy_setopt(url_client->curl, method, 1L)) 
         return "error: curl failed to set method";
     return Ok;
+}
+
+
+Err url_client_perform_with_cancel(UrlClient uc[_1_]) {
+    return w_curl_perform_with_cancel(url_client_multi(uc), url_client_curl(uc));
 }
 

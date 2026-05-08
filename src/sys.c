@@ -123,3 +123,18 @@ bool path_is_dir(const char* path) {
     return stat(path, &st) == 0 && S_ISDIR(st.st_mode);
 }
 // file utils
+
+
+static volatile sig_atomic_t interrupt_flag__ = 0;
+bool interrupt_flag(void) { return interrupt_flag__ != 0; }
+static void set_interrupt_flag(int sig) {
+    (void)sig;
+    interrupt_flag__ = 1;
+}
+
+struct sigaction get_interrupt_action(void) {
+    struct sigaction res = (struct sigaction){.sa_handler=set_interrupt_flag};
+    sigemptyset(&res.sa_mask);
+    return res;
+}
+
