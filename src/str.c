@@ -294,8 +294,7 @@ StrView strview_from_mem_trim(const char* s, size_t len) {
 }
 
 bool strview_skip_space_inplace(StrView s[_1_]) {
-    for(; s->len && !is_visible(*s->items); --(s->len), ++(s->items))
-        ;
+    strview_trim_left_utf8_space(s);
     return s->len != 0;
 }
 

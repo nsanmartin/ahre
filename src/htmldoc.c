@@ -17,6 +17,11 @@ static inline
 Err draw_ctx_esc_code_pop(DrawCtx ctx[_1_]) {
     return arlfn(EscCode, pop)(draw_ctx_esc_code_stack(ctx)) ? Ok : "error: empty stack";
 }
+static bool ends_with_newline(StrView v) { return !v.len || v.items[v.len-1] == '\n'; }
+static bool requires_separation(StrView v) {
+    return v.len && !isspace(v.items[v.len-1]) && !ispunct(v.items[v.len-1]);
+}
+
 
 
 /* internal linkage */
@@ -467,7 +472,7 @@ draw_list (DomNode it, DomNode last, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 static Err
 draw_tag_br(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     try( draw_text_buf_append_lit__(text, "\n"));
-    return draw_iter_childs(node, ctx, text);
+    return draw_iter_childs(node, ctx, text);//TODO1: br can't have child, isn't it?
 }
 
 
@@ -613,8 +618,14 @@ static Err draw_tag_input(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_])
     try( _hypertext_id_open_(
         ctx, text, draw_ctx_color_red, input_text_open_str, &input_id, NULL));
 
-    /* "input" type is text | search */
-    if (str_eq_case(svl("text"), type) || str_eq_case(svl("search"), type)) {
+    /* "input" type is text | search | email */
+    if (
+       str_eq_case(svl("text"),   type)
+    || str_eq_case(svl("search"), type)
+    || str_eq_case(svl("email"),  type) //TODO2: validate input format
+    || str_eq_case(svl("url"),    type)
+    || str_eq_case(svl("tel"),    type)
+    ) {
         try( draw_text_buf_append_lit__(text, "="));
         StrView value = dom_node_attr_value(node, svl("value"));
         if (value.len) try( draw_text_buf_append(text, value));
@@ -1105,7 +1116,8 @@ draw_tag_a(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
         ok_then(err, draw_text_buf_trim_left(sub_text));
         draw_text_buf_trim_right(sub_text);
 
-        if (_prev_is_separable_(node)) err = draw_text_buf_append_lit__(text, " ");
+        if (requires_separation(sv(draw_text_buf_buf(text)))
+        && _prev_is_separable_(node)) err = draw_text_buf_append_lit__(text, " ");
         else if (text->left_newlines) err = draw_text_buf_append_lit__(text, "\n");
         ok_then(err, _hypertext_id_open_(
             ctx, text, draw_text_buf_textmod_blue, anchor_open_str, &anchor_num,anchor_sep_str ));
@@ -1833,8 +1845,6 @@ draw_splitted_table(
     return Ok;
 }
 
-
-static bool ends_with_newline(StrView v) { return !v.len || v.items[v.len-1] == '\n'; }
 
 static Err _expecting_err_could_not_fit_the_table(Err expr, StrView caption, DrawCtx ctx[_1_]) {
     if (expr == err_could_not_fit_the_table__) { 
