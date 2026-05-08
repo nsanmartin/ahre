@@ -188,7 +188,7 @@ Err url_from_get_request(Request r[_1_]) {
     CURLU* cu = url_cu(&u);
     Err err = Ok;
     Str file = (Str){0};
-    if (len__(request_urlstr(r))) {
+    if (len__(request_urlstr(r)) && !str_eq_case(svl("/"),request_urlstr(r))) {
         try_or_jump(err, Failure_Clean_File_Url,
                 _prepend_file_schema_if_file_exists_(request_urlstr(r), &file));
         const char* url_str = file.len ? file.items : items__(request_urlstr(r));
