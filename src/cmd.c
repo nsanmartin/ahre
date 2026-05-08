@@ -322,24 +322,43 @@ Err _cmd_textbuf_write_impl(TextBuf textbuf[_1_], Range r[_1_], const char* rest
 
 static StrView parse_pattern(const char* tk) {
     StrView res = {0};
-    char delim = '/';
     if (!tk) { return res; }
+    char delim = '/';
     tk = cstr_skip_space(tk);
     if (*tk != delim) { return res; }
     ++tk;
     const char* end = strchr(tk, delim);
 
     if (!end) res = (StrView){.items = tk, .len = strlen(tk)};
-    else      res = (StrView){.items = tk, .len = cast__(size_t)(end-tk)};
+    else {
+        res = (StrView){.items = tk, .len = cast__(size_t)(end-tk)};
+        *(char*)end = '\0';
+    }
 
     return res;
 }
 
 
 Err cmd_textbuf_global(CmdParams p[_1_]) {
+    ArlOf(size_t) lines = (ArlOf(size_t)){0};
+    Err err = Ok;
+
+    if (!p->tb) return err_internal("expectind textbuf set at this point");
     StrView pattern = parse_pattern(p->ln);
     if (!pattern.items || !pattern.len) { return "Could not read pattern"; }
-    return err_fmt("TODO: :g/PATTERN..., pattern: '%s'", pattern.items);
+
+    try_or_jump(err,Clean, textbuf_get_lines_matching_regex(p->tb, pattern, &lines));
+
+    StrView line;
+    foreach__(size_t,linenum,&lines) {
+        if (!textbuf_get_line(p->tb, *linenum, &line)) {err=err_internal("expecting matched line");goto Clean;}
+        if (!line.len || !line.items || !*line.items) {err=err_internal("expecting matched nonempty line");goto Clean;}
+        msg__(cmd_params_cmd_out(p), line);
+    }
+
+Clean:
+    arlfn(size_t,clean)(&lines);
+    return err;
 }
 
 /* input commands */

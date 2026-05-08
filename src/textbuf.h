@@ -130,4 +130,5 @@ Err textbuf_range_from_parsed_range(
     Range            range[_1_]
 );
 Err textbuf_to_file(TextBuf tb[_1_], const char* filename, const char* mode);
+Err textbuf_get_lines_matching_regex(TextBuf tb[_1_], StrView pattern, ArlOf(size_t) lines[_1_]);
 #endif
