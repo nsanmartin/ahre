@@ -126,7 +126,11 @@ bool path_is_dir(const char* path) {
 
 
 static volatile sig_atomic_t interrupt_flag__ = 0;
-bool interrupt_flag(void) { return interrupt_flag__ != 0; }
+bool interrupt_flag(void) {
+    bool res = interrupt_flag__ != 0;
+    interrupt_flag__ = 0;
+    return res;
+}
 static void set_interrupt_flag(int sig) {
     (void)sig;
     interrupt_flag__ = 1;
