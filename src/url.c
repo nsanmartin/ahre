@@ -167,18 +167,10 @@ static Err _prepend_file_schema_if_file_exists_(Str url[_1_], Str out[_1_]) {
     if (str_startswith(url, svl(HTTPS_SCHEMA))) return Ok;
     try(str_append(out, svl(FILE_SCHEMA)));
 
-    const char* path = items__(url);
-    if (path[0] != '/') {
-         char cwdbuf[4000];
-         if(!getcwd(cwdbuf, 4000)) { return "error: gwtcwd failed"; }
-         try(str_append(out, cwdbuf));
-         if (*path == '.' && path[1] == '/') ++path;
-         else try(str_append(out, svl("/")));
-    }
-    try( str_append_z(out, path));
+    bool file_exists;
+    try(resolve_path(items__(url), &file_exists,out));
+    if (!file_exists) str_reset(out);
 
-    if (!file_exists(items__(out) + lit_len__(FILE_SCHEMA)))
-        str_reset(out);
     return Ok;
 }
 
