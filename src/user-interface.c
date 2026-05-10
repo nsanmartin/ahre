@@ -109,7 +109,7 @@ static Err run_cmd_help(SessionCmd cmd[_1_], CmdOut out[_1_]) {
 
 static Err
 run_cmd_for_dom_node_range(CmdParams p[_1_], Range r[_1_], ArlOf(DomNode) collection[_1_], nodeCmdCallback cb) {
-    for (size_t i = r->beg; i < r->end; ++i) {
+    for_range(r, i) {
         DomNode* nodeptr = arlfn(DomNode, at)(collection, i);
         if (!nodeptr) return "error: node number invalid";
         Err err = cb(p, *nodeptr);

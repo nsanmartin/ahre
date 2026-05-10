@@ -147,13 +147,8 @@ Err url_client_multi_add_handles(
     CmdOut           cmd_out[_1_]
 ) {
 
-    //TODO: do it in one op, of implement reserve/capacity in hotl
-    for (size_t i = 0; i < len__(urls); ++i) {
-        if (!arlfn(Str,append)(scripts, &(Str){0}))
-            return "error: arlfn(Str,append) failure";
-    }
-    scripts->len -= len__(urls);
-    /*^*/
+    if (!len__(urls)) return Ok;
+    if (arlfn(Str,init_reserve)(scripts, len__(urls))) return err_internal("arlfn Str init_reserve failure");
 
     for (Str* u = arlfn(Str,begin)(urls) ; u != arlfn(Str,end)(urls) ; ++u) {
         Err e = w_curl_multi_add(uc, curlu, items__(u), easies, scripts, curlus);

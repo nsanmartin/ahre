@@ -26,14 +26,13 @@ typedef struct CmdOut CmdOut;
 
 #define URL_CLIENT_FLAG_VERBOSE 0x1
 typedef struct UrlClient {
-    CURL*     curl;
-    CURLM*    curlm;
-    char      errbuf[CURL_ERROR_SIZE];
-    Str       postdata;
-
-    StrView   cookies_fname;
-    StrView   user_agent;
-    unsigned  flags;
+    CURL*       curl;
+    CURLM*      curlm;
+    char        errbuf[CURL_ERROR_SIZE];
+    Str         postdata;
+    StrView     cookies_fname;
+    StrView     user_agent;
+    unsigned    flags;
 } UrlClient;
 
 static inline CURL* url_client_curl(UrlClient url_client[_1_]) { return url_client->curl; }

@@ -39,5 +39,7 @@
     else try_or_jump(ErrLval, Label, ahre_err_); \
 }while(0)
 
+#define arl_append_zero(Type, Arl, Ptr) ((Ptr = arlfn(Type,append)(Arl,&(Type){0})) \
+    ? Ok : err_fmt("error: arl_append failure ("__FILE__":%d)", __LINE__))
 
 #endif

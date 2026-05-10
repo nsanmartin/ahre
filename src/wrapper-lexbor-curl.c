@@ -213,7 +213,7 @@ static Err curl_lexbor_fetch_scripts(
         url_client, curlu, head_urls, htmldoc_head_scripts(htmldoc), easies, curlus, cmd_out);
     if (e) {
         try(msg__(cmd_out, svl("could not add head handles: ")));
-        try(msg__(cmd_out, e));
+        try(msg_ln__(cmd_out, e));
     }
     e = url_client_multi_add_handles(
         url_client, curlu, body_urls, htmldoc_body_scripts(htmldoc), easies, curlus, cmd_out);

@@ -6,6 +6,9 @@
 
 typedef struct { size_t beg, end; } Range;
 
+#define for_range(R, It)  for(size_t It = (R)->beg; It < (R)->end; ++It)
+
+
 typedef enum {
     range_addr_none_tag = 0,
     range_addr_beg_tag,
