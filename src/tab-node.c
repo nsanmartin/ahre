@@ -13,13 +13,7 @@ Err tab_node_init_move_request(
     CmdOut*     out
 ) {
     try(_tab_node_init_base_(n, parent));
-    Err err = htmldoc_init_move_request(tab_node_doc(n), r, url_client, s, out);
-    if (err) {
-        /* we don't want tab_node_cleanup to free node_doc again */
-        *tab_node_doc(n) = (HtmlDoc){0};
-        tab_node_cleanup(n);
-        return err;
-    }
+    try( htmldoc_init_move_request(tab_node_doc(n), r, url_client, s, out));
 
     n->current_ix = n->childs->len;
     return Ok;
@@ -36,60 +30,20 @@ Err tab_node_tree_append_ahref_from_node(
     if (!s) return "error: expecting a session";
     TabNode* n;
     HtmlDoc* d;
-    try(  tab_node_current_node(t, &n));
-    try(  tab_node_current_doc(t, &d));
+    try( tab_node_current_node(t, &n));
+    try( tab_node_current_doc(t, &d));
 
-    Str urlstr   = (Str){0};
-    StrView html = dom_node_attr_value(a, svl("href"));
-    try( str_append_z(&urlstr, &html));
-    Request r;
-    try(request_init_move_urlstr(&r,http_get, &urlstr, htmldoc_url(d)));
+    Err     e       = Ok;
+    StrView html    = dom_node_attr_value(a, svl("href"));
+    Request r       = (Request){0};
+    TabNode newnode = (TabNode){0};
 
-    TabNode newnode;
-    Err e = Ok;
-    try_or_jump(e, Clean_Url_Str,
-        tab_node_init_move_request(&newnode, n, url_client, &r, s, out));
-    try_or_jump(e, Failure_New_Node_Cleanup, tab_node_append_move_child(n, &newnode));
-    goto Clean_Url_Str;
-Failure_New_Node_Cleanup:
+    try_or_jump(e,Clean, request_init(&r,http_get, html, htmldoc_url(d)));
+    try_or_jump(e,Clean, tab_node_init_move_request(&newnode, n, url_client, &r, s, out));
+    try_or_jump(e,Clean, tab_node_append_move_child(n, &newnode));
+    return Ok;
+Clean:
     tab_node_cleanup(&newnode);
-Clean_Url_Str:
-    request_clean(&r);
-    return e;
-}
-
-Err tab_node_tree_append_ahref(
-    TabNode   t[_1_],
-    size_t    linknum,
-    UrlClient url_client[_1_],
-    Session   s[_1_],
-    CmdOut*   out
-) {
-    TabNode* n;
-    HtmlDoc* d;
-    try(  tab_node_current_node(t, &n));
-    try(  tab_node_current_doc(t, &d));
-
-    ArlOf(DomNode)* anchors = htmldoc_anchors(d);
-
-    DomNode* a = arlfn(DomNode, at)(anchors, linknum);
-    if (!a) return "link number invalid";
-
-    Str urlstr   = (Str){0};
-    StrView html = dom_node_attr_value(*a, svl("href"));
-    try( str_append_z(&urlstr, &html));
-    Request r;
-    try(request_init_move_urlstr(&r,http_get, &urlstr, htmldoc_url(d)));
-
-    TabNode newnode;
-    Err e = Ok;
-    try_or_jump(e, Clean_Url_Str,
-        tab_node_init_move_request(&newnode, n, url_client, &r, s, out));
-    try_or_jump(e, Failure_New_Node_Cleanup, tab_node_append_move_child(n, &newnode));
-    goto Clean_Url_Str;
-Failure_New_Node_Cleanup:
-    tab_node_cleanup(&newnode);
-Clean_Url_Str:
     request_clean(&r);
     return e;
 }
@@ -107,32 +61,27 @@ Err tab_node_tree_append_submit_input_node(
     try( tab_node_current_node(t, &tab_node));
     try( tab_node_current_doc(t, &d));
 
-    Err e = Ok;
     DomNode form = dom_node_find_parent_form(input_node);
     if (isnull(form)) { return "expected form, not found"; }
 
-    Request r = (Request){.urlview=htmldoc_url(d)};
-    try( mk_submit_request(form, true, &r));
-    TabNode newnode;
-    try_or_jump(e, Failure_Clean_Request,
-        tab_node_init_move_request(&newnode, tab_node, url_client, &r, s, out));
-    try_or_jump(e, Failure_New_Node_Cleanup, tab_node_append_move_child(tab_node, &newnode));
+    Request r       = (Request){0};
+    TabNode newnode = (TabNode){0};
+    Err e = Ok;
+    try_or_jump(e,Clean, request_from_form_node(&r, form, true, htmldoc_url(d)));
+    try_or_jump(e,Clean, tab_node_init_move_request(&newnode, tab_node, url_client, &r, s, out));
+    try_or_jump(e,Clean, tab_node_append_move_child(tab_node, &newnode));
     return Ok;
 
-Failure_Clean_Request:
+Clean:
     request_clean(&r);
-    return e;
-Failure_New_Node_Cleanup:
     tab_node_cleanup(&newnode);
     return e;
 }
 
 
-
-
 void tab_node_cleanup(TabNode n[_1_]) {
     htmldoc_cleanup(&n->doc);
-    arlfn(TabNode, clean)(n->childs);
+    if (n->childs) arlfn(TabNode, clean)(n->childs);
     std_free(n->childs);
 }
 

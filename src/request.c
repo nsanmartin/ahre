@@ -3,6 +3,19 @@
 #include "sys.h"
 #include "generic.h"
 
+
+static Err _url_from_post_request_(Request r[_1_]);
+Err url_from_get_request(Request r[_1_]) ;
+
+
+static Err request_url_init(Request r[_1_]) {
+    switch (r->method) {
+        case http_post: return _url_from_post_request_(r);
+        case http_get : return url_from_get_request(r);
+        default: return err_internal("could not initialize htmldoc, unsupported http method");
+    }
+}
+
 static Err
 _make_submit_get_request_rec_(DomNode node, Request r[_1_]) {
     if (isnull(node)) return Ok;
@@ -160,7 +173,8 @@ Err request_to_file(Request r[_1_], UrlClient url_client[_1_], FILE* fp) {
 }
 
 
-Err mk_submit_request (DomNode form, bool is_https, Request r[_1_]) {
+Err request_from_form_node (Request r[_1_], DomNode form, bool is_https, Url* urlview) {
+    *r = (Request){.urlview=urlview};
     StrView action = dom_node_attr_value(form, svl("action"));
     StrView method = dom_node_attr_value(form, svl("method"));
 
@@ -170,72 +184,21 @@ Err mk_submit_request (DomNode form, bool is_https, Request r[_1_]) {
 
     if (!method.len || str_eq_case(svl("get"), method)) {
         r->method = http_get;
-        return _make_submit_get_request_rec_(form, r);
+        try( _make_submit_get_request_rec_(form, r));
     }
     if (method.len && str_eq_case(svl("post"), method)) {
         r->method = http_post;
-        return _mk_submit_post_request_(form, is_https, r);
+        try( _mk_submit_post_request_(form, is_https, r));
     }
-    return "not yet supported method";
+
+    return request_url_init(r);
 }
 
 
-static Err _url_fill_postfields_(
-    Request r[_1_],
-    CURL* curl,
-    const char* postfields[_1_],
-    size_t len[_1_]
-) {
-    ArlOf(Str)* ks = request_query_keys(r);
-    ArlOf(Str)* vs = request_query_values(r);
-
-    if ((len__(ks) || len__(vs)) && len__(request_postfields(r)))
-        return "error: request must have either postfiels or keys and values, not both";
-
-    if (len__(request_postfields(r))) {
-        *postfields = items__(request_postfields(r));
-        *len        = len__(request_postfields(r));
-        return Ok;
-    }
-
-    if (len__(ks) != len__(vs))
-        return "error: key/value lists must have the same len";
-    if (!len__(ks))
-        return "submit request must have post fields";
-
-    Str* kit = arlfn(Str,begin)(ks);
-    Str* vit = arlfn(Str,begin)(vs);
-    Err e = Ok;
-    char* escaped = NULL;
-    for ( ; kit != arlfn(Str,end)(ks) && vit != arlfn(Str,end)(vs) ; ++kit, ++vit) {
-
-        escaped = curl_easy_escape(curl, items__(vit), len__(vit));
-        if (!escaped) return "error: curl_escape failure";
-        try_or_jump( e, Failure_Free_Escaped,
-            str_append(request_postfields(r), svl("&")));
-        try_or_jump(e, Failure_Free_Escaped,
-            str_append(request_postfields(r), kit));
-        try_or_jump(e, Failure_Free_Escaped,
-            str_append(request_postfields(r), svl("=")));
-        try_or_jump(e, Failure_Free_Escaped,
-            str_append(request_postfields(r), escaped));
-        curl_free(escaped);
-    }
-    //TODO: write postfields in htmldoc?
-    try(str_append(request_postfields(r), svl("\0")));
-    *postfields = items__(request_postfields(r)) + 1; /* ignore the first '&'! */
-    *len        = len__(request_postfields(r)) - 2; /* ignore first '&' and '\0' ! */
-    return Ok;
-Failure_Free_Escaped:
-    curl_free(escaped);
-    return e;
-}
-
-
-static Err _url_from_post_request_(Request r[_1_], UrlClient uc[_1_]) {
+static Err
+_url_from_post_request_(Request r[_1_]) {
     Err err = Ok;
     try(url_init(request_url(r), r->urlview));
-    CURL* curl = url_client_curl(uc);
     CURLU* cu = url_cu(&r->url);
     if (len__(request_urlstr(r))) {
         CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, items__(request_urlstr(r)), CURLU_DEFAULT_SCHEME);
@@ -245,26 +208,6 @@ static Err _url_from_post_request_(Request r[_1_], UrlClient uc[_1_]) {
         }
     }
     
-    const char* postfields;
-    size_t      len;
-    try (_url_fill_postfields_(r, uc, &postfields, &len));
-
-    if (!len) {
-        err = "error: unexpected empty postfields";
-        goto Clean_Url;
-    }
-
-    CURLcode code;
-    code = curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, len);
-    if (CURLE_OK != code) {
-        err = "error: curl postfields size set failure";
-        goto Clean_Url;
-    }
-    code = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postfields);
-    if (CURLE_OK != code) {
-        err = "error: curl postfields set failure";
-        goto Clean_Url;
-    }
     return Ok;
 Clean_Url:
     url_cleanup(request_url(r));
@@ -346,14 +289,23 @@ Failure_Clean_File_Url:
 }
 
 
-Err url_from_request(Request r[_1_], UrlClient* uc) {
-    switch (r->method) {
-        case http_post:
-            if (!uc) return "error: expetincg an UrlClient, got NULL";
-            return _url_from_post_request_(r, uc);
-        case http_get: return url_from_get_request(r);
-        default: return "error: could not initialize htmldoc, unsupported http method";
-    }
+
+Err
+request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url) {
+    *r = (Request) {
+        .method=method,
+        .urlview=url
+    };
+    if (urlstr.len) try(str_append_z(request_urlstr(r), urlstr));
+    return request_url_init(r);
+}
+
+Err
+request_from_cli_params(Request r[_1_], HttpMethod method, StrView urlstr, StrView postfields) {
+    *r = (Request) { .method=method, };
+    try(str_append_z(request_urlstr(r), urlstr));
+    try(str_append(request_postfields(r), postfields));
+    return request_url_init(r);
 }
 
 

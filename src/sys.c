@@ -83,6 +83,7 @@ Err _file_write_or_close_(const char* mem, size_t len, FILE* fp, const char* cal
 } 
 
 Err file_close(FILE* fp) {
+    if (!fp) return Ok;
     if (fclose(fp)) return err_fmt("error closing file: %s", strerror(errno));
     return Ok;
 }

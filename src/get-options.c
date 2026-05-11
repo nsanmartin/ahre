@@ -1,6 +1,7 @@
 #include "get-options.h"
 #include "user-out.h"
 #include "config.h"
+#include "generic.h"
 
 
 static Err _read_bm_opt_(CliParams cparams[_1_], const char* optparam) {
@@ -20,22 +21,10 @@ static Err _read_cmd_opt_(CliParams cparams[_1_], const char* optparam) {
 static Err _read_data_opt_(CliParams cparams[_1_], const char* data, const char* url) {
     if (!data || !*data) return "invalid -d data optparam";
     if (!url || !*url) return "invalid -d url optparam";
-    Err err = Ok;
-    Str urlstr = (Str){0};
-    Request r = (Request){0};
-
-    try(str_append(&urlstr, sv(url, strlen(url) + 1)));
-    try_or_jump(err, Fail_Clean_Post_Fields, request_init_move_urlstr(&r, http_post, &urlstr, NULL));
-    try_or_jump(err, Fail_Clean_Url_Str, str_append(&r.postfields, (char*)data));
-    if (!arlfn(Request,append)(cparams_requests(cparams), &r))
-        return "error: arl append failure";
-
+    Request* r;
+    try(arl_append_zero(Request,cparams_requests(cparams),r));
+    try(request_from_cli_params(r, http_post, sv(url), sv(data)));
     return Ok;
-Fail_Clean_Post_Fields:
-    str_clean(&r.postfields);
-Fail_Clean_Url_Str:
-    str_clean(&urlstr);
-    return err;
 }
 
 
@@ -65,14 +54,9 @@ static Err _session_conf_from_options_(int argc, char* argv[], CliParams cparams
 
         // read positional parameter
         if (*arg != '-') {
-            Str urlstr = (Str){0};
-            size_t arg_len = strlen(arg);
-            if (arg_len) try(str_append_z(&urlstr, sv(arg, arg_len)));
-            Request r;
-            Err err = request_init_move_urlstr(&r, http_get, &urlstr, NULL);
-            if (err) { str_clean(&urlstr); return err; }
-            if (!arlfn(Request,append)(cparams_requests(cparams), &r))
-                return "error: arl append failure";
+            Request* r;
+            try(arl_append_zero(Request,cparams_requests(cparams),r));
+            try(request_init(r, http_get, sv(arg), NULL));
             continue;
         }
 

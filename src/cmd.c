@@ -16,43 +16,47 @@ static Err save_request_to_file(CmdParams p[_1_], Request r[_1_]);
 
 static bool _is_url_alias_(const char* cmd) { return *cmd == '\\'; }
 
+static Err
+cmd_save_url(CmdParams p[_1_], StrView url) {
+    HtmlDoc* htmldoc;
+    try( session_current_doc(p->s, &htmldoc));
+
+    Err     e   = Ok;
+    Request r   = (Request){0};
+
+    try_or_jump(e, Clean, request_init(&r, http_get, url, htmldoc_url(htmldoc)));
+    try_or_jump(e, Clean, save_request_to_file(p, &r));
+
+Clean:
+    request_clean(&r);
+    return e;
+}
+
 /* session commands */
-Err cmd_get(CmdParams p[_1_]) {
-    p->ln = cstr_trim_space((char*)p->ln);
-    Request r;
+static Err
+cmd_fetch_request_(CmdParams p[_1_], HttpMethod method) {
+    Request r = (Request){0};
+    Str     u = (Str){0};
+    Err     e = Ok;
+    p->ln     = cstr_trim_space((char*)p->ln);
+
     if (_is_url_alias_(p->ln)) {
-        Str u = (Str){0};
         try (get_url_alias(p->s, cstr_skip_space(p->ln + 1), &u));
-        Err err = request_init_move_urlstr(&r, http_get, &u, NULL);
-        ok_then(err,
-            session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p)));
-        request_clean(&r);
-        return err;
-    }
-    try (request_from_userln(&r, p->ln, http_get));
-    Err err = session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p));
-    if (err) request_clean(&r);
-    return err;
+        try_or_jump(e,Fail, request_init(&r, method, sv(u), NULL));
+    } else
+        try_or_jump(e,Fail, request_from_userln(&r, p->ln, method));
+
+    try_or_jump(e,Fail, session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p)));
+    str_clean(&u);
+    return Ok;
+Fail:
+    str_clean(&u);
+    request_clean(&r);
+    return e;
 }
 
-
-Err cmd_post(CmdParams p[_1_]) {
-    p->ln = cstr_trim_space((char*)p->ln);
-    Request r;
-    if (_is_url_alias_(p->ln)) {
-        Str u = (Str){0};
-        try (get_url_alias(p->s, cstr_skip_space(p->ln + 1), &u));
-        Err err = request_init_move_urlstr(&r, http_get, &u, NULL);
-        ok_then(err,
-            session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p)));
-        request_clean(&r);
-        return err;
-    }
-    try (request_from_userln(&r, p->ln, http_post));
-    Err err = session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p));
-    if (err) request_clean(&r);
-    return err;
-}
+Err cmd_get(CmdParams p[_1_]) { return cmd_fetch_request_(p, http_get); }
+Err cmd_post(CmdParams p[_1_]) { return cmd_fetch_request_(p, http_post); }
 
 
 Err cmd_set_session_winsz(CmdParams p[_1_]) {
@@ -399,11 +403,15 @@ cmd_input_default_node(CmdParams p[_1_], DomNode node) {
 
     if (dom_node_tag(node) == HTML_TAG_INPUT
     &&  dom_node_attr_has_value(node, svl("type"), svl("submit"))) 
-        return tab_node_tree_append_submit_input_node(tab , node, session_url_client(p->s), p->s, cmd_params_cmd_out(p));
+        return tab_node_tree_append_submit_input_node(
+            tab, node, session_url_client(p->s), p->s, cmd_params_cmd_out(p)
+        );
     else if (dom_node_tag(node) == HTML_TAG_BUTTON
     &&  (dom_node_attr_has_value(node, svl("type"), svl("submit"))
         || !dom_node_has_attr(node, svl("type"))))
-        return tab_node_tree_append_submit_input_node(tab , node, session_url_client(p->s), p->s, cmd_params_cmd_out(p));
+        return tab_node_tree_append_submit_input_node(
+            tab, node, session_url_client(p->s), p->s, cmd_params_cmd_out(p)
+        );
     else if (dom_node_tag(node) == HTML_TAG_SELECT)
         return cmd_select_elem_show_options(&node, cmd_params_cmd_out(p));
     
@@ -512,12 +520,13 @@ Err cmd_input_save_node(CmdParams p[_1_], DomNode node) {
     try( session_current_doc(p->s, &htmldoc));
     DomNode form = dom_node_find_parent_form(node);
     if (isnull(form)) return "expected form, not found";
-    Request r = (Request){.urlview=htmldoc_url(htmldoc)};
-    try( mk_submit_request(form, true, &r));
+    Err err = Ok;
+    Request r = (Request){0};
+    try_or_jump(err,Clean, request_from_form_node(&r, form, true, htmldoc_url(htmldoc)));
+    err = save_request_to_file(p, &r);
 
-    Err err = save_request_to_file(p, &r);
+Clean:
     request_clean(&r);
-
     return err;
 }
 
@@ -544,39 +553,7 @@ Err cmd_image_print(CmdParams p[_1_], DomNode node) {
 
 
 Err cmd_image_save(CmdParams p[_1_], DomNode node) {
-    HtmlDoc* htmldoc;
-    try( session_current_doc(p->s, &htmldoc));
-
-    Str urlstr = (Str){0};
-    try (dom_node_append_null_terminated_attr_to_str(node, svl("src"), &urlstr));
-
-    Err err = Ok;
-    Request r;
-    try_or_jump(err, Clean_Url_Str,
-        request_init_move_urlstr(&r,http_get, &urlstr, htmldoc_url(htmldoc)));
-    try_or_jump(err, Clean_Request, url_from_request(&r, session_url_client(p->s)));
-
-    const char* fname = p->ln;
-    FILE* fp          = NULL;
-    Str   actual_path = (Str){0};
-    try_or_jump(err, Clean_Request,
-        fopen_or_append_fopen(fname, *request_url(&r), &fp, &actual_path));
-
-    try_or_jump(err, Clean_Actual_Path, request_to_file(&r, session_url_client(p->s), fp));
-
-    file_close(fp);
-
-    ok_then(err, msg__(cmd_params_cmd_out(p), svl("data saved: ")));
-    ok_then(err, msg_ln__(cmd_params_cmd_out(p), actual_path));
-
-Clean_Actual_Path:
-    str_clean(&actual_path);
-Clean_Request:
-    request_clean(&r);
-    return err;
-Clean_Url_Str:
-    str_clean(&urlstr);
-    return err;
+    return cmd_save_url(p, dom_node_attr_value(node, svl("src")));
 }
 
 
@@ -598,27 +575,9 @@ Err cmd_anchor_asterisk(CmdParams p[_1_], DomNode node) {
     return "error: where is the href if current tree is empty?";
 }
 
-
-Err cmd_anchor_save(CmdParams p[_1_], DomNode node) {
-    HtmlDoc* htmldoc;
-    try( session_current_doc(p->s, &htmldoc));
-
-    Str urlstr = (Str){0};
-    try (dom_node_append_null_terminated_attr_to_str(node, svl("href"), &urlstr));
-
-    Err err = Ok;
-    Request r;
-    try_or_jump(err, Clean_Url_Str,
-        request_init_move_urlstr(&r, http_get, &urlstr, htmldoc_url(htmldoc)));
-
-    try_or_jump(err, Clean_Request, save_request_to_file(p, &r));
-
-Clean_Request:
-    request_clean(&r);
-    return err;
-Clean_Url_Str:
-    str_clean(&urlstr);
-    return err;
+Err
+cmd_anchor_save(CmdParams p[_1_], DomNode node) {
+    return cmd_save_url(p, dom_node_attr_value(node, svl("href")));
 }
 
 
@@ -643,23 +602,21 @@ Err _cmd_lexbor_node_print_(ArlOf(DomNode) node_arl[_1_], size_t ix, CmdOut out[
 
 
 static Err save_request_to_file(CmdParams p[_1_], Request r[_1_]) {
+    Err     e           = Ok;
     FILE*   fp          = NULL;
     Str     actual_path = (Str){0};
-    Err     err         = Ok;
     CmdOut* out         = cmd_params_cmd_out(p);
 
-    try(url_from_request(r, session_url_client(p->s)));
-    try(fopen_or_append_fopen(p->ln, *request_url(r), &fp, &actual_path));
+    
+    try_or_jump(e,Clean, fopen_or_append_fopen(p->ln, *request_url(r), &fp, &actual_path));
+    try_or_jump(e,Clean, request_to_file(r, session_url_client(p->s), fp));
 
-    try_or_jump(err, Close_Flie, request_to_file(r, session_url_client(p->s), fp));
+    try_or_jump(e,Clean, msg__(out, svl("file saved: ")));
+    try_or_jump(e,Clean, msg_ln__(out, sv(actual_path)));
 
-
-    ok_then(err, msg__(out, svl("file saved: ")));
-    ok_then(err, msg_ln__(out, sv(actual_path)));
-
-Close_Flie:
+Clean:
     file_close(fp);
     str_clean(&actual_path);
-    return err;
+    return e;
 }
 

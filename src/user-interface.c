@@ -111,7 +111,7 @@ static Err
 run_cmd_for_dom_node_range(CmdParams p[_1_], Range r[_1_], ArlOf(DomNode) collection[_1_], nodeCmdCallback cb) {
     for_range(r, i) {
         DomNode* nodeptr = arlfn(DomNode, at)(collection, i);
-        if (!nodeptr) return "error: node number invalid";
+        if (!nodeptr) return "invalid id\n";
         Err err = cb(p, *nodeptr);
         if (err) msg_ln__(cmd_params_cmd_out(p), err);
     }
@@ -184,7 +184,11 @@ static Err cmd_anchor_asterisk_range(CmdParams p[_1_]) {
     //immediately isntead
     if (range_len(&r) > 1)
         return run_cmd_for_dom_node_range(p, &r, anchors, cmd_anchor_asterisk);
-    return session_follow_ahref(p->s, r.beg, cmd_params_cmd_out(p));
+
+
+    DomNode* a = arlfn(DomNode, at)(anchors, r.beg);
+    if (!a) return "link number invalid";
+    return session_follow_ahref(p->s, *a, cmd_params_cmd_out(p));
 }
 
 

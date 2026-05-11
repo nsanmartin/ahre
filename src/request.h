@@ -35,24 +35,10 @@ static inline void request_clean(Request r[_1_]) {
 
 Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method);
 Err request_to_file(Request r[_1_], UrlClient url_client[_1_], FILE* fp);
-
 Err request_query_append_key_value(Request r[_1_], const char*k, size_t klen, const char* v, size_t vlen);
 
-Err url_from_get_request(Request r[_1_]);
-Err url_from_request(Request r[_1_], UrlClient* uc);
-
-
-static inline Err
-request_init_move_urlstr(Request r[_1_], HttpMethod method, StrZ urlstr[_1_], Url* url) {
-    (void)url;
-    *r = (Request) {
-        .method=method,
-        .urlstr=*urlstr,
-        .urlview=url
-    };
-    return Ok;
-}
-
-
-Err mk_submit_request (DomNode form, bool is_https, Request r[_1_]);
+/* ctors */
+Err request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url);
+Err request_from_form_node (Request r[_1_], DomNode form, bool is_https, Url* urlview);
+Err request_from_cli_params(Request r[_1_], HttpMethod method, StrView urlstr, StrView postfields);
 #endif

@@ -911,28 +911,27 @@ htmldoc_init_move_request(
     *d = (HtmlDoc){
         .req    = *r,
     };
-    try(dom_init(&d->dom));
+    try_or_jump(e,Fail, dom_init(&d->dom));
     if (flags & HTMLDOC_FLAG_JS) 
-        try_or_jump(e, Failure, jse_init(d));
+        try_or_jump(e, Fail, jse_init(d));
 
     ArlOf(FetchHistoryEntry)* hist = session_fetch_history(s);
      if (!arlfn(FetchHistoryEntry,append)(hist, &(FetchHistoryEntry){0}))
-     { e = "error: arl append to fetch history failure"; goto Failure; }
+     { e = "error: arl append to fetch history failure"; goto Fail; }
 
-    try_or_jump(e, Failure, htmldoc_fetch(d, uc, cmd_out, arlfn(FetchHistoryEntry,back)(hist)));
+    try_or_jump(e, Fail, htmldoc_fetch(d, uc, cmd_out, arlfn(FetchHistoryEntry,back)(hist)));
     htmldoc_eval_js_scripts_or_continue(d, s, cmd_out);
-    try_or_jump( e, Failure, _htmldoc_draw_(d, s, cmd_out));
-    try_or_jump( e, Failure,
+    try_or_jump( e, Fail, _htmldoc_draw_(d, s, cmd_out));
+    try_or_jump( e, Fail,
         fetch_history_entry_update_title(arlfn(FetchHistoryEntry,back)(hist),htmldoc_title(d)));
 
     *r = (Request){0};
     return Ok;
 
-Failure:
+Fail:
     /* In case of failure, the caller keeps ownership. In case of success it loses it */
     *r = d->req;
     d->req = (Request){0};
-    htmldoc_cleanup(d);
 
     return e;
 }
@@ -942,15 +941,13 @@ Err
 htmldoc_init_bookmark_move_urlstr(HtmlDoc d[_1_], Str urlstr[_1_]) {
     Err e = Ok;
 
-
     *d = (HtmlDoc){ 0 };
     try(dom_init(&d->dom));
-    if (!urlstr) return "error: cannot initialize bookmark with not path";
-    try_or_jump(e, Failure_Lxb_Html_Document_Destroy,
-        request_init_move_urlstr(htmldoc_request(d), http_get, urlstr, NULL));
-    return Ok;
+    if (!urlstr) return err_internal("cannot initialize bookmark with not path");
+    try_or_jump(e, Fail, request_init(htmldoc_request(d), http_get, sv(urlstr), NULL));
 
-Failure_Lxb_Html_Document_Destroy:
+    return Ok;
+Fail:
     dom_cleanup(d->dom);
     return e;
 }
