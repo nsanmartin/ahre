@@ -57,8 +57,6 @@ Err url_client_init(
     StrView   user_agent,
     unsigned  flags
 ) {
-    Err e = Ok;
-
     *url_client = (UrlClient){
         .cookies_fname = cookies_fname,
         .user_agent   = user_agent,
@@ -69,20 +67,9 @@ Err url_client_init(
     if (!url_client->curl) return "error: curl_easy_init failure";
 
     url_client->curlm = curl_multi_init();
-    if (!url_client->curlm) {
-        e = "error: curl_multi_init failure";
-        goto Failure_Curl_Easy_Cleanup;
-    }
+    if (!url_client->curlm) return err_internal("curl_multi_init failure");
 
-    try_or_jump(e, Failure_Curl_Multi_Cleanup, url_client_set_basic_options(url_client));
-
-    return Ok;
-
-Failure_Curl_Multi_Cleanup:
-    curl_easy_cleanup(url_client->curl);
-Failure_Curl_Easy_Cleanup:
-    curl_multi_cleanup(url_client->curlm);
-    return e;
+    return url_client_set_basic_options(url_client);
 }
 
 

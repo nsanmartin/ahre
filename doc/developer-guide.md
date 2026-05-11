@@ -4,14 +4,27 @@
 An easy way to find bugs, mainly memory leaks and invalid reads, is using valgring.
 Just run
 ```
-valgrind --leak-check=full  --track-origins=yes --show-leak-kinds=all  ahre 2> log
+$ valgrind --leak-check=full  --track-origins=yes --show-leak-kinds=all  ahre 2> log
 ```
 and use it to navigate until something is logged.
 
-## Unit tests
-There are very few unit tests and this should be fixed.o
+If you want to find bugs related to error management, you can build with:
 
-There is a script `bash/check-utests` that run all unit tests with both gcc and clang.
+```
+$ make clean
+$ CFLAGS=-DAHRE_SIMULATE_ERR=5000 make
+```
+
+passing whatever number you want. This will simulate different kinds of errors
+every N times and allows to test the error management (use after free, mempry
+leak, etc.)
+
+## Unit tests
+There are very few unit tests and this should be fixed.
+
+There is a script `bash/check-utests` that run all unit tests with both gcc and
+clang. tcc build is broken due to a dependency, but we should renable it (at
+list failing when that dependency is attempted to be called).
 
 # Errors
 In C, errors are indicated in various ways:

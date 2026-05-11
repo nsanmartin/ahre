@@ -56,7 +56,7 @@ Err create_or_get_confdir(Str confdir[_1_]) {
 
 Err resolve_bookmarks_file(const char* path, Str out[_1_]) {
     size_t prefix = len__(out);
-    bool file_exists;
+    bool   file_exists;
     try(resolve_path(path, &file_exists, out));
 
     if (file_exists) return Ok;

@@ -123,25 +123,28 @@ Err session_write_screen_range_mod(
 
 
 static Err session_write_fetch_history(Session s[_1_]) {
-    int fd;
-    FILE* fp;
-    Str fetch_history_fname = (Str){0};
-    /* try(get_fetch_history_filename(&fetch_history_fname)); */
+    int   fd;
+    FILE* fp                  = NULL;
+    Str   fetch_history_fname = (Str){0};
+    Err   e                   = Ok;
+
     try(session_fetch_history_fname_append(s, &fetch_history_fname));
 
     if (-1 != (fd = open(fetch_history_fname.items, O_WRONLY | O_CREAT | O_EXCL, 0666))) {
         ssize_t nbytes = write(fd, FETCH_HISTORY_HEADER, lit_len__(FETCH_HISTORY_HEADER)) == -1;
         close(fd);
-        if(nbytes == -1)
-            return err_fmt("error: could not write fetch history header: %s", strerror(errno));
+        if(nbytes == -1) {
+            e=err_fmt("error: could not write fetch history header: %s", strerror(errno));
+            goto Clean;
+        }
     } else if (errno == ENOENT) {
-        return err_fmt("error: could not write fetch history header: %s", strerror(errno));
+        e=err_fmt("error: could not write fetch history header: %s", strerror(errno));
+        goto Clean;
     }
 
 
     try(file_open(fetch_history_fname.items, "a", &fp));
     ArlOf(FetchHistoryEntry)* history = session_fetch_history(s);
-    Err e = Ok;
     for (FetchHistoryEntry* it = arlfn(FetchHistoryEntry,begin)(history)
         ; it != arlfn(FetchHistoryEntry,end)(history)
         ; ++it
@@ -156,13 +159,14 @@ Clean:
 
 
 Err session_write_input_history(Session s[_1_]) {
-    Str input_history_fname = (Str){0};
-    FILE* fp;
-    /* try(get_input_history_filename(&history_fname)); */
-    try(session_input_history_fname_append(s, &input_history_fname));
-    try(file_open(input_history_fname.items, "a", &fp));
+    Str   input_history_fname = (Str){0};
+    FILE* fp                  = NULL;
+    Err   e                   = Ok;
+
+
+    try_or_jump(e, Clean, session_input_history_fname_append(s, &input_history_fname));
+    try_or_jump(e, Clean, file_open(input_history_fname.items, "a", &fp));
     ArlOf(const_cstr)* history = session_input_history(s);
-    Err e = Ok;
     Str* dt = session_dt_now_str(s);
     try_or_jump(e, Clean, file_write_or_close(items__(dt), len__(dt), fp));
     try_or_jump(e, Clean, file_write_or_close("\n", 1, fp));

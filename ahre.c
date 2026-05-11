@@ -15,6 +15,7 @@
 #include "wrapper-curl.h"
 #include "generic.h"
 
+Err main_ahre(int argc, char **argv);
 
 static void warn_cmd_out_to_stderr(CmdOut cout[_1_]) {
     Msg*    msg  = cmd_out_msg(cout);
@@ -79,7 +80,7 @@ Clean_Errors:
 }
 
 
-int main(int argc, char **argv) {
+Err main_ahre(int argc, char **argv) {
     w_curl_global_init();
 
     Err       err     = Ok;
@@ -88,33 +89,38 @@ int main(int argc, char **argv) {
     CliParams cparams = (CliParams){0};
     Session   session = (Session){0};
 
-    try_or_jump(err, Clean_Curl, session_conf_from_options(argc, argv, &cparams));
-    if (*cparams_help(&cparams)) { print_help(argv[0]); goto Clean_Cparams; }
-    if (*cparams_version(&cparams)) { puts("ahre version " AHRE_VERSION); goto Clean_Cparams; }
-    try_or_jump(err, Clean_Cparams, session_init(&session, cparams_sconf(&cparams)));
+    try_or_jump(err, Clean, session_conf_from_options(argc, argv, &cparams));
+    if (*cparams_help(&cparams)) { print_help(argv[0]); goto Clean; }
+    if (*cparams_version(&cparams)) { puts("ahre version " AHRE_VERSION); goto Clean; }
+    try_or_jump(err, Clean, session_init(&session, cparams_sconf(&cparams)));
     if (cparams.cmd) {
         cparams.cmd = std_strdup(cparams.cmd);
         if (!cparams.cmd) {
             err = "error: strdup failure";
-            goto Clean_Session;
+            goto Clean;
         }
-        try_or_jump(err, Clean_Session, user_line_init_take_ownership(&userln, cparams.cmd));
-        try_or_jump(err, Clean_Session, run_cmds(&session, &userln));
+        try_or_jump(err, Clean, user_line_init_take_ownership(&userln, cparams.cmd));
+        try_or_jump(err, Clean, run_cmds(&session, &userln));
         user_line_cleanup(&userln);
     }
-    try_or_jump(err, Clean_Session, fetch_params(&session, cparams_requests(&cparams), cout));
+    try_or_jump(err, Clean, fetch_params(&session, cparams_requests(&cparams), cout));
 
     err = _loop_(&session, &userln, cout);
-Clean_Session:
+Clean:
     warn_cmd_out_to_stderr(cout);
     cmd_out_clean(cout);
     session_close(&session);
     session_cleanup(&session);
-Clean_Cparams:
     cparams_clean(&cparams);
-Clean_Curl:
     w_curl_global_cleanup();
+    return err;
+}
 
-    if (err) fprintf(stderr, "%s\n", err);
-    return err ? EXIT_FAILURE : EXIT_SUCCESS;
+int main(int argc, char **argv) {
+    Err err = main_ahre(argc, argv);
+    if (err) {
+        fprintf(stderr, "%s\n", err);
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
 }

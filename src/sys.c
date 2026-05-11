@@ -9,18 +9,20 @@
 
 
 Err resolve_path(const char *path, bool* file_exists, Str out[_1_]) {
+    Err err      = Ok;
     Str expanded = (Str){0};
     try(expand_path(path, &expanded));
     char buf[PATH_MAX];
     char *real = realpath(expanded.items, buf);
     if (!real && errno != ENOENT) {
-    	str_clean(&expanded);
-        return err_fmt("could not resolve path: %s", strerror(errno));
+        err=err_fmt("could not resolve path: %s", strerror(errno));
+        goto Clean;
     }
     if (file_exists) *file_exists =  real && errno != ENOENT;
-    Err err = Ok;
     if (real) err = str_append_z(out, sv(real, strlen(real)));
     else if (expanded.len) { err = str_append_z(out, expanded); }
+
+Clean:
     str_clean(&expanded);
     return err;
 }

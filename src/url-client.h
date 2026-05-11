@@ -62,8 +62,10 @@ static inline char* url_client_escape_url(UrlClient url_client[_1_], const char*
 }
 
 static inline void url_client_cleanup(UrlClient* url_client) {
-    curl_multi_cleanup(url_client->curlm);
-    curl_easy_cleanup(url_client->curl);
+    if (url_client->curlm) curl_multi_cleanup(url_client->curlm);
+    url_client->curlm = NULL;
+    if (url_client->curl) curl_easy_cleanup(url_client->curl);
+    url_client->curl  = NULL;
     str_clean(url_client_postdata(url_client));
 }
 

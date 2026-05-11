@@ -274,10 +274,14 @@ dom_get_elem_by_id(Dom dom, StrView id) {
 }
 
 bool
-dom_node_has_tag(DomNode n, HtmlTag tag) { return _lexbor_to_html_tag_[n.ptr->local_name] == tag; }
+dom_node_has_tag(DomNode n, HtmlTag tag) {
+    return  n.ptr->local_name < LXB_TAG__LAST_ENTRY
+        && _lexbor_to_html_tag_[n.ptr->local_name] == tag;
+}
 
 bool dom_node_has_type(DomNode n, DomNodeType type) {
- return _lexbor_to_dom_node_type_[n.ptr->type] == type;
+ return n.ptr->type < LXB_DOM_NODE_TYPE_LAST_ENTRY
+     && _lexbor_to_dom_node_type_[n.ptr->type] == type;
 }
 
 bool
