@@ -19,6 +19,7 @@
 #include "js-engine.h"
 #include "fetch-history.h"
 #include "cmd-out.h"
+#include "request.h"
 
 
 _Static_assert(sizeof(size_t) >= 2, "size_t type too small");
