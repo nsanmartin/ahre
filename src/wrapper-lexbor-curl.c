@@ -232,11 +232,8 @@ static Err curl_lexbor_fetch_scripts(
             e = get_failed_indexed(easies, failed, indexes);
             if (!e) {
                 foreach__(size_t, indexes, ix) {
-
-                    Str* script;
-                     /* url_client_multi_add_handles pushed the empty buffers for all scripts
-                     * so I can assume indexes will match.
-                     * */
+                    Str* script; /* url_client_multi_add_handles pushed the empty buffers for all scripts
+                     * so I can assume indexes will match.  **/
                     e = htmldoc_script_at(htmldoc, *ix, &script);
                     if (e) break;
                     str_reset(script);
@@ -250,16 +247,15 @@ static Err curl_lexbor_fetch_scripts(
         easies, cmd_out, url_client_curl(url_client), htmldoc_curlinfo_sz_download(htmldoc));
     w_curl_multi_remove_handles(multi, easies, cmd_out);
 
-    arlfn(CurlPtr,clean)(easies);
-    arlfn(CurlMultiSgPtr,clean)(failed);
-    arlfn(CurlUrlPtr,clean)(curlus);
-
     _map_append_nullchar_(htmldoc_head_scripts(htmldoc), cmd_out);
     _map_append_nullchar_(htmldoc_body_scripts(htmldoc), cmd_out);
 
-    arlfn(Str,clean)(body_urls);
 Clean_Head_Urls:
+    arlfn(CurlPtr,clean)(easies);
+    arlfn(CurlMultiSgPtr,clean)(failed);
+    arlfn(CurlUrlPtr,clean)(curlus);
     arlfn(Str,clean)(head_urls);
+    arlfn(Str,clean)(body_urls);
 
 Lxb_Array_Body_Destroy:
     lxb_dom_collection_destroy(body_scripts, true);

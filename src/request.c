@@ -1,6 +1,5 @@
 #include "request.h"
 #include "session.h"
-#include "sys.h"
 #include "generic.h"
 
 
@@ -173,20 +172,23 @@ Err request_to_file(Request r[_1_], UrlClient url_client[_1_], FILE* fp) {
 }
 
 Err
-request_to_handle(Request r[_1_], UrlClient url_client[_1_], const char* path, FILE* fpp[_1_], CurlPtr out[_1_]) {
+request_to_handle(
+    Request     r[_1_],
+    UrlClient   url_client[_1_],
+    const char* path,
+    FilePtr     fpp[_1_],
+    Str         actual_path[_1_],
+    CurlPtr     out[_1_]
+) {
     *out = curl_easy_init();
     if (!out) return err_internal("curl_easy_init failure");
     try(url_client_set_basic_options_to_handle(url_client, *out));
     try(w_curl_set_method_from_http_method(*out, request_method(r)));
     try( w_curl_set_url(*out, request_url(r)));
 
-    Err     e           = Ok;
-    Str     actual_path = (Str){0};
-    try_or_jump(e,Clean, fopen_or_append_fopen(path, *request_url(r), fpp, &actual_path));
-    try_or_jump(e,Clean, w_curl_set_write_fn_and_data_for_download(*out, *fpp));
-Clean:
-    str_clean(&actual_path);
-    return e;
+    try(fopen_or_append_fopen(path, *request_url(r), &fpp->ptr, actual_path));
+    try(w_curl_set_write_fn_and_data_for_download(*out, fpp->ptr));
+    return Ok;
 }
 
 

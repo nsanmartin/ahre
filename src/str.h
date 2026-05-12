@@ -24,6 +24,7 @@
 
 
 #define Str BufOf(char)
+typedef Str* StrPtr;
 
 #define T ArlOf(Str)
 #define TClean arlfn(Str,clean)

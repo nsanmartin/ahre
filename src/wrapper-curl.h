@@ -16,7 +16,9 @@ typedef CURLU*   CurlUrlPtr;
 typedef CURLMsg* CurlMultiSgPtr;
 
 
+static inline void curl_ptr_clean(CurlPtr* p) { if(*p) curl_easy_cleanup((void*)*p); }
 #define T CurlPtr
+#define TClean curl_ptr_clean
 #include <arl.h>
 
 #define T CurlMultiSgPtr

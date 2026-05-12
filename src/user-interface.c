@@ -31,6 +31,11 @@ typedef Err nodeCmdCallback (CmdParams p[_1_], DomNode n);
 typedef ArlOf(DomNode)* nodeCollectionCallback (HtmlDoc h[_1_]);
 
 
+#define KT CurlPtr
+#define VT Str
+#include "lip.h"
+
+
 /* internal linkage */
 
 static Err
@@ -193,24 +198,39 @@ static Err cmd_anchor_asterisk_range(CmdParams p[_1_]) {
 
 
 static Err request_arl_to_file(CmdParams p[_1_], ArlOf(Request) rs[_1_]) {
-    ArlOf(FilePtr)        fps    = (ArlOf(FilePtr)){0};
-    ArlOf(CurlPtr)        handles= (ArlOf(CurlPtr)){0};
-    ArlOf(CurlMultiSgPtr) failed = (ArlOf(CurlMultiSgPtr)){0};
-    Err                   e      = Ok;
+    ArlOf(FilePtr)        fps       = (ArlOf(FilePtr)){0};
+    ArlOf(CurlPtr)        handles   = (ArlOf(CurlPtr)){0};
+    ArlOf(CurlMultiSgPtr) failed    = (ArlOf(CurlMultiSgPtr)){0};
+    ArlOf(Str)            fnames    = (ArlOf(Str)){0};
+    Err                   e         = Ok;
 
-    //TODO0: pass also actul_paths and delete files if somethinf fail (lines 221-228)
+    LipOf(CurlPtr,Str) curl2file = (LipOf(CurlPtr,Str)){0};
+    if (lipfn(CurlPtr,Str,init)(&curl2file, (LipInitArgs){.sz=4})) return err_internal("lip init failure");
+
     UrlClient* uc = session_url_client(p->s);
     foreach__(Request,rs,req) {
-        FilePtr* fpp;
-        CurlPtr* cpp;
+        FilePtr* fpp   = NULL;
+        CurlPtr* cpp   = NULL;
+        Str*     pathp = NULL;
         try(arl_append_zero(FilePtr,&fps,fpp));
         try(arl_append_zero(CurlPtr,&handles,cpp));
-        Err msg = request_to_handle(req, uc, p->ln, fpp, cpp);
+        try(arl_append_zero(Str,&fnames,pathp));
+        Err msg = request_to_handle(req, uc, p->ln, fpp, pathp, cpp);
         if (msg) {
             msg_ln__(p,msg);
-            if (!fps.len || !handles.len) {e=err_internal("arl appended but is empty"); goto Clean;}
+            if (pathp) { str_clean(pathp); *pathp = (Str){0}; }
+            if (cpp) { curl_easy_cleanup(*cpp); *cpp = NULL; }
+            if (fpp) { file_close(fpp->ptr); *fpp = (FilePtr){0}; };
+            if (!fps.len || !fnames.len || !handles.len) {e=err_internal("arl appended but is empty"); goto Clean;}
+            //TODO1: use pop
             --fps.len;
             --handles.len;
+            --fnames.len;
+        } else {
+            if (lipfn(CurlPtr,Str,set)(&curl2file, cpp, pathp)) {
+                e=err_internal("lit append failure");
+                goto Clean;
+            }
         }
     }
 
@@ -218,22 +238,34 @@ static Err request_arl_to_file(CmdParams p[_1_], ArlOf(Request) rs[_1_]) {
     foreach__(CurlPtr,&handles,cpp) { try_or_jump(e,Clean,w_curl_multi_add_handle(multi, *cpp)); }
 
     e = w_curl_multi_perform_poll(multi, &failed);
-    if (len__(&failed)) {
-        msg__(p, "warn: ");
-        msg_ui_b10__(p, len__(&failed));
-        msg_ln__(p, "requests failed");
+    size_t failedcount = len__(&failed);
+    if (failedcount) {
         foreach__(CurlMultiSgPtr,&failed,f) {
+            Str* fname = lipfn(CurlPtr,Str,get)(&curl2file, &(*f)->easy_handle);
+            if (!fname || !len__(fname)) {e=err_internal("lip miss unexpected");  goto Clean;}
+            msg__(p, sv(fname));
+            msg__(p, sv(" download failed: "));
             msg_ln__(p,  curl_easy_strerror((*f)->data.result));
+            remove(fname->items);
         }
     }
 
     w_curl_multi_remove_handles(multi, &handles, cmd_params_cmd_out(p));
 
+    size_t count = len__(&handles);
+    msg_ui_b10__(p, count - failedcount);
+    msg_ln__(p, " files saved.");
+    if (failedcount) {
+        msg_ui_b10__(p, failedcount);
+        msg_ln__(p, " downloads failed.");
+    }
 Clean:
-    foreach__(FilePtr,&fps,fpp) { file_close(*fpp); }
+    foreach__(FilePtr,&fps,fpp) { file_close(fpp->ptr); }
     arlfn(CurlMultiSgPtr,clean)(&failed);
     arlfn(FilePtr,clean)(&fps);
     arlfn(CurlPtr,clean)(&handles);
+    arlfn(Str,clean)(&fnames);
+    lipfn(CurlPtr,Str,clean)(&curl2file);
     return e;
 }
 

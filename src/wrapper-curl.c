@@ -149,7 +149,6 @@ void w_curl_multi_remove_handles(
             char* msg = (char*)curl_multi_strerror(code); 
             /*ignore e*/msg__(cmd_out, msg);
         }
-        curl_easy_cleanup(*cup);
     }
 }
 

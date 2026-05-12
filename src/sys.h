@@ -5,7 +5,7 @@
 #include "utils.h"
 #include <signal.h>
 
-typedef FILE* FilePtr;
+typedef struct { FILE* ptr; } FilePtr;
 #define T FilePtr
 #include <arl.h>
 

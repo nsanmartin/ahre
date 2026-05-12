@@ -50,7 +50,11 @@ static inline Err basic_size_t_from_addr(
     switch(addr->tag) {
         case range_addr_beg_tag: *out=min; return Ok;
         case range_addr_end_tag: *out=bound - 1; return Ok;
-        case range_addr_num_tag: *out=addr->n; return Ok;
+        case range_addr_num_tag:
+             if (addr->n < min) return "number to small for range";
+             if (bound < addr->n) return "number to big for range";
+             *out=addr->n;
+             return Ok;
         case range_addr_none_tag:
             if (optional_none_default) {
                 *out=*optional_none_default;

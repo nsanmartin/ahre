@@ -138,7 +138,12 @@ Err url_client_multi_add_handles(
 ) {
 
     if (!len__(urls)) return Ok;
-    if (arlfn(Str,init_reserve)(scripts, len__(urls))) return err_internal("arlfn Str init_reserve failure");
+    //TODO1: this is awful, improve this fn and w_curl_multi_add as well
+    for (size_t i = 0; i < len__(urls); ++i) {
+        if (!arlfn(Str,append)(scripts, &(Str){0}))
+            return "error: arlfn(Str,append) failure";
+    }
+    scripts->len -= len__(urls);
 
     for (Str* u = arlfn(Str,begin)(urls) ; u != arlfn(Str,end)(urls) ; ++u) {
         Err e = w_curl_multi_add(uc, curlu, items__(u), easies, scripts, curlus);
