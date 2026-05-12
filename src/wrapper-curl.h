@@ -91,4 +91,9 @@ Err w_curl_url_get_malloc(CurlUrlPtr cu, CURLUPart part, char* out[_1_]);
 
 size_t skip_header_callback(char *buffer, size_t size, size_t nitems, void *htmldoc) ;
 Err w_curl_perform_with_cancel(CurlMuliPtr multi, CurlPtr easy);
+Err w_curl_set_basic_options(
+    CurlPtr handle[_1_], long verbose, char* errbuf, char* user_agent, char* cookiefile
+);
+Err w_curl_set_method_from_http_method(CurlPtr handle, HttpMethod m);
+Err w_curl_set_write_fn_and_data_for_download(CurlPtr curl, FILE* fp);
 #endif

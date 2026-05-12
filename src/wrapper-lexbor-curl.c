@@ -29,7 +29,7 @@ static Err _lexbor_parse_chunk_end_(HtmlDoc htmldoc[_1_]) {
 }
 
 
-static Err _curl_set_write_fn_and_data_(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]) {
+static Err url_client_set_write_fn_and_data_for_htmldoc(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]) {
     if (
        curl_easy_setopt(url_client->curl, CURLOPT_HEADERDATA, htmldoc)
     || curl_easy_setopt(url_client->curl, CURLOPT_HEADERFUNCTION, curl_header_callback)
@@ -46,10 +46,10 @@ static Err _curl_set_http_method_(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_
 }
 
 
-Err w_curl_set_url(UrlClient url_client[_1_], Url url[_1_]) {
+Err w_curl_set_url(CurlPtr curl, Url url[_1_]) {
     char* url_str = NULL;
     try( url_cstr_malloc(*url, &url_str));
-    CURLcode code = curl_easy_setopt(url_client->curl, CURLOPT_URL, url_str);
+    CURLcode code = curl_easy_setopt(curl, CURLOPT_URL, url_str);
     curl_free(url_str);
     if (CURLE_OK == code) return Ok;
     return err_fmt("error: curl failed to set url %s", curl_easy_strerror(code));
@@ -63,8 +63,8 @@ Err w_curl_set_url(UrlClient url_client[_1_], Url url[_1_]) {
     /* return err_fmt("error: curl failed to set urlL %s", curl_easy_strerror(code)); */
 }
 
-static Err _curl_set_curlu_(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]) {
-    return w_curl_set_url(url_client, htmldoc_url(htmldoc));
+static Err _curl_set_curlu_(UrlClient uc[_1_], HtmlDoc htmldoc[_1_]) {
+    return w_curl_set_url(url_client_curl(uc), htmldoc_url(htmldoc));
 }
 
 
@@ -353,7 +353,7 @@ Err curl_lexbor_fetch_document(
 ) {
     try( set_post_fields(htmldoc_request(htmldoc), url_client));
     try( url_client_set_basic_options(url_client));
-    try( _curl_set_write_fn_and_data_(url_client, htmldoc));
+    try( url_client_set_write_fn_and_data_for_htmldoc(url_client, htmldoc));
     try( _lexbor_parse_chunk_begin_(htmldoc));
     try( _curl_set_http_method_(url_client, htmldoc));
     try( _curl_set_curlu_(url_client, htmldoc));

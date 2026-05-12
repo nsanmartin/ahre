@@ -18,10 +18,11 @@ static bool _is_url_alias_(const char* cmd) { return *cmd == '\\'; }
 
 Err
 dom_node_range_to_request_arl(
-    Range range[_1_],
+    Range          range[_1_],
     ArlOf(DomNode) ns[_1_],
-    CmdParams p[_1_],
-    HttpMethod method,
+    CmdParams      p[_1_],
+    HttpMethod     method,
+    StrView        url_attr,
     ArlOf(Request) reqs[_1_]
 ) {
     HtmlDoc* d;
@@ -31,7 +32,7 @@ dom_node_range_to_request_arl(
         DomNode* nodeptr = arlfn(DomNode, at)(ns, i);
         if (!nodeptr) return err_fmt("error: unexpected invalid index (%ld) for node list", i);
 
-        StrView url = dom_node_attr_value(*nodeptr, svl("src"));
+        StrView url = dom_node_attr_value(*nodeptr, url_attr);
 
         try(arl_append_zero(Request,reqs,r));
         Err e = request_init(r, method, url, htmldoc_url(d));

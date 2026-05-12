@@ -51,6 +51,7 @@ Err mock_w_curl_set_url(UrlClient url_client[_1_], Url url[_1_]) ;
 #include "../src/fetch-history.c"
 #include "../src/htmldoc.c"
 #include "../src/tab-node.c"
+#include "../src/request.c"
 
 Err mock_w_curl_set_url(UrlClient url_client[_1_], Url url[_1_]) {
     utest_ignore_params(url_client, url);

@@ -80,7 +80,9 @@ Err curlinfo_sz_download_incr(
 }
 
 static char curl_perform_canceled_by_user[] = { "curl perform canceled by user\n" };
-Err w_curl_multi_perform_poll(CURLM* multi, ArlOf(CurlMultiSgPtr) failed[_1_]) {
+
+Err
+w_curl_multi_perform_poll(CURLM* multi, ArlOf(CurlMultiSgPtr) failed[_1_]) {
     struct sigaction interrupt_action = get_interrupt_action();
     struct sigaction old_action = {0};
     sigaction(SIGINT,&interrupt_action, &old_action);
@@ -259,3 +261,43 @@ Err w_curl_perform_with_cancel(CurlMuliPtr multi, CurlPtr easy) {
     return err;
 }
 
+Err
+w_curl_set_basic_options(
+    CurlPtr handle[_1_],
+    long    verbose,
+    char*   errbuf,
+    char*   user_agent,
+    char*   cookiefile
+) {
+    try(w_curl_easy_setopt(handle, CURLOPT_NOPROGRESS,     1L));
+    try(w_curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L));
+
+    try(w_curl_easy_setopt(handle, CURLOPT_VERBOSE, verbose));
+    try(w_curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, errbuf));
+    try(w_curl_easy_setopt(handle, CURLOPT_USERAGENT, user_agent));
+
+    if (cookiefile) {
+        try(w_curl_easy_setopt(handle, CURLOPT_COOKIEFILE, cookiefile));
+        try(w_curl_easy_setopt(handle, CURLOPT_COOKIEJAR, cookiefile));
+    }
+    return Ok;
+}
+
+
+Err w_curl_set_write_fn_and_data_for_download(CurlPtr curl, FILE* fp) {
+    if (0
+    || curl_easy_setopt(curl, CURLOPT_HEADERDATA, NULL)
+    || curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, skip_header_callback)
+    || curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, fwrite)
+    || curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp))
+        return err_internal("configuring curl write fn/data");
+    return Ok;
+}
+
+
+Err w_curl_set_method_from_http_method(CurlPtr handle, HttpMethod m) {
+    CURLoption method = curlopt_method_from_http_method(m);
+    if (curl_easy_setopt(handle, method, 1L)) 
+        return err_internal("curl failed to set method");
+    return Ok;
+}

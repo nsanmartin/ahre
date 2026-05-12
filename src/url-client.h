@@ -37,10 +37,13 @@ typedef struct UrlClient {
 
 static inline CURL* url_client_curl(UrlClient url_client[_1_]) { return url_client->curl; }
 static inline CURLM* url_client_multi(UrlClient url_client[_1_]) { return url_client->curlm; }
+static inline char* url_client_errbuf(UrlClient url_client[_1_]) { return url_client->errbuf; }
 
 static inline Str* url_client_postdata(UrlClient uc[_1_]) { return &uc->postdata; }
 
-static inline char* url_client_cookies_fname(UrlClient uc[_1_]) { return (char*)uc->cookies_fname.items; }
+static inline char* url_client_cookies_fname(UrlClient uc[_1_]) {
+    return (char*)(uc->cookies_fname.len ? uc->cookies_fname.items : NULL);
+}
 static inline char* url_client_user_agent(UrlClient uc[_1_]) { return (char*)uc->user_agent.items; }
 static inline bool url_client_verbose(UrlClient uc[_1_]) { return uc->flags & URL_CLIENT_FLAG_VERBOSE; }
 
@@ -97,4 +100,5 @@ Err w_curl_multi_add(
     ArlOf(CurlUrlPtr) curlus[_1_]
 );
 
+Err url_client_set_basic_options_to_handle(UrlClient uc[_1_], CurlPtr handle);
 #endif

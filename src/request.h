@@ -41,4 +41,6 @@ Err request_query_append_key_value(Request r[_1_], const char*k, size_t klen, co
 Err request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url);
 Err request_from_form_node (Request r[_1_], DomNode form, bool is_https, Url* urlview);
 Err request_from_cli_params(Request r[_1_], HttpMethod method, StrView urlstr, StrView postfields);
+Err 
+request_to_handle(Request r[_1_], UrlClient url_client[_1_], const char* path, FILE* fpp[_1_], CurlPtr out[_1_]);
 #endif

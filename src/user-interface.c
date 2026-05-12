@@ -192,13 +192,67 @@ static Err cmd_anchor_asterisk_range(CmdParams p[_1_]) {
 }
 
 
-static Err cmd_anchor_save_range(CmdParams p[_1_]) {
+static Err request_arl_to_file(CmdParams p[_1_], ArlOf(Request) rs[_1_]) {
+    ArlOf(FilePtr)        fps    = (ArlOf(FilePtr)){0};
+    ArlOf(CurlPtr)        handles= (ArlOf(CurlPtr)){0};
+    ArlOf(CurlMultiSgPtr) failed = (ArlOf(CurlMultiSgPtr)){0};
+    Err                   e      = Ok;
+
+    //TODO0: pass also actul_paths and delete files if somethinf fail (lines 221-228)
+    UrlClient* uc = session_url_client(p->s);
+    foreach__(Request,rs,req) {
+        FilePtr* fpp;
+        CurlPtr* cpp;
+        try(arl_append_zero(FilePtr,&fps,fpp));
+        try(arl_append_zero(CurlPtr,&handles,cpp));
+        Err msg = request_to_handle(req, uc, p->ln, fpp, cpp);
+        if (msg) {
+            msg_ln__(p,msg);
+            if (!fps.len || !handles.len) {e=err_internal("arl appended but is empty"); goto Clean;}
+            --fps.len;
+            --handles.len;
+        }
+    }
+
+    CurlMuliPtr multi = url_client_multi(uc);
+    foreach__(CurlPtr,&handles,cpp) { try_or_jump(e,Clean,w_curl_multi_add_handle(multi, *cpp)); }
+
+    e = w_curl_multi_perform_poll(multi, &failed);
+    if (len__(&failed)) {
+        msg__(p, "warn: ");
+        msg_ui_b10__(p, len__(&failed));
+        msg_ln__(p, "requests failed");
+        foreach__(CurlMultiSgPtr,&failed,f) {
+            msg_ln__(p,  curl_easy_strerror((*f)->data.result));
+        }
+    }
+
+    w_curl_multi_remove_handles(multi, &handles, cmd_params_cmd_out(p));
+
+Clean:
+    foreach__(FilePtr,&fps,fpp) { file_close(*fpp); }
+    arlfn(CurlMultiSgPtr,clean)(&failed);
+    arlfn(FilePtr,clean)(&fps);
+    arlfn(CurlPtr,clean)(&handles);
+    return e;
+}
+
+
+static Err
+cmd_anchor_save_range(CmdParams p[_1_]) {
     ArlOf(DomNode)* anchors;
     Range r;
     try(get_range_and_nodes(p, &r, &anchors, htmldoc_anchors));
     if (range_len(&r) > 1 && !path_is_dir(p->ln)) 
         return err_fmt("anchor ranges only can be saved to existing directoriesm not: %s\n", p->ln);
-    return run_cmd_for_dom_node_range(p, &r, anchors, cmd_anchor_save);
+
+    ArlOf(Request) rs = (ArlOf(Request)){0};
+    Err            e  = Ok;
+    try_or_jump(e,Clean, dom_node_range_to_request_arl(&r, anchors, p, http_get, svl("href"), &rs));
+    try_or_jump(e,Clean, request_arl_to_file(p, &rs));
+Clean:
+    arlfn(Request,clean)(&rs);
+    return e;
 }
 
 
@@ -206,7 +260,7 @@ static SessionCmd _cmd_anchor_[] =
     { {.name="\"", .fn=cmd_anchor_print_range,    .help=CMD_ANCHOR_PRINT_DOC, .flags=CMD_CHAR}
     , {.name="",   .fn=cmd_anchor_asterisk_range, .help=NULL,                 .flags=CMD_EMPTY}
     , {.name="*",  .fn=cmd_anchor_asterisk_range, .help=NULL,                 .flags=CMD_CHAR}
-    , {.name="save", .fn=cmd_anchor_save_range,     .help=NULL,              .match=1}
+    , {.name="save",.fn=cmd_anchor_save_range,   .help=NULL,                 .match=1}
     , {0}
     };
 
@@ -402,9 +456,8 @@ static Err cmd_image_save_range(CmdParams p[_1_]) {
 
     ArlOf(Request) rs = (ArlOf(Request)){0};
     Err            e  = Ok;
-    try_or_jump(e,Clean, dom_node_range_to_request_arl(&r, images, p, http_get, &rs));
-    try_or_jump(e,Clean, foreach_request_save_to_file(p, &rs));
-
+    try_or_jump(e,Clean, dom_node_range_to_request_arl(&r, images, p, http_get, svl("src"), &rs));
+    try_or_jump(e,Clean, request_arl_to_file(p, &rs));
 Clean:
     arlfn(Request,clean)(&rs);
     return Ok;

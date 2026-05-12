@@ -142,7 +142,7 @@ Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method) {
 
     try(str_append_z(&r->urlstr, sv(url, url_len))); 
     if (params_len) try(str_append_z(&r->postfields, sv(params, params_len)));
-    return Ok;
+    return request_url_init(r);
 }
 
 
@@ -159,7 +159,7 @@ Err request_to_file(Request r[_1_], UrlClient url_client[_1_], FILE* fp) {
     if (!fp) return "error: expectinf FILE* received NULL";
     try( url_client_set_basic_options(url_client));
     try( curl_set_method_from_http_method(url_client, request_method(r)));
-    try( w_curl_set_url(url_client, request_url(r)));
+    try( w_curl_set_url(url_client_curl(url_client), request_url(r)));
 
     if (
        curl_easy_setopt(url_client->curl, CURLOPT_HEADERDATA, NULL)
@@ -170,6 +170,23 @@ Err request_to_file(Request r[_1_], UrlClient url_client[_1_], FILE* fp) {
     str_reset(url_client_postdata(url_client));
 
     return url_client_perform_with_cancel(url_client);
+}
+
+Err
+request_to_handle(Request r[_1_], UrlClient url_client[_1_], const char* path, FILE* fpp[_1_], CurlPtr out[_1_]) {
+    *out = curl_easy_init();
+    if (!out) return err_internal("curl_easy_init failure");
+    try(url_client_set_basic_options_to_handle(url_client, *out));
+    try(w_curl_set_method_from_http_method(*out, request_method(r)));
+    try( w_curl_set_url(*out, request_url(r)));
+
+    Err     e           = Ok;
+    Str     actual_path = (Str){0};
+    try_or_jump(e,Clean, fopen_or_append_fopen(path, *request_url(r), fpp, &actual_path));
+    try_or_jump(e,Clean, w_curl_set_write_fn_and_data_for_download(*out, *fpp));
+Clean:
+    str_clean(&actual_path);
+    return e;
 }
 
 

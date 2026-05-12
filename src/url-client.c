@@ -10,38 +10,41 @@
 #define url_client_setopt(Uc, Opt, Val) w_curl_easy_setopt((Uc)->curl, Opt, Val)
 
 
-static Err url_client_set_cookies(UrlClient uc[_1_]) {
-    if (uc->cookies_fname.len) {
-        char* cookiefile = url_client_cookies_fname(uc);
-        /* this call leaks in old curl versions */
-        try(url_client_setopt(uc, CURLOPT_COOKIEFILE, cookiefile));
-        try(url_client_setopt(uc, CURLOPT_COOKIEJAR, cookiefile));
-    }
-    return Ok;
-}
+/* static Err url_client_set_cookies(UrlClient uc[_1_]) { */
+/*     if (uc->cookies_fname.len) { */
+/*         char* cookiefile = url_client_cookies_fname(uc); */
+/*         /1* this call leaks in old curl versions *1/ */
+/*         try(url_client_setopt(uc, CURLOPT_COOKIEFILE, cookiefile)); */
+/*         try(url_client_setopt(uc, CURLOPT_COOKIEJAR, cookiefile)); */
+/*     } */
+/*     return Ok; */
+/* } */
 
 
-static Err url_client_setopt_verbose(UrlClient uc[_1_]) {
-    return url_client_setopt(uc, CURLOPT_VERBOSE, url_client_verbose(uc));
-}
+/* static Err url_client_setopt_verbose(UrlClient uc[_1_]) { */
+/*     return url_client_setopt(uc, CURLOPT_VERBOSE, url_client_verbose(uc)); */
+/* } */
 
-static Err url_client_setopt_error_buffer(UrlClient uc[_1_]) {
-    return url_client_setopt(uc, CURLOPT_ERRORBUFFER, uc->errbuf);
-}
+/* static Err url_client_setopt_error_buffer(UrlClient uc[_1_]) { */
+/*     return url_client_setopt(uc, CURLOPT_ERRORBUFFER, uc->errbuf); */
+/* } */
 
-static Err url_client_setopt_user_agent(UrlClient uc[_1_]) {
-    return url_client_setopt(uc, CURLOPT_USERAGENT, url_client_user_agent(uc));
+/* static Err url_client_setopt_user_agent(UrlClient uc[_1_]) { */
+/*     return url_client_setopt(uc, CURLOPT_USERAGENT, url_client_user_agent(uc)); */
+/* } */
+
+Err url_client_set_basic_options_to_handle(UrlClient uc[_1_], CurlPtr handle) {
+    return w_curl_set_basic_options(
+        handle, 
+        url_client_verbose(uc),
+        url_client_errbuf(uc),
+        url_client_user_agent(uc),
+        url_client_cookies_fname(uc)
+    );
 }
 
 Err url_client_set_basic_options(UrlClient uc[_1_]) {
-    try(url_client_setopt(uc, CURLOPT_NOPROGRESS,     1L));
-    try(url_client_setopt(uc, CURLOPT_FOLLOWLOCATION, 1L));
-
-    try(url_client_setopt_verbose(uc));
-    try(url_client_setopt_error_buffer(uc));
-    try(url_client_setopt_user_agent(uc));
-
-    return url_client_set_cookies(uc);
+    return url_client_set_basic_options_to_handle(uc, url_client_curl(uc));
 }
 
 
@@ -64,7 +67,7 @@ Err url_client_init(
     };
 
     url_client->curl = curl_easy_init();
-    if (!url_client->curl) return "error: curl_easy_init failure";
+    if (!url_client->curl) return err_internal("curl_easy_init failure");
 
     url_client->curlm = curl_multi_init();
     if (!url_client->curlm) return err_internal("curl_multi_init failure");
@@ -152,11 +155,8 @@ void url_client_set_verbose(UrlClient uc[_1_], bool value) {
 }
 
 
-Err curl_set_method_from_http_method(UrlClient url_client[_1_], HttpMethod m) {
-    CURLoption method = curlopt_method_from_http_method(m);
-    if (curl_easy_setopt(url_client->curl, method, 1L)) 
-        return "error: curl failed to set method";
-    return Ok;
+Err curl_set_method_from_http_method(UrlClient uc[_1_], HttpMethod m) {
+    return w_curl_set_method_from_http_method(url_client_curl(uc), m);
 }
 
 

@@ -5,6 +5,10 @@
 #include "utils.h"
 #include <signal.h>
 
+typedef FILE* FilePtr;
+#define T FilePtr
+#include <arl.h>
+
 Err resolve_path(const char *path, bool* file_exists, Str out[_1_]);
 
 #define file_write_or_close(Mem, Len, Fp) _file_write_or_close_(Mem, Len, Fp, __FILE__)

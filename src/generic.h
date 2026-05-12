@@ -28,6 +28,7 @@
 
 #define msg__(P,M)        cmd_out_msg_append(get_cmd_out_(P),M)
 #define msg_ln__(P,M)     cmd_out_msg_append_ln(get_cmd_out_(P),M)
+#define msg_ui_b10__(P,M) cmd_out_msg_append_ui_as_base10(get_cmd_out_(P),M)
 #define msg_ui_b36__(P,M) cmd_out_msg_append_ui_as_base36(get_cmd_out_(P),M)
 #define screen__(P,M)     cmd_out_screen_append(get_cmd_out_(P),M)
 #define screen_ln__(P,M)  cmd_out_screen_append_ln(get_cmd_out_(P),M)

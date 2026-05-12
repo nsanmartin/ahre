@@ -183,10 +183,11 @@ Err
 map_requests(Range range[_1_], ArlOf(DomNode) ns[_1_], HttpMethod method, Url u[_1_], ArlOf(Request) reqs[_1_]);
 Err
 dom_node_range_to_request_arl(
-    Range range[_1_],
+    Range          range[_1_],
     ArlOf(DomNode) ns[_1_],
-    CmdParams p[_1_],
-    HttpMethod method,
+    CmdParams      p[_1_],
+    HttpMethod     method,
+    StrView        url_attr,
     ArlOf(Request) reqs[_1_]
 );
 Err foreach_request_save_to_file(CmdParams p[_1_], ArlOf(Request) rs[_1_]);
