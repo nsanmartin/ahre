@@ -165,8 +165,8 @@ static void _map_append_nullchar_(ArlOf(Str) strlist[_1_], CmdOut cmd_out[_1_]) 
 static Err
 get_failed_indexed(ArlOf(CurlPtr) easies[_1_], ArlOf(CurlMultiSgPtr) failed[_1_], ArlOf(size_t) indexes[_1_]) {
     CurlPtr* first_easy = arlfn(CurlPtr,begin)(easies);
-    foreach__(CurlMultiSgPtr, f, failed) {
-        foreach__(CurlPtr, easy, easies) {
+    foreach__(CurlMultiSgPtr, failed, f) {
+        foreach__(CurlPtr, easies, easy) {
             if ((*f)->easy_handle == *easy) {
                 size_t ix = easy - first_easy;
                 if(!arlfn(size_t, append)(indexes, &ix)) return "error: arl append failure";
@@ -231,7 +231,7 @@ static Err curl_lexbor_fetch_scripts(
             ArlOf(size_t)* indexes = &(ArlOf(size_t)){0};
             e = get_failed_indexed(easies, failed, indexes);
             if (!e) {
-                foreach__(size_t, ix, indexes) {
+                foreach__(size_t, indexes, ix) {
 
                     Str* script;
                      /* url_client_multi_add_handles pushed the empty buffers for all scripts

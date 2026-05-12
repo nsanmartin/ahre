@@ -29,7 +29,7 @@ static void warn_cmd_out_to_stderr(CmdOut cout[_1_]) {
 
 
 static Err fetch_params(Session session[_1_], ArlOf(Request) urls[_1_], CmdOut cout[_1_]) {
-    foreach__(Request,r,urls) {
+    foreach__(Request,urls,r) {
         Err err = session_fetch_request(session, r, session_url_client(session), cout);
         if (err) {
             Str     buf = (Str){0};

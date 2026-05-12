@@ -179,4 +179,15 @@ Err cmd_image_save(CmdParams p[_1_], DomNode node);
 Err cmd_fetch(Session session[_1_], CmdOut* out);
 Err cmd_set_session_forms(CmdParams p[_1_]);
 Err cmd_print_node(CmdParams p[_1_], DomNode node);
+Err
+map_requests(Range range[_1_], ArlOf(DomNode) ns[_1_], HttpMethod method, Url u[_1_], ArlOf(Request) reqs[_1_]);
+Err
+dom_node_range_to_request_arl(
+    Range range[_1_],
+    ArlOf(DomNode) ns[_1_],
+    CmdParams p[_1_],
+    HttpMethod method,
+    ArlOf(Request) reqs[_1_]
+);
+Err foreach_request_save_to_file(CmdParams p[_1_], ArlOf(Request) rs[_1_]);
 #endif

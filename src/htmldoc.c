@@ -1349,8 +1349,8 @@ static size_t colspan_get_actual_length(ColSpan cs[_1_], Coordinates coord, ColW
 static Err
 get_unsplitted_columns_widths(DrawTable table[_1_], ArlOf(ColWidth) out[_1_]) {
 #define mk_coordinates(R,C) (Coordinates){.row=(R),.col=(C)}
-    foreach__(DrawRow, row, table) {
-        foreach__(DrawTextBuf, cell, row) {
+    foreach__(DrawRow, table, row) {
+        foreach__(DrawTextBuf, row, cell) {
             size_t ncol = ncol__(row, cell);
             if (len__(out) < ncol) return err_internal("expecting col width calculated already");
             ColWidth* cw = arlfn(ColWidth,at)(out,ncol);
@@ -1430,7 +1430,7 @@ split_cell(size_t length, DrawTextBuf cell[_1_]) {
 
 static Err
 split_column(DrawTable table[_1_], ColWidth cw[_1_], ArlOf(ColWidth) cwidths[_1_], ColSpan colspan[_1_]) {
-    foreach__(DrawRow, row, table) {
+    foreach__(DrawRow, table, row) {
         size_t ncol = cw->ix;
         size_t nrow = nrow__(table,row);
         DrawTextBuf* cell = arlfn(DrawTextBuf,at)(row, cw->ix);
@@ -1477,14 +1477,14 @@ split_columns(DrawTable table[_1_], size_t exceeding_screen_cols, ColSpan colspa
     } while(exceeding_screen_cols);
 
     qsort(items__(ws), len__(ws), sizeof(*ws->items), colwidth_cmp_ix);
-    foreach__(ColWidth,split_it,ws) try(split_column(table, split_it, ws, colspan));
+    foreach__(ColWidth,ws,split_it) try(split_column(table, split_it, ws, colspan));
     return Ok;
 }
 
 
 static Err
 split_colspan_columns(DrawTable table[_1_], ArlOf(ColWidth) colwidths[_1_], ColSpan colspan[_1_]) {
-    foreach__(Coordinates,coord, colspan_lst(colspan)) {
+    foreach__(Coordinates, colspan_lst(colspan), coord) {
         unsigned* v = colspan_get(colspan, coord);
         if (!v) return err_internal("expecting colspan for coord");
         if (*v < 2) return err_internal("expecting colspan gt 2");
@@ -1515,11 +1515,11 @@ expand_columns_for_colspans(DrawTable table[_1_], size_t screen_width, ColSpan c
     col_increases.len = col_increases.capacity;
 
     size_t totalwidth = 0;
-    foreach__(size_t,chl,cols_hlen) totalwidth += *chl;
+    foreach__(size_t,cols_hlen,chl) totalwidth += *chl;
     if (totalwidth + borders_len > screen_width) { err=err_could_not_fit_the_table; goto Clean; }
     size_t remaining_width = screen_width - (totalwidth + borders_len);
 
-    foreach__(Coordinates,coord, colspan_lst(colspan)) {
+    foreach__(Coordinates, colspan_lst(colspan), coord) {
         unsigned* span = colspan_get(colspan,coord);
         if (!span || *span < 2) { err=err_internal("ColSpan precondition failure"); goto Clean; }
 
@@ -1562,7 +1562,7 @@ fit_table_to_screen(DrawTable table[_1_], size_t screen_width, ColSpan colspan[_
     try_or_jump(err, Clean, get_unsplitted_columns_widths(table, &colwidths));
     size_t totalwidth  = 0;
 
-    foreach__(ColWidth,w,&colwidths) totalwidth += w->w + 1;
+    foreach__(ColWidth, &colwidths, w) totalwidth += w->w + 1;
 
     if (totalwidth > screen_width) {
         size_t exceeding_screen_cols = totalwidth - screen_width;
@@ -1636,7 +1636,7 @@ static size_t cell_part_horizontal_len(CellPart c[_1_]) {
 
 static Err splitted_table_row_vertical_lengths(SplittedTable t[_1_], ArlOf(size_t) rows_vlengths[_1_]) {
     SplittedRow* table_beg = arlfn(SplittedRow,begin)(t);
-    foreach__(SplittedRow, row, t) {
+    foreach__(SplittedRow, t, row) {
         size_t nrow = row - table_beg;
 
         if (len__(rows_vlengths) < nrow) return "error: missing row lenght";
@@ -1646,7 +1646,7 @@ static Err splitted_table_row_vertical_lengths(SplittedTable t[_1_], ArlOf(size_
         size_t* maxlen = arlfn(size_t,at)(rows_vlengths, nrow);
         if (!maxlen) return "error: could noit compute vrow vertical lengths";
 
-        foreach__(SplittedCell,cell, row)
+        foreach__(SplittedCell, row, cell)
             if (splitted_celL_vertical_len(cell) > *maxlen) *maxlen = splitted_celL_vertical_len(cell);
     }
     return Ok;
@@ -1656,11 +1656,11 @@ static Err splitted_table_row_vertical_lengths(SplittedTable t[_1_], ArlOf(size_
 static Err
 splitted_table_col_horizonal_lengths(SplittedTable t[_1_], ColSpan colspan[_1_], ArlOf(size_t) cols_hlengths[_1_]) {
 
-    foreach__(SplittedRow, row, t) {
+    foreach__(SplittedRow, t, row) {
         SplittedCell* row_beg = arlfn(SplittedCell,begin)(row);
         size_t nrow = row - arlfn(SplittedRow,begin)(t);
 
-        foreach__(SplittedCell,cell, row) {
+        foreach__(SplittedCell, row, cell) {
             size_t ncol = cell - row_beg;
             if (len__(cols_hlengths) < ncol) return err_internal("missing row length");
             if (len__(cols_hlengths) == ncol
@@ -1671,7 +1671,7 @@ splitted_table_col_horizonal_lengths(SplittedTable t[_1_], ColSpan colspan[_1_],
 
             size_t* maxlen = arlfn(size_t,at)(cols_hlengths, ncol);
 
-            foreach__(CellPart,cellpart,cell) {
+            foreach__(CellPart,cell,cellpart) {
                 if (cell_part_horizontal_len(cellpart) > *maxlen) *maxlen = cell_part_horizontal_len(cellpart);
             }
         }
@@ -1760,8 +1760,8 @@ draw_table_to_splitted_view(DrawTable table[_1_], SplittedTable table_view[_1_])
     SplittedCell splitted_cell = (SplittedCell){0};
     SplittedRow  splitted_row  = (SplittedRow){0};
 
-    foreach__(DrawRow, row, table) {
-        foreach__(DrawTextBuf, cell, row) {
+    foreach__(DrawRow, table, row) {
+        foreach__(DrawTextBuf, row, cell) {
             splitted_cell = (SplittedCell){0};
             try_or_jump(err, ErrClean, draw_text_buf_split(cell, &splitted_cell));
             try_or_jump(err, ErrClean, splitted_row_append_cell(&splitted_row, &splitted_cell));
@@ -1805,7 +1805,7 @@ draw_splitted_table(
     ColSpan       colspan[_1_],
     DrawTextBuf   text[_1_]
 ) {
-    foreach__(SplittedRow, row, splitted_table) {
+    foreach__(SplittedRow, splitted_table, row) {
         size_t nrow = row - arlfn(SplittedRow,begin)(splitted_table);
         size_t* row_vertical_len = arlfn(size_t,at)(rows_vlengths,nrow);
         if (!row_vertical_len) return err_internal("unexpected empty arl");
@@ -1813,7 +1813,7 @@ draw_splitted_table(
         size_t subrow = 0;
         for (; subrow < *row_vertical_len; ++subrow) {
 
-            foreach__(SplittedCell, cell, row) {
+            foreach__(SplittedCell, row, cell) {
                 size_t ncol = cell - arlfn(SplittedCell,begin)(row);
 
                 unsigned span_value = colspan_get_interpreted(colspan, (Coordinates){.row=nrow,.col=ncol});
@@ -1986,13 +1986,13 @@ htmldoc_console(HtmlDoc d[_1_], Session* s, const char* line, CmdOut* out) {
 static Err
 jse_eval_doc_scripts(Session* s, HtmlDoc d[_1_], CmdOut* out) {
 
-    foreach__(Str, it, htmldoc_head_scripts(d)) {
+    foreach__(Str, htmldoc_head_scripts(d), it) {
         if (len__(it)) {
             Err e = jse_eval(htmldoc_js(d), s, sv(it), out);
             if (e) msg__(out, e);
         }
     }
-    foreach__(Str, it, htmldoc_body_scripts(d)) {
+    foreach__(Str, htmldoc_body_scripts(d), it) {
         if (len__(it)) {
             Err e = jse_eval(htmldoc_js(d), s, sv(it), out);
             if (e) msg__(out, e);
@@ -2142,7 +2142,7 @@ htmldoc_title_or_url(HtmlDoc d[_1_], char* url, Str title[_1_]) {
 void
 textmod_trim_left(TextBufMods mods[_1_], size_t n) {
     if (n && len__(mods)) {
-        foreach__(ModAt,it,mods) {
+        foreach__(ModAt,mods,it) {
             if (it->offset < n) it->offset = 0;
             else it->offset -= n;
         }

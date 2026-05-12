@@ -172,7 +172,7 @@ Err w_curl_multi_add(
     try_or_jump(e, Clean_Easy, w_curl_url_set(dup, CURLUPART_URL, urlstr, CURLU_DEFAULT_SCHEME));
     try_or_jump(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_CURLU        , dup));
     try_or_jump(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, str_append_flip));
-    try_or_jump(e, Clean_Easy, w_curl_easy_setopt( easy, CURLOPT_WRITEDATA , arlfn(Str,back)(destlist)));
+    try_or_jump(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_WRITEDATA , arlfn(Str,back)(destlist)));
 
     try_or_jump(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_VERBOSE, url_client_verbose(uc)));
     try_or_jump(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_USERAGENT, url_client_user_agent(uc)));

@@ -399,7 +399,15 @@ static Err cmd_image_save_range(CmdParams p[_1_]) {
     try(get_range_and_nodes(p, &r, &images, htmldoc_imgs));
     if (range_len(&r) > 1 && !path_is_dir(p->ln)) 
         return err_fmt("image ranges only can be saved to existing directories, not: %s\n", p->ln);
-    return run_cmd_for_dom_node_range(p, &r, images, cmd_image_save);
+
+    ArlOf(Request) rs = (ArlOf(Request)){0};
+    Err            e  = Ok;
+    try_or_jump(e,Clean, dom_node_range_to_request_arl(&r, images, p, http_get, &rs));
+    try_or_jump(e,Clean, foreach_request_save_to_file(p, &rs));
+
+Clean:
+    arlfn(Request,clean)(&rs);
+    return Ok;
 }
 
 static SessionCmd _cmd_image_[] =

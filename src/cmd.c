@@ -16,6 +16,44 @@ static Err save_request_to_file(CmdParams p[_1_], Request r[_1_]);
 
 static bool _is_url_alias_(const char* cmd) { return *cmd == '\\'; }
 
+Err
+dom_node_range_to_request_arl(
+    Range range[_1_],
+    ArlOf(DomNode) ns[_1_],
+    CmdParams p[_1_],
+    HttpMethod method,
+    ArlOf(Request) reqs[_1_]
+) {
+    HtmlDoc* d;
+    try( session_current_doc(p->s, &d));
+    for_range(range, i) {
+        Request*r ;
+        DomNode* nodeptr = arlfn(DomNode, at)(ns, i);
+        if (!nodeptr) return err_fmt("error: unexpected invalid index (%ld) for node list", i);
+
+        StrView url = dom_node_attr_value(*nodeptr, svl("src"));
+
+        try(arl_append_zero(Request,reqs,r));
+        Err e = request_init(r, method, url, htmldoc_url(d));
+        if (e) {
+            msg_ln__(p, e);
+            request_clean(r);
+            if (!reqs->len) return err_internal("arl empry after append");
+            --reqs->len;//TODO: use arl_pop
+        }
+    }
+    return Ok;
+}
+
+Err
+foreach_request_save_to_file(CmdParams p[_1_], ArlOf(Request) rs[_1_]) {
+    foreach__(Request,rs,r) {
+        Err e = save_request_to_file(p, r);
+        if (e) msg_ln__(p, e);
+    }
+    return Ok;
+}
+
 static Err
 cmd_save_url(CmdParams p[_1_], StrView url) {
     HtmlDoc* htmldoc;
@@ -354,7 +392,7 @@ Err cmd_textbuf_global(CmdParams p[_1_]) {
     try_or_jump(err,Clean, textbuf_get_lines_matching_regex(p->tb, pattern, &lines));
 
     StrView line;
-    foreach__(size_t,linenum,&lines) {
+    foreach__(size_t,&lines,linenum) {
         if (!textbuf_get_line(p->tb, *linenum, &line)) {err=err_internal("expecting matched line");goto Clean;}
         if (!line.len || !line.items || !*line.items) {err=err_internal("expecting matched nonempty line");goto Clean;}
         msg__(cmd_params_cmd_out(p), line);

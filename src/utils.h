@@ -180,7 +180,8 @@ void str_reverse(char* s, size_t n) {
 }
 
 
-#define foreach__(T,It,Col) \
+/* for Type, Collection, Element ... */
+#define foreach__(T,Col,It) \
     for (T* It = arlfn(T,begin)(Col) ; It < arlfn(T,end)(Col) ; ++It)
 
 
