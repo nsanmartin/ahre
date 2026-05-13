@@ -1716,8 +1716,8 @@ Clean:
  */
 static Err
 dom_read_table_row(DomNode n, DrawCtx ctx[_1_], DrawRow r[_1_], ColSpan colspan[_1_], size_t nrow) {
-    if (!dom_node_has_tag(n, HTML_TAG_TR)) return "error: expecting a tr tag";
-
+    if (!dom_node_has_tag(n, HTML_TAG_TR))
+        return err_from_unexpected_tag_in_table(dom_node_tag(n));
 
     for (DomNode it = dom_node_first_elem_child(n); !isnull(it); it = dom_node_next_elem(it)) {
         if (!dom_node_has_type(it, DOM_NODE_TYPE_ELEMENT)) continue; //TODO0 log this?
