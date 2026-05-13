@@ -1341,8 +1341,9 @@ static size_t colspan_get_actual_length(ColSpan cs[_1_], Coordinates coord, ColW
 
 
 /*
- * Computes the maximum line inside each columns and assigns the column that width. If the cell spans other columns,
- * it is ignored and computed in a posterior pass.
+ * Computes the maximum line inside each column and assigns the column that
+ * width. If the cell spans other columns, it is ignored and computed in a
+ * posterior pass.
  */
 #define nrow__(T,R) (R)-arlfn(DrawRow,begin)(T)
 #define ncol__(R,C) (C)-arlfn(DrawTextBuf,begin)(R)
@@ -1353,12 +1354,13 @@ get_unsplitted_columns_widths(DrawTable table[_1_], ArlOf(ColWidth) out[_1_]) {
         foreach__(DrawTextBuf, row, cell) {
             size_t ncol = ncol__(row, cell);
             if (len__(out) < ncol) return err_internal("expecting col width calculated already");
+
+            /* get the col, or append it if it wasnt already appended */
             ColWidth* cw = arlfn(ColWidth,at)(out,ncol);
             if (!cw) cw = arlfn(ColWidth,append)(out,&(ColWidth){.ix=ncol});
             if (!cw) return "arl append failure";
-
-
             if (cw->ix != ncol) return err_internal("expecting index match ncol here");
+
             StrView buf = strview_from_draw_text_buf(cell);
             strview_trim_left_utf8_space(&buf);
             for (;buf.len;) {
@@ -1406,6 +1408,7 @@ static Err
 split_cell(size_t length, DrawTextBuf cell[_1_]) {
     if (!length) return err_internal("not expecting zero length cell");
     StrView buf = strview_from_draw_text_buf(cell);
+    strview_trim_left_utf8_space(&buf);
     while (strview_count_utf8(buf) > length) {
 
         const char* nl = memchr(buf.items, '\n', buf.len);
@@ -1428,13 +1431,17 @@ split_cell(size_t length, DrawTextBuf cell[_1_]) {
     return Ok;
 }
 
+
+/*
+ * Splits each column's cell
+ */
 static Err
 split_column(DrawTable table[_1_], ColWidth cw[_1_], ArlOf(ColWidth) cwidths[_1_], ColSpan colspan[_1_]) {
     foreach__(DrawRow, table, row) {
         size_t ncol = cw->ix;
         size_t nrow = nrow__(table,row);
         DrawTextBuf* cell = arlfn(DrawTextBuf,at)(row, cw->ix);
-        if (!cell) continue;
+        if (!cell || !cell->buf.len) continue;
         size_t length  = colspan_get_actual_length(colspan, (Coordinates){.row=nrow, .col=ncol}, cw, cwidths);
         try(split_cell(length, cell));
     }
@@ -1580,7 +1587,7 @@ static Err
 draw_text_buf_split(DrawTextBuf b[_1_], SplittedCell textviews[_1_]) {
     TextBufMods partmods = (TextBufMods){0};
     StrView     buf      = strview_from_draw_text_buf(b);
-    size_t      offset   = 0;
+    size_t      offset   = strview_trim_left_utf8_space(&buf);
     ModAt*      modbeg   = arlfn(ModAt,begin)(draw_text_buf_mods(b));
     ModAt*      modend   = arlfn(ModAt,end)(draw_text_buf_mods(b));
     ModAt*      mod      = modbeg;
@@ -1830,13 +1837,12 @@ draw_splitted_table(
                 }
 
                 if (col_hlen < cell_part_hlen) return err_internal("column length computation failed");
-                size_t spaces = (span_value-1) + col_hlen - cell_part_hlen;
+                bool   is_last_col = is_last_column(len__(cols_hlengths), cell, row, span_value);
+                size_t spaces      = (span_value - is_last_col) + col_hlen - cell_part_hlen;
                 if (spaces)
                     try(draw_text_buf_append(text, whitespace(spaces)));
-
-                if (is_last_column(len__(cols_hlengths), cell, row, span_value)) try(draw_text_buf_append(text, svl("\n")));
-                else try(draw_text_buf_append(text, svl(" ")));
             }
+            try(draw_text_buf_append(text, svl("\n")));
         }
     }
     return Ok;
@@ -1899,7 +1905,6 @@ draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
                 }
             }
             break;
-            case HTML_TAG_TABLE: break;
             case HTML_TAG_COLGROUP: continue;
             default: { err = err_from_unexpected_tag_in_table(dom_node_tag(it)); goto Clean; }
         }
