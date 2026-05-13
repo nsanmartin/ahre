@@ -1621,6 +1621,13 @@ draw_text_buf_split(DrawTextBuf b[_1_], SplittedCell textviews[_1_]) {
         offset += line.len + 1;
     }
 
+    if (mod && mod < modend) { /* apply mods to last part if some are remainig */
+        CellPart* last_part = arlfn(CellPart,back)(textviews);
+        if (last_part)
+            for (;mod && mod < modend; ++mod)
+                try_or_jump(err, ErrClean, textmod_append_left_displaced(&last_part->mods, *mod, offset));
+    }
+
     /* Checks: */
     if ( offset - 1 != strview_from_draw_text_buf(b).len) 
     { err="error: splitting cell did not keet the offset"; goto ErrClean; }
