@@ -56,7 +56,7 @@ Err fopen_or_append_fopen(const char* fname, Url u, FILE* fp[_1_], Str actual_pa
     *fp = NULL; 
     try( resolve_path(fname, &path_exists, actual_path));
     if (path_exists && path_is_dir(actual_path->items))
-        try_or_jump(err, Clean_Actual_Path,  _append_fopen(actual_path, u, fp));
+        tryjmp(err, Clean_Actual_Path,  _append_fopen(actual_path, u, fp));
     else *fp = fopen(actual_path->items, "wa");
     if (!*fp) err = err_fmt("could not open file '%s': %s\n", actual_path->items, strerror(errno));
     else

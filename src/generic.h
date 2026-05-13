@@ -38,7 +38,7 @@
 #define try_or_msg(ErrLval, Label, Expected, Out, Expr)  do{\
     Err ahre_err_=validate_err((Expr)); \
     if (ahre_err_== validate_err(Expected)) msg_ln__(get_cmd_out_(Out), ahre_err_);\
-    else try_or_jump(ErrLval, Label, ahre_err_); \
+    else tryjmp(ErrLval, Label, ahre_err_); \
 }while(0)
 
 #define arl_append_zero(Type, Arl, Ptr) ((Ptr = arlfn(Type,append)(Arl,&(Type){0})) \

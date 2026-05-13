@@ -54,10 +54,10 @@ static Err _loop_(Session s[_1_], UserLine userln[_1_], CmdOut cout[_1_]) {
     Err err      = Ok;
 
     while (!session_quit(s)) {
-        try_or_jump(err, Error, session_show_output(s, cout));
-        try_or_jump(err, Error, session_read_user_input(s, userln));
+        tryjmp(err, Error, session_show_output(s, cout));
+        tryjmp(err, Error, session_read_user_input(s, userln));
         if (!user_line_empty(userln))
-            try_or_jump(err, Error, session_consume_line(s, userln, cout));
+            tryjmp(err, Error, session_consume_line(s, userln, cout));
 Error:
         if (err) if (session_show_error(s, err)) return "error trying to show previous error"; 
     }
@@ -70,7 +70,7 @@ static Err run_cmds(Session s[_1_], UserLine userln[_1_]) {
     CmdOut* cout = &(CmdOut){0};
     while (!user_line_empty(userln) && !session_quit(s)) {
         if (!user_line_empty(userln)) err = session_consume_line(s, userln, cout);
-        if (err) try_or_jump(err, Clean_Errors, str_append_ln(&errors, err));
+        if (err) tryjmp(err, Clean_Errors, str_append_ln(&errors, err));
     }
     if (errors.len) cmd_out_msg_append(cout, errors);
 Clean_Errors:
@@ -89,21 +89,21 @@ Err main_ahre(int argc, char **argv) {
     CliParams cparams = (CliParams){0};
     Session   session = (Session){0};
 
-    try_or_jump(err, Clean, session_conf_from_options(argc, argv, &cparams));
+    tryjmp(err, Clean, session_conf_from_options(argc, argv, &cparams));
     if (*cparams_help(&cparams)) { print_help(argv[0]); goto Clean; }
     if (*cparams_version(&cparams)) { puts("ahre version " AHRE_VERSION); goto Clean; }
-    try_or_jump(err, Clean, session_init(&session, cparams_sconf(&cparams)));
+    tryjmp(err, Clean, session_init(&session, cparams_sconf(&cparams)));
     if (cparams.cmd) {
         cparams.cmd = std_strdup(cparams.cmd);
         if (!cparams.cmd) {
             err = "error: strdup failure";
             goto Clean;
         }
-        try_or_jump(err, Clean, user_line_init_take_ownership(&userln, cparams.cmd));
-        try_or_jump(err, Clean, run_cmds(&session, &userln));
+        tryjmp(err, Clean, user_line_init_take_ownership(&userln, cparams.cmd));
+        tryjmp(err, Clean, run_cmds(&session, &userln));
         user_line_cleanup(&userln);
     }
-    try_or_jump(err, Clean, fetch_params(&session, cparams_requests(&cparams), cout));
+    tryjmp(err, Clean, fetch_params(&session, cparams_requests(&cparams), cout));
 
     err = _loop_(&session, &userln, cout);
 Clean:

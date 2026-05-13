@@ -13,9 +13,9 @@ Err tablist_append_tree_from_url(
 ) {
     Err     e  = Ok;
     TabNode tn = (TabNode){0};
-    try_or_jump(e,Fail, tab_node_init_move_request(&tn, NULL, url_client, r, s, cout));
+    tryjmp(e,Fail, tab_node_init_move_request(&tn, NULL, url_client, r, s, cout));
 
-    try_or_jump(e,Fail, tablist_append_move_tree(f, &tn));
+    tryjmp(e,Fail, tablist_append_move_tree(f, &tn));
     if (!f->tabs.len) {
         e = "error: expecting tabs in the tab list after appending a tab";
         goto Fail;

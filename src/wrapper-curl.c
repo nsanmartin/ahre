@@ -168,20 +168,20 @@ Err w_curl_multi_add(
 
     //TODO!: dont do it this way. Array should had been filed by the caller.
     try( w_curl_url_dup(baseurl, &dup));
-    try_or_jump(e, Clean_Dup, w_curl_easy_init(&easy));
+    tryjmp(e, Clean_Dup, w_curl_easy_init(&easy));
     ++destlist->len;
-    try_or_jump(e, Clean_Easy, w_curl_url_set(dup, CURLUPART_URL, urlstr, CURLU_DEFAULT_SCHEME));
-    try_or_jump(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_CURLU        , dup));
-    try_or_jump(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, str_append_flip));
-    try_or_jump(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_WRITEDATA , arlfn(Str,back)(destlist)));
+    tryjmp(e, Clean_Easy, w_curl_url_set(dup, CURLUPART_URL, urlstr, CURLU_DEFAULT_SCHEME));
+    tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_CURLU        , dup));
+    tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, str_append_flip));
+    tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_WRITEDATA , arlfn(Str,back)(destlist)));
 
-    try_or_jump(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_VERBOSE, url_client_verbose(uc)));
-    try_or_jump(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_USERAGENT, url_client_user_agent(uc)));
+    tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_VERBOSE, url_client_verbose(uc)));
+    tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_USERAGENT, url_client_user_agent(uc)));
 
     //TODO: use CURLOPT_SHARE to share cookies etc between handles.
     //https://everything.curl.dev/helpers/sharing.html
 
-    try_or_jump(e, Clean_Easy, w_curl_multi_add_handle(multi, easy));
+    tryjmp(e, Clean_Easy, w_curl_multi_add_handle(multi, easy));
 
     if (!arlfn(CurlPtr,append)(easies, &easy)) {
         e = "error: arlfn(CurlPtr,append) failure";

@@ -66,9 +66,9 @@ Err resolve_bookmarks_file(const char* path, Str out[_1_]) {
     }
     Err err = Ok;
     FILE* fp;
-    try_or_jump(err, Fail, file_open(items__(out) + prefix, "w", &fp));
-    try_or_jump(err, Fail, file_write_or_close(EMPTY_BOOKMARK, lit_len__(EMPTY_BOOKMARK), fp));
-    try_or_jump(err, Fail, file_close(fp));
+    tryjmp(err, Fail, file_open(items__(out) + prefix, "w", &fp));
+    tryjmp(err, Fail, file_write_or_close(EMPTY_BOOKMARK, lit_len__(EMPTY_BOOKMARK), fp));
+    tryjmp(err, Fail, file_close(fp));
     return Ok;
 Fail:
     str_clean(out);

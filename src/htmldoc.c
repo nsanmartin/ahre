@@ -707,12 +707,12 @@ draw_tag_h(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
     try( draw_block_iter_childs(node,  ctx, &sub));
 
-    try_or_jump(err, Clean, draw_text_buf_trim_left(&sub));
+    tryjmp(err, Clean, draw_text_buf_trim_left(&sub));
     draw_text_buf_trim_right(&sub);
 
-    try_or_jump(err,Clean,_hypertext_open_(ctx, text, draw_ctx_push_bold, h_tag_open_str));
-    if (sub.buf.len) try_or_jump(err, Clean, draw_ctx_append_sub_text(text, &sub));
-    try_or_jump(err, Clean, _hypertext_close_(ctx, text, draw_ctx_reset_color, newline_str));
+    tryjmp(err,Clean,_hypertext_open_(ctx, text, draw_ctx_push_bold, h_tag_open_str));
+    if (sub.buf.len) tryjmp(err, Clean, draw_ctx_append_sub_text(text, &sub));
+    tryjmp(err, Clean, _hypertext_close_(ctx, text, draw_ctx_reset_color, newline_str));
 
 Clean:
     draw_text_buf_clean(&sub);
@@ -911,18 +911,18 @@ htmldoc_init_move_request(
     *d = (HtmlDoc){
         .req    = *r,
     };
-    try_or_jump(e,Fail, dom_init(&d->dom));
+    tryjmp(e,Fail, dom_init(&d->dom));
     if (flags & HTMLDOC_FLAG_JS) 
-        try_or_jump(e, Fail, jse_init(d));
+        tryjmp(e, Fail, jse_init(d));
 
     ArlOf(FetchHistoryEntry)* hist = session_fetch_history(s);
      if (!arlfn(FetchHistoryEntry,append)(hist, &(FetchHistoryEntry){0}))
      { e = "error: arl append to fetch history failure"; goto Fail; }
 
-    try_or_jump(e, Fail, htmldoc_fetch(d, uc, cmd_out, arlfn(FetchHistoryEntry,back)(hist)));
+    tryjmp(e, Fail, htmldoc_fetch(d, uc, cmd_out, arlfn(FetchHistoryEntry,back)(hist)));
     htmldoc_eval_js_scripts_or_continue(d, s, cmd_out);
-    try_or_jump( e, Fail, _htmldoc_draw_(d, s, cmd_out));
-    try_or_jump( e, Fail,
+    tryjmp( e, Fail, _htmldoc_draw_(d, s, cmd_out));
+    tryjmp( e, Fail,
         fetch_history_entry_update_title(arlfn(FetchHistoryEntry,back)(hist),htmldoc_title(d)));
 
     *r = (Request){0};
@@ -944,7 +944,7 @@ htmldoc_init_bookmark_move_urlstr(HtmlDoc d[_1_], Str urlstr[_1_]) {
     *d = (HtmlDoc){ 0 };
     try(dom_init(&d->dom));
     if (!urlstr) return err_internal("cannot initialize bookmark with not path");
-    try_or_jump(e, Fail, request_init(htmldoc_request(d), http_get, sv(urlstr), NULL));
+    tryjmp(e, Fail, request_init(htmldoc_request(d), http_get, sv(urlstr), NULL));
 
     return Ok;
 Fail:
@@ -1566,14 +1566,14 @@ fit_table_to_screen(DrawTable table[_1_], size_t screen_width, ColSpan colspan[_
     Err err                 = Ok;
     ArlOf(ColWidth) colwidths = (ArlOf(ColWidth)){0};
 
-    try_or_jump(err, Clean, get_unsplitted_columns_widths(table, &colwidths));
+    tryjmp(err, Clean, get_unsplitted_columns_widths(table, &colwidths));
     size_t totalwidth  = 0;
 
     foreach__(ColWidth, &colwidths, w) totalwidth += w->w + 1;
 
     if (totalwidth > screen_width) {
         size_t exceeding_screen_cols = totalwidth - screen_width;
-        try_or_jump(err, Clean, split_columns(table, exceeding_screen_cols, colspan, &colwidths));
+        tryjmp(err, Clean, split_columns(table, exceeding_screen_cols, colspan, &colwidths));
     }
 
     err = split_colspan_columns(table, &colwidths, colspan);
@@ -1604,18 +1604,18 @@ draw_text_buf_split(DrawTextBuf b[_1_], SplittedCell textviews[_1_]) {
                 ;
 
             for(;prevmod <= mod - 1; ++prevmod)
-                try_or_jump(err, ErrClean, textmod_append(&partmods, 0, prevmod->tmod));
+                tryjmp(err, ErrClean, textmod_append(&partmods, 0, prevmod->tmod));
         }
         
         for (;mod && mod < modend && mod->offset <= offset + line.len; ++mod) 
-            try_or_jump(err, ErrClean, textmod_append_left_displaced(&partmods, *mod, offset));
+            tryjmp(err, ErrClean, textmod_append_left_displaced(&partmods, *mod, offset));
 
-        try_or_jump(err, ErrClean, textmod_append(&partmods, line.len, text_mod_reset));
+        tryjmp(err, ErrClean, textmod_append(&partmods, line.len, text_mod_reset));
 
         /* not setting capacity since it is a view, but it is not tidy, maybe i'd change it*/
         CellPart part = (DrawTextBuf){ .buf={.items=(char*)line.items, .len=line.len}, .mods=partmods }; 
 
-        try_or_jump(err,ErrClean,splitted_cell_append(textviews, &part));
+        tryjmp(err,ErrClean,splitted_cell_append(textviews, &part));
         partmods = (TextBufMods){0};
 
         offset += line.len + 1;
@@ -1625,7 +1625,7 @@ draw_text_buf_split(DrawTextBuf b[_1_], SplittedCell textviews[_1_]) {
         CellPart* last_part = arlfn(CellPart,back)(textviews);
         if (last_part)
             for (;mod && mod < modend; ++mod)
-                try_or_jump(err, ErrClean, textmod_append_left_displaced(&last_part->mods, *mod, offset));
+                tryjmp(err, ErrClean, textmod_append_left_displaced(&last_part->mods, *mod, offset));
     }
 
     /* Checks: */
@@ -1710,11 +1710,11 @@ static Err draw_tag_td(DomNode node, DrawCtx ctx[_1_], DrawRow r[_1_]) {
     DrawTextBuf cell = (DrawTextBuf){0};
 
     for (DomNode txt = dom_node_first_child(node); !isnull(txt); txt = dom_node_next(txt)) {
-        try_or_jump(err, Clean, draw_rec(txt, ctx, &cell));
+        tryjmp(err, Clean, draw_rec(txt, ctx, &cell));
     }
-    try_or_jump(err, Clean, draw_text_buf_trim_left(&cell));
+    tryjmp(err, Clean, draw_text_buf_trim_left(&cell));
     draw_text_buf_trim_right(&cell);
-    try_or_jump(err, Clean, draw_row_append(r, &cell));
+    tryjmp(err, Clean, draw_row_append(r, &cell));
     cell = (DrawTextBuf){0};
 
 Clean:
@@ -1777,12 +1777,12 @@ draw_table_to_splitted_view(DrawTable table[_1_], SplittedTable table_view[_1_])
     foreach__(DrawRow, table, row) {
         foreach__(DrawTextBuf, row, cell) {
             splitted_cell = (SplittedCell){0};
-            try_or_jump(err, ErrClean, draw_text_buf_split(cell, &splitted_cell));
-            try_or_jump(err, ErrClean, splitted_row_append_cell(&splitted_row, &splitted_cell));
+            tryjmp(err, ErrClean, draw_text_buf_split(cell, &splitted_cell));
+            tryjmp(err, ErrClean, splitted_row_append_cell(&splitted_row, &splitted_cell));
             splitted_cell = (SplittedCell){0};
         }
 
-        try_or_jump(err, ErrClean, splitted_table_append_row(table_view, &splitted_row));
+        tryjmp(err, ErrClean, splitted_table_append_row(table_view, &splitted_row));
         splitted_row  = (SplittedRow){0};
     }
     return Ok;
@@ -1891,7 +1891,7 @@ draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
     /* If included, the <caption> element must be the first child of its parent <table> element. */
     if (dom_node_has_tag(it, HTML_TAG_CAPTION)) {
-        try_or_jump(err, Clean, draw_rec_tag(it, ctx, caption));
+        tryjmp(err, Clean, draw_rec_tag(it, ctx, caption));
         it = dom_skip_text(dom_node_next(it));
     }
     /* size_t caption_len = strview_from_draw_text_buf(caption).len; */
@@ -1906,8 +1906,8 @@ draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
             {
                 for (DomNode th_it = dom_node_first_elem_child(it); !isnull(th_it); th_it = dom_node_next_elem(th_it)) {
                     size_t  nrow = len__(&table);
-                    try_or_jump(err, Clean,  dom_read_table_row(th_it, ctx, &r, &colspan, nrow));
-                    try_or_jump(err, Clean,  draw_table_append(&table, &r));
+                    tryjmp(err, Clean,  dom_read_table_row(th_it, ctx, &r, &colspan, nrow));
+                    tryjmp(err, Clean,  draw_table_append(&table, &r));
                     r = (DrawRow){0};
                 }
             }
@@ -1917,17 +1917,17 @@ draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
         }
     }
 
-    try_or_jump(err, Clean, _expecting_err_could_not_fit_the_table(
+    tryjmp(err, Clean, _expecting_err_could_not_fit_the_table(
         fit_table_to_screen(&table, screen_width, &colspan),
         strview_from_draw_text_buf(caption),
         ctx
     ));
 
 
-    try_or_jump(err, Clean, draw_table_to_splitted_view(&table, &splitted_table));
-    try_or_jump(err, Clean, splitted_table_row_vertical_lengths(&splitted_table, &rows_vlengths));
-    try_or_jump(err, Clean, splitted_table_col_horizonal_lengths(&splitted_table, &colspan, &cols_hlengths));
-    try_or_jump(err, Clean, _expecting_err_could_not_fit_the_table(
+    tryjmp(err, Clean, draw_table_to_splitted_view(&table, &splitted_table));
+    tryjmp(err, Clean, splitted_table_row_vertical_lengths(&splitted_table, &rows_vlengths));
+    tryjmp(err, Clean, splitted_table_col_horizonal_lengths(&splitted_table, &colspan, &cols_hlengths));
+    tryjmp(err, Clean, _expecting_err_could_not_fit_the_table(
         expand_columns_for_colspans(&table, screen_width, &colspan, &cols_hlengths),
         strview_from_draw_text_buf(caption),
         ctx
@@ -1937,7 +1937,7 @@ draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     draw_ctx_append_sub_text(text, caption);
 
     if (!ends_with_newline(strview_from_draw_text_buf(text))) draw_text_buf_append(text, svl("\n"));
-    try_or_jump(err, Clean,
+    tryjmp(err, Clean,
         draw_splitted_table(&splitted_table, &rows_vlengths, &cols_hlengths, &colspan, text));
 Clean:
     arlfn(DrawTextBuf,clean)(&r);

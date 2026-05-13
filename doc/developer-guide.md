@@ -79,11 +79,11 @@ an error is received it is passed to the caller.
 All this works fine as long as no resources are involved. But what happen if, say, `g1`
 end calling `malloc` and we lost the pointer to that memory?
 
-Well, for that cases we use `try_or_jump`:
+Well, for that cases we use `tryjmp`:
 
 ```
 
-#define try_or_jump(ErrLval, Label, Expr) _Generic((Expr), Err: do{\
+#define tryjmp(ErrLval, Label, Expr) _Generic((Expr), Err: do{\
     ErrLval=(Expr);
     if (ErrLval) goto Label;
 } while(0)
@@ -102,11 +102,11 @@ Err type_t_init(TypeT out[1]) {
     Err err = Ok;
 
     try ( init1(x1));
-    try_or_jump (err, Clean, init2((x2));
-    try_or_jump (err, Clean, init3((x3));
-    try_or_jump (err, Clean, init4((x4));
-    try_or_jump (err, Clean, init5((x5));
-    try_or_jump(e, Clean, fn2(x1, x2, x3, x4, out));
+    tryjmp (err, Clean, init2((x2));
+    tryjmp (err, Clean, init3((x3));
+    tryjmp (err, Clean, init4((x4));
+    tryjmp (err, Clean, init5((x5));
+    tryjmp(e, Clean, fn2(x1, x2, x3, x4, out));
 
     return Ok;
 
@@ -149,7 +149,7 @@ where `_1_` is just a macro for `1`. The first form is only used when we may
 receive `NULL`, the second when we don;t expect it.
 
 ## Labels
-Labels are used together with the `try_or_jump` macro and only in functions
+Labels are used together with the `tryjmp` macro and only in functions
 that reserve and free resources when taking care of all cases including errors
 result in easier to follow code in that way. 
 

@@ -235,7 +235,7 @@ static Err request_arl_to_file(CmdParams p[_1_], ArlOf(Request) rs[_1_]) {
     }
 
     CurlMuliPtr multi = url_client_multi(uc);
-    foreach__(CurlPtr,&handles,cpp) { try_or_jump(e,Clean,w_curl_multi_add_handle(multi, *cpp)); }
+    foreach__(CurlPtr,&handles,cpp) { tryjmp(e,Clean,w_curl_multi_add_handle(multi, *cpp)); }
 
     e = w_curl_multi_perform_poll(multi, &failed);
     size_t failedcount = len__(&failed);
@@ -280,8 +280,8 @@ cmd_anchor_save_range(CmdParams p[_1_]) {
 
     ArlOf(Request) rs = (ArlOf(Request)){0};
     Err            e  = Ok;
-    try_or_jump(e,Clean, dom_node_range_to_request_arl(&r, anchors, p, http_get, svl("href"), &rs));
-    try_or_jump(e,Clean, request_arl_to_file(p, &rs));
+    tryjmp(e,Clean, dom_node_range_to_request_arl(&r, anchors, p, http_get, svl("href"), &rs));
+    tryjmp(e,Clean, request_arl_to_file(p, &rs));
 Clean:
     arlfn(Request,clean)(&rs);
     return e;
@@ -387,8 +387,8 @@ static Err cmd_doc_scripts_save(CmdParams p[_1_]) {
     Writer w;
     FILE* fp;
     try(file_open(p->ln, "w", &fp));
-    try_or_jump(e, Failure, file_writer_init(&w, fp));
-    try_or_jump(e, Failure, htmldoc_scripts_write(h, &p->rp, &w));
+    tryjmp(e, Failure, file_writer_init(&w, fp));
+    tryjmp(e, Failure, htmldoc_scripts_write(h, &p->rp, &w));
     e = file_close(fp);
     ok_then(e, msg__(cmd_params_cmd_out(p), svl("script(s) saved\n")));
     return Ok;
@@ -488,8 +488,8 @@ static Err cmd_image_save_range(CmdParams p[_1_]) {
 
     ArlOf(Request) rs = (ArlOf(Request)){0};
     Err            e  = Ok;
-    try_or_jump(e,Clean, dom_node_range_to_request_arl(&r, images, p, http_get, svl("src"), &rs));
-    try_or_jump(e,Clean, request_arl_to_file(p, &rs));
+    tryjmp(e,Clean, dom_node_range_to_request_arl(&r, images, p, http_get, svl("src"), &rs));
+    tryjmp(e,Clean, request_arl_to_file(p, &rs));
 Clean:
     arlfn(Request,clean)(&rs);
     return Ok;

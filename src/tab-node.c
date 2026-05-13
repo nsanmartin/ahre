@@ -38,9 +38,9 @@ Err tab_node_tree_append_ahref_from_node(
     Request r       = (Request){0};
     TabNode newnode = (TabNode){0};
 
-    try_or_jump(e,Clean, request_init(&r,http_get, html, htmldoc_url(d)));
-    try_or_jump(e,Clean, tab_node_init_move_request(&newnode, n, url_client, &r, s, out));
-    try_or_jump(e,Clean, tab_node_append_move_child(n, &newnode));
+    tryjmp(e,Clean, request_init(&r,http_get, html, htmldoc_url(d)));
+    tryjmp(e,Clean, tab_node_init_move_request(&newnode, n, url_client, &r, s, out));
+    tryjmp(e,Clean, tab_node_append_move_child(n, &newnode));
     return Ok;
 Clean:
     tab_node_cleanup(&newnode);
@@ -67,9 +67,9 @@ Err tab_node_tree_append_submit_input_node(
     Request r       = (Request){0};
     TabNode newnode = (TabNode){0};
     Err e = Ok;
-    try_or_jump(e,Clean, request_from_form_node(&r, form, true, htmldoc_url(d)));
-    try_or_jump(e,Clean, tab_node_init_move_request(&newnode, tab_node, url_client, &r, s, out));
-    try_or_jump(e,Clean, tab_node_append_move_child(tab_node, &newnode));
+    tryjmp(e,Clean, request_from_form_node(&r, form, true, htmldoc_url(d)));
+    tryjmp(e,Clean, tab_node_init_move_request(&newnode, tab_node, url_client, &r, s, out));
+    tryjmp(e,Clean, tab_node_append_move_child(tab_node, &newnode));
     return Ok;
 
 Clean:

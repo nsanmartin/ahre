@@ -201,12 +201,12 @@ static Err curl_lexbor_fetch_scripts(
     ArlOf(CurlMultiSgPtr)* failed    = &(ArlOf(CurlMultiSgPtr)){0};
 
     try(_get_scripts_collection_(doc, lxb_dom_interface_element(doc->head), &head_scripts));
-    try_or_jump(e, Lxb_Array_Head_Destroy,
+    tryjmp(e, Lxb_Array_Head_Destroy,
             _get_scripts_collection_(doc, lxb_dom_interface_element(doc->body), &body_scripts));
 
-    try_or_jump(e, Lxb_Array_Body_Destroy,
+    tryjmp(e, Lxb_Array_Body_Destroy,
             _split_remote_local_(head_scripts, htmldoc_head_scripts(htmldoc), head_urls, cmd_out));
-    try_or_jump(e, Clean_Head_Urls,
+    tryjmp(e, Clean_Head_Urls,
             _split_remote_local_(body_scripts, htmldoc_body_scripts(htmldoc), body_urls, cmd_out));
 
 
@@ -295,13 +295,13 @@ static Err _url_fill_postfields_(
 
         escaped = curl_easy_escape(curl, items__(vit), len__(vit));
         if (!escaped) return "error: curl_escape failure";
-        try_or_jump( e, Failure_Free_Escaped,
+        tryjmp( e, Failure_Free_Escaped,
             str_append(request_postfields(r), svl("&")));
-        try_or_jump(e, Failure_Free_Escaped,
+        tryjmp(e, Failure_Free_Escaped,
             str_append(request_postfields(r), kit));
-        try_or_jump(e, Failure_Free_Escaped,
+        tryjmp(e, Failure_Free_Escaped,
             str_append(request_postfields(r), svl("=")));
-        try_or_jump(e, Failure_Free_Escaped,
+        tryjmp(e, Failure_Free_Escaped,
             str_append(request_postfields(r), escaped));
         curl_free(escaped);
     }

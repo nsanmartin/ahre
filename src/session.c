@@ -149,7 +149,7 @@ static Err session_write_fetch_history(Session s[_1_]) {
         ; it != arlfn(FetchHistoryEntry,end)(history)
         ; ++it
     ) {
-        try_or_jump(e, Clean, fetch_history_write_to_file(it, fp));
+        tryjmp(e, Clean, fetch_history_write_to_file(it, fp));
     }
 Clean:
     str_clean(&fetch_history_fname);
@@ -164,18 +164,18 @@ Err session_write_input_history(Session s[_1_]) {
     Err   e                   = Ok;
 
 
-    try_or_jump(e, Clean, session_input_history_fname_append(s, &input_history_fname));
-    try_or_jump(e, Clean, file_open(input_history_fname.items, "a", &fp));
+    tryjmp(e, Clean, session_input_history_fname_append(s, &input_history_fname));
+    tryjmp(e, Clean, file_open(input_history_fname.items, "a", &fp));
     ArlOf(const_cstr)* history = session_input_history(s);
     Str* dt = session_dt_now_str(s);
-    try_or_jump(e, Clean, file_write_or_close(items__(dt), len__(dt), fp));
-    try_or_jump(e, Clean, file_write_or_close("\n", 1, fp));
+    tryjmp(e, Clean, file_write_or_close(items__(dt), len__(dt), fp));
+    tryjmp(e, Clean, file_write_or_close("\n", 1, fp));
     for (const_cstr* it = arlfn(const_cstr,begin)(history)
         ; it != arlfn(const_cstr,end)(history)
         ; ++it
     ) {
-        try_or_jump(e, Clean, file_write(*it, strlen(*it), fp));
-        try_or_jump(e, Clean, file_write("\n", 1, fp));
+        tryjmp(e, Clean, file_write(*it, strlen(*it), fp));
+        tryjmp(e, Clean, file_write("\n", 1, fp));
     }
 
 Clean:

@@ -23,8 +23,8 @@ Err get_bookmarks_doc(
     Str* bm_url = &(Str){0};
 
     try( str_append_z(bm_url, svl("file://")));
-    try_or_jump(err, Clean, str_append_z(bm_url, bm_path));
-    try_or_jump(err, Clean, htmldoc_init_bookmark_move_urlstr(htmldoc_out, bm_url));
+    tryjmp(err, Clean, str_append_z(bm_url, bm_path));
+    tryjmp(err, Clean, htmldoc_init_bookmark_move_urlstr(htmldoc_out, bm_url));
     FetchHistoryEntry e = (FetchHistoryEntry){0};
     err = _htmldoc_fetch_bookmark_(htmldoc_out, url_client, cmd_out, &e);
     fetch_history_entry_clean(&e);
@@ -190,7 +190,7 @@ bookmark_mk_anchor (Dom dom, char* href, Str text[_1_], DomElem out[_1_]) {
     try(dom_elem_set_attr(*out, svl("href"), sv(href, strlen(href))));
     DomText dom_text;
     Err err = Ok;
-    try_or_jump(err, Clean_Elem, dom_text_init(&dom_text, dom, sv(text)));
+    tryjmp(err, Clean_Elem, dom_text_init(&dom_text, dom, sv(text)));
     if (isnull(dom_text)) { err = "error: lxb text create failure"; goto Clean_Elem; }
 
     dom_node_insert_child((*out), dom_text);
@@ -383,7 +383,7 @@ bookmark_add_to_section(Session s[_1_], const char* line, UrlClient url_client[_
     HtmlDoc bm;
     Str bm_path = (Str){0};
     try(resolve_bookmarks_file(items__(session_bookmarks_fname(s)), &bm_path));
-    try_or_jump(err, Fail_Clean_Bm,
+    tryjmp(err, Fail_Clean_Bm,
             get_bookmarks_doc(url_client, sv(&bm_path), cmd_out,  &bm));
 
     char* url;

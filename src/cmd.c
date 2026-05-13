@@ -63,8 +63,8 @@ cmd_save_url(CmdParams p[_1_], StrView url) {
     Err     e   = Ok;
     Request r   = (Request){0};
 
-    try_or_jump(e, Clean, request_init(&r, http_get, url, htmldoc_url(htmldoc)));
-    try_or_jump(e, Clean, save_request_to_file(p, &r));
+    tryjmp(e, Clean, request_init(&r, http_get, url, htmldoc_url(htmldoc)));
+    tryjmp(e, Clean, save_request_to_file(p, &r));
 
 Clean:
     request_clean(&r);
@@ -81,11 +81,11 @@ cmd_fetch_request_(CmdParams p[_1_], HttpMethod method) {
 
     if (_is_url_alias_(p->ln)) {
         try (get_url_alias(p->s, cstr_skip_space(p->ln + 1), &u));
-        try_or_jump(e,Fail, request_init(&r, method, sv(u), NULL));
+        tryjmp(e,Fail, request_init(&r, method, sv(u), NULL));
     } else
-        try_or_jump(e,Fail, request_from_userln(&r, p->ln, method));
+        tryjmp(e,Fail, request_from_userln(&r, p->ln, method));
 
-    try_or_jump(e,Fail, session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p)));
+    tryjmp(e,Fail, session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p)));
     str_clean(&u);
     return Ok;
 Fail:
@@ -390,7 +390,7 @@ Err cmd_textbuf_global(CmdParams p[_1_]) {
     StrView pattern = parse_pattern(p->ln);
     if (!pattern.items || !pattern.len) { return "Could not read pattern"; }
 
-    try_or_jump(err,Clean, textbuf_get_lines_matching_regex(p->tb, pattern, &lines));
+    tryjmp(err,Clean, textbuf_get_lines_matching_regex(p->tb, pattern, &lines));
 
     StrView line;
     foreach__(size_t,&lines,linenum) {
@@ -504,7 +504,7 @@ static Err _cmd_input_select_set_(Session session[_1_], DomNode n[_1_], const ch
                 }
             }
 
-            try_or_jump(e, Clean_Matches, dom_node_remove_attr(it, svl("selected")));
+            tryjmp(e, Clean_Matches, dom_node_remove_attr(it, svl("selected")));
         }
     }
 
@@ -561,7 +561,7 @@ Err cmd_input_save_node(CmdParams p[_1_], DomNode node) {
     if (isnull(form)) return "expected form, not found";
     Err err = Ok;
     Request r = (Request){0};
-    try_or_jump(err,Clean, request_from_form_node(&r, form, true, htmldoc_url(htmldoc)));
+    tryjmp(err,Clean, request_from_form_node(&r, form, true, htmldoc_url(htmldoc)));
     err = save_request_to_file(p, &r);
 
 Clean:
@@ -647,11 +647,11 @@ static Err save_request_to_file(CmdParams p[_1_], Request r[_1_]) {
     CmdOut* out         = cmd_params_cmd_out(p);
 
     
-    try_or_jump(e,Clean, fopen_or_append_fopen(p->ln, *request_url(r), &fp, &actual_path));
-    try_or_jump(e,Clean, request_to_file(r, session_url_client(p->s), fp));
+    tryjmp(e,Clean, fopen_or_append_fopen(p->ln, *request_url(r), &fp, &actual_path));
+    tryjmp(e,Clean, request_to_file(r, session_url_client(p->s), fp));
 
-    try_or_jump(e,Clean, msg__(out, svl("file saved: ")));
-    try_or_jump(e,Clean, msg_ln__(out, sv(actual_path)));
+    tryjmp(e,Clean, msg__(out, svl("file saved: ")));
+    tryjmp(e,Clean, msg_ln__(out, sv(actual_path)));
 
 Clean:
     file_close(fp);
