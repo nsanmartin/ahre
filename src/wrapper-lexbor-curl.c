@@ -180,34 +180,35 @@ get_failed_indexed(ArlOf(CurlPtr) easies[_1_], ArlOf(CurlMultiSgPtr) failed[_1_]
 static Err curl_lexbor_fetch_scripts(
     HtmlDoc        htmldoc[_1_],
     UrlClient      url_client[_1_],
-    CmdOut            cmd_out[_1_]
+    CmdOut         cmd_out[_1_]
 ) {
     Err e = Ok;
     //TODO!: evaluate scripts in order
 
-    lxb_html_document_t* doc = htmldoc_dom(htmldoc).ptr;
-    lxb_dom_collection_t* head_scripts;
-    lxb_dom_collection_t* body_scripts;
+    lxb_html_document_t*  doc          = htmldoc_dom(htmldoc).ptr;
+    lxb_dom_collection_t* head_scripts = NULL;
+    lxb_dom_collection_t* body_scripts = NULL;
 
     if (len__(htmldoc_head_scripts(htmldoc)) + len__(htmldoc_body_scripts(htmldoc)))
         return "error: htmldoc must have no scripts before fetching them";
+
+    ArlOf(Str)*            head_urls = &(ArlOf(Str)){0};
+    ArlOf(Str)*            body_urls = &(ArlOf(Str)){0};
+    ArlOf(CurlPtr)*        easies    = &(ArlOf(CurlPtr)){0};
+    ArlOf(CurlUrlPtr)*     curlus    = &(ArlOf(CurlUrlPtr)){0};
+    CURLM*                 multi     = url_client_multi(url_client);
+    CURLU*                 curlu     = url_cu(htmldoc_url(htmldoc));
+    ArlOf(CurlMultiSgPtr)* failed    = &(ArlOf(CurlMultiSgPtr)){0};
+
     try(_get_scripts_collection_(doc, lxb_dom_interface_element(doc->head), &head_scripts));
     try_or_jump(e, Lxb_Array_Head_Destroy,
             _get_scripts_collection_(doc, lxb_dom_interface_element(doc->body), &body_scripts));
-
-
-    ArlOf(Str)* head_urls = &(ArlOf(Str)){0};
-    ArlOf(Str)* body_urls = &(ArlOf(Str)){0};
 
     try_or_jump(e, Lxb_Array_Body_Destroy,
             _split_remote_local_(head_scripts, htmldoc_head_scripts(htmldoc), head_urls, cmd_out));
     try_or_jump(e, Clean_Head_Urls,
             _split_remote_local_(body_scripts, htmldoc_body_scripts(htmldoc), body_urls, cmd_out));
 
-    ArlOf(CurlPtr)*    easies = &(ArlOf(CurlPtr)){0};
-    ArlOf(CurlUrlPtr)* curlus = &(ArlOf(CurlUrlPtr)){0};
-    CURLM*             multi  = url_client_multi(url_client);
-    CURLU*             curlu  = url_cu(htmldoc_url(htmldoc));
 
     e = url_client_multi_add_handles(
         url_client, curlu, head_urls, htmldoc_head_scripts(htmldoc), easies, curlus, cmd_out);
@@ -222,7 +223,6 @@ static Err curl_lexbor_fetch_scripts(
         try(msg__(cmd_out, e));
     }
 
-    ArlOf(CurlMultiSgPtr)* failed = &(ArlOf(CurlMultiSgPtr)){0};
     e = w_curl_multi_perform_poll(multi, failed);
     if (!e) {
         size_t n = len__(failed);
