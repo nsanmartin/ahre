@@ -146,6 +146,7 @@ Err cmd_input_save_node(CmdParams p[_1_], DomNode node);
 Err cmd_input_info_node(CmdParams p[_1_], DomNode n);
 Err cmd_input_default_node(CmdParams p[_1_], DomNode n);
 
+Err cmd_input_save_node(CmdParams p[_1_], DomNode node);
 
 Err _cmd_lexbor_node_print_(ArlOf(DomNode) node_arl[_1_], size_t ix, CmdOut out[_1_]);
 
@@ -161,7 +162,6 @@ Err cmd_input_default_ix(CmdParams p[_1_], size_t ix);
 
 Err cmd_image(CmdParams p[_1_]);
 Err cmd_image_print(CmdParams p[_1_], DomNode node);
-Err cmd_image_save(CmdParams p[_1_], DomNode node);
 
 
 /*

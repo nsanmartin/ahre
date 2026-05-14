@@ -17,6 +17,7 @@ typedef struct {
 } UserInterface ;
 
 Err process_line_line_mode(Session* s, const char* line, CmdOut cout[_1_]);
+Err process_line_vi_mode(Session* s, const char* line, CmdOut cout[_1_]);
 
 /* ctr / factories */
 static inline UserInterface ui_fgets(void) {
@@ -38,7 +39,7 @@ static inline UserInterface ui_isocline(void) {
 static inline UserInterface ui_vi_mode(void) {
     return (UserInterface) {
         .uin            = uinput_vi_mode(),
-        .process_line   = process_line_line_mode,
+        .process_line   = process_line_vi_mode,
         .uout           = uout_vi_mode()
     };
 }

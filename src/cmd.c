@@ -12,7 +12,6 @@
 
 
 Err _get_image_by_ix(Session session[_1_], size_t ix, DomNode outnode[_1_]);
-static Err save_request_to_file(CmdParams p[_1_], Request r[_1_]);
 
 static bool _is_url_alias_(const char* cmd) { return cmd[0] == '\\'; }
 
@@ -46,30 +45,6 @@ dom_node_range_to_request_arl(
     return Ok;
 }
 
-Err
-foreach_request_save_to_file(CmdParams p[_1_], ArlOf(Request) rs[_1_]) {
-    foreach__(Request,rs,r) {
-        Err e = save_request_to_file(p, r);
-        if (e) msg_ln__(p, e);
-    }
-    return Ok;
-}
-
-static Err
-cmd_save_url(CmdParams p[_1_], StrView url) {
-    HtmlDoc* htmldoc;
-    try( session_current_doc(p->s, &htmldoc));
-
-    Err     e   = Ok;
-    Request r   = (Request){0};
-
-    tryjmp(e, Clean, request_init(&r, http_get, url, htmldoc_url(htmldoc)));
-    tryjmp(e, Clean, save_request_to_file(p, &r));
-
-Clean:
-    request_clean(&r);
-    return e;
-}
 
 /* session commands */
 static Err
@@ -551,24 +526,6 @@ Err cmd_input_set_node(CmdParams p[_1_], DomNode node) {
 }
 
 
-Err cmd_input_save_node(CmdParams p[_1_], DomNode node) {
-    if (!dom_node_attr_has_value(node, svl("type"), svl("submit")))
-        return "warn: save command only applicable to submit inputs\n";
-
-    HtmlDoc* htmldoc;
-    try( session_current_doc(p->s, &htmldoc));
-    DomNode form = dom_node_find_parent_form(node);
-    if (isnull(form)) return "expected form, not found";
-    Err err = Ok;
-    Request r = (Request){0};
-    tryjmp(err,Clean, request_from_form_node(&r, form, true, htmldoc_url(htmldoc)));
-    err = save_request_to_file(p, &r);
-
-Clean:
-    request_clean(&r);
-    return err;
-}
-
 
 /* image commands */
 
@@ -591,11 +548,6 @@ Err cmd_image_print(CmdParams p[_1_], DomNode node) {
 }
 
 
-Err cmd_image_save(CmdParams p[_1_], DomNode node) {
-    return cmd_save_url(p, dom_node_attr_value(node, svl("src")));
-}
-
-
 /* anchor commands */
 
 
@@ -612,11 +564,6 @@ Err cmd_anchor_asterisk(CmdParams p[_1_], DomNode node) {
     }
     
     return "error: where is the href if current tree is empty?";
-}
-
-Err
-cmd_anchor_save(CmdParams p[_1_], DomNode node) {
-    return cmd_save_url(p, dom_node_attr_value(node, svl("href")));
 }
 
 
@@ -640,22 +587,6 @@ Err _cmd_lexbor_node_print_(ArlOf(DomNode) node_arl[_1_], size_t ix, CmdOut out[
 }
 
 
-static Err save_request_to_file(CmdParams p[_1_], Request r[_1_]) {
-    Err     e           = Ok;
-    FILE*   fp          = NULL;
-    Str     actual_path = (Str){0};
-    CmdOut* out         = cmd_params_cmd_out(p);
 
     
-    tryjmp(e,Clean, fopen_or_append_fopen(p->ln, *request_url(r), &fp, &actual_path));
-    tryjmp(e,Clean, request_to_file(r, session_url_client(p->s), fp));
-
-    tryjmp(e,Clean, msg__(out, svl("file saved: ")));
-    tryjmp(e,Clean, msg_ln__(out, sv(actual_path)));
-
-Clean:
-    file_close(fp);
-    str_clean(&actual_path);
-    return e;
-}
 

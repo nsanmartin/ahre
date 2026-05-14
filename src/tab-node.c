@@ -38,7 +38,7 @@ Err tab_node_tree_append_ahref_from_node(
     Request r       = (Request){0};
     TabNode newnode = (TabNode){0};
 
-    tryjmp(e,Clean, request_init(&r,http_get, html, htmldoc_url(d)));
+    tryjmp(e,Clean, request_init(&r, http_get, html, htmldoc_url(d)));
     tryjmp(e,Clean, tab_node_init_move_request(&newnode, n, url_client, &r, s, out));
     tryjmp(e,Clean, tab_node_append_move_child(n, &newnode));
     return Ok;

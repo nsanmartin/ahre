@@ -246,13 +246,13 @@ Err w_curl_url_set(CURLU* u,  CURLUPart part, const char* cstr, unsigned flags) 
 }
 
 
-Err w_curl_perform_with_cancel(CurlMuliPtr multi, CurlPtr easy) {
+Err w_curl_perform_with_cancel(CurlMuliPtr multi, CurlPtr easy, char* url) {
     ArlOf(CurlMultiSgPtr)* failed = &(ArlOf(CurlMultiSgPtr)){0};
     try(w_curl_multi_add_handle(multi, easy));
     Err err = w_curl_multi_perform_poll(multi, failed);
 
     CurlMultiSgPtr* f = arlfn(CurlMultiSgPtr,at)(failed,0);
-    if (f) err = err_fmt("curl failed to fetch: %s\n", curl_easy_strerror((*f)->data.result));
+    if (f) err = err_fmt("curl failed to fetch %s: %s\n", url, curl_easy_strerror((*f)->data.result));
 
     CURLMcode code = curl_multi_remove_handle(multi, easy);
     if (code != CURLM_OK) err = err_fmt("error: curl multi remove habdle failure: %s", curl_multi_strerror(code));

@@ -908,22 +908,18 @@ htmldoc_init_move_request(
     unsigned flags = session_js(s) ? HTMLDOC_FLAG_JS : 0x0;
 
     /* lexbor doc should be initialized before jse_init */
-    *d = (HtmlDoc){
-        .req    = *r,
-    };
+    *d = (HtmlDoc){.req=*r};
     tryjmp(e,Fail, dom_init(&d->dom));
     if (flags & HTMLDOC_FLAG_JS) 
         tryjmp(e, Fail, jse_init(d));
 
-    ArlOf(FetchHistoryEntry)* hist = session_fetch_history(s);
-     if (!arlfn(FetchHistoryEntry,append)(hist, &(FetchHistoryEntry){0}))
-     { e = "error: arl append to fetch history failure"; goto Fail; }
+    FetchHistoryEntry* entry;
+    tryjmp(e,Fail, arl_append_zero(FetchHistoryEntry, session_fetch_history(s), entry));
 
-    tryjmp(e, Fail, htmldoc_fetch(d, uc, cmd_out, arlfn(FetchHistoryEntry,back)(hist)));
+    tryjmp(e,Fail, htmldoc_fetch(d, uc, cmd_out, entry));
     htmldoc_eval_js_scripts_or_continue(d, s, cmd_out);
-    tryjmp( e, Fail, _htmldoc_draw_(d, s, cmd_out));
-    tryjmp( e, Fail,
-        fetch_history_entry_update_title(arlfn(FetchHistoryEntry,back)(hist),htmldoc_title(d)));
+    tryjmp(e,Fail, _htmldoc_draw_(d, s, cmd_out));
+    tryjmp(e,Fail, fetch_history_entry_update_title(entry,htmldoc_title(d)));
 
     *r = (Request){0};
     return Ok;
@@ -2108,12 +2104,17 @@ Err curl_lexbor_fetch_document(
     UrlClient         url_client[_1_],
     HtmlDoc           htmldoc[_1_],
     CmdOut            out[_1_],
-    FetchHistoryEntry histentry[_1_]
+    FetchHistoryEntry histentry[_1_],
+    CurlPtr           easy
 );
 
 Err
 htmldoc_fetch(HtmlDoc htmldoc[_1_], UrlClient url_client[_1_], CmdOut cmd_out[_1_], FetchHistoryEntry he[_1_]) {
-    return curl_lexbor_fetch_document(url_client, htmldoc, cmd_out, he);
+    CurlPtr easy;
+    try(w_curl_easy_init(&easy));
+    Err e = curl_lexbor_fetch_document(url_client, htmldoc, cmd_out, he, easy);
+    curl_easy_cleanup(easy);
+    return e;
 }
 
 

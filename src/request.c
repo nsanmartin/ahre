@@ -156,19 +156,26 @@ Err get_url_alias(Session* s, const char* cstr, BufOf(char)* out) {
 
 Err request_to_file(Request r[_1_], UrlClient url_client[_1_], FILE* fp) {
     if (!fp) return "error: expectinf FILE* received NULL";
-    try( url_client_set_basic_options(url_client));
-    try( curl_set_method_from_http_method(url_client, request_method(r)));
-    try( w_curl_set_url(url_client_curl(url_client), request_url(r)));
+    Err     e  = Ok;
+    CurlPtr curl;
+    try(w_curl_easy_init(&curl));
+
+    tryjmp(e,Clean, url_client_set_basic_options_to_handle(url_client, curl));
+    tryjmp(e,Clean, w_curl_set_method_from_http_method(curl, request_method(r)));
+    tryjmp(e,Clean, w_curl_set_url(curl, request_url(r)));
 
     if (
-       curl_easy_setopt(url_client->curl, CURLOPT_HEADERDATA, NULL)
-    || curl_easy_setopt(url_client->curl, CURLOPT_HEADERFUNCTION, skip_header_callback)
-    || curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, fwrite)
-    || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, fp)
-    ) return "error configuring curl write fn/data";
+       curl_easy_setopt(curl, CURLOPT_HEADERDATA, NULL)
+    || curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, skip_header_callback)
+    || curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, fwrite)
+    || curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp)
+    ) {e="error configuring curl write fn/data"; goto Clean;}
     str_reset(url_client_postdata(url_client));
 
-    return url_client_perform_with_cancel(url_client);
+    tryjmp(e,Clean, url_client_perform_with_cancel(url_client, curl, r));
+Clean:
+    curl_easy_cleanup(curl);
+    return e;
 }
 
 Err
@@ -188,6 +195,7 @@ request_to_handle(
 
     try(fopen_or_append_fopen(path, *request_url(r), &fpp->ptr, actual_path));
     try(w_curl_set_write_fn_and_data_for_download(*out, fpp->ptr));
+    try( set_post_fields(r, *out));
     return Ok;
 }
 
@@ -251,6 +259,53 @@ static Err _prepend_file_schema_if_file_exists_(Str url[_1_], Str out[_1_]) {
 }
 
 
+static Err
+_url_fill_postfields_(Request r[_1_], CurlPtr curl, const char* postfields[_1_], size_t len[_1_]) {
+    ArlOf(Str)* ks = request_query_keys(r);
+    ArlOf(Str)* vs = request_query_values(r);
+
+    if ((len__(ks) || len__(vs)) && len__(request_postfields(r)))
+        return "error: request must have either postfiels or keys and values, not both";
+
+    if (len__(request_postfields(r))) {
+        *postfields = items__(request_postfields(r));
+        *len        = len__(request_postfields(r));
+        return Ok;
+    }
+
+    if (len__(ks) != len__(vs))
+        return "error: key/value lists must have the same len";
+    if (!len__(ks))
+        return "submit request must have post fields";
+
+    Str* kit = arlfn(Str,begin)(ks);
+    Str* vit = arlfn(Str,begin)(vs);
+    Err e = Ok;
+    char* escaped = NULL;
+    for ( ; kit != arlfn(Str,end)(ks) && vit != arlfn(Str,end)(vs) ; ++kit, ++vit) {
+
+        escaped = curl_easy_escape(curl, items__(vit), len__(vit));
+        if (!escaped) return "error: curl_escape failure";
+        tryjmp( e, Failure_Free_Escaped,
+            str_append(request_postfields(r), svl("&")));
+        tryjmp(e, Failure_Free_Escaped,
+            str_append(request_postfields(r), kit));
+        tryjmp(e, Failure_Free_Escaped,
+            str_append(request_postfields(r), svl("=")));
+        tryjmp(e, Failure_Free_Escaped,
+            str_append(request_postfields(r), escaped));
+        curl_free(escaped);
+    }
+
+    try(str_append(request_postfields(r), svl("\0")));
+    *postfields = items__(request_postfields(r)) + 1; /* ignore the first '&'! */
+    *len        = len__(request_postfields(r)) - 2; /* ignore first '&' and '\0' ! */
+    return Ok;
+Failure_Free_Escaped:
+    curl_free(escaped);
+    return e;
+}
+
 
 Err url_from_get_request(Request r[_1_]) {
     Url u = (Url){0};
@@ -264,7 +319,8 @@ Err url_from_get_request(Request r[_1_]) {
         const char* url_str = file.len ? file.items : items__(request_urlstr(r));
         CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, url_str, CURLU_DEFAULT_SCHEME);
         if (curl_code != CURLUE_OK) {
-            err = err_fmt("warn: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
+            char* url = r->urlstr.len ? r->urlstr.items : "";
+            err = err_fmt("curl_url_set failed setting %s get request : %s\n", url, curl_url_strerror(curl_code));
             goto Failure_Clean_File_Url;
         }
     }
@@ -336,5 +392,24 @@ request_query_append_key_value(Request r[_1_], const char*k, size_t klen, const 
     try(arl_append_zero(Str,request_query_values(r),value));
     try(str_append(key, sv(k, klen)));
     try(str_append(value, sv(v, vlen)));
+    return Ok;
+}
+
+
+Err
+set_post_fields(Request r[_1_], CurlPtr curl) {
+    if (r->method != http_post) return Ok;
+    const char* postfields;
+    size_t      len;
+    try (_url_fill_postfields_(r, curl, &postfields, &len));
+
+    if (!len) return err_internal("unexpected empty postfields");
+
+    CURLcode code;
+    code = curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, len);
+    if (CURLE_OK != code) return err_internal("curl postfields size set failure");
+
+    code = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postfields);
+    if (CURLE_OK != code) return err_internal("curl postfields set failure");
     return Ok;
 }

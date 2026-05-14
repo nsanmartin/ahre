@@ -197,7 +197,8 @@ static Err cmd_anchor_asterisk_range(CmdParams p[_1_]) {
 }
 
 
-static Err request_arl_to_file(CmdParams p[_1_], ArlOf(Request) rs[_1_]) {
+static Err
+request_arl_to_file(CmdParams p[_1_], ArlOf(Request) rs[_1_]) {
     ArlOf(FilePtr)        fps       = (ArlOf(FilePtr)){0};
     ArlOf(CurlPtr)        handles   = (ArlOf(CurlPtr)){0};
     ArlOf(CurlMultiSgPtr) failed    = (ArlOf(CurlMultiSgPtr)){0};
@@ -326,6 +327,29 @@ static SessionCmd _cmd_input_[] =
     , {.name="save",.fn=cmd_input_save,.help=NULL,.match=1}
     , {0}
     };
+
+
+Err cmd_input_save_node(CmdParams p[_1_], DomNode node) {
+    if (!dom_node_attr_has_value(node, svl("type"), svl("submit")))
+        return "warn: save command only applicable to submit inputs\n";
+
+    HtmlDoc*       htmldoc;
+    try( session_current_doc(p->s, &htmldoc));
+
+    DomNode form = dom_node_find_parent_form(node);
+    if (isnull(form)) return "expected form, not found";
+    Err e = Ok;
+
+    ArlOf(Request) rs = (ArlOf(Request)){0};
+    Request* r;
+    try(arl_append_zero(Request,&rs,r));
+    tryjmp(e,Clean, request_from_form_node(r, form, true, htmldoc_url(htmldoc)));
+    tryjmp(e,Clean, request_arl_to_file(p, &rs));
+
+Clean:
+    arlfn(Request,clean)(&rs);
+    return e;
+}
 
 /* set session comands */
 
@@ -625,14 +649,26 @@ Err process_line(Session session[_1_], const char* line, CmdOut cout[_1_]) {
 
 Err process_line_line_mode(Session* s, const char* line, CmdOut cout[_1_]) {
     if (!s) return "error: no session :./";
-    return process_line(s, line, cout);
+    try (process_line(s, line, cout));
+    static size_t logged_fetch_history = 0;
+
+    FetchHistoryEntry* last_entry = NULL;
+    while ((last_entry = arlfn(FetchHistoryEntry,at)(session_fetch_history(s), logged_fetch_history))) {
+        ++logged_fetch_history;
+        try(cmd_out_screen_append_ui_as_base10(cout, last_entry->size_download_t));
+        if (last_entry->effective_url.len) {
+            try(cmd_out_screen_append(cout, sv("\t")));
+            try(cmd_out_screen_append_ln(cout, sv(last_entry->effective_url)));
+        } else try(cmd_out_screen_append(cout, sv("\n")));
+
+    }
+    return Ok;
 }
 
-/* Err process_line_vi_mode(Session* s, const char* line, CmdOut cout[_1_]) { */
-/*     if (!s) return "error: no session :./"; */
-/*     try( process_line(s, line, cout)); */
-/*     return session_doc_draw(s); */
-/* } */
+Err process_line_vi_mode(Session* s, const char* line, CmdOut cout[_1_]) {
+    if (!s) return "error: no session :./";
+    return process_line(s, line, cout);
+}
 
 #include <sys/ioctl.h>
 

@@ -29,20 +29,15 @@ static Err _lexbor_parse_chunk_end_(HtmlDoc htmldoc[_1_]) {
 }
 
 
-static Err url_client_set_write_fn_and_data_for_htmldoc(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]) {
+static Err url_client_set_write_fn_and_data_for_htmldoc(CurlPtr curl, HtmlDoc htmldoc[_1_]) {
     if (
-       curl_easy_setopt(url_client->curl, CURLOPT_HEADERDATA, htmldoc)
-    || curl_easy_setopt(url_client->curl, CURLOPT_HEADERFUNCTION, curl_header_callback)
-    || curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, lexbor_parse_chunk_callback)
-    || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, htmldoc)) {
+       curl_easy_setopt(curl, CURLOPT_HEADERDATA, htmldoc)
+    || curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, curl_header_callback)
+    || curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, lexbor_parse_chunk_callback)
+    || curl_easy_setopt(curl, CURLOPT_WRITEDATA, htmldoc)) {
         return "error configuring curl write fn/data";
     }
     return Ok;
-}
-
-
-static Err _curl_set_http_method_(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]) {
-    return curl_set_method_from_http_method(url_client, htmldoc_method(htmldoc));
 }
 
 
@@ -63,17 +58,10 @@ Err w_curl_set_url(CurlPtr curl, Url url[_1_]) {
     /* return err_fmt("error: curl failed to set urlL %s", curl_easy_strerror(code)); */
 }
 
-static Err _curl_set_curlu_(UrlClient uc[_1_], HtmlDoc htmldoc[_1_]) {
-    return w_curl_set_url(url_client_curl(uc), htmldoc_url(htmldoc));
-}
 
-
-
-static Err _set_htmldoc_url_with_effective_url_(
-    UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]
-) {
+static Err _set_htmldoc_url_with_effective_url_(CurlPtr curl, HtmlDoc htmldoc[_1_]) {
     char* effective_url = NULL;
-    if (CURLE_OK != curl_easy_getinfo(url_client->curl, CURLINFO_EFFECTIVE_URL, &effective_url)) {
+    if (CURLE_OK != curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &effective_url)) {
         return "error: couldn't get effective url from curl";
     }
     return curlu_set_url_or_fragment(url_cu(htmldoc_url(htmldoc)), effective_url);
@@ -177,11 +165,7 @@ get_failed_indexed(ArlOf(CurlPtr) easies[_1_], ArlOf(CurlMultiSgPtr) failed[_1_]
 }
 
 
-static Err curl_lexbor_fetch_scripts(
-    HtmlDoc        htmldoc[_1_],
-    UrlClient      url_client[_1_],
-    CmdOut         cmd_out[_1_]
-) {
+static Err curl_lexbor_fetch_scripts(HtmlDoc htmldoc[_1_], UrlClient url_client[_1_], CurlPtr easy, CmdOut cmd_out[_1_]) {
     Err e = Ok;
     //TODO!: evaluate scripts in order
 
@@ -244,7 +228,7 @@ static Err curl_lexbor_fetch_scripts(
     }
 
     for_htmldoc_size_download_append(
-        easies, cmd_out, url_client_curl(url_client), htmldoc_curlinfo_sz_download(htmldoc));
+        easies, cmd_out, easy, htmldoc_curlinfo_sz_download(htmldoc));
     w_curl_multi_remove_handles(multi, easies, cmd_out);
 
     _map_append_nullchar_(htmldoc_head_scripts(htmldoc), cmd_out);
@@ -264,110 +248,42 @@ Lxb_Array_Head_Destroy:
     return e;
 }
 
-static Err _url_fill_postfields_(
-    Request r[_1_],
-    CURL* curl,
-    const char* postfields[_1_],
-    size_t len[_1_]
-) {
-    ArlOf(Str)* ks = request_query_keys(r);
-    ArlOf(Str)* vs = request_query_values(r);
-
-    if ((len__(ks) || len__(vs)) && len__(request_postfields(r)))
-        return "error: request must have either postfiels or keys and values, not both";
-
-    if (len__(request_postfields(r))) {
-        *postfields = items__(request_postfields(r));
-        *len        = len__(request_postfields(r));
-        return Ok;
-    }
-
-    if (len__(ks) != len__(vs))
-        return "error: key/value lists must have the same len";
-    if (!len__(ks))
-        return "submit request must have post fields";
-
-    Str* kit = arlfn(Str,begin)(ks);
-    Str* vit = arlfn(Str,begin)(vs);
-    Err e = Ok;
-    char* escaped = NULL;
-    for ( ; kit != arlfn(Str,end)(ks) && vit != arlfn(Str,end)(vs) ; ++kit, ++vit) {
-
-        escaped = curl_easy_escape(curl, items__(vit), len__(vit));
-        if (!escaped) return "error: curl_escape failure";
-        tryjmp( e, Failure_Free_Escaped,
-            str_append(request_postfields(r), svl("&")));
-        tryjmp(e, Failure_Free_Escaped,
-            str_append(request_postfields(r), kit));
-        tryjmp(e, Failure_Free_Escaped,
-            str_append(request_postfields(r), svl("=")));
-        tryjmp(e, Failure_Free_Escaped,
-            str_append(request_postfields(r), escaped));
-        curl_free(escaped);
-    }
-
-    try(str_append(request_postfields(r), svl("\0")));
-    *postfields = items__(request_postfields(r)) + 1; /* ignore the first '&'! */
-    *len        = len__(request_postfields(r)) - 2; /* ignore first '&' and '\0' ! */
-    return Ok;
-Failure_Free_Escaped:
-    curl_free(escaped);
-    return e;
-}
-
-
-static Err
-set_post_fields(Request r[_1_], UrlClient uc[_1_]) {
-    if (r->method != http_post) return Ok;
-    const char* postfields;
-    size_t      len;
-    try (_url_fill_postfields_(r, uc, &postfields, &len));
-
-    if (!len) return err_internal("unexpected empty postfields");
-
-    CURLcode code;
-    code = curl_easy_setopt(uc->curl, CURLOPT_POSTFIELDSIZE, len);
-    if (CURLE_OK != code) return err_internal("curl postfields size set failure");
-
-    code = curl_easy_setopt(uc->curl, CURLOPT_POSTFIELDS, postfields);
-    if (CURLE_OK != code) return err_internal("curl postfields set failure");
-    return Ok;
-}
-
 
 Err curl_lexbor_fetch_document(
     UrlClient         url_client[_1_],
     HtmlDoc           htmldoc[_1_],
     CmdOut            out[_1_],
-    FetchHistoryEntry histentry[_1_]
+    FetchHistoryEntry histentry[_1_],
+    CurlPtr           easy
 );
 Err curl_lexbor_fetch_document(
     UrlClient         url_client[_1_],
     HtmlDoc           htmldoc[_1_],
     CmdOut            cmd_out[_1_],
-    FetchHistoryEntry histentry[_1_]
+    FetchHistoryEntry histentry[_1_],
+    CurlPtr           easy
 ) {
-    try( set_post_fields(htmldoc_request(htmldoc), url_client));
-    try( url_client_set_basic_options(url_client));
-    try( url_client_set_write_fn_and_data_for_htmldoc(url_client, htmldoc));
+    try( set_post_fields(htmldoc_request(htmldoc), easy));
+    try( url_client_set_basic_options_to_handle(url_client, easy));
+    try( url_client_set_write_fn_and_data_for_htmldoc(easy, htmldoc));
     try( _lexbor_parse_chunk_begin_(htmldoc));
-    try( _curl_set_http_method_(url_client, htmldoc));
-    try( _curl_set_curlu_(url_client, htmldoc));
+    try(w_curl_set_method_from_http_method(easy, htmldoc_method(htmldoc)));
+    try(w_curl_set_url(easy, htmldoc_url(htmldoc)));
 
     try( fetch_history_entry_init(histentry));
-    Err err = url_client_perform_with_cancel(url_client);
+    Err err = url_client_perform_with_cancel(url_client, easy, htmldoc_request(htmldoc));
     str_reset(url_client_postdata(url_client));
     try(err);
-    try(fetch_history_entry_update_curl(histentry, url_client->curl, cmd_out));
+    try(fetch_history_entry_update_curl(histentry, easy, cmd_out));
 
     if (histentry->size_download_t < 0)
         try(msg__(cmd_out, svl("CURLINFO_SIZE_DOWNLOAD_T is negative")));
     else *htmldoc_curlinfo_sz_download(htmldoc) = histentry->size_download_t;
 
     try( _lexbor_parse_chunk_end_(htmldoc));
-    try( _set_htmldoc_url_with_effective_url_(url_client, htmldoc));
+    try( _set_htmldoc_url_with_effective_url_(easy, htmldoc));
     try( htmldoc_convert_sourcebuf_to_utf8(htmldoc));
     if (htmldoc_js_is_enabled(htmldoc))
-        try(curl_lexbor_fetch_scripts(htmldoc, url_client, cmd_out));
+        try(curl_lexbor_fetch_scripts(htmldoc, url_client, easy, cmd_out));
     return Ok;
 }

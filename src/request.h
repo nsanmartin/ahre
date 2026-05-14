@@ -50,4 +50,6 @@ Err request_to_handle(
     Str         actual_path[_1_],
     CurlPtr     out[_1_]
 );
+Err url_client_perform_with_cancel(UrlClient uc[_1_], CurlPtr easy, Request req[_1_]);
+Err set_post_fields(Request r[_1_], CurlPtr curl);
 #endif
