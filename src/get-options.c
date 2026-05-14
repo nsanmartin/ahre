@@ -5,22 +5,22 @@
 
 
 static Err _read_bm_opt_(CliParams cparams[_1_], const char* optparam) {
-    if (!optparam || !*optparam) return "invalid data option";
+    if (!optparam || !*optparam) return "bookmark file name must be provided to -b option";
     try(resolve_bookmarks_file(optparam, &cparams->sconf.bookmarks_fname));
     return Ok;
 }
 
 
 static Err _read_cmd_opt_(CliParams cparams[_1_], const char* optparam) {
-    if (!optparam || !*optparam) return "invalid data option";
+    if (!optparam || !*optparam) return "cmd string must be provided to -c option";
     cparams->cmd = optparam;
     return Ok;
 }
 
 
 static Err _read_data_opt_(CliParams cparams[_1_], const char* data, const char* url) {
-    if (!data || !*data) return "invalid -d data optparam";
-    if (!url || !*url) return "invalid -d url optparam";
+    if (!data || !*data) return "<data> and <url> parameters must be provided to -d option";
+    if (!url || !*url) return "<url> must be provided to -d option";
     Request* r;
     try(arl_append_zero(Request,cparams_requests(cparams),r));
     try(request_from_cli_params(r, http_post, sv(url), sv(data)));

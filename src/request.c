@@ -146,12 +146,12 @@ Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method) {
 
 
 Err get_url_alias(Session* s, const char* cstr, BufOf(char)* out) {
-    if (cstr_starts_with("bookmarks", cstr)) {
+    if (strlen(cstr) && cstr_starts_with("bookmarks", cstr)) {
         if (!len__(session_bookmarks_fname(s))) return "no bookmarks file configured";
         try(str_append(out, svl("file://")));
         return resolve_bookmarks_file(items__(session_bookmarks_fname(s)), out);
     }
-    return err_fmt("not a url alias: %s", cstr);
+    return err_fmt("not a url alias: '%s'\n", cstr);
 }
 
 Err request_to_file(Request r[_1_], UrlClient url_client[_1_], FILE* fp) {

@@ -14,7 +14,7 @@
 Err _get_image_by_ix(Session session[_1_], size_t ix, DomNode outnode[_1_]);
 static Err save_request_to_file(CmdParams p[_1_], Request r[_1_]);
 
-static bool _is_url_alias_(const char* cmd) { return *cmd == '\\'; }
+static bool _is_url_alias_(const char* cmd) { return cmd[0] == '\\'; }
 
 Err
 dom_node_range_to_request_arl(

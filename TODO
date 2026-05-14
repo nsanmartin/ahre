@@ -1,23 +1,18 @@
 # TODO
 [ ] [build] add build option to disable js (and not require quickjs)
 [ ] [build] fix tcc quick-check build
-[ ] [curl] implement cancel for curl commands
 [ ] [curl] implement other curlopt setter in user interface
 [ ] [curl] use CULROPT_SHARE for multi interface
 [ ] [draw] browse ul/li
 [ ] [draw] draw properly blockquote 
 [ ] [draw] draw properly center 
-[ ] [draw] draw tables as tables
 [ ] [draw] support default and bright colour pallets (like w3m)
 [ ] [feat] use libchafa for images (or open a separate process with custom viewer)
-[ ] [hotl] implement hotl arl reset
-[ ] [isocline] move back to readline? fork? use linenoise?
 [ ] [isocline] set autocomplete with ahre commands 
 [ ] [js] implement and bind DOM
 [~] [js] implement and bind console object
 [ ] [js] implement and bind window object
 [~] [libcurl] store cookies in file and make it configurable.
-[*] [refa][?] separate more htmldoc init from draw
 [ ] [refa][ui] move from OOP to more functional
 [ ] [refa] reduce headers size moving code to the .c files
 [ ] [test] so many tests...
@@ -38,6 +33,7 @@
 [~] document basic funtionality (usefull until cmd self docuemnt themselfs)
 [~] use trie for commands and include docs (the current simpler approach seems good enought)
 [X] [refa][?] use SessionMemWriter consistently (session_write_* -> session_writer_write_*)
+[X] [isocline] move back to readline? fork? use linenoise? -- pr was merged https://github.com/daanx/isocline/pull/30
 
 # DONE
 ['] [HTML] implement pre tag
@@ -90,3 +86,7 @@
 [*] [js] use curl multi interface to downloas the scripts
 [*] [ui] implement ';' as cmd separator so that 'dr;:%p' means first draw then print all 
 [*] [ui] implement multiline commands (you can use ;)
+[*] [curl] implement cancel for curl commands
+[*] [draw] draw tables as tables
+[*] [hotl] implement hotl arl reset
+[*] [refa][?] separate more htmldoc init from draw

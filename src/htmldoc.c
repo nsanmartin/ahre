@@ -1894,7 +1894,6 @@ draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
         tryjmp(err, Clean, draw_rec_tag(it, ctx, caption));
         it = dom_skip_text(dom_node_next(it));
     }
-    /* size_t caption_len = strview_from_draw_text_buf(caption).len; */
 
 
     for (; !isnull(it); it = dom_node_next_elem(it)) {

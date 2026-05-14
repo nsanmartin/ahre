@@ -186,8 +186,9 @@ Clean:
 
 
 Err session_close(Session s[_1_]) {
-    session_write_input_history(s);
-    session_write_fetch_history(s);
+    SessionConf* sconf = session_conf(s);
+    if (sconf->input_history_fname.len) session_write_input_history(s);
+    if (sconf->fetch_history_fname.len) session_write_fetch_history(s);
     return Ok;
 }
 
@@ -241,3 +242,8 @@ session_doc_console(Session session[_1_], const char* line, CmdOut* out) {
     return htmldoc_console(htmldoc, session, line, out);
 }
 
+
+Err
+session_fetch_history_fname_append(Session s[_1_], Str out[_1_]) {
+    return str_append(out, session_conf(s)->fetch_history_fname);
+}
