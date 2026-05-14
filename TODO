@@ -27,6 +27,7 @@
 [ ] [ui] relative path in write command
 [ ] [ui/readline] edit user line
 [ ] [bug] jump to content should only jump to content, not open a new doc
+[ ] [draw] implement rowspan
 
 #CLOSED
 [X] run test in github ci workflow (currently it does not find liblexbos.so.2): moving away from github

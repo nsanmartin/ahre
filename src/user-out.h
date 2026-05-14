@@ -39,8 +39,8 @@ static inline Err ui_write_callback_stdout(const char* mem, size_t len, Session*
 static inline Err ui_line_flush_msg(Session* s, CmdOut cout[_1_]) {
     (void)s;
     Msg* msg = cmd_out_msg(cout);
-    try( mem_fwrite(msg_items(msg), msg_len(msg), stdout));
-    if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
+    try( mem_fwrite(msg_items(msg), msg_len(msg), stderr));
+    if (fflush(stderr)) return err_fmt("error: fflush failure: %s", strerror(errno));
     msg_clean(msg);
     return Ok;
 }

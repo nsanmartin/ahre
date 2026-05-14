@@ -133,7 +133,7 @@ Err url_client_perform_with_cancel(UrlClient uc[_1_], CurlPtr easy, Request req[
     Err e = Ok;
     Str url = (Str){0};
     tryjmp(e,Clean, curl_url_to_filename_append(*request_url(req), &url));
-    tryjmp(e,Clean, w_curl_perform_with_cancel(url_client_multi(uc), easy, url.items));
+    tryjmp(e,Clean, w_curl_perform_with_cancel(url_client_multi(uc), easy, url.items ? url.items : ""));
 Clean:
     str_clean(&url);
     return e;
