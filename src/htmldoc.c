@@ -2183,11 +2183,9 @@ htmldoc_http_charset_is_utf8(HtmlDoc d[_1_]) {
 
 bool
 htmldoc_http_content_type_text_or_undef(HtmlDoc d[_1_]) {
-#define TXT_ "text/"
+#define TEXT_HTML__ "text/html"
     Str* content_type = htmldoc_http_content_type(d);
-    const size_t len = lit_len__(TXT_);
-    const size_t ctlen = len__(content_type);
-    return !ctlen || (ctlen > len && !strncmp(items__(content_type), TXT_, len));
-#undef TXT_
+    return !len__(content_type) || str_eq_case(content_type, svl(TEXT_HTML__));
+#undef TEXT_HTML__
 }
 

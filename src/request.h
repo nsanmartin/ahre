@@ -13,9 +13,11 @@ typedef struct {
     ArlOf(Str) keys;
     ArlOf(Str) values;
     Str        postfields; /* used for post field and quey */
+    bool       local;
 } Request;
 
-
+bool request_is_local(Request r[_1_]);
+void request_set_local(Request r[_1_], bool value);
 static inline HttpMethod request_method(Request r[_1_]) { return r->method; }
 static inline StrZ* request_urlstr(Request r[_1_]) { return &r->urlstr; }
 static inline Url* request_url(Request r[_1_]) { return &r->url; }

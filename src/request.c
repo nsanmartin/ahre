@@ -241,23 +241,6 @@ Clean_Url:
     return err;
 }
 
-#define FILE_SCHEMA "file://"
-#define HTTP_SCHEMA "http://"
-#define HTTPS_SCHEMA "https://"
-static Err _prepend_file_schema_if_file_exists_(Str url[_1_], Str out[_1_]) {
-    if (!len__(url)) return Ok;
-    if (str_startswith(url, svl(FILE_SCHEMA))) return Ok;
-    if (str_startswith(url, svl(HTTP_SCHEMA))) return Ok;
-    if (str_startswith(url, svl(HTTPS_SCHEMA))) return Ok;
-    try(str_append(out, svl(FILE_SCHEMA)));
-
-    bool file_exists;
-    try(resolve_path(items__(url), &file_exists,out));
-    if (!file_exists) str_reset(out);
-
-    return Ok;
-}
-
 
 static Err
 _url_fill_postfields_(Request r[_1_], CurlPtr curl, const char* postfields[_1_], size_t len[_1_]) {
@@ -307,21 +290,49 @@ Failure_Free_Escaped:
 }
 
 
+#define FILE_SCHEMA "file://"
+#define HTTP_SCHEMA "http://"
+#define HTTPS_SCHEMA "https://"
+static Err
+resolve_request_url_if_local(Request r[_1_]) {
+    Str* url = request_urlstr(r);
+    if (!len__(url)) return Ok;
+    if (str_startswith(url, svl(HTTP_SCHEMA))) return Ok;
+    if (str_startswith(url, svl(HTTPS_SCHEMA))) return Ok;
+    if (str_startswith(url, svl(FILE_SCHEMA))) {
+        request_set_local(r, true);
+        return Ok;
+    }
+    bool file_exists;
+    Err  e        = Ok;
+    Str  resolved = (Str){0};
+    tryjmp(e,Clean, str_append_z(&resolved, svl(FILE_SCHEMA)));
+    tryjmp(e,Clean, resolve_path(items__(url), &file_exists, &resolved));
+    if (file_exists) {
+        str_clean(request_urlstr(r));
+        *request_urlstr(r) = resolved;
+        request_set_local(r, true);
+        return Ok;
+    }
+Clean:
+    str_clean(&resolved);
+    return e;
+}
+
+
 Err url_from_get_request(Request r[_1_]) {
     Url u = (Url){0};
     try(url_init(&u, r->urlview));
-    CURLU* cu = url_cu(&u);
-    Err err = Ok;
-    Str file = (Str){0};
-    if (len__(request_urlstr(r)) && !str_eq_case(svl("/"),request_urlstr(r))) {
-        tryjmp(err, Failure_Clean_File_Url,
-                _prepend_file_schema_if_file_exists_(request_urlstr(r), &file));
-        const char* url_str = file.len ? file.items : items__(request_urlstr(r));
-        CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, url_str, CURLU_DEFAULT_SCHEME);
+    CURLU* cu   = url_cu(&u);
+    Err    e    = Ok;
+    Str    file = (Str){0};
+    if (len__(request_urlstr(r)) && !str_eq_case(svl("/"), request_urlstr(r))) {
+        tryjmp(e,Fail, resolve_request_url_if_local(r));
+        CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, request_urlstr(r)->items, CURLU_DEFAULT_SCHEME);
         if (curl_code != CURLUE_OK) {
             char* url = r->urlstr.len ? r->urlstr.items : "";
-            err = err_fmt("curl_url_set failed setting %s get request : %s\n", url, curl_url_strerror(curl_code));
-            goto Failure_Clean_File_Url;
+            e = err_fmt("curl_url_set failed setting %s get request : %s\n", url, curl_url_strerror(curl_code));
+            goto Fail;
         }
     }
 
@@ -329,18 +340,18 @@ Err url_from_get_request(Request r[_1_]) {
     ArlOf(Str)* ks = request_query_keys(r);
     ArlOf(Str)* vs = request_query_values(r);
     if (len__(ks) != len__(vs)) {
-        err = "error: key/value lists must have the same len";
-        goto Failure_Clean_File_Url;
+        e = "error: key/value lists must have the same len";
+        goto Fail;
     }
 
     Str* kit = arlfn(Str,begin)(ks);
     Str* vit = arlfn(Str,begin)(vs);
     for ( ; kit != arlfn(Str,end)(ks) && vit != arlfn(Str,end)(vs) ; ++kit, ++vit) {
         str_reset(request_postfields(r));
-        tryjmp(err, Failure_Clean_File_Url, str_append(request_postfields(r), kit));
-        tryjmp(err, Failure_Clean_File_Url, str_append(request_postfields(r), svl("=")));
-        tryjmp(err, Failure_Clean_File_Url, str_append(request_postfields(r), vit));
-        tryjmp(err, Failure_Clean_File_Url, str_append(request_postfields(r), svl("\0")));
+        tryjmp(e, Fail, str_append(request_postfields(r), kit));
+        tryjmp(e, Fail, str_append(request_postfields(r), svl("=")));
+        tryjmp(e, Fail, str_append(request_postfields(r), vit));
+        tryjmp(e, Fail, str_append(request_postfields(r), svl("\0")));
         CURLUcode curl_code = curl_url_set(
             cu,
             CURLUPART_QUERY,
@@ -348,19 +359,19 @@ Err url_from_get_request(Request r[_1_]) {
             CURLU_APPENDQUERY | CURLU_URLENCODE
         );
         if (curl_code != CURLUE_OK) {
-            err = err_fmt("warn: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
-            goto Failure_Clean_File_Url;
+            e = err_fmt("warn: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
+            goto Fail;
         }
     }
     str_reset(request_postfields(r));
     str_clean(&file);
     r->url = u;
 
-    return err;
-Failure_Clean_File_Url:
+    return e;
+Fail:
     str_clean(&file);
     url_cleanup(&u);
-    return err;
+    return e;
 }
 
 
@@ -413,3 +424,11 @@ set_post_fields(Request r[_1_], CurlPtr curl) {
     if (CURLE_OK != code) return err_internal("curl postfields set failure");
     return Ok;
 }
+
+
+bool
+request_is_local(Request r[_1_]) { return r->local; }
+
+
+void
+request_set_local(Request r[_1_], bool value) { r->local = value; }
