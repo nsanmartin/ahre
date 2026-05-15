@@ -61,10 +61,14 @@ static Err ui_vi_show_session_default(Session* s) {
         try( screen__(default_out, svl(EMPTY_SESSION_MSG_)));
         err = session_flush_cmd_out_screen(s, default_out);
     } else {
+        HtmlDoc* d;
         TextBuf* tb;
+        try( session_current_doc(s, &d));
         try( session_current_buf(s, &tb));
         if (textbuf_is_empty(tb)) {
-            try( msg__(default_out, svl(EMPTY_BUFFER_MSG_)));
+            if (!htmldoc_content_is_html(d)) 
+                try( msg_ln__(default_out, svl("content was not parsed, is it html?\ncheck source and run .parse")));
+            else try( msg__(default_out, svl(EMPTY_BUFFER_MSG_)));
             err = session_flush_cmd_out_msg(s, default_out);
         } else {
 

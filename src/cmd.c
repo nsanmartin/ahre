@@ -6,6 +6,7 @@
 #include "readpass.h"
 #include "url.h"
 #include "generic.h"
+#include "htmldoc.h"
 
 
 #define MsgLastLine EscCodePurple "%{- last line -}%" EscCodeReset
@@ -242,6 +243,14 @@ Err cmd_fetch(Session session[_1_], CmdOut* out) {
     htmldoc_cleanup(htmldoc);
     *htmldoc = newdoc;
     return Ok;
+}
+
+
+Err cmd_parse(Session session[_1_], CmdOut* out) {
+    HtmlDoc* d;
+    try( session_current_doc(session, &d));
+    try( htmldoc_reparse_source(d));
+    return session_htmldoc_redraw(d, session, out);
 }
 
 
