@@ -190,7 +190,9 @@ ui_vi_flush_msg_read_input(Session* s, StrView msg) {
                    update = true;
                } else update = false;
                break;
-            default: break;
+            default:
+               update = false;
+               break;
         }
         if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &prev_termios) == -1) return err_internal("tcsetattr failure");
     }
