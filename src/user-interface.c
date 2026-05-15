@@ -464,9 +464,14 @@ static inline Err cmd_scripts(CmdParams p[_1_]) {
     return run_cmd_on_range__(p, _cmd_doc_scripts_, 10);
 }
 
-#define CMD_DOC_FETCh \
+#define CMD_DOC_FETCH \
     "Fetchs the current document.\n"
 static inline Err cmd_doc_fetch(CmdParams p[_1_]) { return cmd_fetch(p->s, cmd_params_cmd_out(p)); }
+
+
+#define CMD_DOC_PARSE \
+    "(Re)parses the current document.\n"
+static inline Err cmd_doc_parse(CmdParams p[_1_]) { return cmd_parse(p->s, cmd_params_cmd_out(p)); }
 
 
 static SessionCmd _cmd_doc_[] =
@@ -476,8 +481,9 @@ static SessionCmd _cmd_doc_[] =
     , {.name="\"",      .fn=cmd_doc_info,              .help=CMD_DOC_INFO_DOC,     .flags=CMD_CHAR}
     , {.name="console", .match=1, .fn=cmd_doc_console, .help=CMD_DOC_CONSOLE}
     , {.name="draw",    .match=1, .fn=cmd_doc_draw,    .help=CMD_DOC_DRAW}
-    , {.name="fetch",   .match=1, .fn=cmd_doc_fetch,   .help=CMD_DOC_DRAW}
+    , {.name="fetch",   .match=1, .fn=cmd_doc_fetch,   .help=CMD_DOC_FETCH}
     , {.name="js",      .match=1, .fn=cmd_doc_js,      .help=CMD_DOC_JS}
+    , {.name="parse",   .match=1, .fn=cmd_doc_parse,   .help=CMD_DOC_PARSE}
     , {0}
 };
 

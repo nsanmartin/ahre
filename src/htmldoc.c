@@ -1955,7 +1955,7 @@ draw_tag_table (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 }
 
 
-static Err
+Err
 htmldoc_reparse_source(HtmlDoc d[_1_]) {
     Dom dom = htmldoc_dom(d);
     dom_reset(dom);
@@ -1966,7 +1966,7 @@ htmldoc_reparse_source(HtmlDoc d[_1_]) {
 
 Err
 htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[_1_]) {
-    if (!htmldoc_http_content_type_text_or_undef(d)) return Ok;
+    if (!htmldoc_content_is_html(d)) return Ok;
     const char* utf8s;
     size_t utf8slen;
     if (!htmldoc_http_charset_is_utf8(d)) {
@@ -2184,8 +2184,19 @@ htmldoc_http_charset_is_utf8(HtmlDoc d[_1_]) {
 bool
 htmldoc_http_content_type_text_or_undef(HtmlDoc d[_1_]) {
 #define TEXT_HTML__ "text/html"
-    Str* content_type = htmldoc_http_content_type(d);
-    return !len__(content_type) || str_eq_case(content_type, svl(TEXT_HTML__));
+    StrView content_type = sv(htmldoc_http_content_type(d));
+    return !content_type.len || str_eq_case(content_type, svl(TEXT_HTML__));
 #undef TEXT_HTML__
 }
 
+bool htmldoc_content_is_html(HtmlDoc d[_1_]) {
+    Request* r = htmldoc_request(d);
+    if (!request_is_local(r)) return htmldoc_http_content_type_text_or_undef(d);
+
+    char*  url  = items__(request_urlstr(r));
+    size_t len  = len__(request_urlstr(r));
+    if (!len || !url) return false;
+    size_t dot = len - 1;
+    for (;dot; --dot) if (url[dot] == '.') break;
+    return url[dot] == '.' && str_eq_case(svl(".html"), sv(url + dot, len - dot));
+}

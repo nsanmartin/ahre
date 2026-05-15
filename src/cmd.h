@@ -176,6 +176,7 @@ Err cmd_image_print(CmdParams p[_1_], DomNode node);
 //     return lexbor_cp_tag(rest, htmldoc->lxbdoc, textbuf_buf(htmldoc_textbuf(htmldoc)));
 // }
 
+Err cmd_parse(Session session[_1_], CmdOut* out);
 Err cmd_fetch(Session session[_1_], CmdOut* out);
 Err cmd_set_session_forms(CmdParams p[_1_]);
 Err cmd_print_node(CmdParams p[_1_], DomNode node);

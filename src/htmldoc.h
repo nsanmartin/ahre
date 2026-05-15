@@ -121,5 +121,6 @@ bool htmldoc_http_charset_is_utf8(HtmlDoc d[_1_]);
 bool htmldoc_http_content_type_text_or_undef(HtmlDoc d[_1_]);
 void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[_1_], Session* s, CmdOut* out);
 void textmod_trim_left(TextBufMods mods[_1_], size_t n);
-
+bool htmldoc_content_is_html(HtmlDoc d[_1_]);
+Err htmldoc_reparse_source(HtmlDoc d[_1_]);
 #endif

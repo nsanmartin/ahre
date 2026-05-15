@@ -33,8 +33,7 @@ size_t curl_header_callback(char *buffer, size_t size, size_t nitems, void *html
             char* ws = mem_is_whitespace(buffer, len);
             size_t chslen = ws ? (size_t)(ws - buffer) : len;
             str_reset(htmldoc_http_charset(hd));
-            str_append(htmldoc_http_charset(hd), sv(buffer, chslen));
-            str_append(htmldoc_http_charset(hd), svl("\0"));
+            str_append_z(htmldoc_http_charset(hd), sv(buffer, chslen));
             buffer += chslen;
             len -= chslen;
             mem_skip_space_inplace((const char**)&buffer, &len);
@@ -48,7 +47,10 @@ size_t curl_header_callback(char *buffer, size_t size, size_t nitems, void *html
             size_t contypelen = colon ? (size_t)(colon - buffer) : len;
             str_reset(htmldoc_http_content_type(hd));
             //TODO: does not depend on null termoination
-            str_append(htmldoc_http_content_type(hd), sv(buffer, contypelen));
+            StrView content_type = sv(buffer, contypelen);
+            while (content_type.len && isspace(content_type.items[content_type.len-1]))
+                --content_type.len;
+            str_append(htmldoc_http_content_type(hd), content_type);
             if (colon) ++contypelen;
             buffer += contypelen;
             len -= contypelen;
