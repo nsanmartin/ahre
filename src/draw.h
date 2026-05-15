@@ -2,7 +2,6 @@
 #define AHRE_DRAW_H__
 
 #include "escape-codes.h"
-#include "generic.h"
 #include "htmldoc.h"
 #include "session-conf.h"
 #include "session.h"
@@ -23,6 +22,7 @@ typedef struct {
 #define DRAW_CTX_FLAG_JS         0x8u
     unsigned flags;
     Session* session;
+    CmdOut*  cmd_out;
 } DrawCtx;
 
 
@@ -34,6 +34,8 @@ static inline unsigned draw_ctx_flags_from_session(Session s[_1_]) {
     return flags;
 }
 
+StrView draw_ctx_url_strview(DrawCtx ctx[_1_]);
+static inline CmdOut* draw_ctx_cmd_out(DrawCtx ctx[_1_]) { return ctx->cmd_out; }
 static inline ArlOf(EscCode)* draw_ctx_esc_code_stack(DrawCtx ctx[_1_]) { return &ctx->esc_code_stack; }
 static inline HtmlDoc* draw_ctx_htmldoc(DrawCtx ctx[_1_]) { return ctx->htmldoc; }
 static inline Session* draw_ctx_session(DrawCtx ctx[_1_]) { return ctx->session; }
@@ -48,14 +50,15 @@ static inline void draw_ctx_pre_set(DrawCtx ctx[_1_], bool value) {
 }
 
 static inline Err
-draw_ctx_init(DrawCtx ctx[_1_], HtmlDoc htmldoc[_1_], Session s[_1_], unsigned flags) {
+draw_ctx_init(DrawCtx ctx[_1_], HtmlDoc htmldoc[_1_], Session s[_1_], unsigned flags, CmdOut cmd_out[_1_]) {
     char* fragment = NULL;
     try( url_fragment(htmldoc_url(htmldoc), &fragment));
     *ctx = (DrawCtx) {
         .htmldoc  = htmldoc,
         .fragment = fragment,
         .flags    = flags,
-        .session  = s
+        .session  = s,
+        .cmd_out  = cmd_out
     };
     return Ok;
 }

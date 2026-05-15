@@ -3,6 +3,8 @@
 #include <ctype.h>
 #include <errno.h>
 #include <iconv.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -13,7 +15,7 @@
 
 /* mem fns */
 char* mem_is_whitespace(char* s, size_t len) {
-    while(len && *s && !isspace(*s)) { ++s; --len; }
+    while(len && *s && !isspace(*s)) { ++s; --len; } //TODO1: why !
     return len ? s : NULL;
 }
 
@@ -70,22 +72,6 @@ bool cstr_starts_with(const char* s, const char* t) {
 bool mem_eq_case(const char* m1, size_t l1, const char* m2, size_t l2) { 
     return m1 && m2 && l1 == l2 && !strncasecmp(m1, m2, l1);
 }
-
-
-/* static Err mem_get_indexes_of(char* data, size_t len, size_t offset, char c, ArlOf(size_t)* indexes) { */
-/*     char* end = data + len; */
-/*     char* it = data; */
-
-/*     for(; it < end;) { */
-/*         it = memchr(it, c, end-it); */
-/*         if (!it || it >= end) { break; } */
-/*         size_t off = offset + (it - data); */
-/*         if(NULL == arlfn(size_t, append)(indexes, &off)) { return "arlfn append failed"; } */
-/*         ++it; */
-/*     } */
-
-/*     return Ok; */
-/* } */
 
 
 /* cstr fns */
@@ -290,14 +276,14 @@ void strview_trim_space_in_place(StrView s[_1_]) {
 
 StrView strview_split_word(StrView s[_1_]) {
     StrView word = (StrView){.items=items__(s)};
-    while(s->len && !isspace(*(items__(s)))) { ++word.len; ++s->items; --s->len; }
+    while(s->len && is_visible(*(items__(s)))) { ++word.len; ++s->items; --s->len; }
     return word;
 }
 
 StrView cstr_split_word(const char* s[_1_]) {
     StrView word = (StrView){.items=*s};
-    while(**s && !isspace(**s)) { ++(*s); ++word.len; }
-    while(**s && isspace(**s)) { ++(*s); }
+    while(**s && is_visible(**s)) { ++(*s); ++word.len; }
+    while(**s && !is_visible(**s)) { ++(*s); }
     return word;
 }
 
@@ -308,8 +294,7 @@ StrView strview_from_mem_trim(const char* s, size_t len) {
 }
 
 bool strview_skip_space_inplace(StrView s[_1_]) {
-    for(; s->len && isspace(*s->items); --(s->len), ++(s->items))
-        ;
+    strview_trim_left_utf8_space(s);
     return s->len != 0;
 }
 
@@ -347,6 +332,7 @@ strview_from_cstr(const char* s) {
 StrView
 strview_split_line(StrView text[_1_]) {
     StrView line = *text;
+    if (!line.len) return line;
     const char* nl = memchr(line.items, '\n', line.len);
     if (nl) {
         line.len = nl - line.items;
@@ -396,6 +382,9 @@ str_startswith_mem(Str s[_1_], const char* mem, size_t len) {
 }
 
 
+bool str_startswith(Str s[_1_], StrView v) { return str_startswith_mem(s, v.items, v.len); }
+
+
 size_t
 str_append_flip(const char* mem, size_t size, size_t nmemb, Str out[_1_]) {
     size_t len = size * nmemb;
@@ -406,6 +395,108 @@ str_append_flip(const char* mem, size_t size, size_t nmemb, Str out[_1_]) {
 }
 
 bool strview_strview_eq_case (StrView s, StrView t) { return mem_eq_case(s.items, s.len, t.items, t.len); }
+
+
+
+size_t mem_count_utf8(const char* s, size_t len) {
+    const char* end = s + len;
+    size_t      res = 0;
+    if (!s || !len) return res;
+    while (s < end) {
+        if ((*s & 0x80) == 0) ++s;         // ASCII    - 1 byte
+        else if ((*s & 0xE0) == 0xC0) s += 2; // 110xxxxx - 2 bytes
+        else if ((*s & 0xF0) == 0xE0) s += 3; // 1110xxxx - 3 bytes
+        else if ((*s & 0xF8) == 0xF0) s += 4; // 11110xxx - 4 bytes
+        else {
+            ++s; // Invalid leading byte - skip it to avoid infinite loop
+            continue;
+        }
+        res++;
+    }
+    return res;
+}
+
+/**
+ * Trims leading Unicode whitespace from a Str.
+ * Updates both the pointer (s) and length (len) in place.
+ * 
+ * Recognizes:
+ * - All ASCII whitespace (isspace)
+ * - U+00A0 (NBSP)
+ * - U+2000-U+200B (en quad through zero width space)
+ * - U+2028-U+2029 (line/paragraph separators)
+ * - U+202F (narrow no-break space)
+ * - U+205F (medium mathematical space)
+ * - U+3000 (ideographic space)
+ *///TODO1: the lines check should be improoved
+size_t
+strview_trim_left_utf8_space(StrView s[_1_]) {
+    if (!s->items || s->len == 0) return 0;
+
+    const char* p = s->items;
+    const char* end = s->items + s->len;
+
+    while (p < end) {
+        unsigned char b1 = (unsigned char)*p;
+
+        // ASCII
+        if (b1 < 0x80) { 
+            if (isspace(b1)) {
+                p++;
+                continue;
+            }
+            break;
+        }
+
+        // 2-byte sequence
+        if ((b1 & 0xE0) == 0xC0 && p + 1 < end) {
+            unsigned char b2 = (unsigned char)p[1];
+            if ((b2 & 0xC0) != 0x80) break;
+
+            if (b1 == 0xC2 && b2 == 0xA0) {
+                p += 2;
+                continue;
+            }
+            break;
+
+        // 3-byte sequence
+        } else if ((b1 & 0xF0) == 0xE0 && p + 2 < end) {
+            unsigned char b2 = (unsigned char)p[1];
+            unsigned char b3 = (unsigned char)p[2];
+            if ((b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80) break;
+
+            if (b1 == 0xE2 && b2 == 0x80 && b3 >= 0x80 && b3 <= 0x8B) {
+                p += 3;
+                continue;
+            }
+            if (b1 == 0xE2 && b2 == 0x80 && (b3 == 0xA8 || b3 == 0xA9)) {
+                p += 3;
+                continue;
+            }
+            if (b1 == 0xE2 && b2 == 0x80 && b3 == 0xAF) {
+                p += 3;
+                continue;
+            }
+            if (b1 == 0xE2 && b2 == 0x81 && b3 == 0x9F) {
+                p += 3;
+                continue;
+            }
+            if (b1 == 0xE3 && b2 == 0x80 && b3 == 0x80) {
+                p += 3;
+                continue;
+            }
+            break;
+
+        } else if ((b1 & 0xF8) == 0xF0 && p + 3 < end) {
+            break; // 4-byte sequence — no Unicode spaces in this range
+        } else break; // Invalid/incomplete sequence
+    }
+
+    size_t skipped = p - s->items;
+    s->items = p;
+    s->len -= skipped;
+    return skipped;
+}
 
 /* testing */
 #ifdef TESTING_FAILURES

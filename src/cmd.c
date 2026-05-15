@@ -5,6 +5,8 @@
 #include "range-parse.h"
 #include "readpass.h"
 #include "url.h"
+#include "generic.h"
+#include "htmldoc.h"
 
 
 #define MsgLastLine EscCodePurple "%{- last line -}%" EscCodeReset
@@ -12,45 +14,64 @@
 
 Err _get_image_by_ix(Session session[_1_], size_t ix, DomNode outnode[_1_]);
 
-static bool _is_url_alias_(const char* cmd) { return *cmd == '\\'; }
+static bool _is_url_alias_(const char* cmd) { return cmd[0] == '\\'; }
+
+Err
+dom_node_range_to_request_arl(
+    Range          range[_1_],
+    ArlOf(DomNode) ns[_1_],
+    CmdParams      p[_1_],
+    HttpMethod     method,
+    StrView        url_attr,
+    ArlOf(Request) reqs[_1_]
+) {
+    HtmlDoc* d;
+    try( session_current_doc(p->s, &d));
+    for_range(range, i) {
+        Request*r ;
+        DomNode* nodeptr = arlfn(DomNode, at)(ns, i);
+        if (!nodeptr) return err_fmt("error: unexpected invalid index (%ld) for node list", i);
+
+        StrView url = dom_node_attr_value(*nodeptr, url_attr);
+
+        try(arl_append_zero(Request,reqs,r));
+        Err e = request_init(r, method, url, htmldoc_url(d));
+        if (e) {
+            msg_ln__(p, e);
+            request_clean(r);
+            if (!reqs->len) return err_internal("arl empry after append");
+            --reqs->len;//TODO: use arl_pop
+        }
+    }
+    return Ok;
+}
+
 
 /* session commands */
-Err cmd_get(CmdParams p[_1_]) {
-    p->ln = cstr_trim_space((char*)p->ln);
-    Request r;
+static Err
+cmd_fetch_request_(CmdParams p[_1_], HttpMethod method) {
+    Request r = (Request){0};
+    Str     u = (Str){0};
+    Err     e = Ok;
+    p->ln     = cstr_trim_space((char*)p->ln);
+
     if (_is_url_alias_(p->ln)) {
-        Str u = (Str){0};
         try (get_url_alias(p->s, cstr_skip_space(p->ln + 1), &u));
-        Err err = request_init_move_urlstr(&r, http_get, &u, NULL);
-        ok_then(err,
-            session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p)));
-        request_clean(&r);
-        return err;
-    }
-    try (request_from_userln(&r, p->ln, http_get));
-    Err err = session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p));
-    if (err) request_clean(&r);
-    return err;
+        tryjmp(e,Fail, request_init(&r, method, sv(u), NULL));
+    } else
+        tryjmp(e,Fail, request_from_userln(&r, p->ln, method));
+
+    tryjmp(e,Fail, session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p)));
+    str_clean(&u);
+    return Ok;
+Fail:
+    str_clean(&u);
+    request_clean(&r);
+    return e;
 }
 
-
-Err cmd_post(CmdParams p[_1_]) {
-    p->ln = cstr_trim_space((char*)p->ln);
-    Request r;
-    if (_is_url_alias_(p->ln)) {
-        Str u = (Str){0};
-        try (get_url_alias(p->s, cstr_skip_space(p->ln + 1), &u));
-        Err err = request_init_move_urlstr(&r, http_get, &u, NULL);
-        ok_then(err,
-            session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p)));
-        request_clean(&r);
-        return err;
-    }
-    try (request_from_userln(&r, p->ln, http_post));
-    Err err = session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p));
-    if (err) request_clean(&r);
-    return err;
-}
+Err cmd_get(CmdParams p[_1_]) { return cmd_fetch_request_(p, http_get); }
+Err cmd_post(CmdParams p[_1_]) { return cmd_fetch_request_(p, http_post); }
 
 
 Err cmd_set_session_winsz(CmdParams p[_1_]) {
@@ -141,7 +162,7 @@ cmd_curl_version(CmdParams p[_1_]) {
 /* doc commands */
 
 Err
-cmd_doc_draw(CmdParams p[_1_]) { return session_doc_draw(p->s); }
+cmd_doc_draw(CmdParams p[_1_]) { return session_doc_draw(p->s, cmd_params_cmd_out(p)); }
 
 Err
 cmd_doc_js(CmdParams p[_1_]) { return session_doc_js(p->s, cmd_params_cmd_out(p)); }
@@ -222,6 +243,14 @@ Err cmd_fetch(Session session[_1_], CmdOut* out) {
     htmldoc_cleanup(htmldoc);
     *htmldoc = newdoc;
     return Ok;
+}
+
+
+Err cmd_parse(Session session[_1_], CmdOut* out) {
+    HtmlDoc* d;
+    try( session_current_doc(session, &d));
+    try( htmldoc_reparse_source(d));
+    return session_htmldoc_redraw(d, session, out);
 }
 
 
@@ -320,24 +349,43 @@ Err _cmd_textbuf_write_impl(TextBuf textbuf[_1_], Range r[_1_], const char* rest
 
 static StrView parse_pattern(const char* tk) {
     StrView res = {0};
-    char delim = '/';
     if (!tk) { return res; }
+    char delim = '/';
     tk = cstr_skip_space(tk);
     if (*tk != delim) { return res; }
     ++tk;
     const char* end = strchr(tk, delim);
 
     if (!end) res = (StrView){.items = tk, .len = strlen(tk)};
-    else      res = (StrView){.items = tk, .len = cast__(size_t)(end-tk)};
+    else {
+        res = (StrView){.items = tk, .len = cast__(size_t)(end-tk)};
+        *(char*)end = '\0';
+    }
 
     return res;
 }
 
 
 Err cmd_textbuf_global(CmdParams p[_1_]) {
+    ArlOf(size_t) lines = (ArlOf(size_t)){0};
+    Err err = Ok;
+
+    if (!p->tb) return err_internal("expectind textbuf set at this point");
     StrView pattern = parse_pattern(p->ln);
     if (!pattern.items || !pattern.len) { return "Could not read pattern"; }
-    return err_fmt("TODO: :g/PATTERN..., pattern: '%s'", pattern.items);
+
+    tryjmp(err,Clean, textbuf_get_lines_matching_regex(p->tb, pattern, &lines));
+
+    StrView line;
+    foreach__(size_t,&lines,linenum) {
+        if (!textbuf_get_line(p->tb, *linenum, &line)) {err=err_internal("expecting matched line");goto Clean;}
+        if (!line.len || !line.items || !*line.items) {err=err_internal("expecting matched nonempty line");goto Clean;}
+        msg__(cmd_params_cmd_out(p), line);
+    }
+
+Clean:
+    arlfn(size_t,clean)(&lines);
+    return err;
 }
 
 /* input commands */
@@ -350,10 +398,6 @@ _cmd_form_print(CmdParams p[_1_], size_t ix) {
     return _cmd_lexbor_node_print_(htmldoc_forms(d), ix, cmd_params_cmd_out(p));
 }
 
-Err
-_cmd_input_submit_ix(CmdParams p[_1_], size_t ix) {
-    return session_press_submit(p->s, ix, cmd_params_cmd_out(p));
-}
 
 static
 Err cmd_select_elem_show_options(DomNode lbn[_1_], CmdOut out [_1_]) {
@@ -376,23 +420,23 @@ Err cmd_select_elem_show_options(DomNode lbn[_1_], CmdOut out [_1_]) {
 
 
 Err
-cmd_input_default_ix(CmdParams p[_1_], size_t ix) {
+cmd_input_default_node(CmdParams p[_1_], DomNode node) {
     TabNode* tab;
-    HtmlDoc* doc;
-    DomNode  lbn;
     try( tablist_current_tab(session_tablist(p->s), &tab));
-    try( tab_node_current_doc(tab, &doc));
-    try( htmldoc_input_at(doc, ix, &lbn));
 
-    if (dom_node_tag(lbn) == HTML_TAG_INPUT
-    &&  dom_node_attr_has_value(lbn, svl("type"), svl("submit"))) 
-        return tab_node_tree_append_submit(tab , ix, session_url_client(p->s), p->s, cmd_params_cmd_out(p));
-    else if (dom_node_tag(lbn) == HTML_TAG_BUTTON
-    &&  (dom_node_attr_has_value(lbn, svl("type"), svl("submit"))
-        || !dom_node_has_attr(lbn, svl("type"))))
-        return tab_node_tree_append_submit(tab , ix, session_url_client(p->s), p->s, cmd_params_cmd_out(p));
-    else if (dom_node_tag(lbn) == HTML_TAG_SELECT)
-        return cmd_select_elem_show_options(&lbn, cmd_params_cmd_out(p));
+    if (dom_node_tag(node) == HTML_TAG_INPUT
+    &&  dom_node_attr_has_value(node, svl("type"), svl("submit"))) 
+        return tab_node_tree_append_submit_input_node(
+            tab, node, session_url_client(p->s), p->s, cmd_params_cmd_out(p)
+        );
+    else if (dom_node_tag(node) == HTML_TAG_BUTTON
+    &&  (dom_node_attr_has_value(node, svl("type"), svl("submit"))
+        || !dom_node_has_attr(node, svl("type"))))
+        return tab_node_tree_append_submit_input_node(
+            tab, node, session_url_client(p->s), p->s, cmd_params_cmd_out(p)
+        );
+    else if (dom_node_tag(node) == HTML_TAG_SELECT)
+        return cmd_select_elem_show_options(&node, cmd_params_cmd_out(p));
     
     return "error: invalid input node";
 }
@@ -412,6 +456,7 @@ _cmd_input_text_set_(Session session[_1_], DomNode n[_1_], const char* line, Cmd
     Err err = Ok;
     if (!*line) {
         try( screen__(cout, svl("> ")));
+        try( session_flush_cmd_out(session, cout));
         ArlOf(char) masked = (ArlOf(char)){0};
         err = readpass_term(&masked, true);
         ok_then(err, dom_node_set_attr(*n, svl("value"), sv(&masked)));
@@ -422,12 +467,12 @@ _cmd_input_text_set_(Session session[_1_], DomNode n[_1_], const char* line, Cmd
         if (len && line[len-1] == '\n') --len;
         err = dom_node_set_attr(*n, svl("value"), sv(line, len));
     }
-    ok_then(err, session_doc_draw(session));
+    ok_then(err, session_doc_draw(session, cout));
     return err;
 }
 
 
-static Err _cmd_input_select_set_(Session session[_1_], DomNode n[_1_], const char* line) {
+static Err _cmd_input_select_set_(Session session[_1_], DomNode n[_1_], const char* line, CmdOut cmd_out[_1_]) {
     ArlOf(DomNode)* matches = &(ArlOf(DomNode)){0};
     Err e = Ok;
 
@@ -443,7 +488,7 @@ static Err _cmd_input_select_set_(Session session[_1_], DomNode n[_1_], const ch
                 }
             }
 
-            try_or_jump(e, Clean_Matches, dom_node_remove_attr(it, svl("selected")));
+            tryjmp(e, Clean_Matches, dom_node_remove_attr(it, svl("selected")));
         }
     }
 
@@ -453,7 +498,7 @@ static Err _cmd_input_select_set_(Session session[_1_], DomNode n[_1_], const ch
         DomNode* selected = arlfn(DomNode,at)(matches,0);
         if (!selected) return "error: arlfn failure";
         e = dom_node_set_attr(*selected, svl("selected"), svl(""));
-        ok_then(e, session_doc_draw(session));
+        ok_then(e, session_doc_draw(session, cmd_out));
     } else e = "amiguous input";
 
 Clean_Matches:
@@ -463,33 +508,33 @@ Clean_Matches:
 
 
 Err
-cmd_input_print(CmdParams p[_1_], size_t ix) {
-    HtmlDoc* d;
-    try( session_current_doc(p->s, &d));
-    return _cmd_lexbor_node_print_(htmldoc_inputs(d), ix, cmd_params_cmd_out(p));
+cmd_input_info_node(CmdParams p[_1_], DomNode n) {
+    Str* buf = &(Str){0};
+    Err err = dom_node_to_str(n, buf);
+    ok_then(err,  msg__(cmd_params_cmd_out(p), buf));
+    str_clean(buf);
+    return err;
 }
 
 
-Err _cmd_input_ix_set_(CmdParams p[_1_], const size_t ix) {
+Err cmd_input_set_node(CmdParams p[_1_], DomNode node) {
     Session* session = p->s;
     const char* ln   = p->ln;
-    HtmlDoc* d;
-    DomNode n = (DomNode){0};
-    try( session_current_doc(session, &d));
-    try( _get_dom_node_at_(htmldoc_inputs(d), ix, &n));
 
-    if (dom_node_attr_has_value( n, svl("type"), svl("text")))
-        return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p));
-    else if (dom_node_attr_has_value(n, svl("type"), svl("search")))
-        return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p)); //TODO: implement it properly
-    else if (dom_node_attr_has_value(n, svl("type"), svl("password")))
-        return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p));
-    else if (dom_node_tag(n) == HTML_TAG_SELECT) return _cmd_input_select_set_(session, &n, ln);
-    else if (!dom_node_has_attr(n, svl("type")))
-        return _cmd_input_text_set_(session, &n, ln, cmd_params_cmd_out(p));
+    if (dom_node_attr_has_value( node, svl("type"), svl("text")))
+        return _cmd_input_text_set_(session, &node, ln, cmd_params_cmd_out(p));
+    else if (dom_node_attr_has_value(node, svl("type"), svl("search")))
+        return _cmd_input_text_set_(session, &node, ln, cmd_params_cmd_out(p)); //TODO: implement it properly
+    else if (dom_node_attr_has_value(node, svl("type"), svl("password")))
+        return _cmd_input_text_set_(session, &node, ln, cmd_params_cmd_out(p));
+    else if (dom_node_tag(node) == HTML_TAG_SELECT) return _cmd_input_select_set_(session, &node, ln, cmd_params_cmd_out(p));
+    else if (!dom_node_has_attr(node, svl("type")))
+        return _cmd_input_text_set_(session, &node, ln, cmd_params_cmd_out(p));
 
     return "input set not supported for element";
 }
+
+
 
 /* image commands */
 
@@ -512,43 +557,6 @@ Err cmd_image_print(CmdParams p[_1_], DomNode node) {
 }
 
 
-Err cmd_image_save(CmdParams p[_1_], DomNode node) {
-    HtmlDoc* htmldoc;
-    try( session_current_doc(p->s, &htmldoc));
-
-    Str urlstr = (Str){0};
-    try (dom_node_append_null_terminated_attr_to_str(node, svl("src"), &urlstr));
-
-    Err err = Ok;
-    Request r;
-    try_or_jump(err, Clean_Url_Str,
-        request_init_move_urlstr(&r,http_get, &urlstr, htmldoc_url(htmldoc)));
-    try_or_jump(err, Clean_Request, url_from_request(&r, session_url_client(p->s)));
-
-    const char* fname = p->ln;
-    FILE* fp          = NULL;
-    Str   actual_path = (Str){0};
-    try_or_jump(err, Clean_Request,
-        fopen_or_append_fopen(fname, *request_url(&r), &fp, &actual_path));
-
-    try_or_jump(err, Clean_Actual_Path, request_to_file(&r, session_url_client(p->s), fp));
-
-    file_close(fp);
-
-    ok_then(err, msg__(cmd_params_cmd_out(p), svl("data saved: ")));
-    ok_then(err, msg_ln__(cmd_params_cmd_out(p), actual_path));
-
-Clean_Actual_Path:
-    str_clean(&actual_path);
-Clean_Request:
-    request_clean(&r);
-    return err;
-Clean_Url_Str:
-    str_clean(&urlstr);
-    return err;
-}
-
-
 /* anchor commands */
 
 
@@ -567,53 +575,14 @@ Err cmd_anchor_asterisk(CmdParams p[_1_], DomNode node) {
     return "error: where is the href if current tree is empty?";
 }
 
-Err cmd_anchor_print(CmdParams p[_1_], DomNode node) {
-    
-    Str* buf = &(Str){0};
-    try( dom_node_to_str(node, buf));
 
-    Err err = msg__(cmd_params_cmd_out(p), buf);
+Err cmd_print_node(CmdParams p[_1_], DomNode node) {
+    Str* buf = &(Str){0};
+    Err err = dom_node_to_str(node, buf);
+    ok_then(err,  msg__(cmd_params_cmd_out(p), buf));
     str_clean(buf);
     return err;
 }
-
-
-Err cmd_anchor_save(CmdParams p[_1_], DomNode node) {
-    CmdOut* out = cmd_params_cmd_out(p);
-    HtmlDoc* htmldoc;
-    try( session_current_doc(p->s, &htmldoc));
-
-    Str urlstr = (Str){0};
-    try (dom_node_append_null_terminated_attr_to_str(node, svl("href"), &urlstr));
-
-    Err err = Ok;
-    Request r;
-    try_or_jump(err, Clean_Url_Str,
-        request_init_move_urlstr(&r, http_get, &urlstr, htmldoc_url(htmldoc)));
-    try_or_jump(err, Clean_Request, url_from_request(&r, session_url_client(p->s)));
-
-    FILE* fp          = NULL;
-    Str   actual_path = (Str){0};
-    try_or_jump(err, Clean_Request,
-        fopen_or_append_fopen(p->ln, *request_url(&r), &fp, &actual_path));
-
-    try_or_jump(err, Clean_Actual_Path, request_to_file(&r, session_url_client(p->s), fp));
-
-    file_close(fp);
-
-    ok_then(err, msg__(out, svl("file saved: ")));
-    ok_then(err, msg_ln__(out, sv(actual_path)));
-
-Clean_Actual_Path:
-    str_clean(&actual_path);
-Clean_Request:
-    request_clean(&r);
-    return err;
-Clean_Url_Str:
-    str_clean(&urlstr);
-    return err;
-}
-
 
 Err _cmd_lexbor_node_print_(ArlOf(DomNode) node_arl[_1_], size_t ix, CmdOut out[_1_]) {
     DomNode node;
@@ -625,4 +594,8 @@ Err _cmd_lexbor_node_print_(ArlOf(DomNode) node_arl[_1_], size_t ix, CmdOut out[
     str_clean(buf);
     return err;
 }
+
+
+
+    
 

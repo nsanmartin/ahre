@@ -3,6 +3,11 @@
 
 #include "error.h"
 #include "utils.h"
+#include <signal.h>
+
+typedef struct { FILE* ptr; } FilePtr;
+#define T FilePtr
+#include <arl.h>
 
 Err resolve_path(const char *path, bool* file_exists, Str out[_1_]);
 
@@ -25,4 +30,6 @@ Err _file_write_sep_(
 );
 Err expand_path(const char *path, Str out[_1_]);
 bool path_is_dir(const char* path);
+struct sigaction get_interrupt_action(void);
+bool interrupt_flag(void);
 #endif

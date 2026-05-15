@@ -1,6 +1,7 @@
 #include "user-out.h"
 #include "session.h"
 
+#include "generic.h"
 /*
  * Line mode
  */
@@ -60,12 +61,17 @@ static Err ui_vi_show_session_default(Session* s) {
         try( screen__(default_out, svl(EMPTY_SESSION_MSG_)));
         err = session_flush_cmd_out_screen(s, default_out);
     } else {
+        HtmlDoc* d;
         TextBuf* tb;
+        try( session_current_doc(s, &d));
         try( session_current_buf(s, &tb));
         if (textbuf_is_empty(tb)) {
-            try( msg__(default_out, svl(EMPTY_BUFFER_MSG_)));
+            if (!htmldoc_content_is_html(d)) 
+                try( msg_ln__(default_out, svl("content was not parsed, is it html?\ncheck source and run .parse")));
+            else try( msg__(default_out, svl(EMPTY_BUFFER_MSG_)));
             err = session_flush_cmd_out_msg(s, default_out);
         } else {
+
 
             size_t line = textbuf_current_line(tb);
             if (!line) return "error: expecting current line number, not found";
@@ -132,8 +138,15 @@ Err ui_vi_show_err(Session* s, char* err, size_t len) {
     (void)s;
     FILE* stream = stdout;
     if (err) {
-        if (mem_fwrite(err, len, stream)
-        || lit_write__("{type enter}", stream)) {
+        if (internal_error(err)) {
+            int suberr = mem_fwrite(EscCodeRed, lit_len__(EscCodeRed), stream)
+                      || mem_fwrite(INTERNAL_ERROR_PREFIX, lit_len__(INTERNAL_ERROR_PREFIX), stream)
+                      || mem_fwrite(EscCodeReset, lit_len__(EscCodeRed), stream)
+                      || mem_fwrite(err + lit_len__(INTERNAL_ERROR_PREFIX), len - lit_len__(INTERNAL_ERROR_PREFIX), stream)
+                      || lit_write__("{type enter}", stream)
+                      ;
+            if (suberr) return EscCodeRed"error: fprintf failure while attempting to show an error :/"EscCodeReset;
+        } else if (mem_fwrite(err, len, stream) || lit_write__("{type enter}", stream)) {
             return "error: fprintf failure while attempting to show an error :/";
         }
 

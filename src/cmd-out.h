@@ -2,6 +2,7 @@
 #define __AHRE_CMD_OUT_H__
 
 #include "str.h"
+#include "nongeneric.h"
 
 typedef struct { Str s; } Msg;
 static inline Str* msg_str(Msg m[_1_]) { return &m->s; }

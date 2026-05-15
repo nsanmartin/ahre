@@ -83,9 +83,7 @@ static inline Err session_bookmarks_fname_append(Session s[_1_], Str out[_1_]) {
     return str_append(out, session_conf(s)->bookmarks_fname);
 }
 
-static inline Err session_fetch_history_fname_append(Session s[_1_], Str out[_1_]) {
-    return str_append(out, session_conf(s)->fetch_history_fname);
-}
+Err session_fetch_history_fname_append(Session s[_1_], Str out[_1_]);
 
 static inline Err session_input_history_fname_append(Session s[_1_], Str out[_1_]) {
     return str_append(out, session_conf(s)->input_history_fname);
@@ -139,31 +137,16 @@ Err tab_node_tree_append_ahref(
     Session s[_1_],
     CmdOut* out
 );
-static inline Err session_follow_ahref(Session s[_1_], size_t linknum, CmdOut* out) {
+static inline Err session_follow_ahref(Session s[_1_], DomNode node, CmdOut* out) {
     TabNode* current_tab;
     try( tablist_current_tab(session_tablist(s), &current_tab));
-    if(current_tab)
-        return tab_node_tree_append_ahref(current_tab , linknum, session_url_client(s), s, out);
+    if(current_tab) {
+        return tab_node_tree_append_ahref_from_node(current_tab , node, session_url_client(s), s, out);
+    }
     
     return "error: where is the href if current tree is empty?";
 }
 
-Err tab_node_tree_append_submit(
-    TabNode t[_1_],
-    size_t ix,
-    UrlClient url_client[_1_],
-    Session s[_1_],
-    CmdOut* out
-);
-static inline Err session_press_submit(Session s[_1_], size_t ix, CmdOut* out) {
-    TabNode* current_tab;
-    try( tablist_current_tab(session_tablist(s), &current_tab));
-    if(current_tab)
-        return tab_node_tree_append_submit(current_tab , ix, session_url_client(s), s, out);
-
-    
-    return "error: where is the input if current tree is empty?";
-}
 
 int edcmd_print(Session session[_1_]);
 
@@ -210,8 +193,15 @@ Err session_write_input_history(Session s[_1_]);
 Err session_flush_cmd_out_msg(Session s[_1_], CmdOut cout[_1_]);
 Err session_flush_cmd_out_screen(Session s[_1_], CmdOut cout[_1_]);
 Err session_flush_cmd_out(Session s[_1_], CmdOut cout[_1_]);
-Err session_htmldoc_redraw(HtmlDoc htmldoc[_1_], Session s[_1_]);
-Err session_doc_draw(Session session[_1_]);
+Err session_htmldoc_redraw(HtmlDoc htmldoc[_1_], Session s[_1_], CmdOut cmd_out[_1_]);
+Err session_doc_draw(Session session[_1_], CmdOut cmd_out[_1_]);
 Err session_doc_js(Session session[_1_], CmdOut* out);
 Err session_doc_console(Session session[_1_], const char* line, CmdOut* out);
+Err tab_node_tree_append_submit_input_node(
+    TabNode t[_1_],
+    DomNode  input_node,
+    UrlClient url_client[_1_],
+    Session s[_1_],
+    CmdOut* out
+);
 #endif

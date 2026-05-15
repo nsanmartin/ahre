@@ -1,12 +1,20 @@
+#include "sys.h"
 #include "str.h"
 #include "htmldoc.h"
 #include "wrapper-curl.h"
+#include "generic.h"
 
 /* internal linkage */
 
 CURLUcode w_curl_get_part(CurlUrlPtr cu, CURLUPart part, char** content, unsigned flags);
 
 /* external linkage */
+size_t skip_header_callback(char *buffer, size_t size, size_t nitems, void *htmldoc) {
+    (void) buffer;
+    (void) htmldoc;
+    return size * nitems;
+}
+
 #define lit_match__(Lit, Mem, Len) (lit_len__(Lit) <= Len && !strncasecmp(Lit, Mem, lit_len__(Lit)))
 size_t curl_header_callback(char *buffer, size_t size, size_t nitems, void *htmldoc) {
     /* received header is nitems * size long in 'buffer' NOT ZERO TERMINATED */
@@ -25,8 +33,7 @@ size_t curl_header_callback(char *buffer, size_t size, size_t nitems, void *html
             char* ws = mem_is_whitespace(buffer, len);
             size_t chslen = ws ? (size_t)(ws - buffer) : len;
             str_reset(htmldoc_http_charset(hd));
-            str_append(htmldoc_http_charset(hd), sv(buffer, chslen));
-            str_append(htmldoc_http_charset(hd), svl("\0"));
+            str_append_z(htmldoc_http_charset(hd), sv(buffer, chslen));
             buffer += chslen;
             len -= chslen;
             mem_skip_space_inplace((const char**)&buffer, &len);
@@ -40,7 +47,10 @@ size_t curl_header_callback(char *buffer, size_t size, size_t nitems, void *html
             size_t contypelen = colon ? (size_t)(colon - buffer) : len;
             str_reset(htmldoc_http_content_type(hd));
             //TODO: does not depend on null termoination
-            str_append(htmldoc_http_content_type(hd), sv(buffer, contypelen));
+            StrView content_type = sv(buffer, contypelen);
+            while (content_type.len && isspace(content_type.items[content_type.len-1]))
+                --content_type.len;
+            str_append(htmldoc_http_content_type(hd), content_type);
             if (colon) ++contypelen;
             buffer += contypelen;
             len -= contypelen;
@@ -71,34 +81,49 @@ Err curlinfo_sz_download_incr(
     return Ok;
 }
 
-Err w_curl_multi_perform_poll(CURLM* multi, ArlOf(CurlPtr) failed[_1_]) {
+static char curl_perform_canceled_by_user[] = { "curl perform canceled by user\n" };
+
+Err
+w_curl_multi_perform_poll(CURLM* multi, ArlOf(CurlMultiSgPtr) failed[_1_]) {
+    struct sigaction interrupt_action = get_interrupt_action();
+    struct sigaction old_action = {0};
+    sigaction(SIGINT,&interrupt_action, &old_action);
+
     int running;
     Err err = Ok;
     do {
-        CURLMcode code = curl_multi_perform(multi, &running);
-        if (code != CURLM_OK) {
-            err = "error: curl_multi_perform failed";
-            break;
-        }
-        code = curl_multi_poll(multi, NULL, 0, 1000, NULL);
-        if (code != CURLM_OK) {
-            err = err_fmt("error: curl_multi_poll failed: %s", curl_multi_strerror(code));
+        if (interrupt_flag()) {
+            err = curl_perform_canceled_by_user;
             break;
         }
 
-        CURLMsg *msg;
+        CURLMcode code = curl_multi_perform(multi, &running);
+        if (code != CURLM_OK) {
+            err = err_fmt("curl_multi_perform failed: %s", curl_multi_strerror(code));
+            break;
+        }
+        code = curl_multi_poll(multi, NULL, 0, 100, NULL);
+        if (code != CURLM_OK) {
+            err = err_fmt("curl_multi_poll failed: %s", curl_multi_strerror(code));
+            break;
+        }
+
+        CurlMultiSgPtr msg;
         int msgs_left;
         while ((msg = curl_multi_info_read(multi, &msgs_left))) {
             if (msg->msg == CURLMSG_DONE) {
                 if (msg->data.result != CURLE_OK) {
-                    if (!arlfn(CurlPtr, append)(failed,msg->easy_handle))
-                        return "error: arl append failed";
+                    if (!arlfn(CurlMultiSgPtr, append)(failed,&msg))
+                        return err_internal("while processing curl failure, arl append failed");
                 }
             }
-    }
+        }
     } while (running);
+
+    sigaction(SIGINT, &old_action, NULL);
     return err;
 }
+
 
 Err for_htmldoc_size_download_append(
     ArlOf(CurlPtr) easies[_1_],
@@ -126,9 +151,9 @@ void w_curl_multi_remove_handles(
             char* msg = (char*)curl_multi_strerror(code); 
             /*ignore e*/msg__(cmd_out, msg);
         }
-        curl_easy_cleanup(*cup);
     }
 }
+
 
 Err w_curl_multi_add(
     UrlClient       uc[_1_],
@@ -145,20 +170,20 @@ Err w_curl_multi_add(
 
     //TODO!: dont do it this way. Array should had been filed by the caller.
     try( w_curl_url_dup(baseurl, &dup));
-    try_or_jump(e, Clean_Dup, w_curl_easy_init(&easy));
+    tryjmp(e, Clean_Dup, w_curl_easy_init(&easy));
     ++destlist->len;
-    try_or_jump(e, Clean_Easy, w_curl_url_set(dup, CURLUPART_URL, urlstr, CURLU_DEFAULT_SCHEME));
-    try_or_jump(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_CURLU        , dup));
-    try_or_jump(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, str_append_flip));
-    try_or_jump(e, Clean_Easy, w_curl_easy_setopt( easy, CURLOPT_WRITEDATA , arlfn(Str,back)(destlist)));
+    tryjmp(e, Clean_Easy, w_curl_url_set(dup, CURLUPART_URL, urlstr, CURLU_DEFAULT_SCHEME));
+    tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_CURLU        , dup));
+    tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, str_append_flip));
+    tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_WRITEDATA , arlfn(Str,back)(destlist)));
 
-    try_or_jump(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_VERBOSE, url_client_verbose(uc)));
-    try_or_jump(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_USERAGENT, url_client_user_agent(uc)));
+    tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_VERBOSE, url_client_verbose(uc)));
+    tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_USERAGENT, url_client_user_agent(uc)));
 
     //TODO: use CURLOPT_SHARE to share cookies etc between handles.
     //https://everything.curl.dev/helpers/sharing.html
 
-    try_or_jump(e, Clean_Easy, w_curl_multi_add_handle(multi, easy));
+    tryjmp(e, Clean_Easy, w_curl_multi_add_handle(multi, easy));
 
     if (!arlfn(CurlPtr,append)(easies, &easy)) {
         e = "error: arlfn(CurlPtr,append) failure";
@@ -201,8 +226,8 @@ w_curl_url_get_malloc(CURLU* cu, CURLUPart part, char* out[_1_]) {
  */
     CURLUcode code = w_curl_get_part(cu, part, out, 0);
     if (code != CURLUE_OK)
-        return err_fmt("error getting url from CURLU: %s", curl_url_strerror(code));
-    if (!*out) return "error: curl_url_get returned NULL wioth no error";
+        return err_fmt("warn: getting url from CURLU: %s", curl_url_strerror(code));
+    if (!*out) return "error: curl_url_get returned NULL with no error";
     return Ok;
 }
 
@@ -219,6 +244,61 @@ Err w_curl_url_set(CURLU* u,  CURLUPart part, const char* cstr, unsigned flags) 
     if (!cstr || !*cstr) return "error: no contents for CURLUPart";
     CURLUcode code = curl_url_set(u, part, cstr, flags);
     return code == CURLUE_OK 
-        ? Ok : err_fmt("error setting url with '%s': %s", cstr, curl_url_strerror(code));
+        ? Ok : err_fmt("warn: setting url with '%s': %s", cstr, curl_url_strerror(code));
 }
 
+
+Err w_curl_perform_with_cancel(CurlMuliPtr multi, CurlPtr easy, char* url) {
+    ArlOf(CurlMultiSgPtr)* failed = &(ArlOf(CurlMultiSgPtr)){0};
+    try(w_curl_multi_add_handle(multi, easy));
+    Err err = w_curl_multi_perform_poll(multi, failed);
+
+    CurlMultiSgPtr* f = arlfn(CurlMultiSgPtr,at)(failed,0);
+    if (f) err = err_fmt("curl failed to fetch %s: %s\n", url, curl_easy_strerror((*f)->data.result));
+
+    CURLMcode code = curl_multi_remove_handle(multi, easy);
+    if (code != CURLM_OK) err = err_fmt("error: curl multi remove habdle failure: %s", curl_multi_strerror(code));
+    arlfn(CurlMultiSgPtr,clean)(failed);
+    return err;
+}
+
+Err
+w_curl_set_basic_options(
+    CurlPtr handle[_1_],
+    long    verbose,
+    char*   errbuf,
+    char*   user_agent,
+    char*   cookiefile
+) {
+    try(w_curl_easy_setopt(handle, CURLOPT_NOPROGRESS,     1L));
+    try(w_curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L));
+
+    try(w_curl_easy_setopt(handle, CURLOPT_VERBOSE, verbose));
+    try(w_curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, errbuf));
+    try(w_curl_easy_setopt(handle, CURLOPT_USERAGENT, user_agent));
+
+    if (cookiefile) {
+        try(w_curl_easy_setopt(handle, CURLOPT_COOKIEFILE, cookiefile));
+        try(w_curl_easy_setopt(handle, CURLOPT_COOKIEJAR, cookiefile));
+    }
+    return Ok;
+}
+
+
+Err w_curl_set_write_fn_and_data_for_download(CurlPtr curl, FILE* fp) {
+    if (0
+    || curl_easy_setopt(curl, CURLOPT_HEADERDATA, NULL)
+    || curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, skip_header_callback)
+    || curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, fwrite)
+    || curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp))
+        return err_internal("configuring curl write fn/data");
+    return Ok;
+}
+
+
+Err w_curl_set_method_from_http_method(CurlPtr handle, HttpMethod m) {
+    CURLoption method = curlopt_method_from_http_method(m);
+    if (curl_easy_setopt(handle, method, 1L)) 
+        return err_internal("curl failed to set method");
+    return Ok;
+}

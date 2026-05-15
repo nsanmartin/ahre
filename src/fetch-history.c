@@ -1,5 +1,6 @@
 #include "sys.h"
 #include "fetch-history.h"
+#include "generic.h"
 
 Err fetch_history_entry_update_curl(
     FetchHistoryEntry e[_1_],

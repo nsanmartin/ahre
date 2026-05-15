@@ -274,8 +274,15 @@ dom_get_elem_by_id(Dom dom, StrView id) {
 }
 
 bool
-dom_node_has_tag(DomNode n, HtmlTag tag) { return _lexbor_to_html_tag_[n.ptr->local_name] == tag; }
+dom_node_has_tag(DomNode n, HtmlTag tag) {
+    return  n.ptr->local_name < LXB_TAG__LAST_ENTRY
+        && _lexbor_to_html_tag_[n.ptr->local_name] == tag;
+}
 
+bool dom_node_has_type(DomNode n, DomNodeType type) {
+ return n.ptr->type < LXB_DOM_NODE_TYPE_LAST_ENTRY
+     && _lexbor_to_dom_node_type_[n.ptr->type] == type;
+}
 
 bool
 dom_node_has_attr(DomNode n, StrView attr) {
@@ -335,6 +342,29 @@ Err dom_node_append_null_terminated_attr_to_str(DomNode node, StrView attr, Str 
     StrView value = dom_node_attr_value(node, attr);
     if (!value.items || !value.len) return "dom node does not have attr";
     return str_append_z(out, &value);
+}
+
+
+DomNode dom_skip_text(DomNode n) {
+    while (!isnull(n) && dom_node_has_type(n, DOM_NODE_TYPE_TEXT))
+        n = dom_node_next(n);
+    return n;
+}
+
+
+DomNode dom_node_first_elem_child(DomNode n) {
+    n = dom_node_first_child(n);
+    while (!isnull(n) && dom_node_has_type(n, DOM_NODE_TYPE_TEXT))
+        n = dom_node_next(n);
+    return n;
+}
+
+
+DomNode dom_node_next_elem(DomNode n) {
+    n = dom_node_next(n);
+    while (!isnull(n) && !dom_node_has_type(n, DOM_NODE_TYPE_ELEMENT))
+        n = dom_node_next(n);
+    return n;
 }
 
 /*

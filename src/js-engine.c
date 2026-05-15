@@ -8,6 +8,7 @@
 #include "js-engine.h"
 #include "htmldoc.h"
 #include "cmd-out.h"
+#include "generic.h"
 
 
 void jse_clean(JsEngine js[_1_]) {

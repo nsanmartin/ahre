@@ -3,6 +3,8 @@
 
 #include "str.h"
 #include "utils.h"
+#include "nongeneric.h"
+
 
 //TODO: cache all these in session-conf
 

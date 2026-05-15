@@ -6,9 +6,7 @@
 #include "user-interface.h"
 #include "utils.h"
 #include "url.h"
-
-#define T Request
-#include <arl.h>
+#include "request.h"
 
 typedef struct {
     bool             version;

@@ -13,17 +13,35 @@
 #include "src/session.h"
 #include "src/reditline.h"
 #include "wrapper-curl.h"
+#include "generic.h"
+
+Err main_ahre(int argc, char **argv);
+
+static void warn_cmd_out_to_stderr(CmdOut cout[_1_]) {
+    Msg*    msg  = cmd_out_msg(cout);
+    if (!len__(msg_str(msg))) return;
+    StrView warn = svl("ahre warn: ");
+    mem_fwrite(warn.items, warn.len, stderr);
+    mem_fwrite(msg_items(msg), msg_len(msg), stderr);
+    fflush(stderr);
+    msg_clean(msg);
+}
 
 
-
-static Err _fetch_many_urls_(Session session[_1_], ArlOf(Request) urls[_1_], CmdOut cout[_1_]) {
-    for (Request* r = arlfn(Request,begin)(urls)
-        ; r != arlfn(Request,end)(urls)
-        ; ++r
-    ) {
+static Err fetch_params(Session session[_1_], ArlOf(Request) urls[_1_], CmdOut cout[_1_]) {
+    foreach__(Request,urls,r) {
         Err err = session_fetch_request(session, r, session_url_client(session), cout);
         if (err) {
-            request_clean(r);
+            Str     buf = (Str){0};
+            StrView url = sv(r->urlstr);
+
+            if (url.len) {
+                Err append_err = str_append_z(&buf, sv(err));
+                if (!append_err) err = err_fmt("ahre (processing url '%s'): %s", url.items, buf.items);
+
+                request_clean(r);
+                str_clean(&buf);
+            }
             return err;
         }
     }
@@ -36,10 +54,10 @@ static Err _loop_(Session s[_1_], UserLine userln[_1_], CmdOut cout[_1_]) {
     Err err      = Ok;
 
     while (!session_quit(s)) {
-        try_or_jump(err, Error, session_show_output(s, cout));
-        try_or_jump(err, Error, session_read_user_input(s, userln));
+        tryjmp(err, Error, session_show_output(s, cout));
+        tryjmp(err, Error, session_read_user_input(s, userln));
         if (!user_line_empty(userln))
-            try_or_jump(err, Error, session_consume_line(s, userln, cout));
+            tryjmp(err, Error, session_consume_line(s, userln, cout));
 Error:
         if (err) if (session_show_error(s, err)) return "error trying to show previous error"; 
     }
@@ -52,7 +70,7 @@ static Err run_cmds(Session s[_1_], UserLine userln[_1_]) {
     CmdOut* cout = &(CmdOut){0};
     while (!user_line_empty(userln) && !session_quit(s)) {
         if (!user_line_empty(userln)) err = session_consume_line(s, userln, cout);
-        if (err) try_or_jump(err, Clean_Errors, str_append_ln(&errors, err));
+        if (err) tryjmp(err, Clean_Errors, str_append_ln(&errors, err));
     }
     if (errors.len) cmd_out_msg_append(cout, errors);
 Clean_Errors:
@@ -62,40 +80,47 @@ Clean_Errors:
 }
 
 
-int main(int argc, char **argv) {
+Err main_ahre(int argc, char **argv) {
     w_curl_global_init();
-    CliParams cparams = (CliParams){0};
-    UserLine userln = (UserLine){0};
-    Session session;
-    Err err = Ok;
 
-    try_or_jump(err, Clean_Curl, session_conf_from_options(argc, argv, &cparams));
-    if (*cparams_help(&cparams)) { print_help(argv[0]); goto Clean_Cparams; }
-    if (*cparams_version(&cparams)) { puts("ahre version " AHRE_VERSION); goto Clean_Cparams; }
-    try_or_jump(err, Clean_Cparams, session_init(&session, cparams_sconf(&cparams)));
+    Err       err     = Ok;
+    CmdOut*   cout    = &(CmdOut){0};
+    UserLine  userln  = (UserLine){0};
+    CliParams cparams = (CliParams){0};
+    Session   session = (Session){0};
+
+    tryjmp(err, Clean, session_conf_from_options(argc, argv, &cparams));
+    if (*cparams_help(&cparams)) { print_help(argv[0]); goto Clean; }
+    if (*cparams_version(&cparams)) { puts("ahre version " AHRE_VERSION); goto Clean; }
+    tryjmp(err, Clean, session_init(&session, cparams_sconf(&cparams)));
     if (cparams.cmd) {
         cparams.cmd = std_strdup(cparams.cmd);
         if (!cparams.cmd) {
             err = "error: strdup failure";
-            goto Clean_Session;
+            goto Clean;
         }
-        try_or_jump(err, Clean_Session, user_line_init_take_ownership(&userln, cparams.cmd));
-        try_or_jump(err, Clean_Session, run_cmds(&session, &userln));
+        tryjmp(err, Clean, user_line_init_take_ownership(&userln, cparams.cmd));
+        tryjmp(err, Clean, run_cmds(&session, &userln));
         user_line_cleanup(&userln);
     }
-    CmdOut* cout = &(CmdOut){0};
-    try_or_jump(err, Clean_Session, _fetch_many_urls_(&session, cparams_requests(&cparams), cout));
+    tryjmp(err, Clean, fetch_params(&session, cparams_requests(&cparams), cout));
 
     err = _loop_(&session, &userln, cout);
+Clean:
+    warn_cmd_out_to_stderr(cout);
     cmd_out_clean(cout);
-Clean_Session:
     session_close(&session);
     session_cleanup(&session);
-Clean_Cparams:
     cparams_clean(&cparams);
-Clean_Curl:
     w_curl_global_cleanup();
+    return err;
+}
 
-    if (err) fprintf(stderr, "ahre: %s\n", err);
-    return err ? EXIT_FAILURE : EXIT_SUCCESS;
+int main(int argc, char **argv) {
+    Err err = main_ahre(argc, argv);
+    if (err) {
+        fprintf(stderr, "%s\n", err);
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
 }

@@ -1,4 +1,5 @@
 #include "tabs.h"
+#include "generic.h"
 #include "session.h"
 
 
@@ -10,20 +11,20 @@ Err tablist_append_tree_from_url(
     Session     s[_1_],
     CmdOut      cout[_1_]
 ) {
+    Err     e  = Ok;
     TabNode tn = (TabNode){0};
-    try( tab_node_init_move_request(&tn, NULL, url_client, r, s, cout));
+    tryjmp(e,Fail, tab_node_init_move_request(&tn, NULL, url_client, r, s, cout));
 
-    Err err = Ok;
-    try_or_jump(err, Failure_Tab_Node_Cleanup, tablist_append_move_tree(f, &tn));
+    tryjmp(e,Fail, tablist_append_move_tree(f, &tn));
     if (!f->tabs.len) {
-        err = "error: expecting tabs in the tab list after appending a tab";
-        goto Failure_Tab_Node_Cleanup;
+        e = "error: expecting tabs in the tab list after appending a tab";
+        goto Fail;
     }
     f->current_tab = f->tabs.len - 1;
     return Ok;
-Failure_Tab_Node_Cleanup:
+Fail:
     tab_node_cleanup(&tn);
-    return err;
+    return e;
 }
 
 

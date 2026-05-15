@@ -19,6 +19,7 @@
 #include "range-parse.h"
 #include "htmldoc.h"
 #include "writer.h"
+#include "generic.h"
 
 
 #define CMD_NO_PARAMS 0x1
@@ -26,10 +27,13 @@
 #define CMD_EMPTY 0x4
 #define CMD_ANY 0x8
 
-
-typedef Err indexedCmdCallback (CmdParams p[_1_], size_t ix);
 typedef Err nodeCmdCallback (CmdParams p[_1_], DomNode n);
 typedef ArlOf(DomNode)* nodeCollectionCallback (HtmlDoc h[_1_]);
+
+
+#define KT CurlPtr
+#define VT Str
+#include "lip.h"
 
 
 /* internal linkage */
@@ -39,7 +43,9 @@ get_range_and_nodes(CmdParams p[_1_], Range r[_1_], ArlOf(DomNode)* collection[_
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
     *collection = cb(h);
-    return basic_range_from_parse(&p->rp, 0, len__(*collection), r);
+    try( basic_range_from_parse(&p->rp, 0, len__(*collection), r));
+    if (r->end <= r->beg) return "error: bad range";
+    return Ok;
 }
 
 static inline bool _char_cmd_match_(SessionCmd* cmd, CmdParams p[_1_]) {
@@ -108,41 +114,35 @@ static Err run_cmd_help(SessionCmd cmd[_1_], CmdOut out[_1_]) {
 
 static Err
 run_cmd_for_dom_node_range(CmdParams p[_1_], Range r[_1_], ArlOf(DomNode) collection[_1_], nodeCmdCallback cb) {
-    if (r->end <= r->beg) return "error: bad range";
-    for (size_t i = r->beg; i < r->end; ++i) {
+    for_range(r, i) {
         DomNode* nodeptr = arlfn(DomNode, at)(collection, i);
-        if (!nodeptr) return "error: node number invalid";
-        try( cb(p, *nodeptr));
+        if (!nodeptr) return "invalid id\n";
+        Err err = cb(p, *nodeptr);
+        if (err) msg_ln__(cmd_params_cmd_out(p), err);
     }
     return Ok;
 }
 
 
-static Err _run_cmd_for_basic_range__(CmdParams p[_1_], size_t bound, indexedCmdCallback cb) {
+static Err run_cmd_for_indep_dom_node_range(CmdParams p[_1_], nodeCollectionCallback arlcb, nodeCmdCallback nodecb) {
+    ArlOf(DomNode)* nodes;
     Range r;
-    try(basic_range_from_parse(&p->rp, 0, bound, &r));
-    if (r.end <= r.beg) return "error: bad range";
-    for (size_t i = r.beg; i < r.end; ++i)
-        try( cb(p, i));
-
-    return Ok;
+    try(get_range_and_nodes(p, &r, &nodes, arlcb));
+    return run_cmd_for_dom_node_range(p, &r, nodes, nodecb);
 }
 
 
-static Err _run_cmd_for_htmldoc_inputs_range__(CmdParams p[_1_], indexedCmdCallback cb) {
-    HtmlDoc* h;
-    try(session_current_doc(p->s, &h));
-    const size_t bound = len__(htmldoc_inputs(h));
-    return _run_cmd_for_basic_range__(p, bound, cb);
+static Err run_cmd_for_htmldoc_single_input_node(CmdParams p[_1_], nodeCmdCallback cb) {
+    ArlOf(DomNode)* inputs;
+    Range r;
+    try(get_range_and_nodes(p, &r, &inputs, htmldoc_inputs));
+    if (range_len(&r) != 1) return "range must have len==1 for requested command";
+
+    DomNode* n = arlfn(DomNode,at)(inputs,r.beg);
+    if (!n) return "error: input id invalid";
+    return cb(p, *n);
 }
 
-
-static Err _run_cmd_for_htmldoc_forms_range__(CmdParams p[_1_], indexedCmdCallback cb) {
-    HtmlDoc* h;
-    try(session_current_doc(p->s, &h));
-    const size_t bound = len__(htmldoc_forms(h));
-    return _run_cmd_for_basic_range__(p, bound, cb);
-}
 
 static Err run_cmd__(CmdParams p[_1_], SessionCmd cmdlist[]) {
     p->ln = cstr_skip_space(p->ln);
@@ -165,9 +165,7 @@ static Err run_cmd_on_range__(CmdParams p[_1_], SessionCmd cmdlist[], int base) 
     p->ln = cstr_skip_space(p->ln);
     const char* endptr;
     try(parse_range(p->ln, &p->rp, &endptr, base));
-    p->ln = endptr;
-
-    p->ln = cstr_skip_space(p->ln);
+    p->ln = cstr_skip_space(endptr);
     return run_cmd__(p, cmdlist);
 }
 
@@ -176,10 +174,7 @@ static Err run_cmd_on_range__(CmdParams p[_1_], SessionCmd cmdlist[], int base) 
 
 #define CMD_ANCHOR_PRINT_DOC "Print anchor range info"
 static Err cmd_anchor_print_range(CmdParams p[_1_]) {
-    ArlOf(DomNode)* anchors;
-    Range r;
-    try(get_range_and_nodes(p, &r, &anchors, htmldoc_anchors));
-    return run_cmd_for_dom_node_range(p, &r, anchors, cmd_anchor_print);
+    return run_cmd_for_indep_dom_node_range(p, htmldoc_anchors, cmd_print_node);
 }
 
 
@@ -194,17 +189,103 @@ static Err cmd_anchor_asterisk_range(CmdParams p[_1_]) {
     //immediately isntead
     if (range_len(&r) > 1)
         return run_cmd_for_dom_node_range(p, &r, anchors, cmd_anchor_asterisk);
-    return session_follow_ahref(p->s, r.beg, cmd_params_cmd_out(p));
+
+
+    DomNode* a = arlfn(DomNode, at)(anchors, r.beg);
+    if (!a) return "link number invalid";
+    return session_follow_ahref(p->s, *a, cmd_params_cmd_out(p));
 }
 
 
-static Err cmd_anchor_save_range(CmdParams p[_1_]) {
+static Err
+request_arl_to_file(CmdParams p[_1_], ArlOf(Request) rs[_1_]) {
+    ArlOf(FilePtr)        fps       = (ArlOf(FilePtr)){0};
+    ArlOf(CurlPtr)        handles   = (ArlOf(CurlPtr)){0};
+    ArlOf(CurlMultiSgPtr) failed    = (ArlOf(CurlMultiSgPtr)){0};
+    ArlOf(Str)            fnames    = (ArlOf(Str)){0};
+    Err                   e         = Ok;
+
+    LipOf(CurlPtr,Str) curl2file = (LipOf(CurlPtr,Str)){0};
+    if (lipfn(CurlPtr,Str,init)(&curl2file, (LipInitArgs){.sz=4})) return err_internal("lip init failure");
+
+    UrlClient* uc = session_url_client(p->s);
+    foreach__(Request,rs,req) {
+        FilePtr* fpp   = NULL;
+        CurlPtr* cpp   = NULL;
+        Str*     pathp = NULL;
+        try(arl_append_zero(FilePtr,&fps,fpp));
+        try(arl_append_zero(CurlPtr,&handles,cpp));
+        try(arl_append_zero(Str,&fnames,pathp));
+        Err msg = request_to_handle(req, uc, p->ln, fpp, pathp, cpp);
+        if (msg) {
+            msg_ln__(p,msg);
+            if (pathp) { str_clean(pathp); *pathp = (Str){0}; }
+            if (cpp) { curl_easy_cleanup(*cpp); *cpp = NULL; }
+            if (fpp) { file_close(fpp->ptr); *fpp = (FilePtr){0}; };
+            if (!fps.len || !fnames.len || !handles.len) {e=err_internal("arl appended but is empty"); goto Clean;}
+            //TODO1: use pop
+            --fps.len;
+            --handles.len;
+            --fnames.len;
+        } else {
+            if (lipfn(CurlPtr,Str,set)(&curl2file, cpp, pathp)) {
+                e=err_internal("lit append failure");
+                goto Clean;
+            }
+        }
+    }
+
+    CurlMuliPtr multi = url_client_multi(uc);
+    foreach__(CurlPtr,&handles,cpp) { tryjmp(e,Clean,w_curl_multi_add_handle(multi, *cpp)); }
+
+    e = w_curl_multi_perform_poll(multi, &failed);
+    size_t failedcount = len__(&failed);
+    if (failedcount) {
+        foreach__(CurlMultiSgPtr,&failed,f) {
+            Str* fname = lipfn(CurlPtr,Str,get)(&curl2file, &(*f)->easy_handle);
+            if (!fname || !len__(fname)) {e=err_internal("lip miss unexpected");  goto Clean;}
+            msg__(p, sv(fname));
+            msg__(p, sv(" download failed: "));
+            msg_ln__(p,  curl_easy_strerror((*f)->data.result));
+            remove(fname->items);
+        }
+    }
+
+    w_curl_multi_remove_handles(multi, &handles, cmd_params_cmd_out(p));
+
+    size_t count = len__(&handles);
+    msg_ui_b10__(p, count - failedcount);
+    msg_ln__(p, " files saved.");
+    if (failedcount) {
+        msg_ui_b10__(p, failedcount);
+        msg_ln__(p, " downloads failed.");
+    }
+Clean:
+    foreach__(FilePtr,&fps,fpp) { file_close(fpp->ptr); }
+    arlfn(CurlMultiSgPtr,clean)(&failed);
+    arlfn(FilePtr,clean)(&fps);
+    arlfn(CurlPtr,clean)(&handles);
+    arlfn(Str,clean)(&fnames);
+    lipfn(CurlPtr,Str,clean)(&curl2file);
+    return e;
+}
+
+
+static Err
+cmd_anchor_save_range(CmdParams p[_1_]) {
     ArlOf(DomNode)* anchors;
     Range r;
     try(get_range_and_nodes(p, &r, &anchors, htmldoc_anchors));
     if (range_len(&r) > 1 && !path_is_dir(p->ln)) 
-        return err_fmt("image ranges only can be saved to existing directoriesm not: %s\n", p->ln);
-    return run_cmd_for_dom_node_range(p, &r, anchors, cmd_anchor_save);
+        return err_fmt("anchor ranges only can be saved to existing directoriesm not: %s\n", p->ln);
+
+    ArlOf(Request) rs = (ArlOf(Request)){0};
+    Err            e  = Ok;
+    tryjmp(e,Clean, dom_node_range_to_request_arl(&r, anchors, p, http_get, svl("href"), &rs));
+    tryjmp(e,Clean, request_arl_to_file(p, &rs));
+Clean:
+    arlfn(Request,clean)(&rs);
+    return e;
 }
 
 
@@ -212,39 +293,63 @@ static SessionCmd _cmd_anchor_[] =
     { {.name="\"", .fn=cmd_anchor_print_range,    .help=CMD_ANCHOR_PRINT_DOC, .flags=CMD_CHAR}
     , {.name="",   .fn=cmd_anchor_asterisk_range, .help=NULL,                 .flags=CMD_EMPTY}
     , {.name="*",  .fn=cmd_anchor_asterisk_range, .help=NULL,                 .flags=CMD_CHAR}
-    , {.name="save", .fn=cmd_anchor_save_range,     .help=NULL,              .match=1}
+    , {.name="save",.fn=cmd_anchor_save_range,   .help=NULL,                 .match=1}
     , {0}
     };
 
 /* input commands ({) */
 
-static Err cmd_input_info(CmdParams p[_1_]) {
-    return _run_cmd_for_htmldoc_inputs_range__(p, cmd_input_print);
-}
+static Err cmd_input_info(CmdParams p[_1_]) { return run_cmd_for_indep_dom_node_range(p, htmldoc_inputs, cmd_print_node); }
 
-static Err cmd_input_default(CmdParams p[_1_]) {
-    return _run_cmd_for_htmldoc_inputs_range__(p, cmd_input_default_ix);
-}
 
 static Err cmd_input_submit(CmdParams p[_1_]) {
-    return _run_cmd_for_htmldoc_inputs_range__(p, _cmd_input_submit_ix);
+    return run_cmd_for_indep_dom_node_range(p, htmldoc_inputs, cmd_input_default_node); 
 }
 
 #define CMD_INPUT_SET \
     "{= [VALUE]\n\n"\
     "If VALUE is given, sets the value of an input element.\n"\
     "If not, user's input is hidden (useful for passwords).\n"
-static Err cmd_input_set(CmdParams p[_1_])
-{ return _run_cmd_for_htmldoc_inputs_range__(p, _cmd_input_ix_set_); }
+static Err cmd_input_set(CmdParams p[_1_]) { 
+    return run_cmd_for_indep_dom_node_range(p, htmldoc_inputs, cmd_input_set_node); 
+}
 
+
+
+#define CMD_INPUT_SAVE "{ID save [FILENAME].\n"
+static Err cmd_input_save(CmdParams p[_1_]) { return run_cmd_for_htmldoc_single_input_node(p, cmd_input_save_node); }
 
 static SessionCmd _cmd_input_[] =
     { {.name="\"", .fn=cmd_input_info,    .help=NULL,          .flags=CMD_CHAR}
-    , {.name="",   .fn=cmd_input_default, .help=NULL,          .flags=CMD_EMPTY}
+    , {.name="",   .fn=cmd_input_submit, .help=NULL,           .flags=CMD_EMPTY}
     , {.name="*",  .fn=cmd_input_submit,  .help=NULL,          .flags=CMD_CHAR}
     , {.name="=",  .fn=cmd_input_set,     .help=CMD_INPUT_SET, .flags=CMD_CHAR}
+    , {.name="save",.fn=cmd_input_save,.help=NULL,.match=1}
     , {0}
     };
+
+
+Err cmd_input_save_node(CmdParams p[_1_], DomNode node) {
+    if (!dom_node_attr_has_value(node, svl("type"), svl("submit")))
+        return "warn: save command only applicable to submit inputs\n";
+
+    HtmlDoc*       htmldoc;
+    try( session_current_doc(p->s, &htmldoc));
+
+    DomNode form = dom_node_find_parent_form(node);
+    if (isnull(form)) return "expected form, not found";
+    Err e = Ok;
+
+    ArlOf(Request) rs = (ArlOf(Request)){0};
+    Request* r;
+    try(arl_append_zero(Request,&rs,r));
+    tryjmp(e,Clean, request_from_form_node(r, form, true, htmldoc_url(htmldoc)));
+    tryjmp(e,Clean, request_arl_to_file(p, &rs));
+
+Clean:
+    arlfn(Request,clean)(&rs);
+    return e;
+}
 
 /* set session comands */
 
@@ -276,14 +381,14 @@ static Err cmd_session_set(CmdParams p[_1_]) { return run_cmd__(p, _cmd_session_
 /* tab commands (|) */
 
 static SessionCmd _cmd_tabs_[] =
-    { {.name="-", .fn=cmd_tabs_back, .help=NULL, .flags=CMD_CHAR}
-    , {.name="",  .fn=cmd_tabs_info, .help=NULL, .flags=CMD_EMPTY}
-    , {.name="goto",  .fn=cmd_tabs_goto, .help=NULL, .flags=CMD_ANY}
+    { {.name="-",    .fn=cmd_tabs_back, .help=NULL, .flags=CMD_CHAR}
+    , {.name="",     .fn=cmd_tabs_info, .help=NULL, .flags=CMD_EMPTY}
+    , {.name="goto", .fn=cmd_tabs_goto, .help=NULL, .flags=CMD_ANY}
     , {0}
 };
 
-static Err cmd_doc_scripts_list(CmdParams p[_1_]) {
 
+static Err cmd_doc_scripts_list(CmdParams p[_1_]) {
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
     size_t head_scripts_count = len__(htmldoc_head_scripts(h));
@@ -298,6 +403,7 @@ static Err cmd_doc_scripts_list(CmdParams p[_1_]) {
     return Ok;
 }
 
+
 static Err cmd_doc_scripts_save(CmdParams p[_1_]) {
     Err e = Ok;
     HtmlDoc* h;
@@ -305,8 +411,8 @@ static Err cmd_doc_scripts_save(CmdParams p[_1_]) {
     Writer w;
     FILE* fp;
     try(file_open(p->ln, "w", &fp));
-    try_or_jump(e, Failure, file_writer_init(&w, fp));
-    try_or_jump(e, Failure, htmldoc_scripts_write(h, &p->rp, &w));
+    tryjmp(e, Failure, file_writer_init(&w, fp));
+    tryjmp(e, Failure, htmldoc_scripts_write(h, &p->rp, &w));
     e = file_close(fp);
     ok_then(e, msg__(cmd_params_cmd_out(p), svl("script(s) saved\n")));
     return Ok;
@@ -315,6 +421,7 @@ Failure:
     return e;
 }
 
+
 static Err cmd_doc_scripts_msg(CmdParams p[_1_]) {
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
@@ -322,6 +429,7 @@ static Err cmd_doc_scripts_msg(CmdParams p[_1_]) {
     try(msg_writer_init(&w, cmd_out_msg(cmd_params_cmd_out(p))));
     return htmldoc_scripts_write(h, &p->rp, &w);
 }
+
 
 /* doc scripts commands */
 static SessionCmd _cmd_doc_scripts_[] =
@@ -356,9 +464,14 @@ static inline Err cmd_scripts(CmdParams p[_1_]) {
     return run_cmd_on_range__(p, _cmd_doc_scripts_, 10);
 }
 
-#define CMD_DOC_FETCh \
+#define CMD_DOC_FETCH \
     "Fetchs the current document.\n"
 static inline Err cmd_doc_fetch(CmdParams p[_1_]) { return cmd_fetch(p->s, cmd_params_cmd_out(p)); }
+
+
+#define CMD_DOC_PARSE \
+    "(Re)parses the current document.\n"
+static inline Err cmd_doc_parse(CmdParams p[_1_]) { return cmd_parse(p->s, cmd_params_cmd_out(p)); }
 
 
 static SessionCmd _cmd_doc_[] =
@@ -368,19 +481,20 @@ static SessionCmd _cmd_doc_[] =
     , {.name="\"",      .fn=cmd_doc_info,              .help=CMD_DOC_INFO_DOC,     .flags=CMD_CHAR}
     , {.name="console", .match=1, .fn=cmd_doc_console, .help=CMD_DOC_CONSOLE}
     , {.name="draw",    .match=1, .fn=cmd_doc_draw,    .help=CMD_DOC_DRAW}
-    , {.name="fetch",   .match=1, .fn=cmd_doc_fetch,   .help=CMD_DOC_DRAW}
+    , {.name="fetch",   .match=1, .fn=cmd_doc_fetch,   .help=CMD_DOC_FETCH}
     , {.name="js",      .match=1, .fn=cmd_doc_js,      .help=CMD_DOC_JS}
+    , {.name="parse",   .match=1, .fn=cmd_doc_parse,   .help=CMD_DOC_PARSE}
     , {0}
 };
 
 /* texbuf commands */
 
 static SessionCmd _cmd_textbuf_[] =
-    { {.name="",            .fn=cmd_textbuf_print,        .help=NULL, .flags=CMD_EMPTY}
-    , {.name="g", .match=1, .fn=cmd_textbuf_global,       .help=NULL}
-    , {.name="n", .match=1, .fn=cmd_textbuf_print_n,      .help=NULL,.flags=CMD_NO_PARAMS}
-    , {.name="print", .match=1, .fn=cmd_textbuf_print,    .help=NULL,.flags=CMD_NO_PARAMS}
-    , {.name="write", .match=1, .fn=cmd_textbuf_write,    .help=NULL }
+    { {.name="",                .fn=cmd_textbuf_print,   .help=NULL, .flags=CMD_EMPTY}
+    , {.name="g",     .match=1, .fn=cmd_textbuf_global,  .help=NULL}
+    , {.name="n",     .match=1, .fn=cmd_textbuf_print_n, .help=NULL, .flags=CMD_NO_PARAMS}
+    , {.name="print", .match=1, .fn=cmd_textbuf_print,   .help=NULL, .flags=CMD_NO_PARAMS}
+    , {.name="save",  .match=1, .fn=cmd_textbuf_write,   .help=NULL }
     , {0}
 };
 
@@ -400,13 +514,20 @@ static Err cmd_image_save_range(CmdParams p[_1_]) {
     Range r;
     try(get_range_and_nodes(p, &r, &images, htmldoc_imgs));
     if (range_len(&r) > 1 && !path_is_dir(p->ln)) 
-        return err_fmt("image ranges only can be saved to existing directoriesm not: %s\n", p->ln);
-    return run_cmd_for_dom_node_range(p, &r, images, cmd_image_save);
+        return err_fmt("image ranges only can be saved to existing directories, not: %s\n", p->ln);
+
+    ArlOf(Request) rs = (ArlOf(Request)){0};
+    Err            e  = Ok;
+    tryjmp(e,Clean, dom_node_range_to_request_arl(&r, images, p, http_get, svl("src"), &rs));
+    tryjmp(e,Clean, request_arl_to_file(p, &rs));
+Clean:
+    arlfn(Request,clean)(&rs);
+    return Ok;
 }
 
 static SessionCmd _cmd_image_[] =
-    { {.name="\"", .fn=cmd_image_info,       .help=NULL, .flags=CMD_CHAR}
-    , {.name="s",  .fn=cmd_image_save_range, .help=NULL, .flags=CMD_CHAR}
+    { {.name="\"",   .fn=cmd_image_info,       .help=NULL, .flags=CMD_CHAR}
+    , {.name="save", .fn=cmd_image_save_range, .help=NULL, .match=1}
     , {0}
     };
 
@@ -467,8 +588,14 @@ static Err cmd_sourcebuf(CmdParams p[_1_]) {
     "'{' commands are applied to the input elements present in the document.\n"
 static Err cmd_input(CmdParams p[_1_]) { return run_cmd_on_range__(p, _cmd_input_, 36); }
 
-static Err cmd_form_print(CmdParams p[_1_])
-{ return _run_cmd_for_htmldoc_forms_range__(p, _cmd_form_print); }
+
+static Err cmd_form_print(CmdParams p[_1_]) {
+    p->ln = cstr_skip_space(p->ln);
+    const char* endptr;
+    try(parse_range(p->ln, &p->rp, &endptr, 36));
+    p->ln = cstr_skip_space(endptr);
+    return run_cmd_for_indep_dom_node_range(p, htmldoc_forms, cmd_print_node);
+}
 
 
 #define CMD_IMAGE_DOC \
@@ -528,14 +655,26 @@ Err process_line(Session session[_1_], const char* line, CmdOut cout[_1_]) {
 
 Err process_line_line_mode(Session* s, const char* line, CmdOut cout[_1_]) {
     if (!s) return "error: no session :./";
-    return process_line(s, line, cout);
+    try (process_line(s, line, cout));
+    static size_t logged_fetch_history = 0;
+
+    FetchHistoryEntry* last_entry = NULL;
+    while ((last_entry = arlfn(FetchHistoryEntry,at)(session_fetch_history(s), logged_fetch_history))) {
+        ++logged_fetch_history;
+        try(cmd_out_screen_append_ui_as_base10(cout, last_entry->size_download_t));
+        if (last_entry->effective_url.len) {
+            try(cmd_out_screen_append(cout, sv("\t")));
+            try(cmd_out_screen_append_ln(cout, sv(last_entry->effective_url)));
+        } else try(cmd_out_screen_append(cout, sv("\n")));
+
+    }
+    return Ok;
 }
 
-/* Err process_line_vi_mode(Session* s, const char* line, CmdOut cout[_1_]) { */
-/*     if (!s) return "error: no session :./"; */
-/*     try( process_line(s, line, cout)); */
-/*     return session_doc_draw(s); */
-/* } */
+Err process_line_vi_mode(Session* s, const char* line, CmdOut cout[_1_]) {
+    if (!s) return "error: no session :./";
+    return process_line(s, line, cout);
+}
 
 #include <sys/ioctl.h>
 

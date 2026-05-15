@@ -123,30 +123,33 @@ Err session_write_screen_range_mod(
 
 
 static Err session_write_fetch_history(Session s[_1_]) {
-    int fd;
-    FILE* fp;
-    Str fetch_history_fname = (Str){0};
-    /* try(get_fetch_history_filename(&fetch_history_fname)); */
+    int   fd;
+    FILE* fp                  = NULL;
+    Str   fetch_history_fname = (Str){0};
+    Err   e                   = Ok;
+
     try(session_fetch_history_fname_append(s, &fetch_history_fname));
 
     if (-1 != (fd = open(fetch_history_fname.items, O_WRONLY | O_CREAT | O_EXCL, 0666))) {
         ssize_t nbytes = write(fd, FETCH_HISTORY_HEADER, lit_len__(FETCH_HISTORY_HEADER)) == -1;
         close(fd);
-        if(nbytes == -1)
-            return err_fmt("error: could not write fetch history header: %s", strerror(errno));
+        if(nbytes == -1) {
+            e=err_fmt("error: could not write fetch history header: %s", strerror(errno));
+            goto Clean;
+        }
     } else if (errno == ENOENT) {
-        return err_fmt("error: could not write fetch history header: %s", strerror(errno));
+        e=err_fmt("error: could not write fetch history header: %s", strerror(errno));
+        goto Clean;
     }
 
 
     try(file_open(fetch_history_fname.items, "a", &fp));
     ArlOf(FetchHistoryEntry)* history = session_fetch_history(s);
-    Err e = Ok;
     for (FetchHistoryEntry* it = arlfn(FetchHistoryEntry,begin)(history)
         ; it != arlfn(FetchHistoryEntry,end)(history)
         ; ++it
     ) {
-        try_or_jump(e, Clean, fetch_history_write_to_file(it, fp));
+        tryjmp(e, Clean, fetch_history_write_to_file(it, fp));
     }
 Clean:
     str_clean(&fetch_history_fname);
@@ -156,22 +159,23 @@ Clean:
 
 
 Err session_write_input_history(Session s[_1_]) {
-    Str input_history_fname = (Str){0};
-    FILE* fp;
-    /* try(get_input_history_filename(&history_fname)); */
-    try(session_input_history_fname_append(s, &input_history_fname));
-    try(file_open(input_history_fname.items, "a", &fp));
+    Str   input_history_fname = (Str){0};
+    FILE* fp                  = NULL;
+    Err   e                   = Ok;
+
+
+    tryjmp(e, Clean, session_input_history_fname_append(s, &input_history_fname));
+    tryjmp(e, Clean, file_open(input_history_fname.items, "a", &fp));
     ArlOf(const_cstr)* history = session_input_history(s);
-    Err e = Ok;
     Str* dt = session_dt_now_str(s);
-    try_or_jump(e, Clean, file_write_or_close(items__(dt), len__(dt), fp));
-    try_or_jump(e, Clean, file_write_or_close("\n", 1, fp));
+    tryjmp(e, Clean, file_write_or_close(items__(dt), len__(dt), fp));
+    tryjmp(e, Clean, file_write_or_close("\n", 1, fp));
     for (const_cstr* it = arlfn(const_cstr,begin)(history)
         ; it != arlfn(const_cstr,end)(history)
         ; ++it
     ) {
-        try_or_jump(e, Clean, file_write(*it, strlen(*it), fp));
-        try_or_jump(e, Clean, file_write("\n", 1, fp));
+        tryjmp(e, Clean, file_write(*it, strlen(*it), fp));
+        tryjmp(e, Clean, file_write("\n", 1, fp));
     }
 
 Clean:
@@ -182,8 +186,9 @@ Clean:
 
 
 Err session_close(Session s[_1_]) {
-    session_write_input_history(s);
-    session_write_fetch_history(s);
+    SessionConf* sconf = session_conf(s);
+    if (sconf->input_history_fname.len) session_write_input_history(s);
+    if (sconf->fetch_history_fname.len) session_write_fetch_history(s);
     return Ok;
 }
 
@@ -208,17 +213,17 @@ Err session_flush_cmd_out(Session s[_1_], CmdOut cout[_1_]) {
     return Ok;
 }
 
-Err session_htmldoc_redraw(HtmlDoc htmldoc[_1_], Session s[_1_]) {
+Err session_htmldoc_redraw(HtmlDoc htmldoc[_1_], Session s[_1_], CmdOut cmd_out[_1_]) {
     htmldoc_reset_draw(htmldoc);
     unsigned flags = draw_ctx_flags_from_session(s);
-    return htmldoc_draw_with_flags(htmldoc, s, flags);
+    return htmldoc_draw_with_flags(htmldoc, s, flags, cmd_out);
 }
 
 Err
-session_doc_draw(Session session[_1_]) {
+session_doc_draw(Session session[_1_], CmdOut cmd_out[_1_]) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
-    return session_htmldoc_redraw(htmldoc, session);
+    return session_htmldoc_redraw(htmldoc, session, cmd_out);
 }
 
 
@@ -237,3 +242,8 @@ session_doc_console(Session session[_1_], const char* line, CmdOut* out) {
     return htmldoc_console(htmldoc, session, line, out);
 }
 
+
+Err
+session_fetch_history_fname_append(Session s[_1_], Str out[_1_]) {
+    return str_append(out, session_conf(s)->fetch_history_fname);
+}

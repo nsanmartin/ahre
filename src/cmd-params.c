@@ -1,4 +1,5 @@
 #include "cmd-params.h"
+#include "generic.h"
 
 const char* cmd_params_match(CmdParams p[_1_], const char* cmd_name, size_t unmatch) {
     const char* s = p->ln;

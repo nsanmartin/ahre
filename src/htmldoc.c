@@ -1,3 +1,4 @@
+#include "generic.h"
 #include "constants.h"
 #include "draw.h"
 #include "error.h"
@@ -16,6 +17,12 @@ static inline
 Err draw_ctx_esc_code_pop(DrawCtx ctx[_1_]) {
     return arlfn(EscCode, pop)(draw_ctx_esc_code_stack(ctx)) ? Ok : "error: empty stack";
 }
+static bool ends_with_newline(StrView v) { return !v.len || v.items[v.len-1] == '\n'; }
+static bool requires_separation(StrView v) {
+    return v.len && !isspace(v.items[v.len-1]) && !ispunct(v.items[v.len-1]);
+}
+
+
 
 /* internal linkage */
 #define MAX_URL_LEN 2048u
@@ -27,24 +34,18 @@ append_to_arlof_lxb_node__(ArrayList, NodePtr) \
     (arlfn(DomNode,append)(ArrayList, (NodePtr)) ? Ok : "error: lip set")
 
 
-static size_t 
-_strview_trim_left_count_newlines_(StrView s[_1_]) {
-    size_t newlines = 0;
-    while(s->len && isspace(*(items__(s)))) {
-        newlines += *(items__(s)) == '\n';
-        ++s->items;
-        --s->len;
-    }
-    return newlines;
-}
-
 static size_t _strview_trim_right_count_newlines_(StrView s[_1_]) {
+#define last_char__(S) items__(S)[len__(S)-1]
+//TODO1: use unicode space
+#define is_space_or_not_print__(C) (isspace(C) || !isprint(C))
     size_t newlines = 0;
-    while(s->len && isspace(items__(s)[len__(s)-1])) {
-        newlines += items__(s)[s->len-1] == '\n';
+    while(s->len && is_space_or_not_print__(last_char__(s))) {
+        newlines += last_char__(s) == '\n';
         --s->len;
     }
     return newlines;
+#undef is_space_or_not_print__
+#undef last_char__
 }
 
 
@@ -54,10 +55,56 @@ typedef struct {
     TextBufMods mods;
     size_t      flags;
     size_t      fragment_offset;
-    size_t      left_newlines;
+    bool        left_newlines;
     size_t      left_trim;
     size_t      right_newlines;
 } DrawTextBuf;
+
+
+typedef struct { size_t col, row; } Coordinates;
+#define T Coordinates
+#include "arl.h"
+
+#define KT Coordinates
+#define VT unsigned
+#include "lip.h"
+
+typedef LipOf(Coordinates,unsigned) CoordToUint;
+typedef struct { CoordToUint map; ArlOf(Coordinates) lst; } ColSpan;
+
+static inline CoordToUint* colspan_map(ColSpan cs[_1_]) { return &cs->map; }
+static inline ArlOf(Coordinates)* colspan_lst(ColSpan cs[_1_]) { return &cs->lst; }
+
+static Err colspan_init(ColSpan cs[_1_]) {
+    *cs              = (ColSpan){0};
+    if (lipfn(Coordinates,unsigned,init)(colspan_map(cs), (LipInitArgs){.sz=4}))
+        return err_internal("lip init failure)");
+    return Ok;
+}
+
+static inline void colspan_clean(ColSpan cs[_1_]) {
+    lipfn(Coordinates,unsigned,clean)(colspan_map(cs));
+    arlfn(Coordinates,clean)(colspan_lst(cs));
+}
+
+static Err colspan_set(ColSpan cs[_1_], Coordinates k, unsigned v) {
+    if (lipfn(Coordinates,unsigned,set)(&cs->map, &k, &v))
+        return err_internal("lip set failure");
+
+    if ( v > 1 && !arlfn(Coordinates,append)(&cs->lst, &k))
+        return err_internal("arl append failure");
+    return Ok;
+}
+
+static unsigned* colspan_get(ColSpan cs[_1_], Coordinates k[_1_]) {
+    return lipfn(Coordinates,unsigned,get)(&cs->map, k);
+}
+
+static unsigned colspan_get_interpreted(ColSpan cs[_1_], Coordinates k) {
+    unsigned* v = colspan_get(cs, &k);
+    if (!v) return 1;
+    return *v;
+}
 
 /* sub text flags */
 static inline bool
@@ -70,6 +117,7 @@ static Err draw_rec_tag(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
 static Err draw_text(DomNode node,  DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
 static inline Err draw_list( DomNode it, DomNode last, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
 static inline Err draw_list_block( DomNode it, DomNode last, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
+static Err draw_tag_table (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
 
 
 static Err
@@ -94,6 +142,27 @@ draw_text_buf_trim_right(DrawTextBuf sub[_1_]) {
 static Str*
 draw_text_buf_buf(DrawTextBuf sub_text[_1_]) { return &sub_text->buf; }
 
+
+static StrView strview_from_draw_text_buf(DrawTextBuf dtb[_1_]) {
+    Str* buf = draw_text_buf_buf(dtb);
+    return (StrView){
+        .items = buf->items + dtb->left_trim,
+        .len   = buf->len - size_t_min(buf->len,dtb->left_trim)
+    };
+}
+
+static size_t
+draw_text_buf_hlen(DrawTextBuf text[_1_]) {
+    size_t res = 0;
+    StrView buf = strview_from_draw_text_buf(text);
+    for (;buf.len;) {
+        StrView line = strview_split_line(&buf);
+        strview_trim_left_utf8_space(&line);
+        size_t utf8len = strview_count_utf8(line);
+        if (utf8len > res) res = utf8len;
+    }
+    return res;
+}
 
 static TextBufMods*
 draw_text_buf_mods(DrawTextBuf text[_1_]) { return &text->mods; }
@@ -142,7 +211,8 @@ draw_text_buf_commit(DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
             return "error: could not append empty line to TextBuffer";
         buffn(char, reset)(buf);
 
-        *textbuf_mods(draw_ctx_textbuf(ctx)) = *draw_text_buf_mods(text);
+        arlfn(ModAt, clean)(textbuf_mods(tb));
+        *textbuf_mods(tb)         = *draw_text_buf_mods(text);
         *draw_text_buf_mods(text) = (TextBufMods){0};
 
 
@@ -156,6 +226,7 @@ draw_text_buf_commit(DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
 static Err
 draw_ctx_append_sub_text(DrawTextBuf text[_1_], DrawTextBuf sub[_1_]) {
+    if (sub->buf.len < sub->left_trim) return err_internal("left trim larger than buffer len");
     if (sub->fragment_offset)
         *draw_text_buf_fragment_offset(text) = len__(draw_text_buf_buf(text)) + sub->fragment_offset;
     if (len__(&sub->mods))
@@ -297,12 +368,15 @@ draw_tag_a(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
 Err draw_tag_pre(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
 
 
-static void
+static Err
 draw_text_buf_trim_left(DrawTextBuf sub[_1_]) {
-    StrView content = strview_from_mem(sub->buf.items, sub->buf.len);
-    sub->left_newlines = _strview_trim_left_count_newlines_(&content);
-    sub->left_trim = sub->buf.len-content.len;
+    StrView content    = sv(sub->buf);
+    if (sub->buf.len < content.len) return err_internal("buffer smaller than its content?");
+    size_t skipped     = strview_trim_left_utf8_space(&content);
+    sub->left_newlines = memchr(sub->buf.items, '\n', skipped) != NULL;
+    sub->left_trim     = sub->buf.len - content.len;
     textmod_trim_left(&sub->mods, sub->left_trim);
+    return Ok;
 }
 
 
@@ -398,7 +472,7 @@ draw_list (DomNode it, DomNode last, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 static Err
 draw_tag_br(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     try( draw_text_buf_append_lit__(text, "\n"));
-    return draw_iter_childs(node, ctx, text);
+    return draw_iter_childs(node, ctx, text);//TODO1: br can't have child, isn't it?
 }
 
 
@@ -544,8 +618,14 @@ static Err draw_tag_input(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_])
     try( _hypertext_id_open_(
         ctx, text, draw_ctx_color_red, input_text_open_str, &input_id, NULL));
 
-    /* "input" type is text | search */
-    if (str_eq_case(svl("text"), type) || str_eq_case(svl("search"), type)) {
+    /* "input" type is text | search | email */
+    if (
+       str_eq_case(svl("text"),   type)
+    || str_eq_case(svl("search"), type)
+    || str_eq_case(svl("email"),  type) //TODO2: validate input format
+    || str_eq_case(svl("url"),    type)
+    || str_eq_case(svl("tel"),    type)
+    ) {
         try( draw_text_buf_append_lit__(text, "="));
         StrView value = dom_node_attr_value(node, svl("value"));
         if (value.len) try( draw_text_buf_append(text, value));
@@ -622,17 +702,19 @@ draw_tag_li(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
 static Err
 draw_tag_h(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+    Err err = Ok;
     DrawTextBuf sub = (DrawTextBuf){0};
 
     try( draw_block_iter_childs(node,  ctx, &sub));
 
-    draw_text_buf_trim_left(&sub);
+    tryjmp(err, Clean, draw_text_buf_trim_left(&sub));
     draw_text_buf_trim_right(&sub);
 
-    Err err = _hypertext_open_(ctx, text, draw_ctx_push_bold, h_tag_open_str);
-    if (!err && sub.buf.len) ok_then(err, draw_ctx_append_sub_text(text, &sub));
-    ok_then(err, _hypertext_close_(ctx, text, draw_ctx_reset_color, newline_str));
+    tryjmp(err,Clean,_hypertext_open_(ctx, text, draw_ctx_push_bold, h_tag_open_str));
+    if (sub.buf.len) tryjmp(err, Clean, draw_ctx_append_sub_text(text, &sub));
+    tryjmp(err, Clean, _hypertext_close_(ctx, text, draw_ctx_reset_color, newline_str));
 
+Clean:
     draw_text_buf_clean(&sub);
     return Ok;
 }
@@ -736,78 +818,6 @@ draw_strview_skipping_space(StrView s, DomNode prev, DrawTextBuf text[_1_]) {
 }
 
 
-/*
- * This implementation was a quick solution to just render the text parts without caring 
- * too much about the DOM specification, and we started using a context to be able to pass
- * some information to the recursive calls. It should be progressively replaced by functions
- * that instead of calling the same draw_rec_tag, resolve only the element they are made to
- * draw.
- * 
- */
-static Err
-draw_rec_tag(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
-    if (ctx->fragment
-    && str_eq_case(sv(ctx->fragment), dom_node_attr_value(node, svl("id")))) {
-        *draw_text_buf_fragment_offset(text) = len__(draw_text_buf_buf(text));
-    }
-    switch(dom_node_tag(node)) {
-        case HTML_TAG_A: { return draw_tag_a(node, ctx, text); }
-        case HTML_TAG_B: { return draw_tag_b(node, ctx, text); }
-        case HTML_TAG_BLOCKQUOTE: { return draw_tag_blockquote(node, ctx, text); }
-        case HTML_TAG_BR: { return draw_tag_br(node, ctx, text); }
-        case HTML_TAG_BUTTON: { return draw_tag_button(node, ctx, text); }
-        case HTML_TAG_CENTER: { return draw_tag_center(node, ctx, text); } 
-        case HTML_TAG_CODE: { return draw_tag_code(node, ctx, text); } 
-        case HTML_TAG_DIV: { return draw_tag_div(node, ctx, text); }
-        case HTML_TAG_DL: { return draw_block_iter_childs(node, ctx, text); }
-        case HTML_TAG_DT: { return draw_block_iter_childs(node, ctx, text); }
-        case HTML_TAG_EM: { return draw_tag_em(node, ctx, text); }
-        case HTML_TAG_FORM: { return draw_tag_form(node, ctx, text); }
-        case HTML_TAG_H1: case HTML_TAG_H2: case HTML_TAG_H3: case HTML_TAG_H4: case HTML_TAG_H5: case HTML_TAG_H6: { return draw_tag_h(node, ctx, text); }
-        case HTML_TAG_I: { return draw_tag_i(node, ctx, text); }
-        case HTML_TAG_INPUT: { return draw_tag_input(node, ctx, text); }
-        case HTML_TAG_IMAGE: case HTML_TAG_IMG: { return draw_tag_img(node, ctx, text); }
-        case HTML_TAG_LI: { return draw_tag_li(node, ctx, text); }
-        case HTML_TAG_META: { return Ok; }
-        case HTML_TAG_OL: { return draw_tag_ul(node, ctx, text); }
-        case HTML_TAG_P: { return draw_tag_p(node, ctx, text); }
-        case HTML_TAG_PRE: { return draw_tag_pre(node, ctx, text); }
-        case HTML_TAG_SCRIPT: {
-            return Ok; /*
-                          draw_tag_script(node, ctx, text);
-                          Here draw only body scripts
-                          */
-        } 
-        case HTML_TAG_SELECT: { return draw_tag_select(node, ctx, text); }
-        case HTML_TAG_STYLE: {
-            /* Does it make any sense that wo dosomething with this in ahre? */
-            return Ok;
-        } 
-        case HTML_TAG_TITLE: { return draw_tag_title(node, ctx); } 
-        case HTML_TAG_TR: { return draw_tag_tr(node, ctx, text); }
-        case HTML_TAG_TT: { return draw_tag_code(node, ctx, text); }
-        case HTML_TAG_UL: { return draw_tag_ul(node, ctx, text); }
-        //TODO: implement all these tags, meanwhile we just add
-        // spaces when needed to separate from previous word
-        case HTML_TAG_TD: case HTML_TAG_TH: //TODO delete once table is implemented
-        case HTML_TAG_TIME:
-        case HTML_TAG_SAMP:
-        case HTML_TAG_SMALL:
-        case HTML_TAG_SPAN:
-        case HTML_TAG_STRONG:
-        case HTML_TAG_VAR: { return draw_tag_separating_with_space(node, ctx, text); }
-        default: {
-            /* if (node->local_name >= HTML_TAG__LAST_ENTRY) */
-            /*     return err_fmt( */
-            /*         "error: node local name (TAG) greater than last entry: %lx\n", node->local_name */
-            /*     ); */
-            /* else TODO: "TAG 'NOT' IMPLEMENTED: %s", node->local_name */
-            return draw_iter_childs(node, ctx, text);
-        }
-    }
-}
-
-
 static Err
 draw_text(DomNode node,  DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     StrView data = dom_node_text_view(node);
@@ -858,12 +868,12 @@ draw_tag_pre(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
 /*TODO: decouple sesion and htmldoc here */
 Err
-htmldoc_draw_with_flags(HtmlDoc htmldoc[_1_], Session* s, unsigned flags) {
+htmldoc_draw_with_flags(HtmlDoc htmldoc[_1_], Session* s, unsigned flags, CmdOut cmd_out[_1_]) {
     if (!s) return "error: expecting not null Session";
     Dom dom = htmldoc_dom(htmldoc);
     DrawCtx     ctx;
     DrawTextBuf text = (DrawTextBuf){0};
-    Err err = draw_ctx_init(&ctx, htmldoc, s, flags);
+    Err err = draw_ctx_init(&ctx, htmldoc, s, flags, cmd_out);
     try(err);
     ok_then(err, draw_rec(dom_root(dom), &ctx, &text));
     ok_then(err, draw_text_buf_commit(&ctx, &text));
@@ -876,9 +886,9 @@ htmldoc_draw_with_flags(HtmlDoc htmldoc[_1_], Session* s, unsigned flags) {
 
 
 static Err
-_htmldoc_draw_(HtmlDoc htmldoc[_1_], Session s[_1_]) {
+_htmldoc_draw_(HtmlDoc htmldoc[_1_], Session s[_1_], CmdOut cmd_out[_1_]) {
     unsigned flags = draw_ctx_flags_from_session(s) | DRAW_CTX_FLAG_TITLE;
-    return htmldoc_draw_with_flags(htmldoc, s, flags);
+    return htmldoc_draw_with_flags(htmldoc, s, flags, cmd_out);
 }
 
 
@@ -898,31 +908,26 @@ htmldoc_init_move_request(
     unsigned flags = session_js(s) ? HTMLDOC_FLAG_JS : 0x0;
 
     /* lexbor doc should be initialized before jse_init */
-    *d = (HtmlDoc){
-        .req    = *r,
-    };
-    try(dom_init(&d->dom));
+    *d = (HtmlDoc){.req=*r};
+    tryjmp(e,Fail, dom_init(&d->dom));
     if (flags & HTMLDOC_FLAG_JS) 
-        try_or_jump(e, Failure, jse_init(d));
+        tryjmp(e, Fail, jse_init(d));
 
-    ArlOf(FetchHistoryEntry)* hist = session_fetch_history(s);
-     if (!arlfn(FetchHistoryEntry,append)(hist, &(FetchHistoryEntry){0}))
-     { e = "error: arl append to fetch history failure"; goto Failure; }
+    FetchHistoryEntry* entry;
+    tryjmp(e,Fail, arl_append_zero(FetchHistoryEntry, session_fetch_history(s), entry));
 
-    try_or_jump(e, Failure, htmldoc_fetch(d, uc, cmd_out, arlfn(FetchHistoryEntry,back)(hist)));
+    tryjmp(e,Fail, htmldoc_fetch(d, uc, cmd_out, entry));
     htmldoc_eval_js_scripts_or_continue(d, s, cmd_out);
-    try_or_jump( e, Failure, _htmldoc_draw_(d, s));
-    try_or_jump( e, Failure,
-        fetch_history_entry_update_title(arlfn(FetchHistoryEntry,back)(hist),htmldoc_title(d)));
+    tryjmp(e,Fail, _htmldoc_draw_(d, s, cmd_out));
+    tryjmp(e,Fail, fetch_history_entry_update_title(entry,htmldoc_title(d)));
 
     *r = (Request){0};
     return Ok;
 
-Failure:
+Fail:
     /* In case of failure, the caller keeps ownership. In case of success it loses it */
     *r = d->req;
     d->req = (Request){0};
-    htmldoc_cleanup(d);
 
     return e;
 }
@@ -932,15 +937,13 @@ Err
 htmldoc_init_bookmark_move_urlstr(HtmlDoc d[_1_], Str urlstr[_1_]) {
     Err e = Ok;
 
-
     *d = (HtmlDoc){ 0 };
     try(dom_init(&d->dom));
-    if (!urlstr) return "error: cannot initialize bookmark with not path";
-    try_or_jump(e, Failure_Lxb_Html_Document_Destroy,
-        request_init_move_urlstr(htmldoc_request(d), http_get, urlstr, NULL));
-    return Ok;
+    if (!urlstr) return err_internal("cannot initialize bookmark with not path");
+    tryjmp(e, Fail, request_init(htmldoc_request(d), http_get, sv(urlstr), NULL));
 
-Failure_Lxb_Html_Document_Destroy:
+    return Ok;
+Fail:
     dom_cleanup(d->dom);
     return e;
 }
@@ -1103,10 +1106,11 @@ draw_tag_a(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
         bool div_child = draw_text_buf_div(sub_text); /* check whether any child is div */
 
-        draw_text_buf_trim_left(sub_text);
+        ok_then(err, draw_text_buf_trim_left(sub_text));
         draw_text_buf_trim_right(sub_text);
 
-        if (_prev_is_separable_(node)) err = draw_text_buf_append_lit__(text, " ");
+        if (requires_separation(sv(draw_text_buf_buf(text)))
+        && _prev_is_separable_(node)) err = draw_text_buf_append_lit__(text, " ");
         else if (text->left_newlines) err = draw_text_buf_append_lit__(text, "\n");
         ok_then(err, _hypertext_id_open_(
             ctx, text, draw_text_buf_textmod_blue, anchor_open_str, &anchor_num,anchor_sep_str ));
@@ -1126,7 +1130,832 @@ draw_tag_a(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 }
 
 
+/*
+ * This implementation was a quick solution to just render the text parts without caring 
+ * too much about the DOM specification, and we started using a context to be able to pass
+ * some information to the recursive calls. It should be progressively replaced by functions
+ * that instead of calling the same draw_rec_tag, resolve only the element they are made to
+ * draw.
+ * 
+ */
 static Err
+draw_rec_tag(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+    if (ctx->fragment
+    && str_eq_case(sv(ctx->fragment), dom_node_attr_value(node, svl("id")))) {
+        *draw_text_buf_fragment_offset(text) = len__(draw_text_buf_buf(text));
+    }
+    switch(dom_node_tag(node)) {
+        case HTML_TAG_A: { return draw_tag_a(node, ctx, text); }
+        case HTML_TAG_B: { return draw_tag_b(node, ctx, text); }
+        case HTML_TAG_BLOCKQUOTE: { return draw_tag_blockquote(node, ctx, text); }
+        case HTML_TAG_BR: { return draw_tag_br(node, ctx, text); }
+        case HTML_TAG_BUTTON: { return draw_tag_button(node, ctx, text); }
+        case HTML_TAG_CENTER: { return draw_tag_center(node, ctx, text); } 
+        case HTML_TAG_CODE: { return draw_tag_code(node, ctx, text); } 
+        case HTML_TAG_DIV: { return draw_tag_div(node, ctx, text); }
+        case HTML_TAG_DL: { return draw_block_iter_childs(node, ctx, text); }
+        case HTML_TAG_DT: { return draw_block_iter_childs(node, ctx, text); }
+        case HTML_TAG_EM: { return draw_tag_em(node, ctx, text); }
+        case HTML_TAG_FORM: { return draw_tag_form(node, ctx, text); }
+        case HTML_TAG_H1: case HTML_TAG_H2: case HTML_TAG_H3: case HTML_TAG_H4: case HTML_TAG_H5: case HTML_TAG_H6: { return draw_tag_h(node, ctx, text); }
+        case HTML_TAG_I: { return draw_tag_i(node, ctx, text); }
+        case HTML_TAG_INPUT: { return draw_tag_input(node, ctx, text); }
+        case HTML_TAG_IMAGE: case HTML_TAG_IMG: { return draw_tag_img(node, ctx, text); }
+        case HTML_TAG_LI: { return draw_tag_li(node, ctx, text); }
+        case HTML_TAG_META: { return Ok; }
+        case HTML_TAG_OL: { return draw_tag_ul(node, ctx, text); }
+        case HTML_TAG_P: { return draw_tag_p(node, ctx, text); }
+        case HTML_TAG_PRE: { return draw_tag_pre(node, ctx, text); }
+        case HTML_TAG_SCRIPT: {
+            return Ok; /*
+                          draw_tag_script(node, ctx, text);
+                          Here draw only body scripts
+                          */
+        } 
+        case HTML_TAG_SELECT: { return draw_tag_select(node, ctx, text); }
+        case HTML_TAG_STYLE: {
+            /* Does it make any sense that wo dosomething with this in ahre? */
+            return Ok;
+        } 
+        case HTML_TAG_TABLE: { return draw_tag_table(node, ctx, text); } 
+        case HTML_TAG_TITLE: { return draw_tag_title(node, ctx); } 
+        case HTML_TAG_TR: { return draw_tag_tr(node, ctx, text); }
+        case HTML_TAG_TT: { return draw_tag_code(node, ctx, text); }
+        case HTML_TAG_UL: { return draw_tag_ul(node, ctx, text); }
+        //TODO: implement all these tags, meanwhile we just add
+        // spaces when needed to separate from previous word
+        case HTML_TAG_TD: case HTML_TAG_TH: //TODO delete once table is implemented
+        case HTML_TAG_TIME:
+        case HTML_TAG_SAMP:
+        case HTML_TAG_SPAN:
+        case HTML_TAG_STRONG:
+        case HTML_TAG_VAR: { return draw_tag_separating_with_space(node, ctx, text); }
+        default: {
+            /* if (node->local_name >= HTML_TAG__LAST_ENTRY) */
+            /*     return err_fmt( */
+            /*         "error: node local name (TAG) greater than last entry: %lx\n", node->local_name */
+            /*     ); */
+            /* else TODO: "TAG 'NOT' IMPLEMENTED: %s", node->local_name */
+            return draw_iter_childs(node, ctx, text);
+        }
+    }
+}
+
+
+/*
+ * DrawRow == ArlOf(DrawTextBuf)
+ */
+
+#define T DrawTextBuf
+#define TClean draw_text_buf_clean
+#include <arl.h>
+typedef ArlOf(DrawTextBuf) DrawRow;
+
+#define draw_row_append(R,T) ((!arlfn(DrawTextBuf,append)(R,T)) ? "error: draw_row_append failure": Ok)
+
+/********************************/
+
+
+/*
+ * DrawTable == ArlOf(DrawRow)
+ */
+
+#define T DrawRow
+#define TClean arlfn(DrawTextBuf,clean)
+#include <arl.h>
+
+
+typedef ArlOf(DrawRow) DrawTable;
+#define draw_table_clean arlfn(DrawRow,clean)
+#define draw_table_append(T,R) ((!arlfn(DrawRow,append)(T,R)) ? "error: draw_table_append failure":Ok)
+static Err draw_table_get_coords(DrawTable t[_1_], Coordinates coord[_1_], DrawTextBuf* out[_1_]) {
+    DrawRow* r = arlfn(DrawRow,at)(t,coord->row);
+    if (!r) return err_internal("expecting row at index");
+    DrawTextBuf* cell = arlfn(DrawTextBuf,at)(r,coord->col);
+    if (!cell) return err_internal("expecting col at row index");
+    *out = cell; 
+    return Ok;
+}
+
+/********************************/
+
+
+typedef struct { size_t nrows, ncols; } CellDims;
+
+
+/*
+ * ArlOf(CellDims)
+ */
+#define T CellDims
+#include <arl.h>
+/********************************/
+
+
+typedef DrawTextBuf CellPart;
+/* This function does not clean buf since it does not owns it */
+static void cell_part_clean(DrawTextBuf c[_1_]) { arlfn(ModAt, clean)(&c->mods); }
+
+/*
+ * SplittedCell == ArlOf(CellPart) == ArlOf(DrawTextBuf)
+ */
+#define T CellPart
+#define TClean cell_part_clean
+#include <arl.h>
+typedef ArlOf(CellPart) SplittedCell;
+#define splitted_cell_append(C,T) ((!arlfn(CellPart,append)(C,T))?"error: arl append":Ok)
+#define splitted_cell_clean arlfn(CellPart,clean)
+
+/********************************/
+
+
+/*
+ * SplittedRow == ArlOf(SplittedCell)
+ */
+
+#define T SplittedCell
+#define TClean splitted_cell_clean
+#include <arl.h>
+typedef ArlOf(SplittedCell) SplittedRow;
+#define splitted_row_append_cell(C,T) ((!arlfn(SplittedCell,append)(C,T))?"error: arl append":Ok)
+#define splitted_row_clean arlfn(SplittedCell,clean)
+
+/********************************/
+
+
+/*
+ * SplittedTable == ArlOf(SplittedRow)
+ */
+
+#define T SplittedRow
+#define TClean arlfn(SplittedCell,clean)
+#include <arl.h>
+typedef ArlOf(SplittedRow) SplittedTable;
+
+
+#define splitted_table_clean arlfn(SplittedRow,clean)
+#define splitted_table_append_row(R,C) ((!arlfn(SplittedRow,append)(R,C))?"error: arl":Ok)
+
+/********************************/
+
+
+typedef struct  { size_t w,ix,splits; } ColWidth;
+#define T ColWidth
+#include <arl.h>
+static int colwidth_cmp(const void* a, const void* b) {
+#define splitted_col_width__(C) _Generic((C),\
+        ColWidth*: (C)->w / (1+(C)->splits), const ColWidth*: (C)->w / (1+(C)->splits))
+    const ColWidth* A = a;
+    const ColWidth* B = b;
+    return (splitted_col_width__(A) + (B)->splits) - (splitted_col_width__(B) + (A)->splits);
+}
+static int colwidth_cmp_ix(const void* a, const void* b) {
+    const ColWidth* A = a;
+    const ColWidth* B = b;
+    return A->ix - B->ix;
+}
+
+#define col_width__(C) _Generic((C),ColWidth*: ((C)->w / (1+(C)->splits)))
+static size_t compute_colspan_len(size_t ncol, size_t span, ArlOf(ColWidth) cwidths[_1_]) {
+    size_t res = 0;
+    size_t last_col = min_size_t(ncol + span, len__(cwidths));
+    for (size_t col = ncol; col < last_col; ++col) {
+        ColWidth* w = arlfn(ColWidth,at)(cwidths, col);
+        if (w) res += col_width__(w);
+    }
+    return res;
+}
+
+static size_t colspan_get_actual_length(ColSpan cs[_1_], Coordinates coord, ColWidth cw[_1_], ArlOf(ColWidth) cwidths[_1_]) {
+    unsigned span = colspan_get_interpreted(cs, coord);
+    switch (span) {
+        case 0 : return len__(cwidths);
+        case 1 : return col_width__(cw);
+        default: return compute_colspan_len(coord.col, span, cwidths);
+    }
+} 
+#undef col_width__
+
+
+/*
+ * Computes the maximum line inside each column and assigns the column that
+ * width. If the cell spans other columns, it is ignored and computed in a
+ * posterior pass.
+ */
+#define nrow__(T,R) (R)-arlfn(DrawRow,begin)(T)
+#define ncol__(R,C) (C)-arlfn(DrawTextBuf,begin)(R)
+static Err
+get_unsplitted_columns_widths(DrawTable table[_1_], ArlOf(ColWidth) out[_1_]) {
+#define mk_coordinates(R,C) (Coordinates){.row=(R),.col=(C)}
+    foreach__(DrawRow, table, row) {
+        foreach__(DrawTextBuf, row, cell) {
+            size_t ncol = ncol__(row, cell);
+            if (len__(out) < ncol) return err_internal("expecting col width calculated already");
+
+            /* get the col, or append it if it wasnt already appended */
+            ColWidth* cw = arlfn(ColWidth,at)(out,ncol);
+            if (!cw) cw = arlfn(ColWidth,append)(out,&(ColWidth){.ix=ncol});
+            if (!cw) return "arl append failure";
+            if (cw->ix != ncol) return err_internal("expecting index match ncol here");
+
+            StrView buf = strview_from_draw_text_buf(cell);
+            strview_trim_left_utf8_space(&buf);
+            for (;buf.len;) {
+                StrView line = strview_split_line(&buf);
+                strview_trim_left_utf8_space(&line);
+                size_t utf8len = strview_count_utf8(line);
+                if (utf8len > cw->w) {
+                    cw->w  = utf8len;
+                    cw->ix = ncol;
+                }
+            }
+        }
+    }
+    return Ok;
+#undef coordinates_for_cell
+}
+
+#define ERR_FIT_MSG__ "could not fit table in screen at " __FILE__ ":"
+static char err_could_not_fit_the_table__[ sizeof(ERR_FIT_MSG__) +  /*linenum*/ INT_TO_STR_BUFSZ + 2 ] = {
+    ERR_FIT_MSG__
+};
+
+static Err err_could_not_fit_the_table_impl(int linenum) {
+    size_t len;
+    try(int_to_str(linenum, err_could_not_fit_the_table__ + lit_len__(ERR_FIT_MSG__), INT_TO_STR_BUFSZ, &len));
+    err_could_not_fit_the_table__[lit_len__(ERR_FIT_MSG__) + len] = '\0';
+    return err_could_not_fit_the_table__;
+}
+
+#define err_could_not_fit_the_table err_could_not_fit_the_table_impl(__LINE__)
+
+
+#define ERR_TAG_MSG__ "unexpected tag in table: 0x" 
+#define TAG_STR_MAX_LEN sizeof(HtmlTag) 
+static char err_unexpected_tag_in_table[ sizeof(ERR_TAG_MSG__) + TAG_STR_MAX_LEN ] = {  ERR_TAG_MSG__ };
+static Err err_from_unexpected_tag_in_table(HtmlTag tag) {
+    size_t len;
+    try(int_to_str(tag, err_unexpected_tag_in_table + lit_len__(ERR_TAG_MSG__), TAG_STR_MAX_LEN, &len));
+    err_unexpected_tag_in_table[lit_len__(ERR_TAG_MSG__) + len] = '\0';
+    return err_unexpected_tag_in_table;
+}
+
+
+static Err
+split_cell(size_t length, DrawTextBuf cell[_1_]) {
+    if (!length) return err_internal("not expecting zero length cell");
+    StrView buf = strview_from_draw_text_buf(cell);
+    strview_trim_left_utf8_space(&buf);
+    while (strview_count_utf8(buf) > length) {
+
+        const char* nl = memchr(buf.items, '\n', buf.len);
+        if (nl && cast__(size_t)(nl - buf.items) <= length) {
+            strview_split_line(&buf);
+            continue;
+        }
+
+        char* p = (char*)buf.items + size_t_min(buf.len, length - 1);
+        while (p > buf.items && is_visible(*p)) p--;
+        if (p < buf.items) return err_internal("why?");
+        if (p == buf.items) {
+            if (buf.len <=3) return err_could_not_fit_the_table;
+            if (buf.len < length) return err_internal("this was not expected");
+            p = (char*)buf.items + length - 1;
+        }
+        *p = '\n';
+        strview_split_line(&buf);
+    }
+    return Ok;
+}
+
+
+/*
+ * Splits each column's cell
+ */
+static Err
+split_column(DrawTable table[_1_], ColWidth cw[_1_], ArlOf(ColWidth) cwidths[_1_], ColSpan colspan[_1_]) {
+    foreach__(DrawRow, table, row) {
+        size_t ncol = cw->ix;
+        size_t nrow = nrow__(table,row);
+        DrawTextBuf* cell = arlfn(DrawTextBuf,at)(row, cw->ix);
+        if (!cell || !cell->buf.len) continue;
+        size_t length  = colspan_get_actual_length(colspan, (Coordinates){.row=nrow, .col=ncol}, cw, cwidths);
+        try(split_cell(length, cell));
+    }
+    return Ok;
+}
+#undef ncol__
+#undef nrow__
+
+
+/*
+ * Resize the column widths so that the column fits the screen and "split" the cells
+ * accordinly, ie, insert newlines (not *insert* but replace spaces by them).
+ */ 
+static Err
+split_columns(DrawTable table[_1_], size_t exceeding_screen_cols, ColSpan colspan[_1_], ArlOf(ColWidth) ws[_1_]) {
+    static size_t MIN_COL_WIDTH = 3;
+
+    if (!len__(ws)) return Ok;
+    do {
+        ColWidth* max_cw = arlfn(ColWidth,begin)(ws);
+        if (!max_cw) return err_internal("expecting elements in arl");
+        for(ColWidth* it = max_cw + 1; it < arlfn(ColWidth,end)(ws) ; ++it)
+            if (colwidth_cmp(max_cw, it) < 0) max_cw = it;
+
+
+        size_t prev_col_width = splitted_col_width__(max_cw);
+        max_cw->splits        += 1;
+        if (!(max_cw->w / max_cw->splits)) return err_could_not_fit_the_table;
+        size_t width          = splitted_col_width__(max_cw);
+        if (width <= MIN_COL_WIDTH) return err_could_not_fit_the_table;
+        size_t reduction      = prev_col_width - width;
+
+        if (reduction <= exceeding_screen_cols) exceeding_screen_cols -= reduction;
+        else {
+            max_cw->w      = prev_col_width - exceeding_screen_cols;
+            max_cw->splits = 0;
+            if (max_cw->w == 0) return err_internal(":(");
+            break;
+        }
+    } while(exceeding_screen_cols);
+
+    qsort(items__(ws), len__(ws), sizeof(*ws->items), colwidth_cmp_ix);
+    foreach__(ColWidth,ws,split_it) try(split_column(table, split_it, ws, colspan));
+    return Ok;
+}
+
+
+static Err
+split_colspan_columns(DrawTable table[_1_], ArlOf(ColWidth) colwidths[_1_], ColSpan colspan[_1_]) {
+    foreach__(Coordinates, colspan_lst(colspan), coord) {
+        unsigned* v = colspan_get(colspan, coord);
+        if (!v) return err_internal("expecting colspan for coord");
+        if (*v < 2) return err_internal("expecting colspan gt 2");
+        size_t length = compute_colspan_len(coord->col, *v, colwidths);
+
+        if (!length) return Ok;
+
+        DrawRow* row  = arlfn(DrawRow,at)(table, coord->row);
+        if (!row) return err_internal("arl failure: empty at");
+        DrawTextBuf* cell = arlfn(DrawTextBuf,at)(row, coord->col);
+        if (!cell) return err_internal("arl failure: empty at");
+
+        try(split_cell(length, cell));
+    }
+
+    return Ok;
+}
+
+
+static Err
+expand_columns_for_colspans(DrawTable table[_1_], size_t screen_width, ColSpan colspan[_1_], ArlOf(size_t) cols_hlen[_1_]) {
+    Err err = Ok;
+    if (!len__(cols_hlen)) return Ok;//TODO1 is this possible and acceptable?
+    size_t col_count   = len__(cols_hlen);
+    size_t borders_len = col_count - 1;
+    ArlOf(size_t) col_increases = (ArlOf(size_t)){0};
+    if (arlfn(size_t,init_reserve)(&col_increases, col_count)) return err_internal("arl reserve failure");
+    col_increases.len = col_increases.capacity;
+
+    size_t totalwidth = 0;
+    foreach__(size_t,cols_hlen,chl) totalwidth += *chl;
+    if (totalwidth + borders_len > screen_width) { err=err_could_not_fit_the_table; goto Clean; }
+    size_t remaining_width = screen_width - (totalwidth + borders_len);
+
+    foreach__(Coordinates, colspan_lst(colspan), coord) {
+        unsigned* span = colspan_get(colspan,coord);
+        if (!span || *span < 2) { err=err_internal("ColSpan precondition failure"); goto Clean; }
+
+        size_t* chl = arlfn(size_t,at)(cols_hlen,coord->col);
+        if (!chl) { err=err_internal("expecting column in arl"); goto Clean; }
+
+
+        DrawTextBuf* cell;
+        try( draw_table_get_coords(table, coord, &cell));
+        size_t cell_hlen = draw_text_buf_hlen(cell);
+
+        if (cell_hlen <= *chl) continue;
+
+        size_t spanlen = 0;
+        size_t* it = arlfn(size_t,at)(cols_hlen,coord->col);
+        size_t* end   = arlfn(size_t,at)(cols_hlen,coord->col + *span);
+        if (!it) { err=err_internal("expecting col at index"); goto Clean; }
+        if (!end) end = arlfn(size_t,end)(cols_hlen);
+        for (; it < end; ++it) spanlen += *it;
+
+        /* column horizontal len is not zero and text fits the span */
+        if (cell_hlen <= spanlen) continue;
+
+        size_t incr = cell_hlen - spanlen;
+        if (remaining_width < incr) { err=err_could_not_fit_the_table; goto Clean; }
+        remaining_width -= incr;
+        *chl            += incr;
+    }
+Clean:
+    arlfn(size_t,clean)(&col_increases);
+    return err;
+}
+
+
+static Err
+fit_table_to_screen(DrawTable table[_1_], size_t screen_width, ColSpan colspan[_1_]) {
+    Err err                 = Ok;
+    ArlOf(ColWidth) colwidths = (ArlOf(ColWidth)){0};
+
+    tryjmp(err, Clean, get_unsplitted_columns_widths(table, &colwidths));
+    size_t totalwidth  = 0;
+
+    foreach__(ColWidth, &colwidths, w) totalwidth += w->w + 1;
+
+    if (totalwidth > screen_width) {
+        size_t exceeding_screen_cols = totalwidth - screen_width;
+        tryjmp(err, Clean, split_columns(table, exceeding_screen_cols, colspan, &colwidths));
+    }
+
+    err = split_colspan_columns(table, &colwidths, colspan);
+Clean:
+    arlfn(ColWidth,clean)(&colwidths);
+    return err;
+}
+
+
+static Err
+draw_text_buf_split(DrawTextBuf b[_1_], SplittedCell textviews[_1_]) {
+    TextBufMods partmods = (TextBufMods){0};
+    StrView     buf      = strview_from_draw_text_buf(b);
+    size_t      offset   = strview_trim_left_utf8_space(&buf);
+    ModAt*      modbeg   = arlfn(ModAt,begin)(draw_text_buf_mods(b));
+    ModAt*      modend   = arlfn(ModAt,end)(draw_text_buf_mods(b));
+    ModAt*      mod      = modbeg;
+    Err         err      = Ok;
+
+    if (!buf.len) return Ok;
+
+    for (;buf.len;) {
+        StrView line = strview_split_line(&buf);
+
+        if (mod > modbeg) {
+            ModAt* prevmod = mod - 1;
+            for(; prevmod > modbeg && prevmod->tmod != text_mod_reset; --prevmod)
+                ;
+
+            for(;prevmod <= mod - 1; ++prevmod)
+                tryjmp(err, ErrClean, textmod_append(&partmods, 0, prevmod->tmod));
+        }
+        
+        for (;mod && mod < modend && mod->offset <= offset + line.len; ++mod) 
+            tryjmp(err, ErrClean, textmod_append_left_displaced(&partmods, *mod, offset));
+
+        tryjmp(err, ErrClean, textmod_append(&partmods, line.len, text_mod_reset));
+
+        /* not setting capacity since it is a view, but it is not tidy, maybe i'd change it*/
+        CellPart part = (DrawTextBuf){ .buf={.items=(char*)line.items, .len=line.len}, .mods=partmods }; 
+
+        tryjmp(err,ErrClean,splitted_cell_append(textviews, &part));
+        partmods = (TextBufMods){0};
+
+        offset += line.len + 1;
+    }
+
+    if (mod && mod < modend) { /* apply mods to last part if some are remainig */
+        CellPart* last_part = arlfn(CellPart,back)(textviews);
+        if (last_part)
+            for (;mod && mod < modend; ++mod)
+                tryjmp(err, ErrClean, textmod_append_left_displaced(&last_part->mods, *mod, offset));
+    }
+
+    /* Checks: */
+    if ( offset - 1 != strview_from_draw_text_buf(b).len) 
+    { err="error: splitting cell did not keet the offset"; goto ErrClean; }
+    if ( mod != modend) { err="error: splitting cell did not apply all mods"; goto ErrClean; }
+
+    return Ok; 
+
+ErrClean:
+    arlfn(ModAt,clean)(&partmods);
+    return err;
+}
+
+static size_t splitted_celL_vertical_len(SplittedCell c[_1_]) { return len__(c); }
+static size_t cell_part_horizontal_len(CellPart c[_1_]) {
+    StrView part = sv(c->buf);
+    strview_trim_left_utf8_space(&part);
+    return strview_count_utf8(part);
+
+}
+
+static Err splitted_table_row_vertical_lengths(SplittedTable t[_1_], ArlOf(size_t) rows_vlengths[_1_]) {
+    SplittedRow* table_beg = arlfn(SplittedRow,begin)(t);
+    foreach__(SplittedRow, t, row) {
+        size_t nrow = row - table_beg;
+
+        if (len__(rows_vlengths) < nrow) return "error: missing row lenght";
+        if (len__(rows_vlengths) == nrow && !arlfn(size_t,append)(rows_vlengths, &((size_t){0})))
+            return "error: arl append failure";
+
+        size_t* maxlen = arlfn(size_t,at)(rows_vlengths, nrow);
+        if (!maxlen) return "error: could noit compute vrow vertical lengths";
+
+        foreach__(SplittedCell, row, cell)
+            if (splitted_celL_vertical_len(cell) > *maxlen) *maxlen = splitted_celL_vertical_len(cell);
+    }
+    return Ok;
+}
+
+
+static Err
+splitted_table_col_horizonal_lengths(SplittedTable t[_1_], ColSpan colspan[_1_], ArlOf(size_t) cols_hlengths[_1_]) {
+
+    foreach__(SplittedRow, t, row) {
+        SplittedCell* row_beg = arlfn(SplittedCell,begin)(row);
+        size_t nrow = row - arlfn(SplittedRow,begin)(t);
+
+        foreach__(SplittedCell, row, cell) {
+            size_t ncol = cell - row_beg;
+            if (len__(cols_hlengths) < ncol) return err_internal("missing row length");
+            if (len__(cols_hlengths) == ncol
+            && !arlfn(size_t,append)(cols_hlengths, &((size_t){0})))
+                return err_internal("arl append failure");
+
+            if (colspan_get_interpreted(colspan, (Coordinates){.row=nrow,.col=ncol}) > 1) { continue; }
+
+            size_t* maxlen = arlfn(size_t,at)(cols_hlengths, ncol);
+
+            foreach__(CellPart,cell,cellpart) {
+                if (cell_part_horizontal_len(cellpart) > *maxlen) *maxlen = cell_part_horizontal_len(cellpart);
+            }
+        }
+    }
+    return Ok;
+}
+
+
+static unsigned parse_colspan(DomNode n) {
+    StrView colspan = dom_node_attr_value(n, svl("colspan"));
+    long    res     = 0;
+    Str     buf     = (Str){0};
+
+    if (colspan.len && !str_append_z(&buf, colspan) && !parse_l(buf.items, &res))
+        res = 0;
+    str_clean(&buf);
+    return (res < 0 || res > UINT_MAX) ? 0 : res;
+}
+
+static Err draw_tag_td(DomNode node, DrawCtx ctx[_1_], DrawRow r[_1_]) {
+    Err err = Ok;
+    DrawTextBuf cell = (DrawTextBuf){0};
+
+    for (DomNode txt = dom_node_first_child(node); !isnull(txt); txt = dom_node_next(txt)) {
+        tryjmp(err, Clean, draw_rec(txt, ctx, &cell));
+    }
+    tryjmp(err, Clean, draw_text_buf_trim_left(&cell));
+    draw_text_buf_trim_right(&cell);
+    tryjmp(err, Clean, draw_row_append(r, &cell));
+    cell = (DrawTextBuf){0};
+
+Clean:
+    draw_text_buf_clean(&cell);
+    return err;
+}
+
+/*
+ * reads row table from dom.
+ * rv:
+ *   the cell(s), appended to tis row (it'd be more than only if colspan > 1)
+ *   the colspan entry in the colspan map
+ */
+static Err
+dom_read_table_row(DomNode n, DrawCtx ctx[_1_], DrawRow r[_1_], ColSpan colspan[_1_], size_t nrow) {
+    if (!dom_node_has_tag(n, HTML_TAG_TR))
+        return err_from_unexpected_tag_in_table(dom_node_tag(n));
+
+    for (DomNode it = dom_node_first_elem_child(n); !isnull(it); it = dom_node_next_elem(it)) {
+        if (!dom_node_has_type(it, DOM_NODE_TYPE_ELEMENT)) continue; //TODO0 log this?
+        switch(dom_node_tag(it)) {
+            case HTML_TAG_TH:
+            case HTML_TAG_TD: {
+                size_t   ncol = len__(r); /* cell is about to be appended */
+                unsigned span = parse_colspan(it);
+                if (span > 1) try(colspan_set(colspan, (Coordinates){.row=nrow,.col=ncol}, span));
+
+                try(draw_tag_td(it, ctx, r));
+
+                for (size_t i = 1; i < span; ++i) {
+                    try(colspan_set(colspan, (Coordinates){.row=nrow, .col=ncol + i}, 0));
+                    try(draw_row_append(r, &(DrawTextBuf){0}));
+                }
+                break;
+            }
+            default: return "error: expecting either th or td";
+        }
+    }
+
+    return Ok;
+}
+
+#define _WHITE_SPACE_ "                                                                                   "\
+    "                                                                                                     "\
+    "                                                                                                     "\
+    "                                                                                                     "
+
+#define whitespace(N) _Generic((N),size_t: sv(_WHITE_SPACE_,size_t_min(N,lit_len__(_WHITE_SPACE_))))
+
+/*
+ * We "split" the columns so that we can prserve the mods (color, etc.) between the lines
+ * in which they are split.
+ */
+static Err
+draw_table_to_splitted_view(DrawTable table[_1_], SplittedTable table_view[_1_]) {
+    Err          err           = Ok;
+    SplittedCell splitted_cell = (SplittedCell){0};
+    SplittedRow  splitted_row  = (SplittedRow){0};
+
+    foreach__(DrawRow, table, row) {
+        foreach__(DrawTextBuf, row, cell) {
+            splitted_cell = (SplittedCell){0};
+            tryjmp(err, ErrClean, draw_text_buf_split(cell, &splitted_cell));
+            tryjmp(err, ErrClean, splitted_row_append_cell(&splitted_row, &splitted_cell));
+            splitted_cell = (SplittedCell){0};
+        }
+
+        tryjmp(err, ErrClean, splitted_table_append_row(table_view, &splitted_row));
+        splitted_row  = (SplittedRow){0};
+    }
+    return Ok;
+ErrClean:
+    splitted_cell_clean(&splitted_cell);
+    splitted_row_clean(&splitted_row);
+    return err;
+}
+
+
+static Err
+get_cell_horizontal_len(size_t ncol, size_t span, ArlOf(size_t) cols_hlengths[_1_], size_t out[_1_]) {
+    *out = 0;
+    size_t last_col = min_size_t(ncol + span, len__(cols_hlengths));
+    for (size_t col = ncol; col < last_col; ++col) {
+        size_t* clen = arlfn(size_t,at)(cols_hlengths, col);
+        if (!clen) return err_internal("expecting value at index");
+        *out += *clen;
+    }
+    return Ok;
+}
+
+
+static size_t
+is_last_column(size_t ncols, SplittedCell cell[_1_], SplittedRow row[_1_], size_t span) {
+    return cast__(size_t)(cell - arlfn(SplittedCell,begin)(row)) + span >= ncols;
+}
+
+static Err
+draw_splitted_table(
+    SplittedTable splitted_table[_1_],
+    ArlOf(size_t) rows_vlengths[_1_],
+    ArlOf(size_t) cols_hlengths[_1_],
+    ColSpan       colspan[_1_],
+    DrawTextBuf   text[_1_]
+) {
+    foreach__(SplittedRow, splitted_table, row) {
+        size_t nrow = row - arlfn(SplittedRow,begin)(splitted_table);
+        size_t* row_vertical_len = arlfn(size_t,at)(rows_vlengths,nrow);
+        if (!row_vertical_len) return err_internal("unexpected empty arl");
+
+        size_t subrow = 0;
+        for (; subrow < *row_vertical_len; ++subrow) {
+
+            foreach__(SplittedCell, row, cell) {
+                size_t ncol = cell - arlfn(SplittedCell,begin)(row);
+
+                unsigned span_value = colspan_get_interpreted(colspan, (Coordinates){.row=nrow,.col=ncol});
+                if (!span_value) continue;
+
+                size_t col_hlen;
+                try(get_cell_horizontal_len(ncol, span_value, cols_hlengths, &col_hlen));
+
+                CellPart* part = arlfn(CellPart,at)(cell, subrow);
+                size_t cell_part_hlen = 0;
+                if (part && strview_from_draw_text_buf(part).len) {
+                    try(draw_ctx_append_sub_text(text, part));
+                    cell_part_hlen = cell_part_horizontal_len(part);
+                }
+
+                if (col_hlen < cell_part_hlen) return err_internal("column length computation failed");
+                bool   is_last_col = is_last_column(len__(cols_hlengths), cell, row, span_value);
+                size_t spaces      = (span_value - is_last_col) + col_hlen - cell_part_hlen;
+                if (spaces)
+                    try(draw_text_buf_append(text, whitespace(spaces)));
+            }
+            try(draw_text_buf_append(text, svl("\n")));
+        }
+    }
+    return Ok;
+}
+
+
+static Err _expecting_err_could_not_fit_the_table(Err expr, StrView caption, DrawCtx ctx[_1_]) {
+    if (expr == err_could_not_fit_the_table__) { 
+        StrView url = draw_ctx_url_strview(ctx);
+        if (url.len) {
+            msg__(ctx, svl("drawing "));
+            msg__(ctx, url);
+            msg__(ctx, svl(": "));
+        }
+        msg__(ctx, sv(expr));
+        if (caption.len) msg_ln__(ctx, caption);
+        else  msg_ln__(ctx, svl(": <TABLE WITH NO CAPTION>"));
+        return Ok;
+    } else return expr;
+}
+
+
+static Err
+draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+    Err           err                     = Ok;
+    DrawTextBuf*  caption                 = &(DrawTextBuf){0};
+    DrawTable     table                   = (DrawTable){0};
+    DomNode       it                      = dom_skip_text(dom_node_first_child(node));
+    SplittedTable splitted_table          = (SplittedTable){0};
+    ArlOf(size_t) rows_vlengths   = (ArlOf(size_t)){0};
+    ArlOf(size_t) cols_hlengths = (ArlOf(size_t)){0};
+    ColSpan       colspan                 = (ColSpan){0};
+    DrawRow       r                       = (DrawRow){0};
+    size_t        screen_width            = *session_ncols(draw_ctx_session(ctx));
+
+    if (isnull(it)) return Ok;
+
+    try(colspan_init(&colspan));
+
+    /* If included, the <caption> element must be the first child of its parent <table> element. */
+    if (dom_node_has_tag(it, HTML_TAG_CAPTION)) {
+        tryjmp(err, Clean, draw_rec_tag(it, ctx, caption));
+        it = dom_skip_text(dom_node_next(it));
+    }
+
+
+    for (; !isnull(it); it = dom_node_next_elem(it)) {
+        if (!dom_node_has_type(it, DOM_NODE_TYPE_ELEMENT)) continue; //TODO0 log this?
+        switch(dom_node_tag(it)) {
+            case HTML_TAG_THEAD: /*TODO1: differentiate head, body and foot */
+            case HTML_TAG_TBODY:
+            case HTML_TAG_TFOOT:
+            {
+                for (DomNode th_it = dom_node_first_elem_child(it); !isnull(th_it); th_it = dom_node_next_elem(th_it)) {
+                    size_t  nrow = len__(&table);
+                    tryjmp(err, Clean,  dom_read_table_row(th_it, ctx, &r, &colspan, nrow));
+                    tryjmp(err, Clean,  draw_table_append(&table, &r));
+                    r = (DrawRow){0};
+                }
+            }
+            break;
+            case HTML_TAG_COLGROUP: continue;
+            default: { err = err_from_unexpected_tag_in_table(dom_node_tag(it)); goto Clean; }
+        }
+    }
+
+    tryjmp(err, Clean, _expecting_err_could_not_fit_the_table(
+        fit_table_to_screen(&table, screen_width, &colspan),
+        strview_from_draw_text_buf(caption),
+        ctx
+    ));
+
+
+    tryjmp(err, Clean, draw_table_to_splitted_view(&table, &splitted_table));
+    tryjmp(err, Clean, splitted_table_row_vertical_lengths(&splitted_table, &rows_vlengths));
+    tryjmp(err, Clean, splitted_table_col_horizonal_lengths(&splitted_table, &colspan, &cols_hlengths));
+    tryjmp(err, Clean, _expecting_err_could_not_fit_the_table(
+        expand_columns_for_colspans(&table, screen_width, &colspan, &cols_hlengths),
+        strview_from_draw_text_buf(caption),
+        ctx
+    ));
+
+    draw_text_buf_append(caption, svl("\n"));
+    draw_ctx_append_sub_text(text, caption);
+
+    if (!ends_with_newline(strview_from_draw_text_buf(text))) draw_text_buf_append(text, svl("\n"));
+    tryjmp(err, Clean,
+        draw_splitted_table(&splitted_table, &rows_vlengths, &cols_hlengths, &colspan, text));
+Clean:
+    arlfn(DrawTextBuf,clean)(&r);
+    colspan_clean(&colspan);
+    arlfn(size_t,clean)(&cols_hlengths);
+    arlfn(size_t,clean)(&rows_vlengths);
+    splitted_table_clean(&splitted_table);
+    draw_table_clean(&table);
+    draw_text_buf_clean(caption);
+    return err;
+}
+
+
+static Err
+draw_tag_table (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+    Err err = draw_tag_table_impl(node, ctx, text);
+    if (err != err_unexpected_tag_in_table) return err;
+    try(msg_ln__(get_cmd_out_(ctx), err));
+    return draw_iter_childs(node, ctx, text);
+}
+
+
+Err
 htmldoc_reparse_source(HtmlDoc d[_1_]) {
     Dom dom = htmldoc_dom(d);
     dom_reset(dom);
@@ -1137,7 +1966,7 @@ htmldoc_reparse_source(HtmlDoc d[_1_]) {
 
 Err
 htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[_1_]) {
-    if (!htmldoc_http_content_type_text_or_undef(d)) return Ok;
+    if (!htmldoc_content_is_html(d)) return Ok;
     const char* utf8s;
     size_t utf8slen;
     if (!htmldoc_http_charset_is_utf8(d)) {
@@ -1164,13 +1993,13 @@ htmldoc_console(HtmlDoc d[_1_], Session* s, const char* line, CmdOut* out) {
 static Err
 jse_eval_doc_scripts(Session* s, HtmlDoc d[_1_], CmdOut* out) {
 
-    foreach__(Str, it, htmldoc_head_scripts(d)) {
+    foreach__(Str, htmldoc_head_scripts(d), it) {
         if (len__(it)) {
             Err e = jse_eval(htmldoc_js(d), s, sv(it), out);
             if (e) msg__(out, e);
         }
     }
-    foreach__(Str, it, htmldoc_body_scripts(d)) {
+    foreach__(Str, htmldoc_body_scripts(d), it) {
         if (len__(it)) {
             Err e = jse_eval(htmldoc_js(d), s, sv(it), out);
             if (e) msg__(out, e);
@@ -1275,12 +2104,17 @@ Err curl_lexbor_fetch_document(
     UrlClient         url_client[_1_],
     HtmlDoc           htmldoc[_1_],
     CmdOut            out[_1_],
-    FetchHistoryEntry histentry[_1_]
+    FetchHistoryEntry histentry[_1_],
+    CurlPtr           easy
 );
 
 Err
 htmldoc_fetch(HtmlDoc htmldoc[_1_], UrlClient url_client[_1_], CmdOut cmd_out[_1_], FetchHistoryEntry he[_1_]) {
-    return curl_lexbor_fetch_document(url_client, htmldoc, cmd_out, he);
+    CurlPtr easy;
+    try(w_curl_easy_init(&easy));
+    Err e = curl_lexbor_fetch_document(url_client, htmldoc, cmd_out, he, easy);
+    curl_easy_cleanup(easy);
+    return e;
 }
 
 
@@ -1320,7 +2154,7 @@ htmldoc_title_or_url(HtmlDoc d[_1_], char* url, Str title[_1_]) {
 void
 textmod_trim_left(TextBufMods mods[_1_], size_t n) {
     if (n && len__(mods)) {
-        foreach__(ModAt,it,mods) {
+        foreach__(ModAt,mods,it) {
             if (it->offset < n) it->offset = 0;
             else it->offset -= n;
         }
@@ -1349,11 +2183,20 @@ htmldoc_http_charset_is_utf8(HtmlDoc d[_1_]) {
 
 bool
 htmldoc_http_content_type_text_or_undef(HtmlDoc d[_1_]) {
-#define TXT_ "text/"
-    Str* content_type = htmldoc_http_content_type(d);
-    const size_t len = lit_len__(TXT_);
-    const size_t ctlen = len__(content_type);
-    return !ctlen || (ctlen > len && !strncmp(items__(content_type), TXT_, len));
-#undef TXT_
+#define TEXT_HTML__ "text/html"
+    StrView content_type = sv(htmldoc_http_content_type(d));
+    return !content_type.len || str_eq_case(content_type, svl(TEXT_HTML__));
+#undef TEXT_HTML__
 }
 
+bool htmldoc_content_is_html(HtmlDoc d[_1_]) {
+    Request* r = htmldoc_request(d);
+    if (!request_is_local(r)) return htmldoc_http_content_type_text_or_undef(d);
+
+    char*  url  = items__(request_urlstr(r));
+    size_t len  = len__(request_urlstr(r));
+    if (!len || !url) return false;
+    size_t dot = len - 1;
+    for (;dot; --dot) if (url[dot] == '.') break;
+    return url[dot] == '.' && str_eq_case(svl(".html"), sv(url + dot, len - dot));
+}

@@ -8,6 +8,10 @@ run_tests:
 	$(MAKE) -C utests run_tests
 
 
+debug:
+	$(MAKE) -C src -f Makefile.debug
+
+
 tags: $(wildcard $(AHRE_SRCDIR)/*.c) clean-tags
 	ctags -R \
 		--exclude=.git \

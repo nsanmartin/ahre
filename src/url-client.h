@@ -26,22 +26,22 @@ typedef struct CmdOut CmdOut;
 
 #define URL_CLIENT_FLAG_VERBOSE 0x1
 typedef struct UrlClient {
-    CURL*     curl;
-    CURLM*    curlm;
-    char      errbuf[CURL_ERROR_SIZE];
-    Str       postdata;
-
-    StrView   cookies_fname;
-    StrView   user_agent;
-    unsigned  flags;
+    CURLM*      curlm;
+    char        errbuf[CURL_ERROR_SIZE];
+    Str         postdata;
+    StrView     cookies_fname;
+    StrView     user_agent;
+    unsigned    flags;
 } UrlClient;
 
-static inline CURL* url_client_curl(UrlClient url_client[_1_]) { return url_client->curl; }
 static inline CURLM* url_client_multi(UrlClient url_client[_1_]) { return url_client->curlm; }
+static inline char* url_client_errbuf(UrlClient url_client[_1_]) { return url_client->errbuf; }
 
 static inline Str* url_client_postdata(UrlClient uc[_1_]) { return &uc->postdata; }
 
-static inline char* url_client_cookies_fname(UrlClient uc[_1_]) { return (char*)uc->cookies_fname.items; }
+static inline char* url_client_cookies_fname(UrlClient uc[_1_]) {
+    return (char*)(uc->cookies_fname.len ? uc->cookies_fname.items : NULL);
+}
 static inline char* url_client_user_agent(UrlClient uc[_1_]) { return (char*)uc->user_agent.items; }
 static inline bool url_client_verbose(UrlClient uc[_1_]) { return uc->flags & URL_CLIENT_FLAG_VERBOSE; }
 
@@ -56,22 +56,17 @@ Err url_client_init(
 /* dtor */
 
 
-/* curl easy escape */
-static inline char* url_client_escape_url(UrlClient url_client[_1_], const char* u, int len) {
-    return curl_easy_escape(url_client->curl, u, len);
-}
 
 static inline void url_client_cleanup(UrlClient* url_client) {
-    curl_multi_cleanup(url_client->curlm);
-    curl_easy_cleanup(url_client->curl);
+    if (url_client->curlm) curl_multi_cleanup(url_client->curlm);
+    url_client->curlm = NULL;
     str_clean(url_client_postdata(url_client));
 }
 
 typedef struct Session Session;
 static inline void url_client_curl_free_cstr(char* s) { w_curl_free(s); }
 Err url_client_print_cookies(Session* s, UrlClient uc[_1_], CmdOut* out);
-Err url_client_reset(UrlClient url_client[_1_]);
-Err url_client_set_basic_options(UrlClient url_client[_1_]);
+
 
 Err url_client_multi_add_handles( 
     UrlClient        uc[_1_],
@@ -95,4 +90,5 @@ Err w_curl_multi_add(
     ArlOf(CurlUrlPtr) curlus[_1_]
 );
 
+Err url_client_set_basic_options_to_handle(UrlClient uc[_1_], CurlPtr handle);
 #endif

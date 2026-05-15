@@ -1,0 +1,8 @@
+v0.2.4 (15 May 2026)
+
+	Changes:
+	* draw : "Fair" table rendering implementationg (rowspan missing).
+	* draw : Consider unicode spaces (not only ascii space) when drawing.
+	* refa : Separate url and request modules.
+	* test : Add error simulation for manual testing.
+	* ui   : Implement global regex searh (for ascii).

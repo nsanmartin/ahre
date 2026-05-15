@@ -3,6 +3,7 @@
 #include "draw.h" 
 #include "bookmark.h"
 #include "session.h"
+#include "generic.h"
 
 static Err _bm_to_source_rec_tag_(DomNode node, Str out[_1_]);
 static Err _bm_to_source_append_text_(DomNode node, Str out[_1_]);
@@ -18,20 +19,18 @@ Err get_bookmarks_doc(
     CmdOut      cmd_out[_1_],
     HtmlDoc     htmldoc_out[_1_]
 ) {
+    Err  err    = Ok;
     Str* bm_url = &(Str){0};
-    Err err = str_append(bm_url, svl("file://"));
-    try(err);
-    try_or_jump(err, Clean_Bm_Url, str_append(bm_url, bm_path));
-    try_or_jump(err, Clean_Bm_Url,
-        htmldoc_init_bookmark_move_urlstr(htmldoc_out, bm_url));
+
+    try( str_append_z(bm_url, svl("file://")));
+    tryjmp(err, Clean, str_append_z(bm_url, bm_path));
+    tryjmp(err, Clean, htmldoc_init_bookmark_move_urlstr(htmldoc_out, bm_url));
     FetchHistoryEntry e = (FetchHistoryEntry){0};
     err = _htmldoc_fetch_bookmark_(htmldoc_out, url_client, cmd_out, &e);
     fetch_history_entry_clean(&e);
-    if (err) {
-        htmldoc_cleanup(htmldoc_out);
-Clean_Bm_Url:
-        str_clean(bm_url);
-    }
+    if (err) htmldoc_cleanup(htmldoc_out);
+Clean:
+    str_clean(bm_url);
     return err;
 }
 
@@ -191,7 +190,7 @@ bookmark_mk_anchor (Dom dom, char* href, Str text[_1_], DomElem out[_1_]) {
     try(dom_elem_set_attr(*out, svl("href"), sv(href, strlen(href))));
     DomText dom_text;
     Err err = Ok;
-    try_or_jump(err, Clean_Elem, dom_text_init(&dom_text, dom, sv(text)));
+    tryjmp(err, Clean_Elem, dom_text_init(&dom_text, dom, sv(text)));
     if (isnull(dom_text)) { err = "error: lxb text create failure"; goto Clean_Elem; }
 
     dom_node_insert_child((*out), dom_text);
@@ -384,7 +383,7 @@ bookmark_add_to_section(Session s[_1_], const char* line, UrlClient url_client[_
     HtmlDoc bm;
     Str bm_path = (Str){0};
     try(resolve_bookmarks_file(items__(session_bookmarks_fname(s)), &bm_path));
-    try_or_jump(err, Fail_Clean_Bm,
+    tryjmp(err, Fail_Clean_Bm,
             get_bookmarks_doc(url_client, sv(&bm_path), cmd_out,  &bm));
 
     char* url;

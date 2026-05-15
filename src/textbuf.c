@@ -80,7 +80,7 @@ _insert_missing_newlines_(TextBuf tb[_1_], size_t maxlen, ArlOf(size_t) insertio
     Str* buf = &(BufOf(char)){0};
     while (textbuf_get_line(tb, n++, &line)) {
         Err err;
-        if (line.len && line.len <= maxlen) {
+        if (line.len && strview_count_utf8(line) <= maxlen) {
             /* line includes the '\n' */
             err = str_append(buf, line);
         } else {
@@ -264,33 +264,24 @@ bool textbuf_get_line(TextBuf tb[_1_], size_t n, StrView out[_1_]) {
     return false;
 }
 
-static Err _regex_search_pattern_in_buf_(
-    StrView pattern[_1_], const char* buf, size_t match_offset[_1_]
-) {
-    const char* lastptr = items__(pattern) + len__(pattern) - 1;
+static Err err_pattern_not_found = "pattern not found\n";
+
+static Err
+_regex_search_pattern_in_buf_(StrView pattern[_1_], const char* buf, size_t match_offset[_1_]) {
+    if (!len__(pattern)) return "expecting non empty pattern";
+    const char* lastptr = items__(pattern) + len__(pattern);
     char last           = *lastptr;
-    *(char*)lastptr     = '\0';
     size_t match        = 0;
     size_t* pmatch      = &match;
     Err err             = regex_maybe_find_next(items__(pattern), buf, &pmatch);
     *(char*)lastptr     = last;
     if (err) return err;
-    if (!pmatch) return "pattern not found";
+    if (!pmatch) return err_pattern_not_found;
+        ;
     *match_offset =  match;
     return Ok;
 }
 
-/* static Err  textbuf_regex_search_linenum( */
-/*     TextBuf tb[_1_], */
-/*     StrView pattern[_1_], */
-/*     size_t  outln[_1_], */
-/*     size_t  match_offset[_1_] */
-/* ) { */
-/*     size_t current_offset = *textbuf_current_offset(tb); */
-/*     const char* buf = textbuf_items(tb) + current_offset; */
-/*     try( _regex_search_pattern_in_buf_(pattern, buf, match_offset)); */
-/*     return textbuf_get_line_of_offset(tb, *match_offset, outln); */
-/* } */
 
 static Err _textbuf_range_parse_to_range_(
     TextBuf          tb[_1_],
@@ -351,6 +342,25 @@ static Err _textbuf_range_parse_to_range_(
     }
     return Ok;
 }
+
+
+Err textbuf_get_lines_matching_regex(TextBuf tb[_1_], StrView pattern, ArlOf(size_t) lines[_1_]) {
+    *textbuf_current_offset(tb) = 0;
+    const char* buf             = textbuf_items(tb);
+    size_t      match_offset;
+
+    do {
+        Err err =  _regex_search_pattern_in_buf_(&pattern, buf + *textbuf_current_offset(tb), &match_offset);
+        if (err == err_pattern_not_found) return len__(lines) ? Ok : err_pattern_not_found;
+        match_offset += *textbuf_current_offset(tb);
+        *textbuf_current_offset(tb) = match_offset;
+
+        size_t* l =  arlfn(size_t,append)(lines,&(size_t){0});
+        if (!l) return err_internal("arl append failure");
+        try( textbuf_get_line_of_offset(tb, match_offset, l));
+    } while(1);
+}
+
 
 static inline Err _textbuf_range_validate_(TextBuf tb[_1_], Range r[_1_]) {
     if (r->end < r->beg) return "Backward r given";

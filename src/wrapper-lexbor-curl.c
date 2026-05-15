@@ -29,27 +29,22 @@ static Err _lexbor_parse_chunk_end_(HtmlDoc htmldoc[_1_]) {
 }
 
 
-static Err _curl_set_write_fn_and_data_(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]) {
+static Err url_client_set_write_fn_and_data_for_htmldoc(CurlPtr curl, HtmlDoc htmldoc[_1_]) {
     if (
-       curl_easy_setopt(url_client->curl, CURLOPT_HEADERDATA, htmldoc)
-    || curl_easy_setopt(url_client->curl, CURLOPT_HEADERFUNCTION, curl_header_callback)
-    || curl_easy_setopt(url_client->curl, CURLOPT_WRITEFUNCTION, lexbor_parse_chunk_callback)
-    || curl_easy_setopt(url_client->curl, CURLOPT_WRITEDATA, htmldoc)) {
+       curl_easy_setopt(curl, CURLOPT_HEADERDATA, htmldoc)
+    || curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, curl_header_callback)
+    || curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, lexbor_parse_chunk_callback)
+    || curl_easy_setopt(curl, CURLOPT_WRITEDATA, htmldoc)) {
         return "error configuring curl write fn/data";
     }
     return Ok;
 }
 
 
-static Err _curl_set_http_method_(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]) {
-    return curl_set_method_from_http_method(url_client, htmldoc_method(htmldoc));
-}
-
-
-Err w_curl_set_url(UrlClient url_client[_1_], Url url[_1_]) {
+Err w_curl_set_url(CurlPtr curl, Url url[_1_]) {
     char* url_str = NULL;
     try( url_cstr_malloc(*url, &url_str));
-    CURLcode code = curl_easy_setopt(url_client->curl, CURLOPT_URL, url_str);
+    CURLcode code = curl_easy_setopt(curl, CURLOPT_URL, url_str);
     curl_free(url_str);
     if (CURLE_OK == code) return Ok;
     return err_fmt("error: curl failed to set url %s", curl_easy_strerror(code));
@@ -63,28 +58,10 @@ Err w_curl_set_url(UrlClient url_client[_1_], Url url[_1_]) {
     /* return err_fmt("error: curl failed to set urlL %s", curl_easy_strerror(code)); */
 }
 
-static Err _curl_set_curlu_(UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]) {
-    return w_curl_set_url(url_client, htmldoc_url(htmldoc));
-}
 
-static Err _curl_perform_error_( HtmlDoc htmldoc[_1_], CURLcode curl_code) {
-    Url* url = htmldoc_url(htmldoc);
-    char* u;
-    Err e = url_cstr_malloc(*url, &u);
-    if (e) u = "and url could not be obtained due to another error :/";
-    Err err = err_fmt(
-        "curl failed to perform curl: %s (%s)", curl_easy_strerror(curl_code), u
-    );
-    if (!e) w_curl_free(u);
-    return err;
-}
-
-
-static Err _set_htmldoc_url_with_effective_url_(
-    UrlClient url_client[_1_], HtmlDoc htmldoc[_1_]
-) {
+static Err _set_htmldoc_url_with_effective_url_(CurlPtr curl, HtmlDoc htmldoc[_1_]) {
     char* effective_url = NULL;
-    if (CURLE_OK != curl_easy_getinfo(url_client->curl, CURLINFO_EFFECTIVE_URL, &effective_url)) {
+    if (CURLE_OK != curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &effective_url)) {
         return "error: couldn't get effective url from curl";
     }
     return curlu_set_url_or_fragment(url_cu(htmldoc_url(htmldoc)), effective_url);
@@ -172,18 +149,15 @@ static void _map_append_nullchar_(ArlOf(Str) strlist[_1_], CmdOut cmd_out[_1_]) 
 }
 
 
-//TODO0: althoug we expect small lengths, this may be done more inefficiently.
+//TODO0: althoug we expect small lengths, this may be done more efficiently.
 static Err
-get_failed_indexed(ArlOf(CurlPtr) easies[_1_], ArlOf(CurlPtr) failed[_1_], ArlOf(size_t) indexes[_1_]) {
+get_failed_indexed(ArlOf(CurlPtr) easies[_1_], ArlOf(CurlMultiSgPtr) failed[_1_], ArlOf(size_t) indexes[_1_]) {
     CurlPtr* first_easy = arlfn(CurlPtr,begin)(easies);
-    foreach__(CurlPtr, f, failed) {
-        foreach__(CurlPtr, easy, easies) {
-            if (*f == *easy) {
+    foreach__(CurlMultiSgPtr, failed, f) {
+        foreach__(CurlPtr, easies, easy) {
+            if ((*f)->easy_handle == *easy) {
                 size_t ix = easy - first_easy;
-                if(!arlfn(size_t, append)(indexes, &ix)) {
-                    arlfn(size_t, clean)(indexes);
-                    return "error: arl append failure";
-                }
+                if(!arlfn(size_t, append)(indexes, &ix)) return "error: arl append failure";
             }
         }
     }
@@ -191,43 +165,40 @@ get_failed_indexed(ArlOf(CurlPtr) easies[_1_], ArlOf(CurlPtr) failed[_1_], ArlOf
 }
 
 
-static Err curl_lexbor_fetch_scripts(
-    HtmlDoc        htmldoc[_1_],
-    UrlClient      url_client[_1_],
-    CmdOut            cmd_out[_1_]
-) {
+static Err curl_lexbor_fetch_scripts(HtmlDoc htmldoc[_1_], UrlClient url_client[_1_], CurlPtr easy, CmdOut cmd_out[_1_]) {
     Err e = Ok;
     //TODO!: evaluate scripts in order
 
-    lxb_html_document_t* doc = htmldoc_dom(htmldoc).ptr;
-    lxb_dom_collection_t* head_scripts;
-    lxb_dom_collection_t* body_scripts;
+    lxb_html_document_t*  doc          = htmldoc_dom(htmldoc).ptr;
+    lxb_dom_collection_t* head_scripts = NULL;
+    lxb_dom_collection_t* body_scripts = NULL;
 
     if (len__(htmldoc_head_scripts(htmldoc)) + len__(htmldoc_body_scripts(htmldoc)))
         return "error: htmldoc must have no scripts before fetching them";
+
+    ArlOf(Str)*            head_urls = &(ArlOf(Str)){0};
+    ArlOf(Str)*            body_urls = &(ArlOf(Str)){0};
+    ArlOf(CurlPtr)*        easies    = &(ArlOf(CurlPtr)){0};
+    ArlOf(CurlUrlPtr)*     curlus    = &(ArlOf(CurlUrlPtr)){0};
+    CURLM*                 multi     = url_client_multi(url_client);
+    CURLU*                 curlu     = url_cu(htmldoc_url(htmldoc));
+    ArlOf(CurlMultiSgPtr)* failed    = &(ArlOf(CurlMultiSgPtr)){0};
+
     try(_get_scripts_collection_(doc, lxb_dom_interface_element(doc->head), &head_scripts));
-    try_or_jump(e, Lxb_Array_Head_Destroy,
+    tryjmp(e, Lxb_Array_Head_Destroy,
             _get_scripts_collection_(doc, lxb_dom_interface_element(doc->body), &body_scripts));
 
-
-    ArlOf(Str)* head_urls = &(ArlOf(Str)){0};
-    ArlOf(Str)* body_urls = &(ArlOf(Str)){0};
-
-    try_or_jump(e, Lxb_Array_Body_Destroy,
+    tryjmp(e, Lxb_Array_Body_Destroy,
             _split_remote_local_(head_scripts, htmldoc_head_scripts(htmldoc), head_urls, cmd_out));
-    try_or_jump(e, Clean_Head_Urls,
+    tryjmp(e, Clean_Head_Urls,
             _split_remote_local_(body_scripts, htmldoc_body_scripts(htmldoc), body_urls, cmd_out));
 
-    ArlOf(CurlPtr)*    easies = &(ArlOf(CurlPtr)){0};
-    ArlOf(CurlUrlPtr)* curlus = &(ArlOf(CurlUrlPtr)){0};
-    CURLM*             multi  = url_client_multi(url_client);
-    CURLU*             curlu  = url_cu(htmldoc_url(htmldoc));
 
     e = url_client_multi_add_handles(
         url_client, curlu, head_urls, htmldoc_head_scripts(htmldoc), easies, curlus, cmd_out);
     if (e) {
         try(msg__(cmd_out, svl("could not add head handles: ")));
-        try(msg__(cmd_out, e));
+        try(msg_ln__(cmd_out, e));
     }
     e = url_client_multi_add_handles(
         url_client, curlu, body_urls, htmldoc_body_scripts(htmldoc), easies, curlus, cmd_out);
@@ -236,42 +207,39 @@ static Err curl_lexbor_fetch_scripts(
         try(msg__(cmd_out, e));
     }
 
-    ArlOf(CurlPtr)* failed = &(ArlOf(CurlPtr)){0};
     e = w_curl_multi_perform_poll(multi, failed);
     if (!e) {
         size_t n = len__(failed);
         if (n) {
             msg__(cmd_out, err_fmt("warn: %d script%s could not be downloaded\n", n, (n>1?"s":"")));
             ArlOf(size_t)* indexes = &(ArlOf(size_t)){0};
-            if (!get_failed_indexed(easies, failed, indexes)) {
-                foreach__(size_t, ix, indexes) {
-
-                    Str* script;
-                     /* url_client_multi_add_handles pushed the empty buffers for all scripts
-                     * so I can assume indexes will match.
-                     * */
+            e = get_failed_indexed(easies, failed, indexes);
+            if (!e) {
+                foreach__(size_t, indexes, ix) {
+                    Str* script; /* url_client_multi_add_handles pushed the empty buffers for all scripts
+                     * so I can assume indexes will match.  **/
                     e = htmldoc_script_at(htmldoc, *ix, &script);
                     if (e) break;
                     str_reset(script);
                 }
             }
+            arlfn(size_t, clean)(indexes);
         }
     }
 
     for_htmldoc_size_download_append(
-        easies, cmd_out, url_client_curl(url_client), htmldoc_curlinfo_sz_download(htmldoc));
+        easies, cmd_out, easy, htmldoc_curlinfo_sz_download(htmldoc));
     w_curl_multi_remove_handles(multi, easies, cmd_out);
-
-    arlfn(CurlPtr,clean)(easies);
-    arlfn(CurlPtr,clean)(failed);
-    arlfn(CurlUrlPtr,clean)(curlus);
 
     _map_append_nullchar_(htmldoc_head_scripts(htmldoc), cmd_out);
     _map_append_nullchar_(htmldoc_body_scripts(htmldoc), cmd_out);
 
-    arlfn(Str,clean)(body_urls);
 Clean_Head_Urls:
+    arlfn(CurlPtr,clean)(easies);
+    arlfn(CurlMultiSgPtr,clean)(failed);
+    arlfn(CurlUrlPtr,clean)(curlus);
     arlfn(Str,clean)(head_urls);
+    arlfn(Str,clean)(body_urls);
 
 Lxb_Array_Body_Destroy:
     lxb_dom_collection_destroy(body_scripts, true);
@@ -281,41 +249,41 @@ Lxb_Array_Head_Destroy:
 }
 
 
-
 Err curl_lexbor_fetch_document(
     UrlClient         url_client[_1_],
     HtmlDoc           htmldoc[_1_],
     CmdOut            out[_1_],
-    FetchHistoryEntry histentry[_1_]
+    FetchHistoryEntry histentry[_1_],
+    CurlPtr           easy
 );
 Err curl_lexbor_fetch_document(
     UrlClient         url_client[_1_],
     HtmlDoc           htmldoc[_1_],
     CmdOut            cmd_out[_1_],
-    FetchHistoryEntry histentry[_1_]
+    FetchHistoryEntry histentry[_1_],
+    CurlPtr           easy
 ) {
-    try( url_from_request(htmldoc_request(htmldoc), url_client));
-    try( url_client_set_basic_options(url_client));
-    try( _curl_set_write_fn_and_data_(url_client, htmldoc));
+    try( set_post_fields(htmldoc_request(htmldoc), easy));
+    try( url_client_set_basic_options_to_handle(url_client, easy));
+    try( url_client_set_write_fn_and_data_for_htmldoc(easy, htmldoc));
     try( _lexbor_parse_chunk_begin_(htmldoc));
-    try( _curl_set_http_method_(url_client, htmldoc));
-    try( _curl_set_curlu_(url_client, htmldoc));
+    try(w_curl_set_method_from_http_method(easy, htmldoc_method(htmldoc)));
+    try(w_curl_set_url(easy, htmldoc_url(htmldoc)));
 
     try( fetch_history_entry_init(histentry));
-    CURLcode curl_code = curl_easy_perform(url_client->curl);
-    fetch_history_entry_update_curl(histentry, url_client->curl, cmd_out);
+    Err err = url_client_perform_with_cancel(url_client, easy, htmldoc_request(htmldoc));
     str_reset(url_client_postdata(url_client));
-    if (curl_code!=CURLE_OK) 
-        return _curl_perform_error_(htmldoc, curl_code);
+    try(err);
+    try(fetch_history_entry_update_curl(histentry, easy, cmd_out));
 
     if (histentry->size_download_t < 0)
         try(msg__(cmd_out, svl("CURLINFO_SIZE_DOWNLOAD_T is negative")));
     else *htmldoc_curlinfo_sz_download(htmldoc) = histentry->size_download_t;
 
     try( _lexbor_parse_chunk_end_(htmldoc));
-    try( _set_htmldoc_url_with_effective_url_(url_client, htmldoc));
+    try( _set_htmldoc_url_with_effective_url_(easy, htmldoc));
     try( htmldoc_convert_sourcebuf_to_utf8(htmldoc));
     if (htmldoc_js_is_enabled(htmldoc))
-        try(curl_lexbor_fetch_scripts(htmldoc, url_client, cmd_out));
+        try(curl_lexbor_fetch_scripts(htmldoc, url_client, easy, cmd_out));
     return Ok;
 }

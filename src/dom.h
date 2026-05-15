@@ -40,6 +40,8 @@ bool    dom_node_has_attr(DomNode n, StrView attr);
 bool    dom_node_tag_is_valid(DomNode n);
 bool    dom_node_type_is_valid(DomNode n);
 void    dom_node_insert_child_node(DomNode node, DomNode child);
+DomNode dom_skip_text(DomNode n);
+DomNode dom_node_first_elem_child(DomNode n);
 
 #define dom_node_insert_child(Dn, Dch) \
     dom_node_insert_child_node(\
@@ -288,10 +290,13 @@ DomNodeType dom_node_type(DomNode n);
 static inline DomNode dom_node_first_child(DomNode n) { return (DomNode){.ptr=n.ptr->first_child}; }
 static inline DomNode dom_node_last_child(DomNode n)  { return (DomNode){.ptr=n.ptr->last_child}; }
 static inline DomNode dom_node_next(DomNode n){ return (DomNode){.ptr=n.ptr->next}; } 
+DomNode dom_node_next_elem(DomNode n);
 
 static inline bool dom_node_eq(DomNode n, DomNode m) { return n.ptr == m.ptr; }
 
 bool dom_node_has_tag(DomNode n, HtmlTag tag);
+bool dom_node_has_type(DomNode n, DomNodeType type);
+//TODO0: deprecate:
 static inline bool dom_node_has_tag_body(DomNode n) { return n.ptr->local_name == LXB_TAG_BODY; }
 static inline bool dom_node_has_tag_form(DomNode n) { return n.ptr->local_name == LXB_TAG_FORM; }
 static inline bool dom_node_has_tag_head(DomNode n) { return n.ptr->local_name == LXB_TAG_HEAD; }

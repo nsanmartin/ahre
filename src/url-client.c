@@ -4,49 +4,20 @@
 #include "session.h"
 #include "url-client.h"
 #include "cmd.h"
+#include "error.h"
 
 
 #define url_client_setopt(Uc, Opt, Val) w_curl_easy_setopt((Uc)->curl, Opt, Val)
 
 
-static Err url_client_set_cookies(UrlClient uc[_1_]) {
-    if (uc->cookies_fname.len) {
-        char* cookiefile = url_client_cookies_fname(uc);
-        /* this call leaks in old curl versions */
-        try(url_client_setopt(uc, CURLOPT_COOKIEFILE, cookiefile));
-        try(url_client_setopt(uc, CURLOPT_COOKIEJAR, cookiefile));
-    }
-    return Ok;
-}
-
-
-static Err url_client_setopt_verbose(UrlClient uc[_1_]) {
-    return url_client_setopt(uc, CURLOPT_VERBOSE, url_client_verbose(uc));
-}
-
-static Err url_client_setopt_error_buffer(UrlClient uc[_1_]) {
-    return url_client_setopt(uc, CURLOPT_ERRORBUFFER, uc->errbuf);
-}
-
-static Err url_client_setopt_user_agent(UrlClient uc[_1_]) {
-    return url_client_setopt(uc, CURLOPT_USERAGENT, url_client_user_agent(uc));
-}
-
-Err url_client_set_basic_options(UrlClient uc[_1_]) {
-    try(url_client_setopt(uc, CURLOPT_NOPROGRESS,     1L));
-    try(url_client_setopt(uc, CURLOPT_FOLLOWLOCATION, 1L));
-
-    try(url_client_setopt_verbose(uc));
-    try(url_client_setopt_error_buffer(uc));
-    try(url_client_setopt_user_agent(uc));
-
-    return url_client_set_cookies(uc);
-}
-
-
-Err url_client_reset(UrlClient url_client[_1_]) {
-    curl_easy_reset(url_client->curl);
-    return url_client_set_basic_options(url_client);
+Err url_client_set_basic_options_to_handle(UrlClient uc[_1_], CurlPtr handle) {
+    return w_curl_set_basic_options(
+        handle, 
+        url_client_verbose(uc),
+        url_client_errbuf(uc),
+        url_client_user_agent(uc),
+        url_client_cookies_fname(uc)
+    );
 }
 
 
@@ -56,49 +27,38 @@ Err url_client_init(
     StrView   user_agent,
     unsigned  flags
 ) {
-    Err e = Ok;
-
     *url_client = (UrlClient){
         .cookies_fname = cookies_fname,
         .user_agent   = user_agent,
         .flags        = flags
     };
 
-    url_client->curl = curl_easy_init();
-    if (!url_client->curl) return "error: curl_easy_init failure";
-
     url_client->curlm = curl_multi_init();
-    if (!url_client->curlm) {
-        e = "error: curl_multi_init failure";
-        goto Failure_Curl_Easy_Cleanup;
-    }
-
-    try_or_jump(e, Failure_Curl_Multi_Cleanup, url_client_set_basic_options(url_client));
+    if (!url_client->curlm) return err_internal("curl_multi_init failure");
 
     return Ok;
-
-Failure_Curl_Multi_Cleanup:
-    curl_easy_cleanup(url_client->curl);
-Failure_Curl_Easy_Cleanup:
-    curl_multi_cleanup(url_client->curlm);
-    return e;
 }
 
 
 Err url_client_print_cookies(Session* s, UrlClient uc[_1_], CmdOut* out) {
-    (void)out;
     if (!s) return "error: session is null";
+    CurlPtr            curl;
     struct curl_slist* cookies = NULL;
-    CURLcode curl_code = curl_easy_getinfo(uc->curl, CURLINFO_COOKIELIST, &cookies);
-    if (curl_code != CURLE_OK) { return "error: could not retrieve cookies list"; }
-    if (!cookies) { puts("No cookies"); return "no cookies"; }
+    Err                e       = Ok;
+    try(w_curl_easy_init(&curl));
+    tryjmp(e,Clean, url_client_set_basic_options_to_handle(uc, curl));
+    CURLcode curl_code = curl_easy_getinfo(curl, CURLINFO_COOKIELIST, &cookies);
+    if (curl_code != CURLE_OK) { e="error: could not retrieve cookies list"; goto Clean; }
+    if (!cookies) { msg_ln__(out, svl("No cookies")); e="no cookies"; goto Clean; }
 
     struct curl_slist* it = cookies;
     while (it) {
-        try(msg_ln__(out, cast__(const char*)it->data));
+        tryjmp(e, Clean, msg_ln__(out, cast__(const char*)it->data));
         it = it->next;
     }
+Clean:
     curl_slist_free_all(cookies);
+    curl_easy_cleanup(curl);
     return Ok;
 }
 
@@ -146,13 +106,13 @@ Err url_client_multi_add_handles(
     CmdOut           cmd_out[_1_]
 ) {
 
-    //TODO: do it in one op, of implement reserve/capacity in hotl
+    if (!len__(urls)) return Ok;
+    //TODO1: this is awful, improve this fn and w_curl_multi_add as well
     for (size_t i = 0; i < len__(urls); ++i) {
         if (!arlfn(Str,append)(scripts, &(Str){0}))
             return "error: arlfn(Str,append) failure";
     }
     scripts->len -= len__(urls);
-    /*^*/
 
     for (Str* u = arlfn(Str,begin)(urls) ; u != arlfn(Str,end)(urls) ; ++u) {
         Err e = w_curl_multi_add(uc, curlu, items__(u), easies, scripts, curlus);
@@ -169,10 +129,13 @@ void url_client_set_verbose(UrlClient uc[_1_], bool value) {
 }
 
 
-Err curl_set_method_from_http_method(UrlClient url_client[_1_], HttpMethod m) {
-    CURLoption method = curlopt_method_from_http_method(m);
-    if (curl_easy_setopt(url_client->curl, method, 1L)) 
-        return "error: curl failed to set method";
-    return Ok;
+Err url_client_perform_with_cancel(UrlClient uc[_1_], CurlPtr easy, Request req[_1_]) {
+    Err e = Ok;
+    Str url = (Str){0};
+    tryjmp(e,Clean, curl_url_to_filename_append(*request_url(req), &url));
+    tryjmp(e,Clean, w_curl_perform_with_cancel(url_client_multi(uc), easy, url.items ? url.items : ""));
+Clean:
+    str_clean(&url);
+    return e;
 }
 

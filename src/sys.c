@@ -9,18 +9,20 @@
 
 
 Err resolve_path(const char *path, bool* file_exists, Str out[_1_]) {
+    Err err      = Ok;
     Str expanded = (Str){0};
     try(expand_path(path, &expanded));
     char buf[PATH_MAX];
     char *real = realpath(expanded.items, buf);
     if (!real && errno != ENOENT) {
-    	str_clean(&expanded);
-        return err_fmt("could not resolve path: %s", strerror(errno));
+        err=err_fmt("could not resolve path: %s", strerror(errno));
+        goto Clean;
     }
     if (file_exists) *file_exists =  real && errno != ENOENT;
-    Err err = Ok;
     if (real) err = str_append_z(out, sv(real, strlen(real)));
     else if (expanded.len) { err = str_append_z(out, expanded); }
+
+Clean:
     str_clean(&expanded);
     return err;
 }
@@ -83,6 +85,7 @@ Err _file_write_or_close_(const char* mem, size_t len, FILE* fp, const char* cal
 } 
 
 Err file_close(FILE* fp) {
+    if (!fp) return Ok;
     if (fclose(fp)) return err_fmt("error closing file: %s", strerror(errno));
     return Ok;
 }
@@ -123,3 +126,22 @@ bool path_is_dir(const char* path) {
     return stat(path, &st) == 0 && S_ISDIR(st.st_mode);
 }
 // file utils
+
+
+static volatile sig_atomic_t interrupt_flag__ = 0;
+bool interrupt_flag(void) {
+    bool res = interrupt_flag__ != 0;
+    interrupt_flag__ = 0;
+    return res;
+}
+static void set_interrupt_flag(int sig) {
+    (void)sig;
+    interrupt_flag__ = 1;
+}
+
+struct sigaction get_interrupt_action(void) {
+    struct sigaction res = (struct sigaction){.sa_handler=set_interrupt_flag};
+    sigemptyset(&res.sa_mask);
+    return res;
+}
+

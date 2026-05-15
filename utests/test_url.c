@@ -9,7 +9,7 @@ static unsigned _curl_free_calls = 0;
 
 static inline FILE* _mock_fopen_with(const char *restrict pathname, const char *restrict mode) {
     utest_ignore_params(mode);
-    if (strcmp(items__(_mock_fopen_pathname_param), pathname)) return NULL;
+    if (strcmp((_mock_fopen_pathname_param)->items, pathname)) return NULL;
     return (FILE*)-1;
 }
 
@@ -51,6 +51,7 @@ Err mock_w_curl_set_url(UrlClient url_client[_1_], Url url[_1_]) ;
 #include "../src/fetch-history.c"
 #include "../src/htmldoc.c"
 #include "../src/tab-node.c"
+#include "../src/request.c"
 
 Err mock_w_curl_set_url(UrlClient url_client[_1_], Url url[_1_]) {
     utest_ignore_params(url_client, url);

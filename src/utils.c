@@ -6,6 +6,23 @@
 const char _base36digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 
+Err uint_to_base36_str(char* buf, size_t buf_sz, uintmax_t n, size_t len[_1_]) {
+    if (buf_sz == 0) return "error: not enough size to convert num to base36 str.";
+    *len = 0;
+    do {
+        *buf++ = _base36digits[n % 36];
+        n /= 36;
+        --buf_sz;
+        ++*len;
+    } while (n != 0 && buf_sz);
+
+    if (!buf_sz && n) return "error: not enough size to convert num to base36 str.";
+    str_reverse(buf - *len, *len);
+
+    return Ok;
+}
+
+
 const char* parse_ull(const char* tk, uintmax_t* ullp) {
     if (!tk || !*tk) { return NULL; }
     char* endptr = 0x0;
@@ -23,21 +40,6 @@ const char* parse_l(const char* tk, long lptr[_1_]) {
     return endptr == tk ? NULL: endptr;
 }
 
-Err uint_to_base36_str(char* buf, size_t buf_sz, uintmax_t n, size_t len[_1_]) {
-    if (buf_sz == 0) return "error: not enough size to convert num to base36 str.";
-    *len = 0;
-    do {
-        *buf++ = _base36digits[n % 36];
-        n /= 36;
-        --buf_sz;
-        ++*len;
-    } while (n != 0 && buf_sz);
-
-    if (!buf_sz && n) return "error: not enough size to convert num to base36 str.";
-    str_reverse(buf - *len, *len);
-
-    return Ok;
-}
 
 Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) {
     if (!strptr || !*strptr) return "error: unexpected NULL ptr";

@@ -10,12 +10,18 @@
 
 size_t curl_header_callback(char *buffer, size_t size, size_t nitems, void *htmldoc);
 
-typedef CURL* CurlPtr;
-typedef CURLU* CurlUrlPtr;
-typedef CURLM* CurlMuliPtr;
+typedef CURL*    CurlPtr;
+typedef CURLM*   CurlMuliPtr;
+typedef CURLU*   CurlUrlPtr;
+typedef CURLMsg* CurlMultiSgPtr;
 
 
+static inline void curl_ptr_clean(CurlPtr* p) { if(*p) curl_easy_cleanup((void*)*p); }
 #define T CurlPtr
+#define TClean curl_ptr_clean
+#include <arl.h>
+
+#define T CurlMultiSgPtr
 #include <arl.h>
 
 static inline void curlu_ptr_clean(CurlUrlPtr* p) { curl_url_cleanup((void*)*p); }
@@ -65,7 +71,7 @@ static inline Err w_curl_url_dup(CURLU* u, CURLU* dup[_1_]) {
 
 void w_curl_multi_remove_handles(CURLM* multi, ArlOf(CurlPtr)  easies[_1_], CmdOut cmd_out[_1_]);
 
-Err w_curl_multi_perform_poll(CURLM* multi, ArlOf(CurlPtr) failed[_1_]);
+Err w_curl_multi_perform_poll(CURLM* multi, ArlOf(CurlMultiSgPtr) failed[_1_]);
 
 Err for_htmldoc_size_download_append(
     ArlOf(CurlPtr) easies[_1_],
@@ -85,4 +91,11 @@ void w_curl_global_cleanup();
 void w_curl_free(void* p);
 Err w_curl_url_get_malloc(CurlUrlPtr cu, CURLUPart part, char* out[_1_]);
 
+size_t skip_header_callback(char *buffer, size_t size, size_t nitems, void *htmldoc) ;
+Err w_curl_perform_with_cancel(CurlMuliPtr multi, CurlPtr easy, char* url);
+Err w_curl_set_basic_options(
+    CurlPtr handle[_1_], long verbose, char* errbuf, char* user_agent, char* cookiefile
+);
+Err w_curl_set_method_from_http_method(CurlPtr handle, HttpMethod m);
+Err w_curl_set_write_fn_and_data_for_download(CurlPtr curl, FILE* fp);
 #endif
