@@ -90,6 +90,7 @@ static Err ui_vi_show_session_default(Session* s) {
 }
 
 Err ui_vi_show_session(Session* s, CmdOut cout[_1_]) {
+
     if (!s) return "error: unexpected null session, this should really not happen";
 
     size_t nrows, ncols;
@@ -119,17 +120,12 @@ Err ui_vi_flush_std(Session* s, CmdOut cout[_1_]) {
 }
 
 
-#define MSG_PREFIX_ "{msg}:\n"
-#define CONTINUE_MSG_ "{% type enter to continue %}"
 Err ui_vi_flush_msg(Session* s, CmdOut cout[_1_]) {
     if (!s) return "error: no session";
     Msg* msg = cmd_out_msg(cout);
     if (!msg_len(msg)) return Ok;
-    try( lit_write__(MSG_PREFIX_, stdout));
-    try( mem_fwrite(msg_items(msg), msg_len(msg), stdout));
-    try( lit_write__(CONTINUE_MSG_, stdout));
-    if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
-    getchar();
+
+    try(ui_vi_flush_msg_read_input(s, sv(msg->s)));
     msg_reset(msg);
     return Ok;
 }

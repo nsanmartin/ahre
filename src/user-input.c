@@ -3,6 +3,8 @@
 #include "session.h"
 #include "user-input.h"
 #include "utils.h"
+#include "generic.h"
+
 
 typedef enum {
     keycmd_null                = 0x0,
@@ -106,4 +108,93 @@ Err ui_vi_mode_read_input(Session* s, const char* prompt, char* out[_1_]) {
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &prev_termios) == -1) return "error: tcsetattr failure";
     if (*out) puts("");
     return err;
+}
+
+static StrView
+_get_next_page_(size_t nrows, size_t ncols, StrView msg[_1_]) {
+    const char* beg  = msg->items;
+    size_t len = 0;
+    while (msg->len > 0 && nrows) {
+        StrView line = strview_split_line(msg);
+        size_t linerows = 1 + line.len / ncols - (bool)(line.len && line.len % ncols == 0);
+        if (linerows >= nrows) {
+            nrows = 0;
+            len  += nrows * ncols;
+        } else {
+            nrows -= linerows;
+            len   += line.len + 1;
+        }
+    }
+        return sv(beg, len);
+}
+
+
+#define MSG_PREFIX_ "{msg}\n"
+static StrView
+_continue_msg_(size_t pages_len, size_t pagenum, size_t msg_len) {
+    if (pages_len == 1 && !msg_len) return svl("{type q}");
+    if (!msg_len && pagenum + 1 == pages_len) return svl("{type backspace or q}");
+    if (!pagenum) return svl("{type space or q}");
+    return svl("{type space, backspace or q}");
+}
+
+Err
+ui_vi_flush_msg_read_input(Session* s, StrView msg) {
+    if (!msg.len) return Ok;
+    Err e = Ok;
+
+    bool           loop    = true;
+    bool           update  = true;
+    size_t         pagenum = 0;
+    ArlOf(StrView) ps      = (ArlOf(StrView)){0};
+    StrView*       pp      = NULL;
+
+    for (;loop;) {
+        if (ps.len == pagenum) {
+            StrView page = _get_next_page_(*session_nrows(s) - 1, *session_ncols(s), &msg);
+            pp = arlfn(StrView,append)(&ps, &page);
+        } else if (ps.len > pagenum) {
+            pp = arlfn(StrView,at)(&ps, pagenum);
+        } else {e=err_internal("invalid msg page"); goto Clean;}
+
+        if (update) {
+            tryjmp(e,Clean, lit_write__(EscCodeClsScr, stdout));
+            tryjmp(e,Clean, lit_write__(MSG_PREFIX_, stdout));
+            tryjmp(e,Clean, mem_fwrite(pp->items, pp->len, stdout));
+            StrView continue_msg = _continue_msg_(ps.len, pagenum, msg.len);
+            tryjmp(e,Clean, mem_fwrite(continue_msg.items, continue_msg.len,  stdout));
+            if (fflush(stdout)) {e=err_fmt("error: fflush failure: %s", strerror(errno)); goto Clean;}
+        }
+
+        struct termios prev_termios;
+        try( switch_tty_to_raw_mode(&prev_termios));
+
+        int c = fgetc(stdin);
+        switch(c) {
+            case EOF:
+            case KeyCtrl_C:
+            case 'q':
+                loop = false;
+                break;
+            case KeyCtrl_F:
+            case KeySpace:
+               if ((pagenum < ps.len && msg.len) || (pagenum + 1 < ps.len)) {
+                   update = true;
+                   ++pagenum;
+               } else update = false;
+                break;
+            case KeyBackSpace:
+            case KeyCtrl_B:
+               if (pagenum) {
+                   --pagenum;
+                   update = true;
+               } else update = false;
+               break;
+            default: break;
+        }
+        if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &prev_termios) == -1) return err_internal("tcsetattr failure");
+    }
+Clean:
+    arlfn(StrView,clean)(&ps);
+    return e;
 }

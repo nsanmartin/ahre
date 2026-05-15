@@ -36,6 +36,9 @@ typedef struct {
 	size_t      len;
 } StrView;
 
+#define T StrView
+#include <arl.h>
+
 typedef StrView (*StrViewProvider)(void);
 
 /* This just "documents" that the underlying string ir null-terminated at s[len].
