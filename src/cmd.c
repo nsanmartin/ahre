@@ -231,7 +231,6 @@ Err cmd_fetch(Session session[_1_], CmdOut* out) {
     /* we reuse the request, but the Url is duplicated on fetch. We could
      * instead try to not duplicate it in this specific case, but this is
      * easier because the rest of the fetchs need to duplicate. */
-    Url u = htmldoc_request(htmldoc)->url;
     try(htmldoc_init_move_request(
         &newdoc,
         htmldoc_request(htmldoc),
@@ -239,7 +238,6 @@ Err cmd_fetch(Session session[_1_], CmdOut* out) {
         session,
         out
     ));
-    url_cleanup(&u);
     htmldoc_cleanup(htmldoc);
     *htmldoc = newdoc;
     return Ok;
