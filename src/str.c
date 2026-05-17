@@ -400,8 +400,6 @@ str_append_flip(const char* mem, size_t size, size_t nmemb, Str out[_1_]) {
     size_t len = size * nmemb;
 
     if (str_append(out, sv(mem, len))) return 0;
-    /* if (buffn(char,append)(out, (char*)mem, len)) */
-    /*     return len; */
     return len;
 }
 
@@ -518,6 +516,5 @@ Err str_append_mem_(Str* s, char* items, size_t len) {
         return err_fmt("TESTING: appends limit (APPENDS__: %d)", APPENDS__);
     }
     return str_append(s, sv(items,len));
-    /* return (buffn(char,append)(s, items, len) ? false  : true); */
 }
 #endif

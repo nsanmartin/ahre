@@ -127,10 +127,6 @@ size_t* textbuf_eol_at(TextBuf tb[_1_], size_t i) {
 
 Err textbuf_append_part(TextBuf textbuf[_1_], char* data, size_t len) {
     return str_append(&textbuf->buf, sv(data, len));
-    /* return !buffn(char,append)(&textbuf->buf, (char*)data, len) */
-    /*     ?  "buffn failed to append" */
-    /*     : Ok */
-    /*     ; */
 }
 
 
