@@ -64,6 +64,6 @@ Err _err_fmt_vsnprinf_(Err fmt, ...);
 // #define err_jump(E,Tag) do{E="error: " __FILE__ ":" to_lit__(__LINE__); goto Tag;}while(0)
 
 #define err_internal(Msg) err_fmt("error: %s  %s\n", Msg, file_line__)
-#define err_append() err_internal("append error")
+#define err_append() err_internal("append failure")
 
 #endif
