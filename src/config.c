@@ -4,18 +4,9 @@
 #include "sys.h"
 
 
-static Err _str_concat_mem_2z(char* m1, size_t l1, char* m2, size_t l2, Str out[_1_]) {
-    try(str_append(out, sv(m1, l1)));
-    try(str_append(out, sv(m2, l2)));
-    return str_append(out, svl("\0"));
-}
-#define _str_concat_mem_lit_z__(M1, L1, Lit, Out) \
-    _str_concat_mem_2z(M1, L1, Lit, lit_len__(Lit), Out)
-
-static bool _create_dir_and_remove_z_(Str dirname[_1_]) {
-    int rv = mkdir(items__(dirname), 0700);
-    --dirname->len;
+static bool _create_dir_(Str dirname[_1_]) {
     if (!len__(dirname)) return false;
+    int rv = mkdir(items__(dirname), 0700);
     if (rv == 0) return true;
     return errno == EEXIST;
 }
@@ -30,8 +21,8 @@ Err create_or_get_confdir(Str confdir[_1_]) {
     if (xdg_config_env) {
         basedir = realpath(xdg_config_env, buf);
         if (basedir) {
-            try (_str_concat_mem_lit_z__(basedir, strlen(basedir), "/ahre", confdir));
-            if (_create_dir_and_remove_z_(confdir)) return Ok;
+            try (str_append_2(confdir, basedir, "/ahre"));
+            if (_create_dir_(confdir)) return Ok;
         }
     }
 
@@ -40,13 +31,13 @@ Err create_or_get_confdir(Str confdir[_1_]) {
     if (home) {
         basedir = realpath(home, buf);
         if (basedir) {
-            try (_str_concat_mem_lit_z__(basedir, strlen(basedir), "/.config/ahre", confdir));
-            if (_create_dir_and_remove_z_(confdir)) return Ok;
+            try (str_append_2(confdir, basedir, "/.config/ahre"));
+            if (_create_dir_(confdir)) return Ok;
 
             str_reset(confdir);
-            try (_str_concat_mem_lit_z__(basedir, strlen(basedir), "/.ahre", confdir));
+            try (str_append_2(confdir, basedir, "/.ahre"));
 
-            if (_create_dir_and_remove_z_(confdir)) return Ok;
+            if (_create_dir_(confdir)) return Ok;
         }
     }
 

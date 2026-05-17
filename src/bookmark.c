@@ -62,19 +62,20 @@ cmd_bookmarks(CmdParams p[_1_]) {
     const char* url = p->ln;
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
-    ArlOf(BufOf(char)) list = (ArlOf(BufOf(char))){0};
+    ArlOf(Str) list = (ArlOf(Str)){0};
     DomNode body;
     try(bookmark_sections_body(htmldoc, &body));
     Err err = Ok;
+
     if (!*url) {
         err = bookmark_sections(body, &list);
         if (!err) {
-            BufOf(char)* it = arlfn(BufOf(char), begin)(&list);
-            for (; it != arlfn(BufOf(char), end)(&list); ++it) {
+            Str* it = arlfn(Str, begin)(&list);
+            for (; it != arlfn(Str, end)(&list); ++it) {
                 try( msg_ln__(cmd_params_cmd_out(p), it));
             }
         }
-        arlfn(BufOf(char),clean)(&list);
+        arlfn(Str,clean)(&list);
     } else {
         DomNode section;
         try( bookmark_section_get(body, url, &section, /*match_prefix*/false));
@@ -239,8 +240,8 @@ Err _bm_to_source_rec_(DomNode node, Str out[_1_]) {
 
 /* internal linkage */
 
-/* static void bookmark_sections_sort(ArlOf(BufOf(char))* list) { */
-/*     qsort(list->items, list->len, sizeof(BufOf(char)), buf_of_char_cmp); */
+/* static void bookmark_sections_sort(ArlOf(Str)* list) { */
+/*     qsort(list->items, list->len, sizeof(Str), buf_of_char_cmp); */
 /* } */
 
 

@@ -27,7 +27,7 @@ typedef struct TextBuf {
 
 /* getters */
 static inline size_t* textbuf_current_offset(TextBuf tb[_1_]) { return &tb->current_offset; }
-static inline BufOf(char)*
+static inline Str*
 textbuf_buf(TextBuf t[_1_]) { return &t->buf; }
 static inline TextBufMods* textbuf_mods(TextBuf tb[_1_]) { return &tb->mods; }
 
@@ -85,16 +85,11 @@ size_t textbuf_eol_count(TextBuf textbuf[_1_]);
 
 static inline Err
 textbuf_append_line(TextBuf ab[_1_], char* data, size_t len) {
-    if (!len || !data || !*data)
-        return err_fmt("error: invalid param: %s", __func__);
-    if (!buffn(char,append)(&ab->buf, (char*)data, len))
-        return err_fmt("error in %s: could not append data", __func__);
-    if (!arlfn(size_t, append)(&ab->eols, &ab->buf.len))
-        return err_fmt("error in %s: could not append eol", __func__);
-    if (!buffn(char,append)(&ab->buf, (char*)"\n", 1))
-        return err_fmt("error in %s: could not append newline, data: %s",__func__, data);
-
-    return NULL;
+    if (!len || !data || !*data) return err_fmt("error: invalid param: %s", __func__);
+    try(str_append(&ab->buf, sv(data,len)));
+    if (!arlfn(size_t, append)(&ab->eols, &ab->buf.len)) return err_append();
+    try(str_append(&ab->buf, svl("\n")));
+    return Ok;
 }
 
 

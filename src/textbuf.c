@@ -77,7 +77,7 @@ _insert_missing_newlines_(TextBuf tb[_1_], size_t maxlen, ArlOf(size_t) insertio
         return err_fmt("error: %s: bufof mem failure", __func__);
     size_t n = 1;
     StrView line;
-    Str* buf = &(BufOf(char)){0};
+    Str* buf = &(Str){0};
     while (textbuf_get_line(tb, n++, &line)) {
         Err err;
         if (line.len && strview_count_utf8(line) <= maxlen) {
@@ -126,10 +126,11 @@ size_t* textbuf_eol_at(TextBuf tb[_1_], size_t i) {
 
 
 Err textbuf_append_part(TextBuf textbuf[_1_], char* data, size_t len) {
-    return !buffn(char,append)(&textbuf->buf, (char*)data, len)
-        ?  "buffn failed to append"
-        : Ok
-        ;
+    return str_append(&textbuf->buf, sv(data, len));
+    /* return !buffn(char,append)(&textbuf->buf, (char*)data, len) */
+    /*     ?  "buffn failed to append" */
+    /*     : Ok */
+    /*     ; */
 }
 
 

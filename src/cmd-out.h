@@ -3,6 +3,8 @@
 
 #include "str.h"
 #include "nongeneric.h"
+#include "utils.h"
+
 
 typedef struct { Str s; } Msg;
 static inline Str* msg_str(Msg m[_1_]) { return &m->s; }

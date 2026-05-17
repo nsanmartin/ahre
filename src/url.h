@@ -39,7 +39,7 @@ static inline Err url_fragment(Url u[_1_], char* out[_1_]) {
 }
 
 
-Err get_url_alias(Session* s, const char* cstr, BufOf(char)* out);
+Err get_url_alias(Session* s, const char* cstr, Str* out);
 
 
 /* ctor */

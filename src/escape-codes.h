@@ -3,6 +3,8 @@
 
 #include "error.h"
 #include "str.h"
+#include "utils.h"
+
 
 #define EscCodeRed   "\033[91m"
 #define EscCodeLightGreen  "\033[92m"

@@ -55,21 +55,6 @@ static inline bool _size_t_lt_int_(size_t s, int i) {
 
 #define abs_int__(I) (1+(int)(1+I))
 
-// static inline Err incr_size_t_from_int(size_t s[_1_], int i) {
-//     if (i < 0) {
-//         if (*s == 0) return "error: size_t + int undeflow";
-//         --*s;
-//         int i_incr = 1 + i;
-//         if (lt__(*s, i_incr)) return "error: size_t + int undeflow";
-//         *s -= cast__(size_t)i_incr;
-//         return Ok;
-//     } else {
-//         if (lt__(SIZE_MAX, i) || *s > SIZE_MAX - cast__(size_t)i)
-//             return "error: size_t + int overflow";
-//         *s += cast__(size_t)i;
-//     }
-//     return Ok;
-// }
 
 static inline Err _set_size_t_from_int_(size_t s[_1_], int i) {
     if (i < 0) return "error: size_t underflow (cannot be nagative)";
@@ -95,15 +80,10 @@ static inline void set_flag(unsigned flags[_1_], unsigned mask, bool value) {
 }
 
 #define lit_len__(Lit) (Lit == NULL ? 0 : sizeof(Lit)-1)
-#define T char
-#include <buf.h>
 
 typedef const char const_char;
 #define T const_char
 #include <buf.h>
-
-#define T char
-#include <arl.h>
 
 #define T size_t
 #include <arl.h>
@@ -118,38 +98,12 @@ static inline void const_cstr_free(const_cstr* p) { std_free((void*)*p); }
 #define TClean const_cstr_free
 #include <arl.h>
 
-static inline int buf_of_char_cmp(const void* xp, const void* yp) {
-    const BufOf(char)*x = xp;
-    const BufOf(char)*y = yp;
-    size_t min = (x->len < y->len) ? x->len : y->len;
-    return strncmp(x->items, y->items, min);
-}
-
-#define T BufOf(char)
-#define TClean buffn(char,clean)
-#define TCmp buf_of_char_cmp
-#include <arl.h>
 
 #include "str.h"
 #include "error.h"
 
 
-#define buf_append_lit(LitStr, Buf_) do{\
-   if (buffn(char,append)(Buf_, (char*)LitStr, sizeof(LitStr)-1)) {\
-       return "could not append"; }}while(0)
-
 typedef enum { http_get = 0, http_post = 1 } HttpMethod;
-
-static inline int buf_append_hexp(void* p, BufOf(char)*buf) {
-    char num_buff[256];
-    int len = snprintf(num_buff, 256, "%p", p);
-    if (len >= 256) {
-        fprintf(stdout, "truncating pointer address!\n");
-        return -1;
-    }
-    if (!buffn(char,append)(buf, num_buff, (size_t)len)) { return -1; }
-    return 0;
-}
 
 
 static inline  Err unsigned_to_str(uintmax_t ui, char* buf, size_t size , size_t len[_1_]) {

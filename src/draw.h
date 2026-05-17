@@ -40,7 +40,7 @@ static inline ArlOf(EscCode)* draw_ctx_esc_code_stack(DrawCtx ctx[_1_]) { return
 static inline HtmlDoc* draw_ctx_htmldoc(DrawCtx ctx[_1_]) { return ctx->htmldoc; }
 static inline Session* draw_ctx_session(DrawCtx ctx[_1_]) { return ctx->session; }
 static inline TextBuf* draw_ctx_textbuf(DrawCtx ctx[_1_]) { return htmldoc_textbuf(draw_ctx_htmldoc(ctx)); }
-static inline BufOf(char)* draw_ctx_textbuf_buf_(DrawCtx ctx[_1_]) { return &draw_ctx_textbuf(ctx)->buf; }
+static inline Str* draw_ctx_textbuf_buf_(DrawCtx ctx[_1_]) { return &draw_ctx_textbuf(ctx)->buf; }
 static inline UrlClient* draw_ctx_url_client(DrawCtx ctx[_1_]) { return session_url_client(ctx->session); }
 static inline bool draw_ctx_color(DrawCtx ctx[_1_]) { return !(ctx->flags & DRAW_CTX_FLAG_MONOCHROME); }
 static inline bool draw_ctx_pre(DrawCtx ctx[_1_]) { return (ctx->flags & DRAW_CTX_FLAG_PRE); }

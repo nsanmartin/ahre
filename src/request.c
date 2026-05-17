@@ -145,7 +145,7 @@ Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method) {
 }
 
 
-Err get_url_alias(Session* s, const char* cstr, BufOf(char)* out) {
+Err get_url_alias(Session* s, const char* cstr, Str* out) {
     if (strlen(cstr) && cstr_starts_with("bookmarks", cstr)) {
         if (!len__(session_bookmarks_fname(s))) return "no bookmarks file configured";
         try(str_append(out, svl("file://")));

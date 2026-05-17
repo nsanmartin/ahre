@@ -347,15 +347,25 @@ strview_split_line(StrView text[_1_]) {
 
 /* str fns*/
 
-#define append_mem_(B,S,T) (!buffn(char,append)(B, (char*)S, T))
-#define append_(B,S) (append_mem_(B, items__(S), len__(S)))
-#define append_if_(B,S) (len__(S)?append_mem_(B, items__(S), len__(S)):false)
-bool str_append_strview_2_(Str s[_1_], StrView t, StrView u) {
-    return append_(s, &t) || append_if_(s,&u);
+bool
+str_append_strview__(Str b[_1_], StrView v) {
+    char*  data = (char*)v.items;
+    size_t len  = v.len;
+#define T char
+    if (!data || !len) return true;
+    T* rest = buffn(T, __ensure_extra_capacity)(b, len + 1);
+    if (!rest) return true;
+    memcpy((void*)rest, data, len * sizeof(T));
+    b->len += len;
+    b->items[b->len] = '\0';
+    return false;
+#undef T
 }
-#undef append_mem_
-#undef append_
-#undef append_cstr_
+
+bool str_append_strview_2_(Str s[_1_], StrView t, StrView u) {
+    return str_append_strview__(s, t)
+        || (u.len ? str_append_strview__(s,u) : false);
+}
 
 bool
 str_contains(Str s[_1_], char c) { return len__(s) && memchr(items__(s), c, len__(s)); }
@@ -389,9 +399,10 @@ size_t
 str_append_flip(const char* mem, size_t size, size_t nmemb, Str out[_1_]) {
     size_t len = size * nmemb;
 
-    if (buffn(char,append)(out, (char*)mem, len))
-        return len;
-    return 0;
+    if (str_append(out, sv(mem, len))) return 0;
+    /* if (buffn(char,append)(out, (char*)mem, len)) */
+    /*     return len; */
+    return len;
 }
 
 bool strview_strview_eq_case (StrView s, StrView t) { return mem_eq_case(s.items, s.len, t.items, t.len); }
@@ -506,6 +517,7 @@ Err str_append_mem_(Str* s, char* items, size_t len) {
     if (condition) {
         return err_fmt("TESTING: appends limit (APPENDS__: %d)", APPENDS__);
     }
-    return (buffn(char,append)(s, items, len) ? false  : true);
+    return str_append(s, sv(items,len));
+    /* return (buffn(char,append)(s, items, len) ? false  : true); */
 }
 #endif

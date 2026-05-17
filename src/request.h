@@ -9,7 +9,7 @@ typedef struct {
     HttpMethod method;
     Url*       urlview;
     Url        url;
-    StrZ       urlstr;
+    Str        urlstr;
     ArlOf(Str) keys;
     ArlOf(Str) values;
     Str        postfields; /* used for post field and quey */
@@ -19,7 +19,7 @@ typedef struct {
 bool request_is_local(Request r[_1_]);
 void request_set_local(Request r[_1_], bool value);
 static inline HttpMethod request_method(Request r[_1_]) { return r->method; }
-static inline StrZ* request_urlstr(Request r[_1_]) { return &r->urlstr; }
+static inline Str* request_urlstr(Request r[_1_]) { return &r->urlstr; }
 static inline Url* request_url(Request r[_1_]) { return &r->url; }
 static inline Str* request_postfields(Request r[_1_]) { return &r->postfields; }
 static inline ArlOf(Str)* request_query_keys(Request r[_1_]) { return &r->keys; }
