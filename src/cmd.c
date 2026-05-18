@@ -210,14 +210,6 @@ Err cmd_doc_info(CmdParams p[_1_]) {
 }
 
 
-Err cmd_doc_A(CmdParams p[_1_]) {
-    cmd_assert_no_params(p->ln);
-    HtmlDoc* d;
-    try( session_current_doc(p->s, &d));
-    return htmldoc_A(p->s, d, cmd_params_cmd_out(p));
-}
-
-
 Err cmd_doc_bookmark_add(CmdParams p[_1_]) {
     return bookmark_add_to_section(p->s, p->ln, session_url_client(p->s), cmd_params_cmd_out(p));
 }

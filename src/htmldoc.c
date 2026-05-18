@@ -11,6 +11,7 @@
 #include "session.h"
 #include "writer.h"
 #include "dom.h"
+#include "cmd-out.h"
 
 
 static inline
@@ -791,8 +792,7 @@ draw_tag_blockquote(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
 static Err
 draw_tag_title(DomNode node, DrawCtx ctx[_1_]) {
-    HtmlDoc* d = draw_ctx_htmldoc(ctx);
-    *htmldoc_title(d) = node;
+    (void)ctx; (void)node;
     return Ok;
 }
 
@@ -861,6 +861,12 @@ draw_tag_pre(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 }
 
 
+static Err
+htmldoc_cache_script_nodes(HtmlDoc d[_1_]) {
+    return dom_get_tag_nodes_in_doc(htmldoc_dom(d), svl("script"), htmldoc_scripts(d));
+}
+
+
 /*TODO: decouple sesion and htmldoc here */
 Err
 htmldoc_draw_with_flags(HtmlDoc htmldoc[_1_], Session* s, unsigned flags, CmdOut cmd_out[_1_]) {
@@ -874,6 +880,7 @@ htmldoc_draw_with_flags(HtmlDoc htmldoc[_1_], Session* s, unsigned flags, CmdOut
     ok_then(err, draw_text_buf_commit(&ctx, &text));
     ok_then(err, textbuf_fit_lines(htmldoc_textbuf(htmldoc), *session_ncols(s)));
 
+    ok_then(err, htmldoc_cache_script_nodes(htmldoc));
     draw_ctx_cleanup(&ctx);
     draw_text_buf_clean(&text);
     return err;
@@ -900,21 +907,21 @@ htmldoc_init_move_request(
 ) {
     if (!s) return "error: expecting a session, recived NULL";
     Err e = Ok;
-    unsigned flags = session_js(s) ? HTMLDOC_FLAG_JS : 0x0;
+    const bool js_enabled = session_js(s);
 
     /* lexbor doc should be initialized before jse_init */
     *d = (HtmlDoc){.req=*r};
     tryjmp(e,Fail, dom_init(&d->dom));
-    if (flags & HTMLDOC_FLAG_JS) 
-        tryjmp(e, Fail, jse_init(d));
 
     FetchHistoryEntry* entry;
     tryjmp(e,Fail, arl_append_zero(FetchHistoryEntry, session_fetch_history(s), entry));
 
-    tryjmp(e,Fail, htmldoc_fetch(d, uc, cmd_out, entry));
+    tryjmp(e,Fail, htmldoc_fetch(d, uc, js_enabled, cmd_out, entry));
+    if (js_enabled)
+        tryjmp(e, Fail, jse_init(d));
     htmldoc_eval_js_scripts_or_continue(d, s, cmd_out);
     tryjmp(e,Fail, _htmldoc_draw_(d, s, cmd_out));
-    tryjmp(e,Fail, fetch_history_entry_update_title(entry,htmldoc_title(d)));
+    tryjmp(e,Fail, fetch_history_entry_update_title(entry, htmldoc_dom(d)));
 
     *r = (Request){0};
     return Ok;
@@ -950,10 +957,11 @@ Fail:
 void
 htmldoc_reset_draw(HtmlDoc htmldoc[_1_]) {
     textbuf_reset(htmldoc_textbuf(htmldoc));
-    arlfn(DomNode,clean)(htmldoc_anchors(htmldoc));
-    arlfn(DomNode,clean)(htmldoc_imgs(htmldoc));
-    arlfn(DomNode,clean)(htmldoc_inputs(htmldoc));
-    arlfn(DomNode,clean)(htmldoc_forms(htmldoc));
+    arlfn(DomNode,reset)(htmldoc_anchors(htmldoc));
+    arlfn(DomNode,reset)(htmldoc_imgs(htmldoc));
+    arlfn(DomNode,reset)(htmldoc_inputs(htmldoc));
+    arlfn(DomNode,reset)(htmldoc_forms(htmldoc));
+    arlfn(DomNode,reset)(htmldoc_scripts(htmldoc));
 }
 
 
@@ -973,6 +981,7 @@ htmldoc_drawcache_cleanup(HtmlDoc htmldoc[_1_]) {
     arlfn(DomNode,clean)(htmldoc_imgs(htmldoc));
     arlfn(DomNode,clean)(htmldoc_inputs(htmldoc));
     arlfn(DomNode,clean)(htmldoc_forms(htmldoc));
+    arlfn(DomNode,clean)(htmldoc_scripts(htmldoc));
 
     str_clean(htmldoc_screen(htmldoc));
     htmldoc->draw_cache = (DocDrawCache){0};
@@ -1006,64 +1015,48 @@ htmldoc_destroy(HtmlDoc* htmldoc) {
 
 
 Err
-htmldoc_A(Session* s, HtmlDoc d[_1_], CmdOut* out) {
-    if (!s) return "error: no session";
-    msg__(out, svl("<li><a href=\""));
-    char* url_buf;
-    try( url_cstr_malloc(*htmldoc_url(d), &url_buf));
-    msg__(out, url_buf);
-    w_curl_free(url_buf);
-    msg__(out, svl("\">"));
-    /* try( dom_get_title_text_line(*htmldoc_title(d), msg_str(cmd_out_msg(out)))); */
-    try(strview_join_lines_to_str(
-        dom_node_text_view(*htmldoc_title(d)),
-        msg_str(cmd_out_msg(out))
-    ));
-    msg__(out, svl("</a>"));
-    msg__(out, svl("\n"));
-    return Ok;
-}
-
-
-Err
 htmldoc_print_info(HtmlDoc d[_1_], CmdOut* out) {
-    Err err = Ok;
-    DomNode* title = htmldoc_title(d);
+    try( msg_fmt(out, "download size: %ld\n", *htmldoc_curlinfo_sz_download(d)));
+    try( msg_fmt(out, "html size: %ld\n", htmldoc_sourcebuf(d)->buf.len));
 
-    try (msg__(out, svl("DOWNLOAD SIZE: ")));
-    try (cmd_out_msg_append_ui_as_base10(out, *htmldoc_curlinfo_sz_download(d)));
-    try (msg__(out, svl("\n")));
-    try (msg__(out, svl("html size: ")));
-    try (cmd_out_msg_append_ui_as_base10(out, htmldoc_sourcebuf(d)->buf.len));
-    try (msg__(out, svl("\n")));
-
-    if (title) {
-        Str buf = (Str){0};
-        try(strview_join_lines_to_str(dom_node_text_view(*htmldoc_title(d)), &buf));
-        if (!buf.len) err = msg__(out,  svl("<NO TITLE>"));
-        else err = msg__(out, buf);
-        str_clean(&buf);
-        try(err);
+    {
+        Err e = Ok;
+        try(msg__(out, "title: "));
+        Str title = (Str){0};
+        try(dom_get_title_text_line(htmldoc_dom(d), &title));
+        if (!title.len) e = msg__(out,  svl("<NO TITLE>\n"));
+        else e = msg_ln__(out, title);
+        str_clean(&title);
+        try(e);
     }
-
-    try(msg__(out, svl("\n")));
     
-    char* url = NULL;
-    ok_then(err, url_cstr_malloc(*htmldoc_url(d), &url));
-    if (url) {
-        ok_then(err, msg_ln__(out, url));
+    {
+        try(msg__(out, "url: "));
+        char* url = NULL;
+        Err   e   = Ok;
+        tryjmp(e,CleanUrl, url_cstr_malloc(*htmldoc_url(d), &url));
+        if (url) tryjmp(e,CleanUrl, msg_ln__(out, url));
+        else tryjmp(e, CleanUrl, msg_ln__(out, svl("<NO URL>")));
+CleanUrl:
         w_curl_free(url);
+        try(e);
     }
 
     Str* charset = htmldoc_http_charset(d);
-    if (len__(charset))
-        ok_then(err, msg_ln__(out, charset));
+    if (len__(charset)) {
+        try( msg__(out, svl("charset: ")));
+        try( msg_ln__(out, charset));
+    }
 
     Str* content_type = htmldoc_http_content_type(d);
-    if (len__(content_type))
-        ok_then(err, msg_ln__(out, content_type));
+    if (len__(content_type)) {
+        try( msg__(out, svl("content-type: ")));
+        try( msg_ln__(out, content_type));
+    }
 
-    return err;
+    try( msg_fmt(out, "script count: %ld\n", len__(htmldoc_scripts(d))));
+    try( msg_fmt(out, "downloaded script count: %ld\n", len__(htmldoc_body_scripts(d)) + len__(htmldoc_head_scripts(d))));
+    return Ok;
 }
 
 
@@ -1082,10 +1075,10 @@ draw_tag_a(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     bool is_hyperlink = dom_node_has_attr(node, svl("href"));
     if (is_hyperlink) {
 
-        HtmlDoc*           d          = draw_ctx_htmldoc(ctx);
+        HtmlDoc*        d          = draw_ctx_htmldoc(ctx);
         ArlOf(DomNode)* anchors    = htmldoc_anchors(d);
-        const size_t       anchor_num = anchors->len;
-        DrawTextBuf*       sub_text   = &(DrawTextBuf){0};
+        const size_t    anchor_num = anchors->len;
+        DrawTextBuf*    sub_text   = &(DrawTextBuf){0};
 
         if (!arlfn(DomNode,append)(anchors, &node)) 
             return "error: lip set";
@@ -2005,10 +1998,19 @@ jse_eval_doc_scripts(Session* s, HtmlDoc d[_1_], CmdOut* out) {
 }
 
 
-//TODO: make this fn not Err and rename it
 Err
 htmldoc_js_enable(HtmlDoc d[_1_], Session* s, CmdOut* out) {
+    if (!s) return err_internal("expecting non empty session");
     try( jse_init(d));
+
+    if (0 == len__(htmldoc_head_scripts(d)) + len__(htmldoc_body_scripts(d))) {
+        CurlPtr easy;
+        try(w_curl_easy_init(&easy));
+        Err e = htmldoc_fetch_scripts(d, session_url_client(s), easy, out);
+        curl_easy_cleanup(easy);
+        try (e);
+    }
+
     Err e = jse_eval_doc_scripts(s, d, out);
     if (e) msg__(out, (char*)e);
     return Ok;
@@ -2033,6 +2035,8 @@ _htmldoc_scripts_range_from_parsed_range_(
     *r = (Range){0};
     size_t head_script_count = len__(htmldoc_head_scripts(h));
     size_t body_script_count = len__(htmldoc_body_scripts(h));
+    if (head_script_count + body_script_count != len__(htmldoc_scripts(h)))
+        return "scripts not fetched";
     if (!head_script_count && !body_script_count) return "HtmlDoc has no scripts";
     size_t script_max = head_script_count + body_script_count - 1;
     switch (p->beg.tag) {
@@ -2071,8 +2075,6 @@ _htmldoc_scripts_range_from_parsed_range_(
 
 Err
 htmldoc_scripts_write(HtmlDoc h[_1_], RangeParse rp[_1_], Writer w[_1_]) {
-    if (!htmldoc_js_is_enabled(h)) return "enable js to get the scripts";
-
     Range r;
     try(_htmldoc_scripts_range_from_parsed_range_(h, rp, &r));
     for (size_t it = r.beg; it < r.end; ++it) {
@@ -2098,16 +2100,24 @@ htmldoc_scripts_write(HtmlDoc h[_1_], RangeParse rp[_1_], Writer w[_1_]) {
 Err curl_lexbor_fetch_document(
     UrlClient         url_client[_1_],
     HtmlDoc           htmldoc[_1_],
+    bool              fetch_scripts,
     CmdOut            out[_1_],
     FetchHistoryEntry histentry[_1_],
     CurlPtr           easy
 );
 
 Err
-htmldoc_fetch(HtmlDoc htmldoc[_1_], UrlClient url_client[_1_], CmdOut cmd_out[_1_], FetchHistoryEntry he[_1_]) {
+htmldoc_fetch(
+    HtmlDoc           htmldoc[_1_],
+    UrlClient         url_client[_1_],
+    bool              fetch_scripts,
+    CmdOut            cmd_out[_1_],
+    FetchHistoryEntry he[_1_]
+)
+{
     CurlPtr easy;
     try(w_curl_easy_init(&easy));
-    Err e = curl_lexbor_fetch_document(url_client, htmldoc, cmd_out, he, easy);
+    Err e = curl_lexbor_fetch_document(url_client, htmldoc, fetch_scripts, cmd_out, he, easy);
     curl_easy_cleanup(easy);
     return e;
 }
@@ -2195,3 +2205,7 @@ bool htmldoc_content_is_html(HtmlDoc d[_1_]) {
     for (;dot; --dot) if (url[dot] == '.') break;
     return url[dot] == '.' && str_eq_case(svl(".html"), sv(url + dot, len - dot));
 }
+
+
+Err
+htmldoc_title(HtmlDoc d[_1_], DomNode title[_1_]) { return dom_get_title_node(htmldoc_dom(d), title); }

@@ -55,4 +55,5 @@ static inline void cmd_out_clean(CmdOut o[_1_]) {
 #define cmd_out_screen_append_ui_as_base10(M,U) str_append_ui_as_base10(cmd_out_screen(M), U)
 #define cmd_out_screen_append_ui_as_base36(M,U) str_append_ui_as_base36(cmd_out_screen(M), U)
 
+Err msg_fmt(CmdOut cout[_1_], const char* fmt, ...);
 #endif

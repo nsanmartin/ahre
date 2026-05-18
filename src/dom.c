@@ -259,6 +259,8 @@ Err dom_parse(Dom d, StrView html) {
 
 Dom dom_from_ptr(DomPtr ptr) { return (Dom){.ptr=ptr}; }
 
+DomNode
+dom_node_from_elem(DomElem elem) { return (DomNode){.ptr=lxb_dom_interface_node(elem.ptr)}; }
 
 DomNode
 dom_node_prev(DomNode n) { return (DomNode){.ptr=n.ptr->prev}; }
@@ -316,6 +318,7 @@ dom_node_tag_is_valid(DomNode n) {
 
 StrView
 dom_node_text_view(DomNode node) {
+    if (isnull(node)) return (StrView){0};
     lxb_dom_text_t* text = lxb_dom_interface_text(node.ptr);
     if(!text) return (StrView){0};
     return (StrView) {
@@ -384,6 +387,35 @@ Err dom_elem_init(DomElem de[_1_], Dom dom, StrView strv) {
 }
 
 void dom_elem_cleanup(DomElem de) { lxb_dom_document_destroy_element(de.ptr); }
+
+
+Err
+dom_elem_set_text_content(DomElem elem, StrView text)
+{
+    lxb_dom_node_t *node = lxb_dom_interface_node(elem.ptr);
+    while (node->first_child) {
+        lxb_dom_node_destroy(node->first_child);
+    }
+
+    lxb_dom_text_t *text_node = lxb_dom_document_create_text_node(
+        node->owner_document,
+        (const lxb_char_t *)text.items, text.len);
+    if (!text_node) return "lexbor failed to create text node";
+    lxb_dom_node_insert_child(node, lxb_dom_interface_node(text_node));
+    return Ok;
+}
+
+
+Err
+dom_elem_get_text_content(DomElem elem, Str *out)
+{
+    DomNode node = dom_node_from_elem(elem);
+    for(DomNode txt = dom_node_first_child(node); !isnull(txt) ; txt = dom_node_next(txt)) {
+        StrView node_text = dom_node_text_view(txt);
+        if (node_text.len) try( str_append(out, node_text));
+    }
+    return Ok;
+}
 
 
 void dom_node_insert_child_node(DomNode node, DomNode child) {
@@ -520,19 +552,11 @@ _search_title_rec_(lxb_dom_node_t* node, lxb_dom_node_t* title[_1_]) {
 }
 
 
-Err dom_get_title_node(Dom dom, DomNode title[_1_]) {
-    lxb_dom_node_t* node = dom_root(dom).ptr;
-    if (!node) return "error: no document";
-    *title = (DomNode){0};
-    _search_title_rec_(node, &title->ptr);
-    return Ok;
-}
-
-
 Err dom_get_title_text_line(Dom dom, Str* out) {
     DomNode title;
     dom_get_title_node(dom, &title);
     if (isnull(title)) return Ok;
+    //TODO1: why only first child?
     DomNode node = dom_node_first_child(title); 
     try(strview_join_lines_to_str(dom_node_text_view(node), out));
     return Ok;
@@ -615,3 +639,100 @@ html_input_type_is_text_like(StrView type) {
         ;
 }
 
+
+Err
+dom_get_tag_nodes_in_doc(Dom dom, StrView tag, ArlOf(DomNode) nodes[_1_]) {
+    lxb_dom_collection_t* collection = lxb_dom_collection_make(&dom.ptr->dom_document, 16);
+    if (collection == NULL)
+        return err_internal("lexbor failed to create Collection object");
+
+    Err        e      = Ok;
+    DomElemPtr domdoc = lxb_dom_interface_element(dom.ptr);
+    if (LXB_STATUS_OK !=
+        lxb_dom_elements_by_tag_name(domdoc, collection, (const lxb_char_t *)tag.items, tag.len)) {
+        e = err_internal("lexbor failed to get scripts");
+        goto Clean;
+    }
+
+    for (size_t i = 0; i < lxb_dom_collection_length(collection); i++) {
+        lxb_dom_element_t* element = lxb_dom_collection_element(collection, i);
+        if (!element) {
+            e = err_internal("lexbor collection failed to retrieve element");
+            goto Clean;
+        }
+        lxb_dom_node_t*   node = lxb_dom_interface_node(element);
+        if (!arlfn(DomNode,append)(nodes,&(DomNode){.ptr=node})) {
+            e = err_append();
+            goto Clean;
+        }
+    }
+
+Clean:
+    lxb_dom_collection_destroy(collection, true);
+    return e;
+}
+
+
+
+Err
+dom_get_head_elem(Dom dom, DomElem head[_1_]) {
+    if (isnull(dom)) err_internal("unexpected null dom");
+    if (!dom.ptr->head) err_internal("unexpected null head");
+    *head = (DomElem){.ptr=lxb_dom_interface_element(dom.ptr->head)};
+    return Ok;
+}
+
+
+Err
+dom_get_body_elem(Dom dom, DomElem body[_1_]) {
+    if (isnull(dom)) err_internal("unexpected null dom");
+    if (!dom.ptr->body) err_internal("unexpected null body");
+    *body = (DomElem){.ptr=lxb_dom_interface_element(dom.ptr->body)};
+    return Ok;
+}
+
+
+Err
+dom_get_title_node(Dom dom, DomNode title[_1_]) {
+
+    lxb_dom_collection_t* collection = lxb_dom_collection_make(&dom.ptr->dom_document, 16);
+    if (collection == NULL) return err_internal("lexbor failed to create Collection object");
+
+    Err        e         = Ok;
+    DomElemPtr head      = lxb_dom_interface_element(dom.ptr->head);
+    StrView    title_str = svl("title");
+    if (LXB_STATUS_OK !=
+        lxb_dom_elements_by_tag_name(head, collection, (const lxb_char_t *)title_str.items, title_str.len)) {
+        e = err_internal("lexbor failed to get scripts");
+        goto Clean;
+    }
+
+    size_t title_count = lxb_dom_collection_length(collection);
+    if (title_count > 1) {
+        e = err_fmt("unexpected %d titles in head", title_count);
+        goto Clean;
+    } else if (title_count == 1) {
+        lxb_dom_element_t* element = lxb_dom_collection_element(collection, 0);
+        if (!element) {
+            e = err_internal("lexbor collection failed to retrieve element");
+            goto Clean;
+        }
+        title->ptr = lxb_dom_interface_node(element);
+    } else {
+        title->ptr = NULL;
+    }
+ 
+
+Clean:
+    lxb_dom_collection_destroy(collection, true);
+    return e;
+}
+
+
+Err
+dom_get_title_elem(Dom dom, DomElem title[_1_]) {
+    DomNode node;
+    try(dom_get_title_node(dom, &node));
+    *title = dom_elem_from_node(node);
+    return Ok;
+}

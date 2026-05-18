@@ -20,6 +20,7 @@
 #include "htmldoc.h"
 #include "writer.h"
 #include "generic.h"
+#include "wrapper-lexbor-curl.h"
 
 
 #define CMD_NO_PARAMS 0x1
@@ -422,6 +423,20 @@ Failure:
 }
 
 
+static Err cmd_doc_scripts_fetch(CmdParams p[_1_]) {
+    if (!range_parse_is_none(&p->rp)) return "cmd doc scripts fetch does not allow range. ";
+    HtmlDoc* h;
+    try(session_current_doc(p->s, &h));
+    CurlPtr easy;
+    try(w_curl_easy_init(&easy));
+    Err e = htmldoc_fetch_scripts(h, session_url_client(p->s), easy, cmd_params_cmd_out(p));
+    curl_easy_cleanup(easy);
+    return e;
+}
+
+
+
+
 static Err cmd_doc_scripts_msg(CmdParams p[_1_]) {
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
@@ -433,9 +448,10 @@ static Err cmd_doc_scripts_msg(CmdParams p[_1_]) {
 
 /* doc scripts commands */
 static SessionCmd _cmd_doc_scripts_[] =
-    { {.name="",   .fn=cmd_doc_scripts_msg, .help=NULL, .flags=CMD_EMPTY}
-    , {.name="'",  .fn=cmd_doc_scripts_list, .help=NULL, .flags=CMD_CHAR}
-    , {.name="\"", .fn=cmd_doc_scripts_msg, .help=NULL, .flags=CMD_CHAR}
+    { {.name="",     .fn=cmd_doc_scripts_msg,  .help=NULL, .flags=CMD_EMPTY}
+    , {.name="'",    .fn=cmd_doc_scripts_list, .help=NULL, .flags=CMD_CHAR}
+    , {.name="\"",   .fn=cmd_doc_scripts_msg,  .help=NULL, .flags=CMD_CHAR}
+    , {.name="fetch",.fn=cmd_doc_scripts_fetch,.help=NULL, .match=1}
     , {.name="save", .fn=cmd_doc_scripts_save, .help=NULL, .match=1}
     , {0}
 };
@@ -477,7 +493,6 @@ static inline Err cmd_doc_parse(CmdParams p[_1_]) { return cmd_parse(p->s, cmd_p
 static SessionCmd _cmd_doc_[] =
     { {.name="",        .fn=cmd_doc_info,              .help=CMD_DOC_INFO_DOC,     .flags=CMD_EMPTY}
     , {.name="+",       .fn=cmd_doc_bookmark_add,      .help=CMD_DOC_BOOKMARK_ADD, .flags=CMD_CHAR}
-    , {.name="A",       .fn=cmd_doc_A,                 .help=NULL,                 .flags=CMD_CHAR}
     , {.name="\"",      .fn=cmd_doc_info,              .help=CMD_DOC_INFO_DOC,     .flags=CMD_CHAR}
     , {.name="console", .match=1, .fn=cmd_doc_console, .help=CMD_DOC_CONSOLE}
     , {.name="draw",    .match=1, .fn=cmd_doc_draw,    .help=CMD_DOC_DRAW}

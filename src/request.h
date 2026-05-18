@@ -4,7 +4,6 @@
 #include "url.h"
 #include "sys.h"
 
-
 typedef struct {
     HttpMethod method;
     Url*       urlview;
@@ -13,7 +12,8 @@ typedef struct {
     ArlOf(Str) keys;
     ArlOf(Str) values;
     Str        postfields; /* used for post field and quey */
-    bool       local;
+    unsigned   flags;
+#define REQUEST_LOCAL         0x1
 } Request;
 
 bool request_is_local(Request r[_1_]);
@@ -36,14 +36,16 @@ static inline void request_clean(Request r[_1_]) {
 #define TClean request_clean
 #include <arl.h>
 
-Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method);
 Err request_to_file(Request r[_1_], UrlClient url_client[_1_], FILE* fp);
 Err request_query_append_key_value(Request r[_1_], const char*k, size_t klen, const char* v, size_t vlen);
 
 /* ctors */
-Err request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url);
-Err request_from_form_node (Request r[_1_], DomNode form, bool is_https, Url* urlview);
 Err request_from_cli_params(Request r[_1_], HttpMethod method, StrView urlstr, StrView postfields);
+Err request_from_form_node (Request r[_1_], DomNode form, bool is_https, Url* urlview);
+Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method);
+Err request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url);
+/* ctors **/
+
 Err request_to_handle(
     Request     r[_1_],
     UrlClient   url_client[_1_],

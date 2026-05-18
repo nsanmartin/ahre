@@ -38,3 +38,17 @@ size_t lexbor_parse_chunk_callback(char *in, size_t size, size_t nmemb, void* ou
 }
 
 
+Err
+lexbor_count_tag_occurences_in_doc(DomPtr doc, StrView tag, size_t count[_1_]) {
+    lxb_dom_collection_t* collection = lxb_dom_collection_make(&doc->dom_document, 16);
+    if (collection == NULL)
+        return err_internal("lexbor failed to create Collection object");
+
+    DomElemPtr domdoc = lxb_dom_interface_element(doc);
+    if (LXB_STATUS_OK !=
+        lxb_dom_elements_by_tag_name(domdoc, collection, (const lxb_char_t *)tag.items, tag.len))
+        return  err_internal("lexbor failed to get scripts");
+    *count = lxb_dom_collection_length(collection);
+    lxb_dom_collection_destroy(collection, true);
+    return Ok;
+}

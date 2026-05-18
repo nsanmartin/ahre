@@ -3,11 +3,12 @@ REPO_DIR=..
 QUICKJS_REPO=$(REPO_DIR)/quickjs
 QUICKJS_INCLUDE=$(QUICKJS_REPO)
 QUICKJS_BUILD=$(QUICKJS_REPO)/build
-QUICKJS_LIB=$(QUICKJS_BUILD)/libqjs.a
+QUICKJS_LIB=$(QUICKJS_BUILD)/libqjs.a $(QUICKJS_BUILD)/libqjs-libc.a
 
 LIBCURL=$(HOME)/test/local/lib
 
 CFLAGS+=-g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition \
+		-DAHRE_DEBUG \
 		-I. \
 		-I$(REPO_DIR)/hotl/include \
 		-I$(REPO_DIR)/isocline/include \
@@ -43,4 +44,4 @@ $(AHRE_BUILD)/isocline.o:
 
 
 $(QUICKJS_LIB):
-	$(MAKE) -C $(QUICKJS_REPO) debug
+	$(MAKE) -C $(QUICKJS_REPO) CFGLAGS="-g" debug

@@ -11,3 +11,8 @@ vahre01 () { _vahre_ 01 "$@"; }
 gahre () {
     gdb -ex 'run' --args ./build/ahre "$@";
 }
+
+
+gahrebug () {
+    gdb -ex 'run' --args ./build/debug/ahre "$@";
+}

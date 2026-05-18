@@ -84,9 +84,9 @@ static Err _fetch_tag_script_from_text_(lxb_dom_node_t node[_1_], ArlOf(Str) out
 
 
 static Err _get_scripts_collection_(
-    lxb_html_document_t     doc[_1_],
-    lxb_dom_element_t       elem[_1_],
-    lxb_dom_collection_t*   arr_ptr[_1_]
+    lxb_html_document_t   doc[_1_],
+    lxb_dom_element_t     elem[_1_],
+    lxb_dom_collection_t* arr_ptr[_1_]
 ) {
     *arr_ptr = lxb_dom_collection_make(&doc->dom_document, 32);
     if (*arr_ptr == NULL)
@@ -132,40 +132,50 @@ static Err _split_remote_local_(
 }
 
 
-
-static void _map_append_nullchar_(ArlOf(Str) strlist[_1_], CmdOut cmd_out[_1_]) {
-    for ( Str* sp = arlfn(Str,begin)(strlist) ; sp != arlfn(Str,end)(strlist) ; ++sp) {
-        if (len__(sp)) {
-            Err e0 = str_append(sp, svl("\0"));
-            if (e0) {
-                str_reset(sp);
-                /*ignore e*/ msg__(cmd_out, svl("could not append \\0 to str: "));
-                /*ignore e*/ msg__(cmd_out, e0);
-            } else {
-                --sp->len;
-            }
-        }
-    }
-}
-
-
-//TODO0: althoug we expect small lengths, this may be done more efficiently.
 static Err
-get_failed_indexed(ArlOf(CurlPtr) easies[_1_], ArlOf(CurlMultiSgPtr) failed[_1_], ArlOf(size_t) indexes[_1_]) {
+get_failed_indexes(ArlOf(CurlPtr) easies[_1_], ArlOf(CurlMultiSgPtr) failed[_1_], ArlOf(size_t) indexes[_1_]) {
     CurlPtr* first_easy = arlfn(CurlPtr,begin)(easies);
     foreach__(CurlMultiSgPtr, failed, f) {
         foreach__(CurlPtr, easies, easy) {
             if ((*f)->easy_handle == *easy) {
                 size_t ix = easy - first_easy;
                 if(!arlfn(size_t, append)(indexes, &ix)) return "error: arl append failure";
+                break;
             }
         }
     }
     return Ok;
 }
 
+static Err
+clear_scripts_that_failed_to_download(
+    ArlOf(CurlMultiSgPtr)* failed,
+    ArlOf(CurlPtr)*        easies,
+    HtmlDoc                htmldoc[_1_],
+    CmdOut                 cmd_out[_1_]
+) {
+    const size_t n = len__(failed);
+    if (!n) return Ok;
 
-static Err curl_lexbor_fetch_scripts(HtmlDoc htmldoc[_1_], UrlClient url_client[_1_], CurlPtr easy, CmdOut cmd_out[_1_]) {
+    msg__(cmd_out, err_fmt("warn: %d script%s could not be downloaded\n", n, (n>1?"s":"")));
+    ArlOf(size_t)* indexes = &(ArlOf(size_t)){0};
+    Err e = get_failed_indexes(easies, failed, indexes);
+    if (!e) {
+        foreach__(size_t, indexes, ix) {
+            Str* script; /* url_client_multi_add_handles pushed the empty buffers for all scripts
+             * so I can assume indexes will match.  **/
+            e = htmldoc_script_at(htmldoc, *ix, &script);
+            if (e) break;
+            str_reset(script);
+        }
+    }
+    arlfn(size_t, clean)(indexes);
+    return e;
+}
+
+
+Err
+htmldoc_fetch_scripts(HtmlDoc htmldoc[_1_], UrlClient url_client[_1_], CurlPtr easy, CmdOut cmd_out[_1_]) {
     Err e = Ok;
     //TODO!: evaluate scripts in order
 
@@ -185,65 +195,42 @@ static Err curl_lexbor_fetch_scripts(HtmlDoc htmldoc[_1_], UrlClient url_client[
     ArlOf(CurlMultiSgPtr)* failed    = &(ArlOf(CurlMultiSgPtr)){0};
 
     try(_get_scripts_collection_(doc, lxb_dom_interface_element(doc->head), &head_scripts));
-    tryjmp(e, Lxb_Array_Head_Destroy,
-            _get_scripts_collection_(doc, lxb_dom_interface_element(doc->body), &body_scripts));
+    tryjmp(e, Clean, _get_scripts_collection_(doc, lxb_dom_interface_element(doc->body), &body_scripts));
+    if (lxb_dom_collection_length(head_scripts) + lxb_dom_collection_length(body_scripts) == 0)
+        goto Clean;
+    tryjmp(e, Clean, _split_remote_local_(head_scripts, htmldoc_head_scripts(htmldoc), head_urls, cmd_out));
+    tryjmp(e, Clean, _split_remote_local_(body_scripts, htmldoc_body_scripts(htmldoc), body_urls, cmd_out));
 
-    tryjmp(e, Lxb_Array_Body_Destroy,
-            _split_remote_local_(head_scripts, htmldoc_head_scripts(htmldoc), head_urls, cmd_out));
-    tryjmp(e, Clean_Head_Urls,
-            _split_remote_local_(body_scripts, htmldoc_body_scripts(htmldoc), body_urls, cmd_out));
+    if (len__(head_urls) + len__(body_urls) == 0)
+        goto Clean;
 
-
-    e = url_client_multi_add_handles(
-        url_client, curlu, head_urls, htmldoc_head_scripts(htmldoc), easies, curlus, cmd_out);
+    e = url_client_multi_add_handles(url_client, curlu, head_urls, htmldoc_head_scripts(htmldoc), easies, curlus, cmd_out);
     if (e) {
         try(msg__(cmd_out, svl("could not add head handles: ")));
         try(msg_ln__(cmd_out, e));
     }
-    e = url_client_multi_add_handles(
-        url_client, curlu, body_urls, htmldoc_body_scripts(htmldoc), easies, curlus, cmd_out);
+    e = url_client_multi_add_handles(url_client, curlu, body_urls, htmldoc_body_scripts(htmldoc), easies, curlus, cmd_out);
     if (e) {
         try(msg__(cmd_out, svl("could not add head handles: ")));
         try(msg__(cmd_out, e));
     }
 
-    e = w_curl_multi_perform_poll(multi, failed);
+    tryjmp(e,Clean, w_curl_multi_perform_poll(multi, failed));
+    tryjmp(e,CleanMulti, clear_scripts_that_failed_to_download(failed, easies, htmldoc, cmd_out));
     if (!e) {
-        size_t n = len__(failed);
-        if (n) {
-            msg__(cmd_out, err_fmt("warn: %d script%s could not be downloaded\n", n, (n>1?"s":"")));
-            ArlOf(size_t)* indexes = &(ArlOf(size_t)){0};
-            e = get_failed_indexed(easies, failed, indexes);
-            if (!e) {
-                foreach__(size_t, indexes, ix) {
-                    Str* script; /* url_client_multi_add_handles pushed the empty buffers for all scripts
-                     * so I can assume indexes will match.  **/
-                    e = htmldoc_script_at(htmldoc, *ix, &script);
-                    if (e) break;
-                    str_reset(script);
-                }
-            }
-            arlfn(size_t, clean)(indexes);
-        }
+        try(msg_ln__(cmd_out, err_fmt("%d scripts downloaded, %d failed to download", len__(easies)-len__(failed), len__(failed))));
     }
+    tryjmp(e,CleanMulti, for_htmldoc_size_download_append(easies, cmd_out, easy, htmldoc_curlinfo_sz_download(htmldoc)));
 
-    for_htmldoc_size_download_append(
-        easies, cmd_out, easy, htmldoc_curlinfo_sz_download(htmldoc));
+CleanMulti:
     w_curl_multi_remove_handles(multi, easies, cmd_out);
-
-    _map_append_nullchar_(htmldoc_head_scripts(htmldoc), cmd_out);
-    _map_append_nullchar_(htmldoc_body_scripts(htmldoc), cmd_out);
-
-Clean_Head_Urls:
+Clean:
     arlfn(CurlPtr,clean)(easies);
     arlfn(CurlMultiSgPtr,clean)(failed);
     arlfn(CurlUrlPtr,clean)(curlus);
     arlfn(Str,clean)(head_urls);
     arlfn(Str,clean)(body_urls);
-
-Lxb_Array_Body_Destroy:
     lxb_dom_collection_destroy(body_scripts, true);
-Lxb_Array_Head_Destroy:
     lxb_dom_collection_destroy(head_scripts, true);
     return e;
 }
@@ -252,6 +239,7 @@ Lxb_Array_Head_Destroy:
 Err curl_lexbor_fetch_document(
     UrlClient         url_client[_1_],
     HtmlDoc           htmldoc[_1_],
+    bool              fetch_scripts,
     CmdOut            out[_1_],
     FetchHistoryEntry histentry[_1_],
     CurlPtr           easy
@@ -259,6 +247,7 @@ Err curl_lexbor_fetch_document(
 Err curl_lexbor_fetch_document(
     UrlClient         url_client[_1_],
     HtmlDoc           htmldoc[_1_],
+    bool              fetch_scripts,
     CmdOut            cmd_out[_1_],
     FetchHistoryEntry histentry[_1_],
     CurlPtr           easy
@@ -283,7 +272,7 @@ Err curl_lexbor_fetch_document(
     try( _lexbor_parse_chunk_end_(htmldoc));
     try( _set_htmldoc_url_with_effective_url_(easy, htmldoc));
     try( htmldoc_convert_sourcebuf_to_utf8(htmldoc));
-    if (htmldoc_js_is_enabled(htmldoc))
-        try(curl_lexbor_fetch_scripts(htmldoc, url_client, easy, cmd_out));
+    if (fetch_scripts)
+        try(htmldoc_fetch_scripts(htmldoc, url_client, easy, cmd_out));
     return Ok;
 }

@@ -427,8 +427,8 @@ set_post_fields(Request r[_1_], CurlPtr curl) {
 
 
 bool
-request_is_local(Request r[_1_]) { return r->local; }
+request_is_local(Request r[_1_]) { return r->flags & REQUEST_LOCAL; }
 
 
 void
-request_set_local(Request r[_1_], bool value) { r->local = value; }
+request_set_local(Request r[_1_], bool value) { set_flag(&r->flags, REQUEST_LOCAL, value); }

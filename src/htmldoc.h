@@ -36,11 +36,11 @@ typedef struct {
 typedef struct {
     TextBuf        textbuf;
     Str            screen;
-    DomNode        title;
     ArlOf(DomNode) anchors;
     ArlOf(DomNode) imgs;
     ArlOf(DomNode) inputs;
     ArlOf(DomNode) forms;
+    ArlOf(DomNode) scripts;
 } DocDrawCache;
 
 
@@ -70,11 +70,11 @@ static inline ArlOf(DomNode)* htmldoc_anchors(HtmlDoc d[_1_]) { return &d->draw_
 static inline ArlOf(DomNode)* htmldoc_forms(HtmlDoc d[_1_]) { return &d->draw_cache.forms; }
 static inline ArlOf(DomNode)* htmldoc_imgs(HtmlDoc d[_1_]) { return &d->draw_cache.imgs; }
 static inline ArlOf(DomNode)* htmldoc_inputs(HtmlDoc d[_1_]) { return &d->draw_cache.inputs; }
+static inline ArlOf(DomNode)* htmldoc_scripts(HtmlDoc d[_1_]) { return &d->draw_cache.scripts; }
 static inline ArlOf(Str)* htmldoc_body_scripts(HtmlDoc d[_1_]) { return &d->fetch_cache.body_scripts; }
 static inline ArlOf(Str)* htmldoc_head_scripts(HtmlDoc d[_1_]) { return &d->fetch_cache.head_scripts; }
 static inline Dom htmldoc_dom(HtmlDoc d[_1_]) { return d->dom; }
 static inline Dom* htmldoc_dom_ptr(HtmlDoc d[_1_]) { return &d->dom; }
-static inline DomNode* htmldoc_title(HtmlDoc d[_1_]) { return &d->draw_cache.title; }
 static inline HttpHeader* htmldoc_http_header(HtmlDoc h[_1_]) { return &h->http_header; }
 static inline HttpMethod htmldoc_method(HtmlDoc d[_1_]) { return d->req.method; }
 static inline JsEngine* htmldoc_js(HtmlDoc d[_1_]) { return &d->jsdoc; }
@@ -91,6 +91,7 @@ static inline bool htmldoc_js_is_enabled(HtmlDoc d[_1_]) { return jse_is_enabled
 static inline void htmldoc_js_disable(HtmlDoc d[_1_]) { jse_clean(htmldoc_js(d)); }
 
 
+Err htmldoc_title(HtmlDoc d[_1_], DomNode title[_1_]);
 
 
 /* dtors */
@@ -103,10 +104,16 @@ void htmldoc_cache_cleanup(HtmlDoc htmldoc[_1_]) ;
 
 
 Err htmldoc_draw_with_flags(HtmlDoc htmldoc[_1_], Session* s, unsigned flags, CmdOut cmd_out[_1_]);
-Err htmldoc_A(Session* s, HtmlDoc d[_1_], CmdOut* out);
+// Err htmldoc_A(Session* s, HtmlDoc d[_1_], CmdOut* out);
 Err htmldoc_console(HtmlDoc d[_1_], Session* s, const char* line, CmdOut* out);
 Err htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[_1_]);
-Err htmldoc_fetch(HtmlDoc htmldoc[_1_], UrlClient url_client[_1_], CmdOut cmd_out[_1_], FetchHistoryEntry he[_1_]);
+Err htmldoc_fetch(
+    HtmlDoc           htmldoc[_1_],
+    UrlClient         url_client[_1_],
+    bool              fetch_scripts,
+    CmdOut            cmd_out[_1_],
+    FetchHistoryEntry he[_1_]
+);
 Err htmldoc_init_bookmark_move_urlstr(HtmlDoc d[_1_], Str urlstr[_1_]);
 Err htmldoc_init_move_request(HtmlDoc d[_1_], Request r[_1_], UrlClient uc[_1_], Session* s, CmdOut* out);
 Err htmldoc_input_at(HtmlDoc d[_1_], size_t ix, DomNode out[_1_]);
@@ -123,4 +130,5 @@ void htmldoc_eval_js_scripts_or_continue(HtmlDoc d[_1_], Session* s, CmdOut* out
 void textmod_trim_left(TextBufMods mods[_1_], size_t n);
 bool htmldoc_content_is_html(HtmlDoc d[_1_]);
 Err htmldoc_reparse_source(HtmlDoc d[_1_]);
+Err htmldoc_fetch_scripts(HtmlDoc htmldoc[_1_], UrlClient url_client[_1_], CurlPtr easy, CmdOut cmd_out[_1_]);
 #endif

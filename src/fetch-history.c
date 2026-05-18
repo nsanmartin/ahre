@@ -74,8 +74,10 @@ Err fetch_history_write_to_file(FetchHistoryEntry e[_1_], FILE* fp) {
 }
 
 
-Err fetch_history_entry_update_title(FetchHistoryEntry e[_1_], DomNode np[_1_]) {
-    StrView data = dom_node_text_view(*np);
+Err fetch_history_entry_update_title(FetchHistoryEntry e[_1_], Dom d) {
+    DomNode title;
+    try(dom_get_title_node(d, &title));
+    StrView data = dom_node_text_view(title);
     if (data.len) {
         try( str_append(&e->title, &data));
         str_replace_char_inplace(&e->title, '\n', ' ');

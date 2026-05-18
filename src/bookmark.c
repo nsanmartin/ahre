@@ -26,7 +26,7 @@ Err get_bookmarks_doc(
     tryjmp(err, Clean, str_append_z(bm_url, bm_path));
     tryjmp(err, Clean, htmldoc_init_bookmark_move_urlstr(htmldoc_out, bm_url));
     FetchHistoryEntry e = (FetchHistoryEntry){0};
-    err = _htmldoc_fetch_bookmark_(htmldoc_out, url_client, cmd_out, &e);
+    err = _htmldoc_fetch_bookmark_(htmldoc_out, url_client, false, cmd_out, &e);
     fetch_history_entry_clean(&e);
     if (err) htmldoc_cleanup(htmldoc_out);
 Clean:

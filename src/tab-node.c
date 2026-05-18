@@ -136,7 +136,8 @@ Err session_tab_node_print(
             }
     }
     try( msg__(out, svl(" ")));
-    DomNode title = *htmldoc_title(d);
+    DomNode title;
+    try(htmldoc_title(d, &title));
     if (!isnull(title)) {
             Err e = strview_join_lines_to_str(
                 dom_node_text_view(dom_node_first_child(title)),

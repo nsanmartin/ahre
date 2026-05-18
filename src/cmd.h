@@ -97,7 +97,6 @@ Err cmd_doc(CmdParams p[_1_]);
 #define CMD_DOC_INFO_DOC \
     "Prints document information such as the title and its url.\n"
 Err cmd_doc_info(CmdParams p[_1_]);
-Err cmd_doc_A(CmdParams p[_1_]);
 
 #define CMD_DOC_BOOKMARK_ADD \
     ".+[/]SECTION_NAME\n\n"\

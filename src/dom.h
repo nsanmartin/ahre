@@ -17,11 +17,14 @@ Dom     dom_from_ptr(DomPtr ptr);
 DomElem dom_get_elem_by_id(Dom dom, StrView id);
 DomNode dom_root(Dom dom);
 Err     dom_get_title_node(Dom dom, DomNode node[_1_]);
+Err     dom_get_title_elem(Dom dom, DomElem node[_1_]);
 Err     dom_get_title_text_line(Dom dom, Str* out);
 Err     dom_init(Dom d[_1_]);
 Err     dom_parse(Dom d, StrView html);
 void    dom_cleanup(Dom d);
 void    dom_reset(Dom d);
+Err     dom_get_head_elem(Dom dom, DomElem head[_1_]);
+Err     dom_get_body_elem(Dom dom, DomElem body[_1_]);
 
 
 /* DOM NODE */
@@ -29,6 +32,7 @@ void    dom_reset(Dom d);
 DomNode dom_node_prev(DomNode n);
 DomNode dom_node_parent(DomNode n);
 DomNode dom_node_find_parent_form(DomNode node);
+DomNode dom_node_from_elem(DomElem node);
 Err     dom_node_append_null_terminated_attr_to_str(DomNode node, StrView attr, Str out[_1_]);
 Err     dom_node_remove_attr(DomNode n, StrView attr);
 Err     dom_node_set_attr(DomNode n, StrView key, StrView value);
@@ -59,6 +63,8 @@ Err     dom_elem_set_attr(DomElem de, StrView key, StrView value);
 StrView dom_elem_name_view(DomElem elem);
 StrView dom_elem_attr_value(DomElem elem, StrView attr);
 void    dom_elem_cleanup(DomElem de);
+Err     dom_elem_set_text_content(DomElem elem, StrView text);
+Err     dom_elem_get_text_content(DomElem elem, Str *out);
 
 /* DOM ATTRIBUTE */
 bool dom_attr_has_owner(DomAttr attr);
@@ -296,7 +302,7 @@ static inline bool dom_node_eq(DomNode n, DomNode m) { return n.ptr == m.ptr; }
 
 bool dom_node_has_tag(DomNode n, HtmlTag tag);
 bool dom_node_has_type(DomNode n, DomNodeType type);
-//TODO0: deprecate:
+//TODO1: deprecate:
 static inline bool dom_node_has_tag_body(DomNode n) { return n.ptr->local_name == LXB_TAG_BODY; }
 static inline bool dom_node_has_tag_form(DomNode n) { return n.ptr->local_name == LXB_TAG_FORM; }
 static inline bool dom_node_has_tag_head(DomNode n) { return n.ptr->local_name == LXB_TAG_HEAD; }
@@ -318,4 +324,5 @@ StrView dom_attr_name_view(DomAttr attr);
 StrView dom_attr_value_view(DomAttr attr);
 
 bool html_input_type_is_text_like(StrView type);
+Err dom_get_tag_nodes_in_doc(Dom dom, StrView tag, ArlOf(DomNode) nodes[_1_]);
 #endif

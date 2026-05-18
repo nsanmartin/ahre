@@ -2,7 +2,7 @@ REPO_DIR=..
 QUICKJS_REPO=$(REPO_DIR)/quickjs
 QUICKJS_INCLUDE=$(QUICKJS_REPO)
 QUICKJS_BUILD=$(QUICKJS_REPO)/build
-QUICKJS_LIB=$(QUICKJS_BUILD)/libqjs.a
+QUICKJS_LIB=$(QUICKJS_BUILD)/libqjs.a $(QUICKJS_BUILD)/libqjs-libc.a
 
 AHRE_CFLAGS=$(CFLAGS) -g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition \
 			-Wmissing-prototypes \
@@ -60,3 +60,8 @@ $(AHRE_OBJDIR)/__pre__%.c: $(AHRE_SRCDIR)/%.c
 
 preprocessed: $(AHRE_PREPROCESSED)
 	$(CC) $(AHRE_INCLUDE) -E -o $(AHRE_BUILD)/ahre__pre__.c $(REPO_DIR)/ahre.c
+
+
+tags: $(wildcard $(AHRE_SRCDIR)/*.c) clean-tags
+	ctags -R .
+

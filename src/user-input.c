@@ -112,17 +112,29 @@ Err ui_vi_mode_read_input(Session* s, const char* prompt, char* out[_1_]) {
 
 static StrView
 _get_next_page_(size_t nrows, size_t ncols, StrView msg[_1_]) {
-    const char* beg  = msg->items;
-    size_t len = 0;
+    const char*  beg       = msg->items;
+    size_t       len = 0;
+
     while (msg->len > 0 && nrows) {
-        StrView line = strview_split_line(msg);
-        size_t linerows = 1 + line.len / ncols - (bool)(line.len && line.len % ncols == 0);
-        if (linerows >= nrows) {
-            nrows = 0;
-            len  += nrows * ncols;
-        } else {
-            nrows -= linerows;
+        StrView      line            = strview_split_line(msg);
+        const size_t available_space = nrows * ncols;
+        const size_t rows_in_line    = 1 + (line.len / ncols) - (bool)(line.len && line.len % ncols == 0);
+        if (line.len <= available_space) {
+            nrows -= rows_in_line;
             len   += line.len + 1;
+        } else if (rows_in_line >= nrows) {
+            const size_t rewind = line.len - available_space;
+            if (beg + rewind > msg->items) {
+                msg->len = 0;
+                return svl("\nerror paginating msg, rewind too large! :(\n");
+            }
+            nrows       = 0;
+            len        += available_space;
+            msg->len   += rewind;
+            msg->items -= rewind;
+        } else {
+            msg->len = 0;
+            return svl("\nerror paginating msg :(\n");
         }
     }
         return sv(beg, len);
@@ -199,4 +211,14 @@ ui_vi_flush_msg_read_input(Session* s, StrView msg) {
 Clean:
     arlfn(StrView,clean)(&ps);
     return e;
+}
+
+Err wait_for_char(char c) {
+    struct termios prev_termios;
+    try( switch_tty_to_raw_mode(&prev_termios));
+    int cin;
+    while ((c != (cin = fgetc(stdin))))
+        ;
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &prev_termios) == -1) return err_internal("tcsetattr failure");
+    return Ok;
 }

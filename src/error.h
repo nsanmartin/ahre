@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#define MAX_MSG_LEN 4090u
 
 typedef const char* Err;
 #define Ok ((Err)0x0)

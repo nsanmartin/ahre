@@ -127,7 +127,7 @@ Err ui_vi_flush_msg(Session* s, CmdOut cout[_1_]) {
 
     try(ui_vi_flush_msg_read_input(s, sv(msg->s)));
     msg_reset(msg);
-    return Ok;
+    return lit_write__(EscCodeClsScr, stdout);
 }
 
 Err ui_vi_show_err(Session* s, char* err, size_t len) {
@@ -139,16 +139,16 @@ Err ui_vi_show_err(Session* s, char* err, size_t len) {
                       || mem_fwrite(INTERNAL_ERROR_PREFIX, lit_len__(INTERNAL_ERROR_PREFIX), stream)
                       || mem_fwrite(EscCodeReset, lit_len__(EscCodeRed), stream)
                       || mem_fwrite(err + lit_len__(INTERNAL_ERROR_PREFIX), len - lit_len__(INTERNAL_ERROR_PREFIX), stream)
-                      || lit_write__("{type enter}", stream)
+                      || lit_write__("{type q}", stream)
                       ;
             if (suberr) return EscCodeRed"error: fprintf failure while attempting to show an error :/"EscCodeReset;
-        } else if (mem_fwrite(err, len, stream) || lit_write__("{type enter}", stream)) {
+        } else if (mem_fwrite(err, len, stream) || lit_write__("{type q}", stream)) {
             return "error: fprintf failure while attempting to show an error :/";
         }
 
     }
     fflush(stream);
-    getchar();
-    return Ok;
+    try( wait_for_char('q'));
+    return lit_write__(EscCodeClsScr, stream);
 }
 

@@ -33,7 +33,7 @@ typedef struct {
 
 Err fetch_history_entry_init(FetchHistoryEntry e[_1_]);
 Err fetch_history_entry_update_curl(FetchHistoryEntry e[_1_], CURL* curl, CmdOut cmd_out[_1_]);
-Err fetch_history_entry_update_title(FetchHistoryEntry e[_1_], DomNode np[_1_]);
+Err fetch_history_entry_update_title(FetchHistoryEntry e[_1_], Dom np);
 Err fetch_history_write_to_file(FetchHistoryEntry e[_1_], FILE* fp);
 void fetch_history_entry_clean(FetchHistoryEntry e[_1_]);
 

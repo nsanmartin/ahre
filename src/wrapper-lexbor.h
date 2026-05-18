@@ -150,5 +150,5 @@ lexbor_doc_get_element_by_id (lxb_html_document_t* lxbdoc, const char* id, size_
     return lxb_dom_interface_element(node);
 }
 
-
+Err lexbor_count_tag_occurences_in_doc(DomPtr doc, StrView tag, size_t count[_1_]);
 #endif
