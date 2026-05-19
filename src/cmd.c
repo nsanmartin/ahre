@@ -518,16 +518,12 @@ cmd_input_info_node(CmdParams p[_1_], DomNode n) {
 Err cmd_input_set_node(CmdParams p[_1_], DomNode node) {
     Session* session = p->s;
     const char* ln   = p->ln;
+    StrView type = dom_node_attr_value(node, svl("type"));
 
-    if (dom_node_attr_has_value( node, svl("type"), svl("text")))
+    if (html_input_type_is_text_like(type))
         return _cmd_input_text_set_(session, &node, ln, cmd_params_cmd_out(p));
-    else if (dom_node_attr_has_value(node, svl("type"), svl("search")))
-        return _cmd_input_text_set_(session, &node, ln, cmd_params_cmd_out(p)); //TODO: implement it properly
-    else if (dom_node_attr_has_value(node, svl("type"), svl("password")))
-        return _cmd_input_text_set_(session, &node, ln, cmd_params_cmd_out(p));
-    else if (dom_node_tag(node) == HTML_TAG_SELECT) return _cmd_input_select_set_(session, &node, ln, cmd_params_cmd_out(p));
-    else if (!dom_node_has_attr(node, svl("type")))
-        return _cmd_input_text_set_(session, &node, ln, cmd_params_cmd_out(p));
+    else if (dom_node_tag(node) == HTML_TAG_SELECT)
+        return _cmd_input_select_set_(session, &node, ln, cmd_params_cmd_out(p));
 
     return "input set not supported for element";
 }

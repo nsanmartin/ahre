@@ -79,9 +79,11 @@ make ahre
 #### tcc build
 tcc does not support regex and wordexp so currently it won't work.
 
-To build using tcc the `NO_REGEX` flag must be passed:
+You can disable regex passing the `NO_REGEX` flag:
 
 `CC=tcc CFLAGS=-DAHRE_REGEX_DISABLED make`
+
+but `TIME_UTC` is undeclared, so we need to avoid using timespec_get to allow tcc.
 
 To build with no quickjs (and hence no js):
 `CFLAGS=-DAHRE_QUICKJS_DISABLED make`

@@ -592,7 +592,7 @@ draw_tag_button(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 static Err draw_tag_input(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
     StrView type = dom_node_attr_value(node, svl("type"));
-    if (!strncmp("hidden", type.items, type.len))
+    if (str_eq_case(type, svl("hidden")))
         return Ok;
 
     HtmlDoc* d = draw_ctx_htmldoc(ctx);
@@ -618,14 +618,9 @@ static Err draw_tag_input(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_])
     try( _hypertext_id_open_(
         ctx, text, draw_ctx_color_red, input_text_open_str, &input_id, NULL));
 
-    /* "input" type is text | search | email */
-    if (
-       str_eq_case(svl("text"),   type)
-    || str_eq_case(svl("search"), type)
-    || str_eq_case(svl("email"),  type) //TODO2: validate input format
-    || str_eq_case(svl("url"),    type)
-    || str_eq_case(svl("tel"),    type)
-    ) {
+    /* "input" type is text | search | email | url | tel */
+    //TODO2: validate input format for email
+    if (html_input_type_is_text_like(type)) {
         try( draw_text_buf_append_lit__(text, "="));
         StrView value = dom_node_attr_value(node, svl("value"));
         if (value.len) try( draw_text_buf_append(text, value));

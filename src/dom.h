@@ -317,4 +317,5 @@ DomAttr dom_attr_next(DomAttr attr);
 StrView dom_attr_name_view(DomAttr attr);
 StrView dom_attr_value_view(DomAttr attr);
 
+bool html_input_type_is_text_like(StrView type);
 #endif

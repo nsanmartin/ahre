@@ -595,9 +595,23 @@ dom_text_cleanup(DomText dt) {
 }
 
 
-DomNode dom_node_find_parent_form(DomNode n) {
+DomNode
+dom_node_find_parent_form(DomNode n) {
     for (;!isnull(n); n = dom_node_parent(n)) {
         if (dom_node_has_tag(n, HTML_TAG_FORM)) break;
     }
     return n;
 }
+
+
+bool
+html_input_type_is_text_like(StrView type) {
+    return !type.len
+        || str_eq_case(type, svl("email")) 
+        || str_eq_case(type, svl("search"))
+        || str_eq_case(type, svl("tel"))
+        || str_eq_case(type, svl("text"))
+        || str_eq_case(type, svl("url"))
+        ;
+}
+
