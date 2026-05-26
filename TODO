@@ -13,6 +13,7 @@
 [~] [js] implement and bind console object
 [ ] [js] implement and bind window object
 [~] [libcurl] store cookies in file and make it configurable.
+[ ] [libcurl] clean Ctrl-c when race condition
 [ ] [refa][ui] move from OOP to more functional
 [ ] [refa] reduce headers size moving code to the .c files
 [ ] [test] so many tests...

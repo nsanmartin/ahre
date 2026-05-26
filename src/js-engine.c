@@ -12,12 +12,38 @@
 #include "generic.h"
 
 
-#define err_jse(Msg) err_fmt("error jse: %s  %s\n", Msg, file_line__)
+#define validate_jsv(Value) _Generic((Value), JSValue: Value)
+#define tryjs(Expr) do{\
+    Err ahre_jsv_=validate_jsv((Expr));if (JS_IsException(ahre_jsv_)) return ahre_jsv_;}while(0) 
+
+#define js_err_not_impl JS_ThrowPlainError(ctx, "Ahre jse: fn not implemented " file_line__ );
+
+#define err_jse(Msg) err_fmt("error jse: %s %s\n", Msg, file_line__)
 
 #define js_fn__(FnName) JSValue FnName(JSContext* ctx, JSValueConst this, int argc, JSValueConst *argv)
+#define js_fn_n__(FnName, ...) JSValue FnName(JSContext* ctx, JSValueConst this, int argc, JSValueConst *argv, __VA_ARGS__)
 #define js_get__(FnName) JSValue FnName(JSContext *ctx, JSValueConst this)
+#define js_get_n__(FnName, ...) JSValue FnName(JSContext *ctx, JSValueConst this, __VA_ARGS__)
 #define js_set__(FnName) JSValue FnName(JSContext* ctx, JSValueConst this, JSValueConst val)
+#define js_set_n__(FnName, ...) JSValue FnName(JSContext* ctx, JSValueConst this, JSValueConst val, __VA_ARGS__)
 
+
+typedef struct {
+    const char* name;
+    JSClassID class_id[1];
+    JSCFunctionListEntry fn_list[];
+} JsClass;
+
+static JSClassID console_class_id   = 0;
+static JSClassID node_class_id      = 0;
+static JSClassID element_class_id   = 0;
+/* static JSClassID dom_token_list_class_id = 0; */
+/* static JSClassID classList_class_id = 0; */
+static JSClassID document_class_id  = 0;
+static JSClassID window_class_id  = 0;
+/* static JSClassID location_class_id  = 0; */
+/* static JSClassID navigator_class_id = 0; */
+/* static JSClassID storage_class_id   = 0; */
 
 void
 jse_clean(JsEngine js[_1_])
@@ -71,45 +97,15 @@ init_instance(JSValue instance[_1_], JSClassID class_id, JSContext* ctx)
 }
 
 
-static Err
-set_propery_str(JSContext* ctx, JSValueConst this_obj, const char* name, JSValue value)
-{
-    return -1 == JS_SetPropertyStr(ctx, this_obj, name, value) /* return -1 on exception */
-        ? err_jse("could not set propery")
-        : Ok
-        ;
-}
-
+#define set_property_str(Ctx, Obj, Name, Value) (\
+     -1 == JS_SetPropertyStr(Ctx, Obj, Name, Value) ? err_fmt("ahjs error: could not set propery (in %s)", __func__) : Ok)
 
 #define set_property_fn_list(Ctx, Obj, Arr) (\
     JS_SetPropertyFunctionList(Ctx, Obj, Arr, sizeof(Arr)/sizeof(*Arr)) == 0 \
-    ? Ok : err_jse("could not set property fn list"))
-
-//
-//TODO1: https://developer.mozilla.org/en-US/docs/Web/API/Window/setTimeout
-static js_fn__(setTimeout)
-{
-    (void)argc;
-    (void)this;
-    int64_t delay;
-    JSValueConst func;
-
-    func = argv[0];
-    if (!JS_IsFunction(ctx, func))
-        return JS_ThrowTypeError(ctx, "setTimeout expects a function as first parameter");
-    if (JS_ToInt64(ctx, &delay, argv[1]))
-        return JS_EXCEPTION;
-
-    JSValue ret = JS_Call(ctx, func, JS_UNDEFINED, 0, NULL);
-    JS_FreeValue(ctx, ret);
-
-    return JS_NewInt32(ctx, 1);
-}
-
+    ? Ok : err_fmt("ahjs error: could not set property fn list (in %s)",  __func__ ))
 
 
 /* ---- Console ---- */
-static JSClassID console_class_id = 0;
 
 
 static JSValue
@@ -136,21 +132,41 @@ static js_fn__(console_log) { return console_msg(ctx, this, argc, argv, svl("js 
 static js_fn__(console_warn) { return console_msg(ctx, this, argc, argv, svl("js console warn: ")); }
 static js_fn__(console_error) { return console_msg(ctx, this, argc, argv, svl("js console error: ")); }
 
-static const JSCFunctionListEntry console_proto_fn_list[] = {
-    JS_CFUNC_DEF("log",   1, console_log),
-    JS_CFUNC_DEF("warn",  1, console_warn),
-    JS_CFUNC_DEF("error", 1, console_error)
+static const JSCFunctionListEntry console_fn_list[] = {
+    JS_CFUNC_DEF("assert",           0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("clear",            0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("count",            0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("countReset",       0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("debug",            0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("dir",              0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("dirxml",           0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("error",            1,     console_error),
+    JS_CFUNC_DEF("exception",        0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("group",            0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("groupCollapsed",   0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("groupEnd",         0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("info",             0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("log",              1,     console_log),
+    JS_CFUNC_DEF("profile",          0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("profileEnd",       0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("table",            0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("time",             0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("timeEnd",          0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("timeLog",          0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("timeStamp",        0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("trace",            0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("warn",             1,     console_warn),
 };
+
 
 
 static Err
 console_init(JSValue console[_1_], JSContext* ctx, HtmlDoc d[_1_]) {
     try(init_class(&console_class_id, &(JSClassDef){ "Console", .finalizer=NULL }, ctx));
     try(init_instance(console, console_class_id, ctx));
-
+    try(set_property_fn_list(ctx, *console, console_fn_list));
     Str* buf = jse_consolebuf(htmldoc_js(d));
     if (JS_SetOpaque(*console, buf)) err_jse("could not set the console buffer");
-    try(set_property_fn_list(ctx, *console, console_proto_fn_list));
     return Ok;
 }
 
@@ -158,31 +174,30 @@ static Err
 global_add_console(JSValue global, HtmlDoc d[_1_], JSContext* ctx) {
     JSValue console   = JS_UNDEFINED;
     try( console_init(&console, ctx, d));
-    try( set_propery_str(ctx, global, "console", console));
+    try( set_property_str(ctx, global, "console", console));
     return Ok;
 }
 /** console **/
 
-/* ---- Element ---- */
-static JSClassID element_class_id = 0;
 
-
-static JSValue
-element_get_textContent(JSContext* ctx, JSValueConst this_val)
+static DomElem
+js_value_to_dom_elem(JSValueConst jsv)
 {
-    //TODO0
-    (void)ctx;
-    (void)this_val;
-    return JS_NewString(ctx, "Foo");
+    DomNodePtr nodeptr;
+    DomElemPtr elemptr;
+    DomElem elem = (DomElem){0};
+    if      ((nodeptr = JS_GetOpaque(jsv, node_class_id)))    elem = dom_elem_from_nodeptr(nodeptr);
+    else if ((elemptr = JS_GetOpaque(jsv, element_class_id))) elem = dom_elem_from_ptr(elemptr);
+    return elem;
 }
 
 
-static JSValue
-element_set_textContent(JSContext* ctx, JSValueConst this_val, JSValueConst val)
-{
-    DomElem elem = dom_elem_from_ptr(JS_GetOpaque(this_val, element_class_id));
-    if (isnull(elem)) return JS_ThrowTypeError(ctx, "ah re");
+/* ---- Node ---- */
 
+
+static js_set_n__(_set_textContent_impl, DomElem elem) {
+    (void)this;
+    if (isnull(elem)) return JS_ThrowTypeError(ctx, "ahre: cannot set textContext of NULL");
     size_t len;
     const char* new_content = JS_ToCStringLen(ctx, &len, val);
 
@@ -190,33 +205,105 @@ element_set_textContent(JSContext* ctx, JSValueConst this_val, JSValueConst val)
     if (e) return JS_ThrowTypeError(ctx, e);
     return JS_UNDEFINED;
 }
+       
+
+static js_set__(_set_textContent)
+{
+    DomElem elem = js_value_to_dom_elem(this);
+    return _set_textContent_impl(ctx, this, val, elem);
+}
+
+
+static const JSCFunctionListEntry node_fn_list[] = {
+    JS_CGETSET_DEF("baseURI",                jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("childNodes",             jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("firstChild",             jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("isConnected",            jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("lastChild",              jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("nextSibling",            jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("nodeName",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("nodeType",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("nodeValue",              jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ownerDocument",          jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("parentNode",             jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("parentElement",          jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("previousSibling",        jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("textContent",            jse_get_not_implemented, _set_textContent),
+    JS_CFUNC_DEF("appendChild",              0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("cloneNode",                0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("compareDocumentPosition",  0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("contains",                 0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("getRootNode",              0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("hasChildNodes",            0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("insertBefore",             0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("isDefaultNamespace",       0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("isEqualNode",              0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("isSameNode",               0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("lookupPrefix",             0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("lookupNamespaceURI",       0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("normalize",                0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("removeChild",              0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("replaceChild",             0,     jse_fn_not_implemented)
+};
+
+static Err
+node_class_init(JSContext* ctx) {
+    try(init_class(&node_class_id, &(JSClassDef){ "Node", .finalizer=NULL }, ctx));
+    JSValue node_proto = JS_NewObject(ctx);
+    try(set_property_fn_list(ctx, node_proto, node_fn_list));
+    JS_SetClassProto(ctx, node_class_id, node_proto);
+    return Ok;
+}
+
+
+/* ---- Element ---- */
+
+static js_get__(element_get_id)
+{
+    DomElem elem = js_value_to_dom_elem(this);
+
+    StrView value = dom_elem_attr_value(elem, svl("id"));
+    if (!value.len || !value.items) return JS_NULL;
+
+    return JS_NewStringLen(ctx, (char*)value.items, value.len);
+}
+
+static js_set__(element_set_id)
+{
+    DomElem elem = js_value_to_dom_elem(this);
+    if (isnull(elem)) return JS_ThrowTypeError(ctx, "ahjs element is null");
+
+    StrView value = dom_elem_attr_value(elem, svl("id"));
+    if (!value.len || !value.items) return JS_NULL;
+
+    return JS_NewStringLen(ctx, (char*)value.items, value.len);
+
+    size_t len;
+    const char *cstr = JS_ToCStringLen(ctx, &len, val);
+    if (!cstr) {
+        JS_FreeCString(ctx, cstr);
+        return JS_EXCEPTION;
+    }
+    Err e = dom_elem_set_attr(elem, svl("id"), sv(cstr, len));
+    JS_FreeCString(ctx, cstr);
+    if (e) return JS_ThrowTypeError(ctx, e);
+    return JS_UNDEFINED;
+}
 
 static JSValue
-element_getAttribute(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv)
+element_getAttribute(JSContext *ctx, JSValueConst this, int argc, JSValueConst *argv)
 {
     if (argc != 1) return JS_ThrowTypeError(ctx, "Expected 1 argument");
-
-    DomElem elem = dom_elem_from_ptr(JS_GetOpaque(self, element_class_id));
-    if (isnull(elem)) return JS_ThrowTypeError(ctx, "ah re: invalid attribute");
+    DomElem elem = js_value_to_dom_elem(this);
 
     size_t attrlen;
     const char* attr = JS_ToCStringLen(ctx, &attrlen, argv[0]);
     if (!attr) return JS_ThrowTypeError(ctx, "invalid attribute");
 
     StrView value = dom_elem_attr_value(elem, sv(attr, attrlen));
-    if (!value.len || !value.items) return JS_ThrowTypeError(ctx, "invalid attribute");
+    if (!value.len || !value.items) return JS_NULL;
 
     return JS_NewStringLen(ctx, (char*)value.items, value.len);
-}
-
-
-static DomElem
-js_value_to_dom_elem(JSContext* ctx, JSValue jsv)
-{
-    //TODO0
-    (void)ctx;
-    (void)jsv;
-    return (DomElem){0};
 }
 
 
@@ -224,7 +311,7 @@ static JSValue
 element_setAttribute(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv)
 {
     if (argc != 2) return JS_ThrowTypeError(ctx, "setAttribute: name and value needed");
-    DomElem elem = js_value_to_dom_elem(ctx, self);
+    DomElem elem = js_value_to_dom_elem(self);
     if (isnull(elem)) return JS_ThrowTypeError(ctx, "invalid element");
     size_t name_len, val_len;
     const char *name = JS_ToCStringLen(ctx, &name_len, argv[0]);
@@ -245,7 +332,7 @@ static JSValue
 element_removeAttribute(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv)
 {
     if (argc != 1) return JS_ThrowTypeError(ctx, "removeAttribute: name needed");
-    DomElem elem = js_value_to_dom_elem(ctx, self);
+    DomElem elem = js_value_to_dom_elem(self);
     if (isnull(elem)) return JS_ThrowTypeError(ctx, "invalid element");
     size_t len;
     const char *name = JS_ToCStringLen(ctx, &len, argv[0]);
@@ -259,126 +346,10 @@ element_removeAttribute(JSContext *ctx, JSValueConst self, int argc, JSValueCons
 static JSValue
 element_remove(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv) {
     (void)argc; (void)argv;
-    DomElem elem = js_value_to_dom_elem(ctx, self);
+    DomElem elem = js_value_to_dom_elem(self);
     if (isnull(elem)) return JS_ThrowTypeError(ctx, "invalid element");
     lxb_dom_node_destroy(dom_node_from_elem(elem).ptr);
     return JS_UNDEFINED;
-}
-
-
-
-
-/* ClassList */
-//TODO0: none of class list related code was tested
-static JSClassID classList_class_id = 0;
-
-typedef struct {
-    DomElem elem;
-    JSContext *ctx;
-} ClassListData;
-
-static void
-classList_finalizer(JSRuntime *rt, JSValue val)
-{
-    ClassListData *data = JS_GetOpaque(val, classList_class_id);
-    if (data) js_free_rt(rt, data);
-}
-
-
-static JSValue
-element_classList_add(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv)
-{
-    if (argc < 1) return JS_ThrowTypeError(ctx, "add: token needed");
-    ClassListData *data = JS_GetOpaque(this_val, classList_class_id);
-    if (!data) return JS_ThrowTypeError(ctx, "invalid classList");
-    DomElem elem = data->elem;
-    size_t len;
-    const char *token = JS_ToCStringLen(ctx, &len, argv[0]);
-    if (!token) return JS_EXCEPTION;
-    StrView current = dom_elem_attr_value(elem, svl("class"));
-    // Naive append (Google only uses add/remove for simple tokens)
-    Str buf = {0};
-    if (current.len > 0) {
-        str_append(&buf, current);
-        str_append_z(&buf, svl(" "));
-    }
-    str_append(&buf, sv(token, len));
-    dom_elem_set_attr(elem, svl("class"), sv(&buf));
-    str_clean(&buf);
-    JS_FreeCString(ctx, token);
-    return JS_UNDEFINED;
-}
-
-
-static JSValue
-element_classList_remove(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv)
-{
-    if (argc < 1) return JS_ThrowTypeError(ctx, "remove: token needed");
-    ClassListData *data = JS_GetOpaque(this_val, classList_class_id);
-    if (!data) return JS_ThrowTypeError(ctx, "invalid classList");
-    DomElem elem = data->elem;
-    size_t len;
-    const char *token = JS_ToCStringLen(ctx, &len, argv[0]);
-    if (!token) return JS_EXCEPTION;
-    StrView current = dom_elem_attr_value(elem, svl("class"));
-    // Remove token (simple replace)
-    Str buf = {0};
-    // If current equals token, clear; otherwise keep as is
-    if (!str_eq_case(current, sv(token, len)))
-        str_append(&buf, current);
-    if (buf.len == 0)
-        dom_node_remove_attr(dom_node_from_elem(elem), svl("class"));
-    else
-        dom_elem_set_attr(elem, svl("class"), sv(&buf));
-    str_clean(&buf);
-    JS_FreeCString(ctx, token);
-    return JS_UNDEFINED;
-}
-
-static JSValue
-element_classList_contains(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv)
-{
-    if (argc < 1) return JS_ThrowTypeError(ctx, "contains: token needed");
-    ClassListData *data = JS_GetOpaque(this_val, classList_class_id);
-    if (!data) return JS_ThrowTypeError(ctx, "invalid classList");
-    /* DomElem elem = data->elem; */
-    size_t len;
-    const char *token = JS_ToCStringLen(ctx, &len, argv[0]);
-    if (!token) return JS_EXCEPTION;
-    /* StrView current = dom_elem_attr_value(elem, svl("class")); */
-    bool has = false;//str_contains(current, sv(token, len));
-                     //TODO0!
-    JS_FreeCString(ctx, token);
-    return JS_NewBool(ctx, has);
-}
-
-
-static JSValue classList_create(JSContext *ctx, DomElem elem)
-{
-    if (classList_class_id == 0) {
-        JS_NewClassID(JS_GetRuntime(ctx), &classList_class_id);
-        JSClassDef def = { .class_name = "DOMTokenList", .finalizer = classList_finalizer };
-        JS_NewClass(JS_GetRuntime(ctx), classList_class_id, &def);
-    }
-    JSValue obj = JS_NewObjectClass(ctx, classList_class_id);
-    ClassListData *data = js_malloc(ctx, sizeof(ClassListData));
-    if (!data) return JS_EXCEPTION;
-    data->elem = elem;
-    data->ctx = ctx;
-    JS_SetOpaque(obj, data);
-
-    JS_SetPropertyStr(ctx, obj, "add", JS_NewCFunction(ctx, element_classList_add, "add", 1));
-    JS_SetPropertyStr(ctx, obj, "remove", JS_NewCFunction(ctx, element_classList_remove, "remove", 1));
-    JS_SetPropertyStr(ctx, obj, "contains", JS_NewCFunction(ctx, element_classList_contains, "contains", 1));
-    return obj;
-}
-
-
-static JSValue
-element_get_classList(JSContext *ctx, JSValueConst this_val) {
-    DomElem elem = js_value_to_dom_elem(ctx, this_val);
-    if (isnull(elem)) return JS_ThrowTypeError(ctx, "invalid element");
-    return classList_create(ctx, elem);
 }
 
 
@@ -386,57 +357,166 @@ static JSValue
 element_js_value_from_dom_elem(JSContext *ctx, DomElem elem)
 {
     JSValue js_element = JS_NewObjectClass(ctx, element_class_id);
-
-    Str* buf = &(Str){0};
-    DomAttr attr = dom_elem_first_attr(elem);
-
-    while (!isnull(attr)) {
-        if (!dom_attr_has_owner(attr))
-            return JS_ThrowTypeError(ctx, "internal error atribute is malformed");
-
-        StrView name  = dom_attr_name_view(attr);
-        StrView value = dom_attr_value_view(attr);
-        
-        str_reset(buf);
-
-        if (str_append_z(buf, &name)) {
-            str_clean(buf);
-            return JS_ThrowTypeError(ctx, "str append failure");
-        }
-
-        if (value.len)
-            JS_SetPropertyStr(
-                ctx, js_element, items__(buf), JS_NewStringLen(ctx, (char*)value.items, value.len)
-            );
-
-        attr = dom_attr_next(attr);
-    }
-    str_clean(buf);
     if (JS_SetOpaque(js_element, elem.ptr))
-        return JS_ThrowTypeError(ctx, "ahrerr: could not set opaque val");
-
-   DomElem e = dom_elem_from_ptr(JS_GetOpaque(js_element, element_class_id));
-   if (isnull(e)) return JS_ThrowTypeError(ctx, "ahrerr: invalid attribute");
+        return JS_ThrowTypeError(ctx, "ahjs: could not set opaque val");
 
     return js_element;
 }
 
 
 static const JSCFunctionListEntry element_fn_list[] = {
-    JS_CFUNC_DEF("getAttribute", 1, element_getAttribute),
-    JS_CFUNC_DEF("remove", 0, element_remove),
-    JS_CFUNC_DEF("removeAttribute", 1, element_removeAttribute),
-    JS_CFUNC_DEF("setAttribute", 2, element_setAttribute),
-    JS_CGETSET_DEF("classList", element_get_classList, NULL),
-    JS_CGETSET_DEF("textContent", element_get_textContent, element_set_textContent),
+
+    JS_CGETSET_DEF("assignedSlot",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("attributes",                 jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("childElementCount",          jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("children",                   jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("classList",                  jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("className",                  jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("clientHeight",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("clientLeft",                 jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("clientTop",                  jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("clientWidth",                jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("currentCSSZoom",             jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("customElementRegistry",      jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("elementTiming",              jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("firstElementChild",          jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("id",                         element_get_id, element_set_id),
+    JS_CGETSET_DEF("innerHTML",                  jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("lastElementChild",           jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("localName",                  jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("namespaceURI",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("nextElementSibling",         jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("outerHTML",                  jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("part",                       jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("prefix",                     jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("previousElementSibling",     jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("scrollHeight",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("scrollLeft",                 jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("scrollLeftMax",              jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("scrollTop",                  jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("scrollTopMax",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("scrollWidth",                jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("shadowRoot",                 jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("slot",                       jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("tagName",                    jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaAtomic",                 jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaAutoComplete",           jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaBrailleLabel",           jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaBrailleRoleDescription", jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaBusy",                   jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaChecked",                jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaColCount",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaColIndex",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaColIndexText",           jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaColSpan",                jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaCurrent",                jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaDescription",            jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaDisabled",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaExpanded",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaHasPopup",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaHidden",                 jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaInvalid",                jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaKeyShortcuts",           jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaLabel",                  jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaLevel",                  jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaLive",                   jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaModal",                  jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaMultiline",              jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaMultiSelectable",        jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaOrientation",            jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaPlaceholder",            jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaPosInSet",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaPressed",                jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaReadOnly",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaRelevant",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaRequired",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaRoleDescription",        jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaRowCount",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaRowIndex",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaRowIndexText",           jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaRowSpan",                jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaSelected",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaSetSize",                jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaSort",                   jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaValueMax",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaValueMin",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaValueNow",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaValueText",              jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("role",                       jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaActiveDescendantElement",jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaControlsElements",       jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaDescribedByElements",    jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaDetailsElements",        jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaErrorMessageElements",   jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaFlowToElements",         jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaLabelledByElements",     jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("ariaOwnsElements",           jse_get_not_implemented, jse_set_not_implemented),
+
+    JS_CFUNC_DEF("after",                    0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("animate",                  0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("append",                   0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("ariaNotify",               0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("attachShadow",             0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("before",                   0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("checkVisibility",          0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("closest",                  0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("computedStyleMap",         0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("getAnimations",            0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("getAttribute",             1,     element_getAttribute),
+    JS_CFUNC_DEF("getAttributeNS",           0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("getAttributeNames",        0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("getAttributeNode",         0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("getAttributeNodeNS",       0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("getBoundingClientRect",    0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("getClientRects",           0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("getElementsByClassName",   0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("getElementsByTagName",     0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("getElementsByTagNameNS",   0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("getHTML",                  0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("hasAttribute",             0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("hasAttributeNS",           0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("hasAttributes",            0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("hasPointerCapture",        0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("insertAdjacentElement",    0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("insertAdjacentHTML",       0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("insertAdjacentText",       0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("matches",                  0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("moveBefore",               0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("prepend",                  0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("querySelector",            0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("querySelectorAll",         0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("releasePointerCapture",    0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("remove",                   0,     element_remove),
+    JS_CFUNC_DEF("removeAttribute",          1,     element_removeAttribute),
+    JS_CFUNC_DEF("removeAttributeNS",        0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("removeAttributeNode",      0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("replaceChildren",          0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("replaceWith",              0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("requestFullscreen",        0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("requestPointerLock",       0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("scroll",                   0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("scrollBy",                 0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("scrollIntoView",           0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("scrollIntoViewIfNeeded",   0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("scrollTo",                 0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("setAttribute",             2,     element_setAttribute),
+    JS_CFUNC_DEF("setAttributeNS",           0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("setAttributeNode",         0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("setAttributeNodeNS",       0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("setCapture",               0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("setHTML",                  0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("setHTMLUnsafe",            0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("setPointerCapture",        0,     jse_fn_not_implemented),
+    JS_CFUNC_DEF("toggleAttribute",          0,     jse_fn_not_implemented)
 };
 
 
 static Err
-element_init(JSContext* ctx) {
+element_class_init(JSContext* ctx) {
     try(init_class(&element_class_id, &(JSClassDef){ "Element", .finalizer=NULL }, ctx));
     JSValue element_proto = JS_NewObject(ctx);
     try(set_property_fn_list(ctx, element_proto, element_fn_list));
+    try(set_property_fn_list(ctx, element_proto, node_fn_list));
     JS_SetClassProto(ctx, element_class_id, element_proto);
     return Ok;
 }
@@ -446,12 +526,11 @@ element_init(JSContext* ctx) {
 
 
 /* Document */
-static JSClassID document_class_id = 0;
 
 static js_fn__(document_createElement)
 {
     if (argc != 1) return JS_ThrowTypeError(ctx, "createElement: tagName needed");
-    Dom dom = dom_from_ptr(JS_GetOpaque(this, document_class_id));
+    Dom dom = htmldoc_dom(JS_GetOpaque(this, document_class_id));
     if (isnull(dom)) return JS_ThrowTypeError(ctx, "invalid document");
     size_t len;
     const char *tag = JS_ToCStringLen(ctx, &len, argv[0]);
@@ -468,9 +547,7 @@ static JSValue
 document_getElementById(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv) {
 
     if (argc != 1) return JS_ThrowTypeError(ctx, "Expected 1 argument");
-
     Dom dom = htmldoc_dom(JS_GetOpaque(self, document_class_id));
-
     if (isnull(dom)) return JS_ThrowTypeError(ctx, "error: document not properly initialized");
 
     size_t idlen;
@@ -698,7 +775,7 @@ static Err
 global_add_document(JSValue global, HtmlDoc d[_1_], JSContext* ctx) {
     JSValue document  = JS_UNDEFINED;
     try( document_init(&document, d, ctx));
-    try( set_propery_str(ctx, global, "document", document));
+    try( set_property_str(ctx, global, "document", document));
     return Ok;
 }
 
@@ -706,10 +783,8 @@ global_add_document(JSValue global, HtmlDoc d[_1_], JSContext* ctx) {
 
 
 /* ---- Location ---- */
-static JSClassID location_class_id = 0;
-/* static char *current_loc = NULL; */
 
-static const JSCFunctionListEntry location_fn_list[] = {
+static const JSCFunctionListEntry __attribute__((unused)) location_fn_list[] = {
     JS_CGETSET_DEF("href",     jse_get_not_implemented, jse_set_not_implemented),
     JS_CGETSET_DEF("protocol", jse_get_not_implemented, jse_set_not_implemented),
     JS_CGETSET_DEF("host",     jse_get_not_implemented, jse_set_not_implemented),
@@ -725,128 +800,29 @@ static const JSCFunctionListEntry location_fn_list[] = {
     JS_CFUNC_DEF("toString", 0, jse_fn_not_implemented)
 };
 
-static Err
-location_init(JSValue location[_1_], JSContext* ctx, HtmlDoc d[_1_]) {
+//0static Err
+//0location_init(JSValue location[_1_], JSContext* ctx, HtmlDoc d[_1_]) {
+//0
+//0    try(init_class(&location_class_id, &(JSClassDef){ "location", .finalizer=NULL }, ctx));
+//0    try(init_instance(location, location_class_id, ctx));
+//0
+//0    if (JS_SetOpaque(*location, d)) err_jse("could not set the location buffer");
+//0    try(set_property_fn_list(ctx, *location, location_fn_list));
+//0    return Ok;
+//0}
+//0
+//0static Err
+//0global_add_location(JSValue global, HtmlDoc d[_1_], JSContext* ctx) {
+//0    JSValue location  = JS_UNDEFINED;
+//0    try( location_init(&location, ctx, d));
+//0    try( set_property_str(ctx, global, "location", location));
+//0    return Ok;
+//0}
 
-    try(init_class(&location_class_id, &(JSClassDef){ "location", .finalizer=NULL }, ctx));
-    try(init_instance(location, location_class_id, ctx));
-
-    if (JS_SetOpaque(*location, d)) err_jse("could not set the location buffer");
-    try(set_property_fn_list(ctx, *location, location_fn_list));
-    return Ok;
-}
-
-static Err
-global_add_location(JSValue global, HtmlDoc d[_1_], JSContext* ctx) {
-    JSValue location  = JS_UNDEFINED;
-    try( location_init(&location, ctx, d));
-    try( set_propery_str(ctx, global, "location", location));
-    return Ok;
-}
-
-
-/* static void location_finalizer(JSRuntime *rt, JSValue val) */
-/* { */
-/*     char **ptr = JS_GetOpaque(val, location_class_id); */
-/*     if (ptr && *ptr) js_free_rt(rt, *ptr); */
-/*     js_free_rt(rt, ptr); */
-/* } */
-
-/* static JSValue location_get_href(JSContext *ctx, JSValueConst this_val) */
-/* { */
-/*     char **data = JS_GetOpaque(this_val, location_class_id); */
-/*     return JS_NewString(ctx, data && *data ? *data : "https://www.google.com/"); */
-/* } */
-
-/* static JSValue location_get_search(JSContext *ctx, JSValueConst this_val) */
-/* { */
-/*     char **data = JS_GetOpaque(this_val, location_class_id); */
-/*     const char *url = data && *data ? *data : ""; */
-/*     const char *q = strchr(url, '?'); */
-/*     return JS_NewString(ctx, q ? q : ""); */
-/* } */
-
-/* static JSValue location_replace(JSContext *ctx, JSValueConst this_val, */
-/*                                 int argc, JSValueConst *argv) */
-/* { */
-/*     if (argc != 1) return JS_ThrowTypeError(ctx, "replace: url needed"); */
-/*     size_t len; */
-/*     const char *new_url = JS_ToCStringLen(ctx, &len, argv[0]); */
-/*     if (!new_url) return JS_EXCEPTION; */
-/*     char **data = JS_GetOpaque(this_val, location_class_id); */
-/*     if (data && *data) js_free(ctx, *data); */
-/*     if (data) *data = js_strdup(ctx, new_url); */
-/*     JS_FreeCString(ctx, new_url); */
-/*     return JS_UNDEFINED; */
-/* } */
-
-/* static JSValue create_location_object(JSContext *ctx) */
-/* { */
-/*     if (location_class_id == 0) { */
-/*         JS_NewClassID(JS_GetRuntime(ctx), &location_class_id); */
-/*         JSClassDef def = { .class_name = "Location", .finalizer = location_finalizer }; */
-/*         JS_NewClass(JS_GetRuntime(ctx), location_class_id, &def); */
-/*     } */
-/*     JSValue obj = JS_NewObjectClass(ctx, location_class_id); */
-/*     char **data = js_malloc(ctx, sizeof(char*)); */
-/*     *data = js_strdup(ctx, "https://www.google.com/"); */
-/*     JS_SetOpaque(obj, data); */
-/*     JS_SetPropertyStr(ctx, obj, "href", JS_NewCFunction(ctx, location_get_href, "get_href", 0)); */
-/*     JS_SetPropertyStr(ctx, obj, "search", JS_NewCFunction(ctx, location_get_search, "get_search", 0)); */
-/*     JS_SetPropertyStr(ctx, obj, "replace", JS_NewCFunction(ctx, location_replace, "replace", 1)); */
-/*     return obj; */
-/* } */
-
-// -------- Performance stub --------
-/* static JSValue performance_now(JSContext *ctx, JSValueConst this_val, */
-/*                                int argc, JSValueConst *argv) */
-/* { */
-/*     (void)this_val; (void)argc; (void)argv; */
-/*     double ms = (double)clock() / CLOCKS_PER_SEC * 1000.0; */
-/*     return JS_NewFloat64(ctx, ms); */
-/* } */
-
-/* static JSValue create_performance_object(JSContext *ctx) */
-/* { */
-/*     JSValue perf = JS_NewObject(ctx); */
-/*     JS_SetPropertyStr(ctx, perf, "now", JS_NewCFunction(ctx, performance_now, "now", 0)); */
-/*     JS_SetPropertyStr(ctx, perf, "timing", JS_NewObject(ctx)); */
-/*     return perf; */
-/* } */
-
-
-/* ---- SessionStorage ---- */
-
-/* static JSValue sessionStorage_getItem(JSContext *ctx, JSValueConst this_val, */
-/*                                       int argc, JSValueConst *argv) */
-/* { */
-/*     (void)this_val; */
-/*     (void)argv; */
-/*     if (argc != 1) return JS_ThrowTypeError(ctx, "getItem: key needed"); */
-/*     // Always return null */
-/*     return JS_NULL; */
-/* } */
-
-/* static JSValue sessionStorage_setItem(JSContext *ctx, JSValueConst this_val, */
-/*                                       int argc, JSValueConst *argv) */
-/* { */
-/*     (void)this_val; */
-/*     (void)argv; */
-/*     if (argc != 2) return JS_ThrowTypeError(ctx, "setItem: key and value needed"); */
-/*     return JS_UNDEFINED; */
-/* } */
-
-/* static JSValue create_sessionStorage_object(JSContext *ctx) */
-/* { */
-/*     JSValue ss = JS_NewObject(ctx); */
-/*     JS_SetPropertyStr(ctx, ss, "getItem", JS_NewCFunction(ctx, sessionStorage_getItem, "getItem", 1)); */
-/*     JS_SetPropertyStr(ctx, ss, "setItem", JS_NewCFunction(ctx, sessionStorage_setItem, "setItem", 2)); */
-/*     return ss; */
-/* } */
+/** locatiopn **/
 
 /* ---- Navigator ---- */
-static JSClassID navigator_class_id = 0;
-static const JSCFunctionListEntry navigator_fn_list[] = {
+static const JSCFunctionListEntry  __attribute__((unused)) navigator_fn_list[] = {
     JS_CFUNC_DEF("canShare",                    0, jse_fn_not_implemented),
     JS_CFUNC_DEF("clearAppBadge",               0, jse_fn_not_implemented),
     JS_CFUNC_DEF("getAutoplayPolicy",           0, jse_fn_not_implemented),
@@ -919,72 +895,198 @@ static const JSCFunctionListEntry navigator_fn_list[] = {
     JS_CGETSET_DEF("xr",                    jse_get_not_implemented, jse_set_not_implemented),
 };
 
-static Err
-global_add_navigator(JSValue global, HtmlDoc d[_1_], JSContext* ctx) {
-    (void)d;
+//0static Err
+//0global_add_navigator(JSValue global, HtmlDoc d[_1_], JSContext* ctx) {
+//0    (void)d;
+//0
+//0    JSValue navigator   = JS_UNDEFINED;
+//0    try(init_class(&navigator_class_id, &(JSClassDef){"navigator",.finalizer=NULL}, ctx));
+//0    JSValue navigator_proto = JS_NewObject(ctx);
+//0    if (JS_IsException(navigator_proto)) return err_jse("new object failed");
+//0    try(set_property_fn_list(ctx, navigator_proto, navigator_fn_list));
+//0    JS_SetClassProto(ctx, navigator_class_id, navigator_proto);
+//0    try( set_property_str(ctx, global, "navigator", navigator));
+//0    return Ok;
+//0}
 
-    JSValue navigator   = JS_UNDEFINED;
-    try(init_class(&navigator_class_id, &(JSClassDef){"navigator",.finalizer=NULL}, ctx));
-    JSValue navigator_proto = JS_NewObject(ctx);
-    if (JS_IsException(navigator_proto)) return err_jse("new object failed");
-    try(set_property_fn_list(ctx, navigator_proto, navigator_fn_list));
-    JS_SetClassProto(ctx, navigator_class_id, navigator_proto);
-    try( set_propery_str(ctx, global, "navigator", navigator));
-    return Ok;
-}
-//
-/* static JSValue navigator_sendBeacon(JSContext *ctx, JSValueConst this_val, */
-/*                                     int argc, JSValueConst *argv) */
-/* { */
-/*     (void)this_val; (void)argc; (void)argv;(void)ctx; */
-/*     return JS_TRUE; // pretend success */
-/* } */
+/** navigaror **/
 
-/* static JSValue create_navigator_object(JSContext *ctx) */
-/* { */
-/*     JSValue nav = JS_NewObject(ctx); */
-/*     JS_SetPropertyStr(ctx, nav, "sendBeacon", JS_NewCFunction(ctx, navigator_sendBeacon, "sendBeacon", 2)); */
-/*     return nav; */
-/* } */
-
-/* // -------- Event listener stubs -------- */
-/* static JSValue window_addEventListener(JSContext *ctx, JSValueConst this_val, */
-/*                                        int argc, JSValueConst *argv) */
-/* { */
-/*     (void)ctx; (void)this_val; (void)argc; (void)argv; */
-/*     return JS_UNDEFINED; */
-/* } */
-
-/* static JSValue window_removeEventListener(JSContext *ctx, JSValueConst this_val, */
-/*                                           int argc, JSValueConst *argv) */
-/* { */
-/*     (void)ctx; (void)this_val; (void)argc; (void)argv; */
-/*     return JS_UNDEFINED; */
-/* } */
 
 /* ---- Window ---- */
+//TODO1: https://developer.mozilla.org/en-US/docs/Web/API/Window/setTimeout
+static js_fn__(setTimeout)
+{
+    (void)argc;
+    (void)this;
+    int64_t delay;
+    JSValueConst func;
+
+    func = argv[0];
+    if (!JS_IsFunction(ctx, func))
+        return JS_ThrowTypeError(ctx, "setTimeout expects a function as first parameter");
+    if (JS_ToInt64(ctx, &delay, argv[1]))
+        return JS_EXCEPTION;
+
+    JSValue ret = JS_Call(ctx, func, JS_UNDEFINED, 0, NULL);
+    JS_FreeValue(ctx, ret);
+
+    return JS_NewInt32(ctx, 1);
+}
+
+//TODO1: inherit from Event Target
 static const JSCFunctionListEntry window_fn_list[] = {
-    JS_CFUNC_DEF("addEventListener", 2, jse_fn_not_implemented),
+    JS_CGETSET_DEF("caches",                   jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("clientInformation",        jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("closed",                   jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("cookieStore",              jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("crashReport",              jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("credentialless",           jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("crossOriginIsolated",      jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("crypto",                   jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("customElements",           jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("devicePixelRatio",         jse_get_not_implemented, jse_set_not_implemented),
+    /* JS_CGETSET_DEF("document",                 jse_get_not_implemented, jse_set_not_implemented), */
+    JS_CGETSET_DEF("documentPictureInPicture", jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("event",                    jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("external",                 jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("fence",                    jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("frameElement",             jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("frames",                   jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("fullScreen",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("history",                  jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("indexedDB",                jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("innerHeight",              jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("innerWidth",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("isSecureContext",          jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("launchQueue",              jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("length",                   jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("localStorage",             jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("location",                 jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("locationbar",              jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("menubar",                  jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("mozInnerScreenX",          jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("mozInnerScreenY",          jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("name",                     jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("navigation",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("navigator",                jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("opener",                   jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("orientation",              jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("origin",                   jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("originAgentCluster",       jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("outerHeight",              jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("outerWidth",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("pageXOffset",              jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("pageYOffset",              jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("parent",                   jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("performance",              jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("personalbar",              jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("scheduler",                jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("screen",                   jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("screenX",                  jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("screenY",                  jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("scrollMaxX",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("scrollMaxY",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("scrollX",                  jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("scrollY",                  jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("scrollbars",               jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("self",                     jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("sessionStorage",           jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("sharedStorage",            jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("speechSynthesis",          jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("status",                   jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("statusbar",                jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("toolbar",                  jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("top",                      jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("trustedTypes",             jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("viewport",                 jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("visualViewport",           jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("window",                   jse_get_not_implemented, jse_set_not_implemented),
+    JS_CFUNC_DEF("alert",                            0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("atob",                             0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("blur",                             0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("btoa",                             0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("cancelAnimationFrame",             0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("cancelIdleCallback",               0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("captureEvents",                    0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("clearImmediate",                   0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("clearInterval",                    0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("clearTimeout",                     0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("close",                            0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("confirm",                          0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("createImageBitmap",                0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("dump",                             0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("fetch",                            0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("fetchLater",                       0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("find",                             0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("focus",                            0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("getComputedStyle",                 0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("getDefaultComputedStyle",          0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("getScreenDetails",                 0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("getSelection",                     0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("matchMedia",                       0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("moveBy",                           0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("moveTo",                           0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("open",                             0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("postMessage",                      0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("print",                            0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("prompt",                           0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("queryLocalFonts",                  0, jse_fn_not_implemented),
+    // this makes  JS_DefineAutiInitProperty ot abort claiming property already exists?
+    /* JS_CFUNC_DEF("queueMicrotask",                   0, jse_fn_not_implemented), */
+    JS_CFUNC_DEF("releaseEvents",                    0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("reportError",                      0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("requestAnimationFrame",            0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("requestFileSystem",                0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("requestIdleCallback",              0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("resizeBy",                         0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("resizeTo",                         0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("scroll",                           0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("scrollBy",                         0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("scrollByLines",                    0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("scrollByPages",                    0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("scrollTo",                         0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("setImmediate",                     0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("setInterval",                      0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("setResizable",                     0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("setTimeout",                       2, setTimeout),
+    JS_CFUNC_DEF("showDirectoryPicker",              0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("showOpenFilePicker",               0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("showSaveFilePicker",               0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("sizeToContent",                    0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("stop",                             0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("structuredClone",                  0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("webkitConvertPointFromNodeToPage", 0, jse_fn_not_implemented),
+    JS_CFUNC_DEF("webkitConvertPointFromPageToNode", 0, jse_fn_not_implemented),
 };
 
 
+
 static Err
-global_add_window(JSValue global, JSContext* ctx) {
-    JSValue window = JS_DupValue(ctx, global);
-    try(set_propery_str(ctx, global, "window", window));
-    try(set_property_fn_list(ctx, window, window_fn_list));
+window_init (JSValue window[_1_], JSContext* ctx, HtmlDoc d[_1_]) {
+    try(init_class(&window_class_id, &(JSClassDef){ "Window", .finalizer=NULL }, ctx));
+    try(init_instance(window, window_class_id, ctx));
+    try(set_property_fn_list(ctx, *window, window_fn_list));
+    if (JS_SetOpaque(*window, d)) err_jse("could not set the window buffer");
     return Ok;
 }
+
+static Err
+global_add_window(JSValue global, HtmlDoc d[_1_], JSContext* ctx) {
+
+    JSValue window   = JS_UNDEFINED;
+    try(window_init(&window, ctx, d));
+    try(set_property_str(ctx, global, "window", window));
+    
+    return Ok;
+}
+
 
 static const JSCFunctionListEntry global_fn_list[] = {
     JS_CFUNC_DEF("setTimeout", 2, setTimeout),
 };
-
-
 /* ---- Storage ---- */
-static JSClassID storage_class_id = 0;
 
-static const JSCFunctionListEntry storage_fn_list[] = {
+static const JSCFunctionListEntry __attribute__((unused)) storage_fn_list[] = {
     JS_CFUNC_DEF("getItem",    1, jse_fn_not_implemented),
     JS_CFUNC_DEF("setItem",    2, jse_fn_not_implemented),
     JS_CFUNC_DEF("removeItem", 1, jse_fn_not_implemented),
@@ -993,29 +1095,6 @@ static const JSCFunctionListEntry storage_fn_list[] = {
     JS_CGETSET_DEF("length", jse_get_not_implemented, jse_set_not_implemented),
 };
 
-
-static Err
-global_add_storages(JSValue global, HtmlDoc d[_1_], JSContext* ctx)
-{
-    (void)d;
-    try(init_class(&storage_class_id, &(JSClassDef){"storage",.finalizer=NULL}, ctx));
-    JSValue storage_proto = JS_NewObject(ctx);
-    if (JS_IsException(storage_proto)) return err_jse("new object failed");
-    try(set_property_fn_list(ctx, storage_proto, storage_fn_list));
-    JS_SetClassProto(ctx, storage_class_id, storage_proto);
-
-    JSValue local_obj = JS_NewObjectClass(ctx, storage_class_id);
-    /* JS_SetOpaque(local_obj, local_storage); */
-    if (-1 == JS_SetPropertyStr(ctx, global, "localStorage", local_obj))
-        return err_jse("set property failure");
-
-    JSValue session_obj = JS_NewObjectClass(ctx, storage_class_id);
-    /* JS_SetOpaque(session_obj, session_storage); */
-    if (-1 == JS_SetPropertyStr(ctx, global, "sessionStorage", session_obj))
-        return err_jse("set property failure");
-
-    return Ok;
-}
 
 /** storage **/
 
@@ -1040,16 +1119,13 @@ jse_init(HtmlDoc* htmldoc) {
 
     JSValue global    = JS_GetGlobalObject(js->ctx);
 
-    try(element_init(js->ctx));
+    tryjmp(e, Fail, node_class_init(js->ctx));
+    tryjmp(e, Fail, element_class_init(js->ctx));
 
 
     tryjmp(e,Fail, global_add_document(global, htmldoc, js->ctx));
     tryjmp(e,Fail, global_add_console(global, htmldoc, js->ctx));
-    tryjmp(e,Fail, global_add_window(global, js->ctx));
-    tryjmp(e,Fail, global_add_location(global, htmldoc, js->ctx));
-    tryjmp(e,Fail, global_add_storages(global, htmldoc, js->ctx));
-    tryjmp(e,Fail, global_add_navigator(global, htmldoc, js->ctx));
-
+    tryjmp(e,Fail, global_add_window(global, htmldoc, js->ctx));
     tryjmp(e,Fail, set_property_fn_list(js->ctx, global, global_fn_list));
 
     JS_FreeValue(js->ctx, global);

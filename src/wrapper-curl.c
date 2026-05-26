@@ -114,12 +114,16 @@ w_curl_multi_perform_poll(CURLM* multi, ArlOf(CurlMultiSgPtr) failed[_1_]) {
             if (msg->msg == CURLMSG_DONE) {
                 if (msg->data.result != CURLE_OK) {
                     if (!arlfn(CurlMultiSgPtr, append)(failed,&msg))
-                        return err_internal("while processing curl failure, arl append failed");
+                    {
+                        err = err_internal("while processing curl failure, arl append failed");
+                        goto Clean;
+                    }
                 }
             }
         }
     } while (running);
 
+Clean:
     sigaction(SIGINT, &old_action, NULL);
     return err;
 }

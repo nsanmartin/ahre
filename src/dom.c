@@ -379,6 +379,9 @@ DomElem
 dom_elem_from_ptr(DomElemPtr ptr) { return (DomElem){.ptr=ptr}; }
 
 Err dom_elem_init(DomElem de[_1_], Dom dom, StrView strv) {
+    if (isnull(dom))
+        return err_internal("unexpected null Dom");
+
     de->ptr = lxb_dom_document_create_element(
         &dom.ptr->dom_document, (const lxb_char_t*)strv.items, strv.len, NULL
     );
@@ -466,6 +469,8 @@ static Err _str_append_indent_(Str out[_1_], StrView indentantion, size_t level)
 }
 
 DomElem dom_elem_from_node(DomNode n) { return (DomElem){.ptr=lxb_dom_interface_element(n.ptr)}; }
+DomElem dom_elem_from_nodeptr(DomNodePtr n) { return (DomElem){.ptr=lxb_dom_interface_element(n)}; }
+
 #define DOM_NODE_TO_STR_INDENTATION svl("    ")
 static Err _dom_node_to_str_impl_(DomNode node, Str buf[_1_], size_t level) {
     if (dom_node_type(node) != DOM_NODE_TYPE_ELEMENT) return Ok;

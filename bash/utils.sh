@@ -7,7 +7,7 @@ _vahre_ () {
 }
 vahre0  () { _vahre_ 0  "$@"; }
 vahre01 () { _vahre_ 01 "$@"; }
-
+vddg0   () { local IFS="+"; _vahre_ 0 -d q="$*" lite.duckduckgo.com/lite; }
 gahre () {
     gdb -ex 'run' --args ./build/ahre "$@";
 }

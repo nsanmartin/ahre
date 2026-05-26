@@ -4,8 +4,8 @@
 #include "wrapper-lexbor.h"
 
 typedef struct { lxb_html_document_t* ptr; } Dom;
-typedef struct { lxb_dom_node_t* ptr; }      DomNode;
-typedef struct { lxb_dom_element_t* ptr; }   DomElem;
+typedef struct { DomNodePtr ptr; }           DomNode;
+typedef struct { DomElemPtr ptr; }           DomElem;
 typedef struct { lxb_dom_text_t* ptr; }      DomText;
 typedef struct { lxb_dom_attr_t* ptr; }      DomAttr;
 
@@ -57,6 +57,7 @@ DomNode dom_node_first_elem_child(DomNode n);
 /* DOM ELEMENT */
 DomAttr dom_elem_first_attr(DomElem e);
 DomElem dom_elem_from_node(DomNode n);
+DomElem dom_elem_from_nodeptr(DomNodePtr n);
 DomElem dom_elem_from_ptr(DomElemPtr ptr);
 Err     dom_elem_init(DomElem de[_1_], Dom dom, StrView strv);
 Err     dom_elem_set_attr(DomElem de, StrView key, StrView value);
