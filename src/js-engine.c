@@ -56,6 +56,33 @@ jse_clean(JsEngine js[_1_])
     *js = (JsEngine){0};
 }
 
+#define xstringify(N) #N
+#define stringify(N) xstringify(N)
+
+#define not_impl_fn_name__(Name) jse_fn_not_implemented_ ## Name
+#define mk_not_impl_fn(Name) \
+    static js_fn__(not_impl_fn_name__(Name)) {(void)this; (void)argc; (void)argv;\
+    return JS_ThrowPlainError(ctx, "ahjs: fn '"# Name "' not implemented." # Name); }
+
+#define not_impl_getter_name__(Name) jse_getter_not_implemented_ ## Name
+#define mk_not_impl_getter(Name) \
+    static js_get__(not_impl_getter_name__(Name)) {(void)this;\
+    return JS_ThrowPlainError(ctx, "ahjs: getter '"# Name "' not implemented."); }
+
+#define not_impl_setter_name__(Name) jse_setter_not_implemented_ ## Name
+#define mk_not_impl_setter(Name) \
+    static js_set__(not_impl_setter_name__(Name)) {(void)this; (void)val;\
+    return JS_ThrowPlainError(ctx, "ahjs: setter '"# Name "' not implemented." # Name); }
+
+#define concat__(A,B) A ## _ ## B
+
+#define mk_not_impl_getset(NS, Attr) \
+    mk_not_impl_getter(NS ## _ ## Attr) \
+    mk_not_impl_setter(NS ## _ ## Attr)
+
+#define mk_not_impl_getset_list_entry(NS, Attr) \
+    JS_CGETSET_DEF(stringify(Attr), not_impl_getter_name__(NS ## _ ## Attr), not_impl_setter_name__(NS ## _ ## Attr))
+
 
 static js_fn__(jse_fn_not_implemented)
 {
@@ -213,22 +240,37 @@ static js_set__(_set_textContent)
     return _set_textContent_impl(ctx, this, val, elem);
 }
 
+mk_not_impl_getset(node, baseURI)
+mk_not_impl_getset(node, childNodes)
+mk_not_impl_getset(node, firstChild)
+mk_not_impl_getset(node, isConnected)
+mk_not_impl_getset(node, lastChild)
+mk_not_impl_getset(node, nextSibling)
+mk_not_impl_getset(node, nodeName)
+mk_not_impl_getset(node, nodeType)
+mk_not_impl_getset(node, nodeValue)
+mk_not_impl_getset(node, ownerDocument)
+mk_not_impl_getset(node, parentNode)
+mk_not_impl_getset(node, parentElement)
+mk_not_impl_getset(node, previousSibling)
 
 static const JSCFunctionListEntry node_fn_list[] = {
-    JS_CGETSET_DEF("baseURI",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("childNodes",             jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("firstChild",             jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("isConnected",            jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("lastChild",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("nextSibling",            jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("nodeName",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("nodeType",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("nodeValue",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ownerDocument",          jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("parentNode",             jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("parentElement",          jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("previousSibling",        jse_get_not_implemented, jse_set_not_implemented),
     JS_CGETSET_DEF("textContent",            jse_get_not_implemented, _set_textContent),
+
+    mk_not_impl_getset_list_entry(node, baseURI),
+    mk_not_impl_getset_list_entry(node, childNodes),
+    mk_not_impl_getset_list_entry(node, firstChild),
+    mk_not_impl_getset_list_entry(node, isConnected),
+    mk_not_impl_getset_list_entry(node, lastChild),
+    mk_not_impl_getset_list_entry(node, nextSibling),
+    mk_not_impl_getset_list_entry(node, nodeName),
+    mk_not_impl_getset_list_entry(node, nodeType),
+    mk_not_impl_getset_list_entry(node, nodeValue),
+    mk_not_impl_getset_list_entry(node, ownerDocument),
+    mk_not_impl_getset_list_entry(node, parentNode),
+    mk_not_impl_getset_list_entry(node, parentElement),
+    mk_not_impl_getset_list_entry(node, previousSibling),
+
     JS_CFUNC_DEF("appendChild",              0,     jse_fn_not_implemented),
     JS_CFUNC_DEF("cloneNode",                0,     jse_fn_not_implemented),
     JS_CFUNC_DEF("compareDocumentPosition",  0,     jse_fn_not_implemented),
@@ -364,93 +406,178 @@ element_js_value_from_dom_elem(JSContext *ctx, DomElem elem)
 }
 
 
-static const JSCFunctionListEntry element_fn_list[] = {
+mk_not_impl_getset(node, assignedSlot)
+mk_not_impl_getset(node, attributes)
+mk_not_impl_getset(node, childElementCount)
+mk_not_impl_getset(node, children)
+mk_not_impl_getset(node, classList)
+mk_not_impl_getset(node, className)
+mk_not_impl_getset(node, clientHeight)
+mk_not_impl_getset(node, clientLeft)
+mk_not_impl_getset(node, clientTop)
+mk_not_impl_getset(node, clientWidth)
+mk_not_impl_getset(node, currentCSSZoom)
+mk_not_impl_getset(node, customElementRegistry)
+mk_not_impl_getset(node, elementTiming)
+mk_not_impl_getset(node, firstElementChild)
+mk_not_impl_getset(node, innerHTML)
+mk_not_impl_getset(node, lastElementChild)
+mk_not_impl_getset(node, localName)
+mk_not_impl_getset(node, namespaceURI)
+mk_not_impl_getset(node, nextElementSibling)
+mk_not_impl_getset(node, outerHTML)
+mk_not_impl_getset(node, part)
+mk_not_impl_getset(node, prefix)
+mk_not_impl_getset(node, previousElementSibling)
+mk_not_impl_getset(node, scrollHeight)
+mk_not_impl_getset(node, scrollLeft)
+mk_not_impl_getset(node, scrollLeftMax)
+mk_not_impl_getset(node, scrollTop)
+mk_not_impl_getset(node, scrollTopMax)
+mk_not_impl_getset(node, scrollWidth)
+mk_not_impl_getset(node, shadowRoot)
+mk_not_impl_getset(node, slot)
+mk_not_impl_getset(node, tagName)
+mk_not_impl_getset(node, ariaAtomic)
+mk_not_impl_getset(node, ariaAutoComplete)
+mk_not_impl_getset(node, ariaBrailleLabel)
+mk_not_impl_getset(node, ariaBrailleRoleDescription)
+mk_not_impl_getset(node, ariaBusy)
+mk_not_impl_getset(node, ariaChecked)
+mk_not_impl_getset(node, ariaColCount)
+mk_not_impl_getset(node, ariaColIndex)
+mk_not_impl_getset(node, ariaColIndexText)
+mk_not_impl_getset(node, ariaColSpan)
+mk_not_impl_getset(node, ariaCurrent)
+mk_not_impl_getset(node, ariaDescription)
+mk_not_impl_getset(node, ariaDisabled)
+mk_not_impl_getset(node, ariaExpanded)
+mk_not_impl_getset(node, ariaHasPopup)
+mk_not_impl_getset(node, ariaHidden)
+mk_not_impl_getset(node, ariaInvalid)
+mk_not_impl_getset(node, ariaKeyShortcuts)
+mk_not_impl_getset(node, ariaLabel)
+mk_not_impl_getset(node, ariaLevel)
+mk_not_impl_getset(node, ariaLive)
+mk_not_impl_getset(node, ariaModal)
+mk_not_impl_getset(node, ariaMultiline)
+mk_not_impl_getset(node, ariaMultiSelectable)
+mk_not_impl_getset(node, ariaOrientation)
+mk_not_impl_getset(node, ariaPlaceholder)
+mk_not_impl_getset(node, ariaPosInSet)
+mk_not_impl_getset(node, ariaPressed)
+mk_not_impl_getset(node, ariaReadOnly)
+mk_not_impl_getset(node, ariaRelevant)
+mk_not_impl_getset(node, ariaRequired)
+mk_not_impl_getset(node, ariaRoleDescription)
+mk_not_impl_getset(node, ariaRowCount)
+mk_not_impl_getset(node, ariaRowIndex)
+mk_not_impl_getset(node, ariaRowIndexText)
+mk_not_impl_getset(node, ariaRowSpan)
+mk_not_impl_getset(node, ariaSelected)
+mk_not_impl_getset(node, ariaSetSize)
+mk_not_impl_getset(node, ariaSort)
+mk_not_impl_getset(node, ariaValueMax)
+mk_not_impl_getset(node, ariaValueMin)
+mk_not_impl_getset(node, ariaValueNow)
+mk_not_impl_getset(node, ariaValueText)
+mk_not_impl_getset(node, role)
+mk_not_impl_getset(node, ariaActiveDescendantElement)
+mk_not_impl_getset(node, ariaControlsElements)
+mk_not_impl_getset(node, ariaDescribedByElements)
+mk_not_impl_getset(node, ariaDetailsElements)
+mk_not_impl_getset(node, ariaErrorMessageElements)
+mk_not_impl_getset(node, ariaFlowToElements)
+mk_not_impl_getset(node, ariaLabelledByElements)
+mk_not_impl_getset(node, ariaOwnsElements)
 
-    JS_CGETSET_DEF("assignedSlot",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("attributes",                 jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("childElementCount",          jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("children",                   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("classList",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("className",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("clientHeight",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("clientLeft",                 jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("clientTop",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("clientWidth",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("currentCSSZoom",             jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("customElementRegistry",      jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("elementTiming",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("firstElementChild",          jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("id",                         element_get_id, element_set_id),
-    JS_CGETSET_DEF("innerHTML",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("lastElementChild",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("localName",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("namespaceURI",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("nextElementSibling",         jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("outerHTML",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("part",                       jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("prefix",                     jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("previousElementSibling",     jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("scrollHeight",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("scrollLeft",                 jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("scrollLeftMax",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("scrollTop",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("scrollTopMax",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("scrollWidth",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("shadowRoot",                 jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("slot",                       jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("tagName",                    jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaAtomic",                 jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaAutoComplete",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaBrailleLabel",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaBrailleRoleDescription", jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaBusy",                   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaChecked",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaColCount",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaColIndex",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaColIndexText",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaColSpan",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaCurrent",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaDescription",            jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaDisabled",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaExpanded",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaHasPopup",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaHidden",                 jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaInvalid",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaKeyShortcuts",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaLabel",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaLevel",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaLive",                   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaModal",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaMultiline",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaMultiSelectable",        jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaOrientation",            jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaPlaceholder",            jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaPosInSet",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaPressed",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaReadOnly",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaRelevant",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaRequired",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaRoleDescription",        jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaRowCount",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaRowIndex",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaRowIndexText",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaRowSpan",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaSelected",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaSetSize",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaSort",                   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaValueMax",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaValueMin",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaValueNow",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaValueText",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("role",                       jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaActiveDescendantElement",jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaControlsElements",       jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaDescribedByElements",    jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaDetailsElements",        jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaErrorMessageElements",   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaFlowToElements",         jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaLabelledByElements",     jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ariaOwnsElements",           jse_get_not_implemented, jse_set_not_implemented),
+static const JSCFunctionListEntry element_fn_list[] = {
+    JS_CGETSET_DEF("id", element_get_id, element_set_id),
+
+    mk_not_impl_getset_list_entry(node, assignedSlot),
+    mk_not_impl_getset_list_entry(node, attributes),
+    mk_not_impl_getset_list_entry(node, childElementCount),
+    mk_not_impl_getset_list_entry(node, children),
+    mk_not_impl_getset_list_entry(node, classList),
+    mk_not_impl_getset_list_entry(node, className),
+    mk_not_impl_getset_list_entry(node, clientHeight),
+    mk_not_impl_getset_list_entry(node, clientLeft),
+    mk_not_impl_getset_list_entry(node, clientTop),
+    mk_not_impl_getset_list_entry(node, clientWidth),
+    mk_not_impl_getset_list_entry(node, currentCSSZoom),
+    mk_not_impl_getset_list_entry(node, customElementRegistry),
+    mk_not_impl_getset_list_entry(node, elementTiming),
+    mk_not_impl_getset_list_entry(node, firstElementChild),
+    mk_not_impl_getset_list_entry(node, innerHTML),
+    mk_not_impl_getset_list_entry(node, lastElementChild),
+    mk_not_impl_getset_list_entry(node, localName),
+    mk_not_impl_getset_list_entry(node, namespaceURI),
+    mk_not_impl_getset_list_entry(node, nextElementSibling),
+    mk_not_impl_getset_list_entry(node, outerHTML),
+    mk_not_impl_getset_list_entry(node, part),
+    mk_not_impl_getset_list_entry(node, prefix),
+    mk_not_impl_getset_list_entry(node, previousElementSibling),
+    mk_not_impl_getset_list_entry(node, scrollHeight),
+    mk_not_impl_getset_list_entry(node, scrollLeft),
+    mk_not_impl_getset_list_entry(node, scrollLeftMax),
+    mk_not_impl_getset_list_entry(node, scrollTop),
+    mk_not_impl_getset_list_entry(node, scrollTopMax),
+    mk_not_impl_getset_list_entry(node, scrollWidth),
+    mk_not_impl_getset_list_entry(node, shadowRoot),
+    mk_not_impl_getset_list_entry(node, slot),
+    mk_not_impl_getset_list_entry(node, tagName),
+    mk_not_impl_getset_list_entry(node, ariaAtomic),
+    mk_not_impl_getset_list_entry(node, ariaAutoComplete),
+    mk_not_impl_getset_list_entry(node, ariaBrailleLabel),
+    mk_not_impl_getset_list_entry(node, ariaBrailleRoleDescription),
+    mk_not_impl_getset_list_entry(node, ariaBusy),
+    mk_not_impl_getset_list_entry(node, ariaChecked),
+    mk_not_impl_getset_list_entry(node, ariaColCount),
+    mk_not_impl_getset_list_entry(node, ariaColIndex),
+    mk_not_impl_getset_list_entry(node, ariaColIndexText),
+    mk_not_impl_getset_list_entry(node, ariaColSpan),
+    mk_not_impl_getset_list_entry(node, ariaCurrent),
+    mk_not_impl_getset_list_entry(node, ariaDescription),
+    mk_not_impl_getset_list_entry(node, ariaDisabled),
+    mk_not_impl_getset_list_entry(node, ariaExpanded),
+    mk_not_impl_getset_list_entry(node, ariaHasPopup),
+    mk_not_impl_getset_list_entry(node, ariaHidden),
+    mk_not_impl_getset_list_entry(node, ariaInvalid),
+    mk_not_impl_getset_list_entry(node, ariaKeyShortcuts),
+    mk_not_impl_getset_list_entry(node, ariaLabel),
+    mk_not_impl_getset_list_entry(node, ariaLevel),
+    mk_not_impl_getset_list_entry(node, ariaLive),
+    mk_not_impl_getset_list_entry(node, ariaModal),
+    mk_not_impl_getset_list_entry(node, ariaMultiline),
+    mk_not_impl_getset_list_entry(node, ariaMultiSelectable),
+    mk_not_impl_getset_list_entry(node, ariaOrientation),
+    mk_not_impl_getset_list_entry(node, ariaPlaceholder),
+    mk_not_impl_getset_list_entry(node, ariaPosInSet),
+    mk_not_impl_getset_list_entry(node, ariaPressed),
+    mk_not_impl_getset_list_entry(node, ariaReadOnly),
+    mk_not_impl_getset_list_entry(node, ariaRelevant),
+    mk_not_impl_getset_list_entry(node, ariaRequired),
+    mk_not_impl_getset_list_entry(node, ariaRoleDescription),
+    mk_not_impl_getset_list_entry(node, ariaRowCount),
+    mk_not_impl_getset_list_entry(node, ariaRowIndex),
+    mk_not_impl_getset_list_entry(node, ariaRowIndexText),
+    mk_not_impl_getset_list_entry(node, ariaRowSpan),
+    mk_not_impl_getset_list_entry(node, ariaSelected),
+    mk_not_impl_getset_list_entry(node, ariaSetSize),
+    mk_not_impl_getset_list_entry(node, ariaSort),
+    mk_not_impl_getset_list_entry(node, ariaValueMax),
+    mk_not_impl_getset_list_entry(node, ariaValueMin),
+    mk_not_impl_getset_list_entry(node, ariaValueNow),
+    mk_not_impl_getset_list_entry(node, ariaValueText),
+    mk_not_impl_getset_list_entry(node, role),
+    mk_not_impl_getset_list_entry(node, ariaActiveDescendantElement),
+    mk_not_impl_getset_list_entry(node, ariaControlsElements),
+    mk_not_impl_getset_list_entry(node, ariaDescribedByElements),
+    mk_not_impl_getset_list_entry(node, ariaDetailsElements),
+    mk_not_impl_getset_list_entry(node, ariaErrorMessageElements),
+    mk_not_impl_getset_list_entry(node, ariaFlowToElements),
+    mk_not_impl_getset_list_entry(node, ariaLabelledByElements),
+    mk_not_impl_getset_list_entry(node, ariaOwnsElements),
 
     JS_CFUNC_DEF("after",                    0,     jse_fn_not_implemented),
     JS_CFUNC_DEF("animate",                  0,     jse_fn_not_implemented),
@@ -616,74 +743,138 @@ static js_set__(document_set_title)
 }
 
 
+mk_not_impl_getset(document, activeElement)
+mk_not_impl_getset(document, activeViewTransition)
+mk_not_impl_getset(document, adoptedStyleSheets)
+mk_not_impl_getset(document, characterSet)
+mk_not_impl_getset(document, childElementCount)
+mk_not_impl_getset(document, children)
+mk_not_impl_getset(document, compatMode)
+mk_not_impl_getset(document, contentType)
+mk_not_impl_getset(document, currentScript)
+mk_not_impl_getset(document, customElementRegistry)
+mk_not_impl_getset(document, doctype)
+mk_not_impl_getset(document, documentElement)
+mk_not_impl_getset(document, documentURI)
+mk_not_impl_getset(document, embeds)
+mk_not_impl_getset(document, featurePolicy)
+mk_not_impl_getset(document, firstElementChild)
+mk_not_impl_getset(document, fonts)
+mk_not_impl_getset(document, forms)
+mk_not_impl_getset(document, fragmentDirective)
+mk_not_impl_getset(document, fullscreenElement)
+mk_not_impl_getset(document, hidden)
+mk_not_impl_getset(document, images)
+mk_not_impl_getset(document, implementation)
+mk_not_impl_getset(document, lastElementChild)
+mk_not_impl_getset(document, links)
+mk_not_impl_getset(document, pictureInPictureElement)
+mk_not_impl_getset(document, pictureInPictureEnabled)
+mk_not_impl_getset(document, plugins)
+mk_not_impl_getset(document, pointerLockElement)
+mk_not_impl_getset(document, prerendering)
+mk_not_impl_getset(document, scripts)
+mk_not_impl_getset(document, scrollingElement)
+mk_not_impl_getset(document, styleSheets)
+mk_not_impl_getset(document, timeline)
+mk_not_impl_getset(document, visibilityState)
+mk_not_impl_getset(document, cookie)
+mk_not_impl_getset(document, defaultView)
+mk_not_impl_getset(document, designMode)
+mk_not_impl_getset(document, dir)
+mk_not_impl_getset(document, fullscreenEnabled)
+mk_not_impl_getset(document, lastModified)
+mk_not_impl_getset(document, location)
+mk_not_impl_getset(document, readyState)
+mk_not_impl_getset(document, referrer)
+mk_not_impl_getset(document, URL)
+mk_not_impl_getset(document, alinkColor)
+mk_not_impl_getset(document, all)
+mk_not_impl_getset(document, anchors)
+mk_not_impl_getset(document, applets)
+mk_not_impl_getset(document, bgColor)
+mk_not_impl_getset(document, domain)
+mk_not_impl_getset(document, fgColor)
+mk_not_impl_getset(document, fullscreen)
+mk_not_impl_getset(document, lastStyleSheetSet)
+mk_not_impl_getset(document, linkColor)
+mk_not_impl_getset(document, preferredStyleSheetSet)
+mk_not_impl_getset(document, rootElement)
+mk_not_impl_getset(document, selectedStyleSheetSet)
+mk_not_impl_getset(document, styleSheetSets)
+mk_not_impl_getset(document, vlinkColor)
+mk_not_impl_getset(document, xmlEncoding)
+mk_not_impl_getset(document, xmlStandalone)
+mk_not_impl_getset(document, xmlVersion)
 
 static const JSCFunctionListEntry document_fn_list[] = {
-    JS_CGETSET_DEF("activeElement",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("activeViewTransition",        jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("adoptedStyleSheets",          jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("body",                        document_body,           jse_set_not_implemented),
-    JS_CGETSET_DEF("characterSet",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("childElementCount",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("children",                    jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("compatMode",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("contentType",                 jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("currentScript",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("customElementRegistry",       jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("doctype",                     jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("documentElement",             jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("documentURI",                 jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("embeds",                      jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("featurePolicy",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("firstElementChild",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("fonts",                       jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("forms",                       jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("fragmentDirective",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("fullscreenElement",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("head",                        document_head,           jse_set_not_implemented),
-    JS_CGETSET_DEF("hidden",                      jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("images",                      jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("implementation",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("lastElementChild",            jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("links",                       jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("pictureInPictureElement",     jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("pictureInPictureEnabled",     jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("plugins",                     jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("pointerLockElement",          jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("prerendering",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("scripts",                     jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("scrollingElement",            jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("styleSheets",                 jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("timeline",                    jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("visibilityState",             jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("cookie",                      jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("defaultView",                 jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("designMode",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("dir",                         jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("fullscreenEnabled",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("lastModified",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("location",                    jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("readyState",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("referrer",                    jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("title",                       document_get_title,      document_set_title),
-    JS_CGETSET_DEF("URL",                         jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("alinkColor",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("all",                         jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("anchors",                     jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("applets",                     jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("bgColor",                     jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("domain",                      jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("fgColor",                     jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("fullscreen",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("lastStyleSheetSet",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("linkColor",                   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("preferredStyleSheetSet",      jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("rootElement",                 jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("selectedStyleSheetSet",       jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("styleSheetSets",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("vlinkColor",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("xmlEncoding",                 jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("xmlStandalone",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("xmlVersion",                  jse_get_not_implemented, jse_set_not_implemented),
+    JS_CGETSET_DEF("body",   document_body,      jse_set_not_implemented),
+    JS_CGETSET_DEF("head",   document_head,      jse_set_not_implemented),
+    JS_CGETSET_DEF("title",  document_get_title, document_set_title),
+
+    mk_not_impl_getset_list_entry(document, activeElement),
+    mk_not_impl_getset_list_entry(document, activeViewTransition),
+    mk_not_impl_getset_list_entry(document, adoptedStyleSheets),
+    mk_not_impl_getset_list_entry(document, characterSet),
+    mk_not_impl_getset_list_entry(document, childElementCount),
+    mk_not_impl_getset_list_entry(document, children),
+    mk_not_impl_getset_list_entry(document, compatMode),
+    mk_not_impl_getset_list_entry(document, contentType),
+    mk_not_impl_getset_list_entry(document, currentScript),
+    mk_not_impl_getset_list_entry(document, customElementRegistry),
+    mk_not_impl_getset_list_entry(document, doctype),
+    mk_not_impl_getset_list_entry(document, documentElement),
+    mk_not_impl_getset_list_entry(document, documentURI),
+    mk_not_impl_getset_list_entry(document, embeds),
+    mk_not_impl_getset_list_entry(document, featurePolicy),
+    mk_not_impl_getset_list_entry(document, firstElementChild),
+    mk_not_impl_getset_list_entry(document, fonts),
+    mk_not_impl_getset_list_entry(document, forms),
+    mk_not_impl_getset_list_entry(document, fragmentDirective),
+    mk_not_impl_getset_list_entry(document, fullscreenElement),
+    mk_not_impl_getset_list_entry(document, hidden),
+    mk_not_impl_getset_list_entry(document, images),
+    mk_not_impl_getset_list_entry(document, implementation),
+    mk_not_impl_getset_list_entry(document, lastElementChild),
+    mk_not_impl_getset_list_entry(document, links),
+    mk_not_impl_getset_list_entry(document, pictureInPictureElement),
+    mk_not_impl_getset_list_entry(document, pictureInPictureEnabled),
+    mk_not_impl_getset_list_entry(document, plugins),
+    mk_not_impl_getset_list_entry(document, pointerLockElement),
+    mk_not_impl_getset_list_entry(document, prerendering),
+    mk_not_impl_getset_list_entry(document, scripts),
+    mk_not_impl_getset_list_entry(document, scrollingElement),
+    mk_not_impl_getset_list_entry(document, styleSheets),
+    mk_not_impl_getset_list_entry(document, timeline),
+    mk_not_impl_getset_list_entry(document, visibilityState),
+    mk_not_impl_getset_list_entry(document, cookie),
+    mk_not_impl_getset_list_entry(document, defaultView),
+    mk_not_impl_getset_list_entry(document, designMode),
+    mk_not_impl_getset_list_entry(document, dir),
+    mk_not_impl_getset_list_entry(document, fullscreenEnabled),
+    mk_not_impl_getset_list_entry(document, lastModified),
+    mk_not_impl_getset_list_entry(document, location),
+    mk_not_impl_getset_list_entry(document, readyState),
+    mk_not_impl_getset_list_entry(document, referrer),
+    mk_not_impl_getset_list_entry(document, URL),
+    mk_not_impl_getset_list_entry(document, alinkColor),
+    mk_not_impl_getset_list_entry(document, all),
+    mk_not_impl_getset_list_entry(document, anchors),
+    mk_not_impl_getset_list_entry(document, applets),
+    mk_not_impl_getset_list_entry(document, bgColor),
+    mk_not_impl_getset_list_entry(document, domain),
+    mk_not_impl_getset_list_entry(document, fgColor),
+    mk_not_impl_getset_list_entry(document, fullscreen),
+    mk_not_impl_getset_list_entry(document, lastStyleSheetSet),
+    mk_not_impl_getset_list_entry(document, linkColor),
+    mk_not_impl_getset_list_entry(document, preferredStyleSheetSet),
+    mk_not_impl_getset_list_entry(document, rootElement),
+    mk_not_impl_getset_list_entry(document, selectedStyleSheetSet),
+    mk_not_impl_getset_list_entry(document, styleSheetSets),
+    mk_not_impl_getset_list_entry(document, vlinkColor),
+    mk_not_impl_getset_list_entry(document, xmlEncoding),
+    mk_not_impl_getset_list_entry(document, xmlStandalone),
+    mk_not_impl_getset_list_entry(document, xmlVersion),
 
     JS_CFUNC_DEF("adoptNode",                     0, jse_fn_not_implemented),
     JS_CFUNC_DEF("append",                        0, jse_fn_not_implemented),
@@ -933,74 +1124,142 @@ static js_fn__(setTimeout)
     return JS_NewInt32(ctx, 1);
 }
 
+mk_not_impl_getset(window, caches)
+mk_not_impl_getset(window, clientInformation)
+mk_not_impl_getset(window, closed)
+mk_not_impl_getset(window, cookieStore)
+mk_not_impl_getset(window, crashReport)
+mk_not_impl_getset(window, credentialless)
+mk_not_impl_getset(window, crossOriginIsolated)
+mk_not_impl_getset(window, crypto)
+mk_not_impl_getset(window, customElements)
+mk_not_impl_getset(window, devicePixelRatio)
+mk_not_impl_getset(window, documentPictureInPicture)
+mk_not_impl_getset(window, event)
+mk_not_impl_getset(window, external)
+mk_not_impl_getset(window, fence)
+mk_not_impl_getset(window, frameElement)
+mk_not_impl_getset(window, frames)
+mk_not_impl_getset(window, fullScreen)
+mk_not_impl_getset(window, history)
+mk_not_impl_getset(window, indexedDB)
+mk_not_impl_getset(window, innerHeight)
+mk_not_impl_getset(window, innerWidth)
+mk_not_impl_getset(window, isSecureContext)
+mk_not_impl_getset(window, launchQueue)
+mk_not_impl_getset(window, length)
+mk_not_impl_getset(window, localStorage)
+mk_not_impl_getset(window, location)
+mk_not_impl_getset(window, locationbar)
+mk_not_impl_getset(window, menubar)
+mk_not_impl_getset(window, mozInnerScreenX)
+mk_not_impl_getset(window, mozInnerScreenY)
+mk_not_impl_getset(window, name)
+mk_not_impl_getset(window, navigation)
+mk_not_impl_getset(window, navigator)
+mk_not_impl_getset(window, opener)
+mk_not_impl_getset(window, orientation)
+mk_not_impl_getset(window, origin)
+mk_not_impl_getset(window, originAgentCluster)
+mk_not_impl_getset(window, outerHeight)
+mk_not_impl_getset(window, outerWidth)
+mk_not_impl_getset(window, pageXOffset)
+mk_not_impl_getset(window, pageYOffset)
+mk_not_impl_getset(window, parent)
+mk_not_impl_getset(window, performance)
+mk_not_impl_getset(window, personalbar)
+mk_not_impl_getset(window, scheduler)
+mk_not_impl_getset(window, screen)
+mk_not_impl_getset(window, screenX)
+mk_not_impl_getset(window, screenY)
+mk_not_impl_getset(window, scrollMaxX)
+mk_not_impl_getset(window, scrollMaxY)
+mk_not_impl_getset(window, scrollX)
+mk_not_impl_getset(window, scrollY)
+mk_not_impl_getset(window, scrollbars)
+mk_not_impl_getset(window, self)
+mk_not_impl_getset(window, sessionStorage)
+mk_not_impl_getset(window, sharedStorage)
+mk_not_impl_getset(window, speechSynthesis)
+mk_not_impl_getset(window, status)
+mk_not_impl_getset(window, statusbar)
+mk_not_impl_getset(window, toolbar)
+mk_not_impl_getset(window, top)
+mk_not_impl_getset(window, trustedTypes)
+mk_not_impl_getset(window, viewport)
+mk_not_impl_getset(window, visualViewport)
+mk_not_impl_getset(window, window)
+
 //TODO1: inherit from Event Target
 static const JSCFunctionListEntry window_fn_list[] = {
-    JS_CGETSET_DEF("caches",                   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("clientInformation",        jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("closed",                   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("cookieStore",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("crashReport",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("credentialless",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("crossOriginIsolated",      jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("crypto",                   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("customElements",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("devicePixelRatio",         jse_get_not_implemented, jse_set_not_implemented),
     /* JS_CGETSET_DEF("document",                 jse_get_not_implemented, jse_set_not_implemented), */
-    JS_CGETSET_DEF("documentPictureInPicture", jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("event",                    jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("external",                 jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("fence",                    jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("frameElement",             jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("frames",                   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("fullScreen",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("history",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("indexedDB",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("innerHeight",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("innerWidth",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("isSecureContext",          jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("launchQueue",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("length",                   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("localStorage",             jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("location",                 jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("locationbar",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("menubar",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("mozInnerScreenX",          jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("mozInnerScreenY",          jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("name",                     jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("navigation",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("navigator",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("opener",                   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("orientation",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("origin",                   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("originAgentCluster",       jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("outerHeight",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("outerWidth",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("pageXOffset",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("pageYOffset",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("parent",                   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("performance",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("personalbar",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("scheduler",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("screen",                   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("screenX",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("screenY",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("scrollMaxX",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("scrollMaxY",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("scrollX",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("scrollY",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("scrollbars",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("self",                     jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("sessionStorage",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("sharedStorage",            jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("speechSynthesis",          jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("status",                   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("statusbar",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("toolbar",                  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("top",                      jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("trustedTypes",             jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("viewport",                 jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("visualViewport",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("window",                   jse_get_not_implemented, jse_set_not_implemented),
+
+    mk_not_impl_getset_list_entry(window, caches),
+    mk_not_impl_getset_list_entry(window, clientInformation),
+    mk_not_impl_getset_list_entry(window, closed),
+    mk_not_impl_getset_list_entry(window, cookieStore),
+    mk_not_impl_getset_list_entry(window, crashReport),
+    mk_not_impl_getset_list_entry(window, credentialless),
+    mk_not_impl_getset_list_entry(window, crossOriginIsolated),
+    mk_not_impl_getset_list_entry(window, crypto),
+    mk_not_impl_getset_list_entry(window, customElements),
+    mk_not_impl_getset_list_entry(window, devicePixelRatio),
+    mk_not_impl_getset_list_entry(window, documentPictureInPicture),
+    mk_not_impl_getset_list_entry(window, event),
+    mk_not_impl_getset_list_entry(window, external),
+    mk_not_impl_getset_list_entry(window, fence),
+    mk_not_impl_getset_list_entry(window, frameElement),
+    mk_not_impl_getset_list_entry(window, frames),
+    mk_not_impl_getset_list_entry(window, fullScreen),
+    mk_not_impl_getset_list_entry(window, history),
+    mk_not_impl_getset_list_entry(window, indexedDB),
+    mk_not_impl_getset_list_entry(window, innerHeight),
+    mk_not_impl_getset_list_entry(window, innerWidth),
+    mk_not_impl_getset_list_entry(window, isSecureContext),
+    mk_not_impl_getset_list_entry(window, launchQueue),
+    mk_not_impl_getset_list_entry(window, length),
+    mk_not_impl_getset_list_entry(window, localStorage),
+    mk_not_impl_getset_list_entry(window, location),
+    mk_not_impl_getset_list_entry(window, locationbar),
+    mk_not_impl_getset_list_entry(window, menubar),
+    mk_not_impl_getset_list_entry(window, mozInnerScreenX),
+    mk_not_impl_getset_list_entry(window, mozInnerScreenY),
+    mk_not_impl_getset_list_entry(window, name),
+    mk_not_impl_getset_list_entry(window, navigation),
+    mk_not_impl_getset_list_entry(window, navigator),
+    mk_not_impl_getset_list_entry(window, opener),
+    mk_not_impl_getset_list_entry(window, orientation),
+    mk_not_impl_getset_list_entry(window, origin),
+    mk_not_impl_getset_list_entry(window, originAgentCluster),
+    mk_not_impl_getset_list_entry(window, outerHeight),
+    mk_not_impl_getset_list_entry(window, outerWidth),
+    mk_not_impl_getset_list_entry(window, pageXOffset),
+    mk_not_impl_getset_list_entry(window, pageYOffset),
+    mk_not_impl_getset_list_entry(window, parent),
+    mk_not_impl_getset_list_entry(window, performance),
+    mk_not_impl_getset_list_entry(window, personalbar),
+    mk_not_impl_getset_list_entry(window, scheduler),
+    mk_not_impl_getset_list_entry(window, screen),
+    mk_not_impl_getset_list_entry(window, screenX),
+    mk_not_impl_getset_list_entry(window, screenY),
+    mk_not_impl_getset_list_entry(window, scrollMaxX),
+    mk_not_impl_getset_list_entry(window, scrollMaxY),
+    mk_not_impl_getset_list_entry(window, scrollX),
+    mk_not_impl_getset_list_entry(window, scrollY),
+    mk_not_impl_getset_list_entry(window, scrollbars),
+    mk_not_impl_getset_list_entry(window, self),
+    mk_not_impl_getset_list_entry(window, sessionStorage),
+    mk_not_impl_getset_list_entry(window, sharedStorage),
+    mk_not_impl_getset_list_entry(window, speechSynthesis),
+    mk_not_impl_getset_list_entry(window, status),
+    mk_not_impl_getset_list_entry(window, statusbar),
+    mk_not_impl_getset_list_entry(window, toolbar),
+    mk_not_impl_getset_list_entry(window, top),
+    mk_not_impl_getset_list_entry(window, trustedTypes),
+    mk_not_impl_getset_list_entry(window, viewport),
+    mk_not_impl_getset_list_entry(window, visualViewport),
+    mk_not_impl_getset_list_entry(window, window),
+
     JS_CFUNC_DEF("alert",                            0, jse_fn_not_implemented),
     JS_CFUNC_DEF("atob",                             0, jse_fn_not_implemented),
     JS_CFUNC_DEF("blur",                             0, jse_fn_not_implemented),
