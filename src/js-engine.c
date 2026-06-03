@@ -90,19 +90,6 @@ static js_fn__(jse_fn_not_implemented)
     return JS_ThrowPlainError(ctx, "Ahre jse: fn not implemented");
 }
 
-static js_get__(jse_get_not_implemented)
-{
-    (void)this;
-    return JS_ThrowPlainError(ctx, "Ahre jse: getter not implemented");
-}
-
-static js_set__(jse_set_not_implemented)
-{
-    (void)this; (void)val;
-    return JS_ThrowPlainError(ctx, "Ahre jse: setter not implemented");
-}
-
-
 
 static Err
 init_class(JSClassID class_id[_1_], JSClassDef cdef[_1_], JSContext* ctx)
@@ -233,8 +220,8 @@ static js_set_n__(_set_textContent_impl, DomElem elem) {
     return JS_UNDEFINED;
 }
        
-
-static js_set__(_set_textContent)
+mk_not_impl_getter(node_textContent)
+static js_set__(node_set_textContent)
 {
     DomElem elem = js_value_to_dom_elem(this);
     return _set_textContent_impl(ctx, this, val, elem);
@@ -255,7 +242,7 @@ mk_not_impl_getset(node, parentElement)
 mk_not_impl_getset(node, previousSibling)
 
 static const JSCFunctionListEntry node_fn_list[] = {
-    JS_CGETSET_DEF("textContent",            jse_get_not_implemented, _set_textContent),
+    JS_CGETSET_DEF("textContent", not_impl_getter_name__(node_textContent), node_set_textContent),
 
     mk_not_impl_getset_list_entry(node, baseURI),
     mk_not_impl_getset_list_entry(node, childNodes),
@@ -807,9 +794,13 @@ mk_not_impl_getset(document, xmlEncoding)
 mk_not_impl_getset(document, xmlStandalone)
 mk_not_impl_getset(document, xmlVersion)
 
+
+mk_not_impl_setter(document_body)
+mk_not_impl_setter(document_head)
+
 static const JSCFunctionListEntry document_fn_list[] = {
-    JS_CGETSET_DEF("body",   document_body,      jse_set_not_implemented),
-    JS_CGETSET_DEF("head",   document_head,      jse_set_not_implemented),
+    JS_CGETSET_DEF("body",   document_body,      not_impl_setter_name__(document_body)),
+    JS_CGETSET_DEF("head",   document_head,      not_impl_setter_name__(document_head)),
     JS_CGETSET_DEF("title",  document_get_title, document_set_title),
 
     mk_not_impl_getset_list_entry(document, activeElement),
@@ -975,16 +966,26 @@ global_add_document(JSValue global, HtmlDoc d[_1_], JSContext* ctx) {
 
 /* ---- Location ---- */
 
+mk_not_impl_getset(location, href)
+mk_not_impl_getset(location, protocol)
+mk_not_impl_getset(location, host)
+mk_not_impl_getset(location, hostname)
+mk_not_impl_getset(location, port)
+mk_not_impl_getset(location, pathname)
+mk_not_impl_getset(location, search)
+mk_not_impl_getset(location, hash)
+mk_not_impl_getset(location, origin)
+
 static const JSCFunctionListEntry __attribute__((unused)) location_fn_list[] = {
-    JS_CGETSET_DEF("href",     jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("protocol", jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("host",     jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("hostname", jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("port",     jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("pathname", jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("search",   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("hash",     jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("origin",   jse_get_not_implemented, jse_set_not_implemented),
+    mk_not_impl_getset_list_entry(location, href),
+    mk_not_impl_getset_list_entry(location, protocol),
+    mk_not_impl_getset_list_entry(location, host),
+    mk_not_impl_getset_list_entry(location, hostname),
+    mk_not_impl_getset_list_entry(location, port),
+    mk_not_impl_getset_list_entry(location, pathname),
+    mk_not_impl_getset_list_entry(location, search),
+    mk_not_impl_getset_list_entry(location, hash),
+    mk_not_impl_getset_list_entry(location, origin),
     JS_CFUNC_DEF("assign",   1, jse_fn_not_implemented),
     JS_CFUNC_DEF("reload",   0, jse_fn_not_implemented),
     JS_CFUNC_DEF("replace",  1, jse_fn_not_implemented),
@@ -1011,9 +1012,121 @@ static const JSCFunctionListEntry __attribute__((unused)) location_fn_list[] = {
 //0}
 
 /** locatiopn **/
+mk_not_impl_getset(navigator, activeVRDisplays)
+mk_not_impl_getset(navigator, appCodeName)
+mk_not_impl_getset(navigator, appName)
+mk_not_impl_getset(navigator, appVersion)
+mk_not_impl_getset(navigator, audioSession)
+mk_not_impl_getset(navigator, bluetooth)
+mk_not_impl_getset(navigator, buildID)
+mk_not_impl_getset(navigator, clipboard)
+mk_not_impl_getset(navigator, connection)
+mk_not_impl_getset(navigator, contacts)
+mk_not_impl_getset(navigator, cookieEnabled)
+mk_not_impl_getset(navigator, credentials)
+mk_not_impl_getset(navigator, deviceMemory)
+mk_not_impl_getset(navigator, devicePosture)
+mk_not_impl_getset(navigator, doNotTrack)
+mk_not_impl_getset(navigator, geolocation)
+mk_not_impl_getset(navigator, globalPrivacyControl)
+mk_not_impl_getset(navigator, gpu)
+mk_not_impl_getset(navigator, hardwareConcurrency)
+mk_not_impl_getset(navigator, hid)
+mk_not_impl_getset(navigator, ink)
+mk_not_impl_getset(navigator, keyboard)
+mk_not_impl_getset(navigator, language)
+mk_not_impl_getset(navigator, languages)
+mk_not_impl_getset(navigator, locks)
+mk_not_impl_getset(navigator, login)
+mk_not_impl_getset(navigator, maxTouchPoints)
+mk_not_impl_getset(navigator, mediaCapabilities)
+mk_not_impl_getset(navigator, mediaDevices)
+mk_not_impl_getset(navigator, mediaSession)
+mk_not_impl_getset(navigator, mimeTypes)
+mk_not_impl_getset(navigator, onLine)
+mk_not_impl_getset(navigator, oscpu)
+mk_not_impl_getset(navigator, pdfViewerEnabled)
+mk_not_impl_getset(navigator, permissions)
+mk_not_impl_getset(navigator, platform)
+mk_not_impl_getset(navigator, plugins)
+mk_not_impl_getset(navigator, preferences)
+mk_not_impl_getset(navigator, presentation)
+mk_not_impl_getset(navigator, product)
+mk_not_impl_getset(navigator, productSub)
+mk_not_impl_getset(navigator, scheduling)
+mk_not_impl_getset(navigator, serial)
+mk_not_impl_getset(navigator, serviceWorker)
+mk_not_impl_getset(navigator, storage)
+mk_not_impl_getset(navigator, usb)
+mk_not_impl_getset(navigator, userActivation)
+mk_not_impl_getset(navigator, userAgent)
+mk_not_impl_getset(navigator, userAgentData)
+mk_not_impl_getset(navigator, vendor)
+mk_not_impl_getset(navigator, vendorSub)
+mk_not_impl_getset(navigator, virtualKeyboard)
+mk_not_impl_getset(navigator, wakeLock)
+mk_not_impl_getset(navigator, webdriver)
+mk_not_impl_getset(navigator, windowControlsOverlay)
+mk_not_impl_getset(navigator, xr)
 
 /* ---- Navigator ---- */
 static const JSCFunctionListEntry  __attribute__((unused)) navigator_fn_list[] = {
+    mk_not_impl_getset_list_entry(navigator, activeVRDisplays),
+    mk_not_impl_getset_list_entry(navigator, appCodeName),
+    mk_not_impl_getset_list_entry(navigator, appName),
+    mk_not_impl_getset_list_entry(navigator, appVersion),
+    mk_not_impl_getset_list_entry(navigator, audioSession),
+    mk_not_impl_getset_list_entry(navigator, bluetooth),
+    mk_not_impl_getset_list_entry(navigator, buildID),
+    mk_not_impl_getset_list_entry(navigator, clipboard),
+    mk_not_impl_getset_list_entry(navigator, connection),
+    mk_not_impl_getset_list_entry(navigator, contacts),
+    mk_not_impl_getset_list_entry(navigator, cookieEnabled),
+    mk_not_impl_getset_list_entry(navigator, credentials),
+    mk_not_impl_getset_list_entry(navigator, deviceMemory),
+    mk_not_impl_getset_list_entry(navigator, devicePosture),
+    mk_not_impl_getset_list_entry(navigator, doNotTrack),
+    mk_not_impl_getset_list_entry(navigator, geolocation),
+    mk_not_impl_getset_list_entry(navigator, globalPrivacyControl),
+    mk_not_impl_getset_list_entry(navigator, gpu),
+    mk_not_impl_getset_list_entry(navigator, hardwareConcurrency),
+    mk_not_impl_getset_list_entry(navigator, hid),
+    mk_not_impl_getset_list_entry(navigator, ink),
+    mk_not_impl_getset_list_entry(navigator, keyboard),
+    mk_not_impl_getset_list_entry(navigator, language),
+    mk_not_impl_getset_list_entry(navigator, languages),
+    mk_not_impl_getset_list_entry(navigator, locks),
+    mk_not_impl_getset_list_entry(navigator, login),
+    mk_not_impl_getset_list_entry(navigator, maxTouchPoints),
+    mk_not_impl_getset_list_entry(navigator, mediaCapabilities),
+    mk_not_impl_getset_list_entry(navigator, mediaDevices),
+    mk_not_impl_getset_list_entry(navigator, mediaSession),
+    mk_not_impl_getset_list_entry(navigator, mimeTypes),
+    mk_not_impl_getset_list_entry(navigator, onLine),
+    mk_not_impl_getset_list_entry(navigator, oscpu),
+    mk_not_impl_getset_list_entry(navigator, pdfViewerEnabled),
+    mk_not_impl_getset_list_entry(navigator, permissions),
+    mk_not_impl_getset_list_entry(navigator, platform),
+    mk_not_impl_getset_list_entry(navigator, plugins),
+    mk_not_impl_getset_list_entry(navigator, preferences),
+    mk_not_impl_getset_list_entry(navigator, presentation),
+    mk_not_impl_getset_list_entry(navigator, product),
+    mk_not_impl_getset_list_entry(navigator, productSub),
+    mk_not_impl_getset_list_entry(navigator, scheduling),
+    mk_not_impl_getset_list_entry(navigator, serial),
+    mk_not_impl_getset_list_entry(navigator, serviceWorker),
+    mk_not_impl_getset_list_entry(navigator, storage),
+    mk_not_impl_getset_list_entry(navigator, usb),
+    mk_not_impl_getset_list_entry(navigator, userActivation),
+    mk_not_impl_getset_list_entry(navigator, userAgent),
+    mk_not_impl_getset_list_entry(navigator, userAgentData),
+    mk_not_impl_getset_list_entry(navigator, vendor),
+    mk_not_impl_getset_list_entry(navigator, vendorSub),
+    mk_not_impl_getset_list_entry(navigator, virtualKeyboard),
+    mk_not_impl_getset_list_entry(navigator, wakeLock),
+    mk_not_impl_getset_list_entry(navigator, webdriver),
+    mk_not_impl_getset_list_entry(navigator, windowControlsOverlay),
+    mk_not_impl_getset_list_entry(navigator, xr),
     JS_CFUNC_DEF("canShare",                    0, jse_fn_not_implemented),
     JS_CFUNC_DEF("clearAppBadge",               0, jse_fn_not_implemented),
     JS_CFUNC_DEF("getAutoplayPolicy",           0, jse_fn_not_implemented),
@@ -1028,62 +1141,6 @@ static const JSCFunctionListEntry  __attribute__((unused)) navigator_fn_list[] =
     JS_CFUNC_DEF("share",                       0, jse_fn_not_implemented),
     JS_CFUNC_DEF("unregisterProtocolHandler",   0, jse_fn_not_implemented),
     JS_CFUNC_DEF("vibrate",                     0, jse_fn_not_implemented),
-    JS_CGETSET_DEF("activeVRDisplays",      jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("appCodeName",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("appName",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("appVersion",            jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("audioSession",          jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("bluetooth",             jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("buildID",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("clipboard",             jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("connection",            jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("contacts",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("cookieEnabled",         jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("credentials",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("deviceMemory",          jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("devicePosture",         jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("doNotTrack",            jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("geolocation",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("globalPrivacyControl",  jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("gpu",                   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("hardwareConcurrency",   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("hid",                   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("ink",                   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("keyboard",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("language",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("languages",             jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("locks",                 jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("login",                 jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("maxTouchPoints",        jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("mediaCapabilities",     jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("mediaDevices",          jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("mediaSession",          jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("mimeTypes",             jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("onLine",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("oscpu",                 jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("pdfViewerEnabled",      jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("permissions",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("platform",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("plugins",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("preferences",           jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("presentation",          jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("product",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("productSub",            jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("scheduling",            jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("serial",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("serviceWorker",         jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("storage",               jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("usb",                   jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("userActivation",        jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("userAgent",             jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("userAgentData",         jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("vendor",                jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("vendorSub",             jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("virtualKeyboard",       jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("wakeLock",              jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("webdriver",             jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("windowControlsOverlay", jse_get_not_implemented, jse_set_not_implemented),
-    JS_CGETSET_DEF("xr",                    jse_get_not_implemented, jse_set_not_implemented),
 };
 
 //0static Err
@@ -1345,13 +1402,14 @@ static const JSCFunctionListEntry global_fn_list[] = {
 };
 /* ---- Storage ---- */
 
+mk_not_impl_getset(storage, length)
 static const JSCFunctionListEntry __attribute__((unused)) storage_fn_list[] = {
     JS_CFUNC_DEF("getItem",    1, jse_fn_not_implemented),
     JS_CFUNC_DEF("setItem",    2, jse_fn_not_implemented),
     JS_CFUNC_DEF("removeItem", 1, jse_fn_not_implemented),
     JS_CFUNC_DEF("clear",      0, jse_fn_not_implemented),
     JS_CFUNC_DEF("key",        1, jse_fn_not_implemented),
-    JS_CGETSET_DEF("length", jse_get_not_implemented, jse_set_not_implemented),
+    mk_not_impl_getset_list_entry(storage, length),
 };
 
 
