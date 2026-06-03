@@ -60,9 +60,14 @@ jse_clean(JsEngine js[_1_])
 #define stringify(N) xstringify(N)
 
 #define not_impl_fn_name__(Name) jse_fn_not_implemented_ ## Name
-#define mk_not_impl_fn(Name) \
+#define mk_not_imple_fn_with_name(Name) \
     static js_fn__(not_impl_fn_name__(Name)) {(void)this; (void)argc; (void)argv;\
-    return JS_ThrowPlainError(ctx, "ahjs: fn '"# Name "' not implemented." # Name); }
+    return JS_ThrowPlainError(ctx, "ahjs: fn '"# Name "' not implemented."); }
+
+#define mk_not_impl_fn(NS, Fn) mk_not_imple_fn_with_name(NS ## _ ## Fn)
+
+#define mk_not_impl_fn_list_entry(NS, Attr) \
+    JS_CFUNC_DEF(stringify(Attr), 0, not_impl_fn_name__(NS ## _ ## Attr))
 
 #define not_impl_getter_name__(Name) jse_getter_not_implemented_ ## Name
 #define mk_not_impl_getter(Name) \
@@ -74,21 +79,12 @@ jse_clean(JsEngine js[_1_])
     static js_set__(not_impl_setter_name__(Name)) {(void)this; (void)val;\
     return JS_ThrowPlainError(ctx, "ahjs: setter '"# Name "' not implemented." # Name); }
 
-#define concat__(A,B) A ## _ ## B
-
 #define mk_not_impl_getset(NS, Attr) \
     mk_not_impl_getter(NS ## _ ## Attr) \
     mk_not_impl_setter(NS ## _ ## Attr)
 
 #define mk_not_impl_getset_list_entry(NS, Attr) \
     JS_CGETSET_DEF(stringify(Attr), not_impl_getter_name__(NS ## _ ## Attr), not_impl_setter_name__(NS ## _ ## Attr))
-
-
-static js_fn__(jse_fn_not_implemented)
-{
-    (void)this; (void)argc; (void)argv;
-    return JS_ThrowPlainError(ctx, "Ahre jse: fn not implemented");
-}
 
 
 static Err
@@ -146,30 +142,51 @@ static js_fn__(console_log) { return console_msg(ctx, this, argc, argv, svl("js 
 static js_fn__(console_warn) { return console_msg(ctx, this, argc, argv, svl("js console warn: ")); }
 static js_fn__(console_error) { return console_msg(ctx, this, argc, argv, svl("js console error: ")); }
 
+mk_not_impl_fn(console, assert)
+mk_not_impl_fn(console, clear)
+mk_not_impl_fn(console, count)
+mk_not_impl_fn(console, countReset)
+mk_not_impl_fn(console, debug)
+mk_not_impl_fn(console, dir)
+mk_not_impl_fn(console, dirxml)
+mk_not_impl_fn(console, exception)
+mk_not_impl_fn(console, group)
+mk_not_impl_fn(console, groupCollapsed)
+mk_not_impl_fn(console, groupEnd)
+mk_not_impl_fn(console, info)
+mk_not_impl_fn(console, profile)
+mk_not_impl_fn(console, profileEnd)
+mk_not_impl_fn(console, table)
+mk_not_impl_fn(console, time)
+mk_not_impl_fn(console, timeEnd)
+mk_not_impl_fn(console, timeLog)
+mk_not_impl_fn(console, timeStamp)
+mk_not_impl_fn(console, trace)
+
 static const JSCFunctionListEntry console_fn_list[] = {
-    JS_CFUNC_DEF("assert",           0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("clear",            0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("count",            0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("countReset",       0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("debug",            0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("dir",              0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("dirxml",           0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("error",            1,     console_error),
-    JS_CFUNC_DEF("exception",        0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("group",            0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("groupCollapsed",   0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("groupEnd",         0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("info",             0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("log",              1,     console_log),
-    JS_CFUNC_DEF("profile",          0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("profileEnd",       0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("table",            0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("time",             0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("timeEnd",          0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("timeLog",          0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("timeStamp",        0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("trace",            0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("warn",             1,     console_warn),
+    mk_not_impl_fn_list_entry(console, assert),
+    mk_not_impl_fn_list_entry(console, clear),
+    mk_not_impl_fn_list_entry(console, count),
+    mk_not_impl_fn_list_entry(console, countReset),
+    mk_not_impl_fn_list_entry(console, debug),
+    mk_not_impl_fn_list_entry(console, dir),
+    mk_not_impl_fn_list_entry(console, dirxml),
+    mk_not_impl_fn_list_entry(console, exception),
+    mk_not_impl_fn_list_entry(console, group),
+    mk_not_impl_fn_list_entry(console, groupCollapsed),
+    mk_not_impl_fn_list_entry(console, groupEnd),
+    mk_not_impl_fn_list_entry(console, info),
+    mk_not_impl_fn_list_entry(console, profile),
+    mk_not_impl_fn_list_entry(console, profileEnd),
+    mk_not_impl_fn_list_entry(console, table),
+    mk_not_impl_fn_list_entry(console, time),
+    mk_not_impl_fn_list_entry(console, timeEnd),
+    mk_not_impl_fn_list_entry(console, timeLog),
+    mk_not_impl_fn_list_entry(console, timeStamp),
+    mk_not_impl_fn_list_entry(console, trace),
+    JS_CFUNC_DEF("error", 1, console_error),
+    JS_CFUNC_DEF("log",   1, console_log),
+    JS_CFUNC_DEF("warn",  1, console_warn),
 };
 
 
@@ -241,6 +258,22 @@ mk_not_impl_getset(node, parentNode)
 mk_not_impl_getset(node, parentElement)
 mk_not_impl_getset(node, previousSibling)
 
+mk_not_impl_fn(node, appendChild)
+mk_not_impl_fn(node, cloneNode)
+mk_not_impl_fn(node, compareDocumentPosition)
+mk_not_impl_fn(node, contains)
+mk_not_impl_fn(node, getRootNode)
+mk_not_impl_fn(node, hasChildNodes)
+mk_not_impl_fn(node, insertBefore)
+mk_not_impl_fn(node, isDefaultNamespace)
+mk_not_impl_fn(node, isEqualNode)
+mk_not_impl_fn(node, isSameNode)
+mk_not_impl_fn(node, lookupPrefix)
+mk_not_impl_fn(node, lookupNamespaceURI)
+mk_not_impl_fn(node, normalize)
+mk_not_impl_fn(node, removeChild)
+mk_not_impl_fn(node, replaceChild)
+
 static const JSCFunctionListEntry node_fn_list[] = {
     JS_CGETSET_DEF("textContent", not_impl_getter_name__(node_textContent), node_set_textContent),
 
@@ -258,21 +291,21 @@ static const JSCFunctionListEntry node_fn_list[] = {
     mk_not_impl_getset_list_entry(node, parentElement),
     mk_not_impl_getset_list_entry(node, previousSibling),
 
-    JS_CFUNC_DEF("appendChild",              0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("cloneNode",                0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("compareDocumentPosition",  0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("contains",                 0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("getRootNode",              0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("hasChildNodes",            0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("insertBefore",             0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("isDefaultNamespace",       0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("isEqualNode",              0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("isSameNode",               0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("lookupPrefix",             0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("lookupNamespaceURI",       0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("normalize",                0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("removeChild",              0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("replaceChild",             0,     jse_fn_not_implemented)
+    mk_not_impl_fn_list_entry(node, appendChild),
+    mk_not_impl_fn_list_entry(node, cloneNode),
+    mk_not_impl_fn_list_entry(node, compareDocumentPosition),
+    mk_not_impl_fn_list_entry(node, contains),
+    mk_not_impl_fn_list_entry(node, getRootNode),
+    mk_not_impl_fn_list_entry(node, hasChildNodes),
+    mk_not_impl_fn_list_entry(node, insertBefore),
+    mk_not_impl_fn_list_entry(node, isDefaultNamespace),
+    mk_not_impl_fn_list_entry(node, isEqualNode),
+    mk_not_impl_fn_list_entry(node, isSameNode),
+    mk_not_impl_fn_list_entry(node, lookupPrefix),
+    mk_not_impl_fn_list_entry(node, lookupNamespaceURI),
+    mk_not_impl_fn_list_entry(node, normalize),
+    mk_not_impl_fn_list_entry(node, removeChild),
+    mk_not_impl_fn_list_entry(node, replaceChild),
 };
 
 static Err
@@ -478,6 +511,59 @@ mk_not_impl_getset(node, ariaFlowToElements)
 mk_not_impl_getset(node, ariaLabelledByElements)
 mk_not_impl_getset(node, ariaOwnsElements)
 
+mk_not_impl_fn(element, after)
+mk_not_impl_fn(element, animate)
+mk_not_impl_fn(element, append)
+mk_not_impl_fn(element, ariaNotify)
+mk_not_impl_fn(element, attachShadow)
+mk_not_impl_fn(element, before)
+mk_not_impl_fn(element, checkVisibility)
+mk_not_impl_fn(element, closest)
+mk_not_impl_fn(element, computedStyleMap)
+mk_not_impl_fn(element, getAnimations)
+mk_not_impl_fn(element, getAttributeNS)
+mk_not_impl_fn(element, getAttributeNames)
+mk_not_impl_fn(element, getAttributeNode)
+mk_not_impl_fn(element, getAttributeNodeNS)
+mk_not_impl_fn(element, getBoundingClientRect)
+mk_not_impl_fn(element, getClientRects)
+mk_not_impl_fn(element, getElementsByClassName)
+mk_not_impl_fn(element, getElementsByTagName)
+mk_not_impl_fn(element, getElementsByTagNameNS)
+mk_not_impl_fn(element, getHTML)
+mk_not_impl_fn(element, hasAttribute)
+mk_not_impl_fn(element, hasAttributeNS)
+mk_not_impl_fn(element, hasAttributes)
+mk_not_impl_fn(element, hasPointerCapture)
+mk_not_impl_fn(element, insertAdjacentElement)
+mk_not_impl_fn(element, insertAdjacentHTML)
+mk_not_impl_fn(element, insertAdjacentText)
+mk_not_impl_fn(element, matches)
+mk_not_impl_fn(element, moveBefore)
+mk_not_impl_fn(element, prepend)
+mk_not_impl_fn(element, querySelector)
+mk_not_impl_fn(element, querySelectorAll)
+mk_not_impl_fn(element, releasePointerCapture)
+mk_not_impl_fn(element, removeAttributeNS)
+mk_not_impl_fn(element, removeAttributeNode)
+mk_not_impl_fn(element, replaceChildren)
+mk_not_impl_fn(element, replaceWith)
+mk_not_impl_fn(element, requestFullscreen)
+mk_not_impl_fn(element, requestPointerLock)
+mk_not_impl_fn(element, scroll)
+mk_not_impl_fn(element, scrollBy)
+mk_not_impl_fn(element, scrollIntoView)
+mk_not_impl_fn(element, scrollIntoViewIfNeeded)
+mk_not_impl_fn(element, scrollTo)
+mk_not_impl_fn(element, setAttributeNS)
+mk_not_impl_fn(element, setAttributeNode)
+mk_not_impl_fn(element, setAttributeNodeNS)
+mk_not_impl_fn(element, setCapture)
+mk_not_impl_fn(element, setHTML)
+mk_not_impl_fn(element, setHTMLUnsafe)
+mk_not_impl_fn(element, setPointerCapture)
+mk_not_impl_fn(element, toggleAttribute)
+
 static const JSCFunctionListEntry element_fn_list[] = {
     JS_CGETSET_DEF("id", element_get_id, element_set_id),
 
@@ -566,62 +652,64 @@ static const JSCFunctionListEntry element_fn_list[] = {
     mk_not_impl_getset_list_entry(node, ariaLabelledByElements),
     mk_not_impl_getset_list_entry(node, ariaOwnsElements),
 
-    JS_CFUNC_DEF("after",                    0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("animate",                  0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("append",                   0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("ariaNotify",               0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("attachShadow",             0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("before",                   0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("checkVisibility",          0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("closest",                  0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("computedStyleMap",         0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("getAnimations",            0,     jse_fn_not_implemented),
+    mk_not_impl_fn_list_entry(element, after),
+    mk_not_impl_fn_list_entry(element, animate),
+    mk_not_impl_fn_list_entry(element, append),
+    mk_not_impl_fn_list_entry(element, ariaNotify),
+    mk_not_impl_fn_list_entry(element, attachShadow),
+    mk_not_impl_fn_list_entry(element, before),
+    mk_not_impl_fn_list_entry(element, checkVisibility),
+    mk_not_impl_fn_list_entry(element, closest),
+    mk_not_impl_fn_list_entry(element, computedStyleMap),
+    mk_not_impl_fn_list_entry(element, getAnimations),
+    mk_not_impl_fn_list_entry(element, getAttributeNS),
+    mk_not_impl_fn_list_entry(element, getAttributeNames),
+    mk_not_impl_fn_list_entry(element, getAttributeNode),
+    mk_not_impl_fn_list_entry(element, getAttributeNodeNS),
+    mk_not_impl_fn_list_entry(element, getBoundingClientRect),
+    mk_not_impl_fn_list_entry(element, getClientRects),
+    mk_not_impl_fn_list_entry(element, getElementsByClassName),
+    mk_not_impl_fn_list_entry(element, getElementsByTagName),
+    mk_not_impl_fn_list_entry(element, getElementsByTagNameNS),
+    mk_not_impl_fn_list_entry(element, getHTML),
+    mk_not_impl_fn_list_entry(element, hasAttribute),
+    mk_not_impl_fn_list_entry(element, hasAttributeNS),
+    mk_not_impl_fn_list_entry(element, hasAttributes),
+    mk_not_impl_fn_list_entry(element, hasPointerCapture),
+    mk_not_impl_fn_list_entry(element, insertAdjacentElement),
+    mk_not_impl_fn_list_entry(element, insertAdjacentHTML),
+    mk_not_impl_fn_list_entry(element, insertAdjacentText),
+    mk_not_impl_fn_list_entry(element, matches),
+    mk_not_impl_fn_list_entry(element, moveBefore),
+    mk_not_impl_fn_list_entry(element, prepend),
+    mk_not_impl_fn_list_entry(element, querySelector),
+    mk_not_impl_fn_list_entry(element, querySelectorAll),
+    mk_not_impl_fn_list_entry(element, releasePointerCapture),
+    mk_not_impl_fn_list_entry(element, removeAttributeNS),
+    mk_not_impl_fn_list_entry(element, removeAttributeNode),
+    mk_not_impl_fn_list_entry(element, replaceChildren),
+    mk_not_impl_fn_list_entry(element, replaceWith),
+    mk_not_impl_fn_list_entry(element, requestFullscreen),
+    mk_not_impl_fn_list_entry(element, requestPointerLock),
+    mk_not_impl_fn_list_entry(element, scroll),
+    mk_not_impl_fn_list_entry(element, scrollBy),
+    mk_not_impl_fn_list_entry(element, scrollIntoView),
+    mk_not_impl_fn_list_entry(element, scrollIntoViewIfNeeded),
+    mk_not_impl_fn_list_entry(element, scrollTo),
+    mk_not_impl_fn_list_entry(element, setAttributeNS),
+    mk_not_impl_fn_list_entry(element, setAttributeNode),
+    mk_not_impl_fn_list_entry(element, setAttributeNodeNS),
+    mk_not_impl_fn_list_entry(element, setCapture),
+    mk_not_impl_fn_list_entry(element, setHTML),
+    mk_not_impl_fn_list_entry(element, setHTMLUnsafe),
+    mk_not_impl_fn_list_entry(element, setPointerCapture),
+    mk_not_impl_fn_list_entry(element, toggleAttribute),
+
     JS_CFUNC_DEF("getAttribute",             1,     element_getAttribute),
-    JS_CFUNC_DEF("getAttributeNS",           0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("getAttributeNames",        0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("getAttributeNode",         0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("getAttributeNodeNS",       0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("getBoundingClientRect",    0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("getClientRects",           0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("getElementsByClassName",   0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("getElementsByTagName",     0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("getElementsByTagNameNS",   0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("getHTML",                  0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("hasAttribute",             0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("hasAttributeNS",           0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("hasAttributes",            0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("hasPointerCapture",        0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("insertAdjacentElement",    0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("insertAdjacentHTML",       0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("insertAdjacentText",       0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("matches",                  0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("moveBefore",               0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("prepend",                  0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("querySelector",            0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("querySelectorAll",         0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("releasePointerCapture",    0,     jse_fn_not_implemented),
     JS_CFUNC_DEF("remove",                   0,     element_remove),
     JS_CFUNC_DEF("removeAttribute",          1,     element_removeAttribute),
-    JS_CFUNC_DEF("removeAttributeNS",        0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("removeAttributeNode",      0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("replaceChildren",          0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("replaceWith",              0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("requestFullscreen",        0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("requestPointerLock",       0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("scroll",                   0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("scrollBy",                 0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("scrollIntoView",           0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("scrollIntoViewIfNeeded",   0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("scrollTo",                 0,     jse_fn_not_implemented),
     JS_CFUNC_DEF("setAttribute",             2,     element_setAttribute),
-    JS_CFUNC_DEF("setAttributeNS",           0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("setAttributeNode",         0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("setAttributeNodeNS",       0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("setCapture",               0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("setHTML",                  0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("setHTMLUnsafe",            0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("setPointerCapture",        0,     jse_fn_not_implemented),
-    JS_CFUNC_DEF("toggleAttribute",          0,     jse_fn_not_implemented)
+
 };
 
 
@@ -798,6 +886,72 @@ mk_not_impl_getset(document, xmlVersion)
 mk_not_impl_setter(document_body)
 mk_not_impl_setter(document_head)
 
+mk_not_impl_fn(document, adoptNode)
+mk_not_impl_fn(document, append)
+mk_not_impl_fn(document, ariaNotify)
+mk_not_impl_fn(document, browsingTopics)
+mk_not_impl_fn(document, captureEvents)
+mk_not_impl_fn(document, caretPositionFromPoint)
+mk_not_impl_fn(document, caretRangeFromPoint)
+mk_not_impl_fn(document, createAttribute)
+mk_not_impl_fn(document, createAttributeNS)
+mk_not_impl_fn(document, createCDATASection)
+mk_not_impl_fn(document, createComment)
+mk_not_impl_fn(document, createDocumentFragment)
+mk_not_impl_fn(document, createElementNS)
+mk_not_impl_fn(document, createEvent)
+mk_not_impl_fn(document, createNodeIterator)
+mk_not_impl_fn(document, createProcessingInstruction)
+mk_not_impl_fn(document, createRange)
+mk_not_impl_fn(document, createTextNode)
+mk_not_impl_fn(document, createTouch)
+mk_not_impl_fn(document, createTouchList)
+mk_not_impl_fn(document, createTreeWalker)
+mk_not_impl_fn(document, elementFromPoint)
+mk_not_impl_fn(document, elementsFromPoint)
+mk_not_impl_fn(document, enableStyleSheetsForSet)
+mk_not_impl_fn(document, exitFullscreen)
+mk_not_impl_fn(document, exitPictureInPicture)
+mk_not_impl_fn(document, exitPointerLock)
+mk_not_impl_fn(document, getAnimations)
+mk_not_impl_fn(document, getBoxQuads)
+mk_not_impl_fn(document, getElementsByClassName)
+mk_not_impl_fn(document, getElementsByTagName)
+mk_not_impl_fn(document, getElementsByTagNameNS)
+mk_not_impl_fn(document, getSelection)
+mk_not_impl_fn(document, hasPrivateToken)
+mk_not_impl_fn(document, hasRedemptionRecord)
+mk_not_impl_fn(document, hasStorageAccess)
+mk_not_impl_fn(document, hasUnpartitionedCookieAccess)
+mk_not_impl_fn(document, importNode)
+mk_not_impl_fn(document, moveBefore)
+mk_not_impl_fn(document, mozSetImageElement)
+mk_not_impl_fn(document, prepend)
+mk_not_impl_fn(document, querySelector)
+mk_not_impl_fn(document, querySelectorAll)
+mk_not_impl_fn(document, releaseCapture)
+mk_not_impl_fn(document, releaseEvents)
+mk_not_impl_fn(document, replaceChildren)
+mk_not_impl_fn(document, requestStorageAccess)
+mk_not_impl_fn(document, requestStorageAccessFor)
+mk_not_impl_fn(document, startViewTransition)
+mk_not_impl_fn(document, createExpression)
+mk_not_impl_fn(document, createNSResolver)
+mk_not_impl_fn(document, evaluate)
+mk_not_impl_fn(document, clear)
+mk_not_impl_fn(document, close)
+mk_not_impl_fn(document, execCommand)
+mk_not_impl_fn(document, getElementsByName)
+mk_not_impl_fn(document, hasFocus)
+mk_not_impl_fn(document, open)
+mk_not_impl_fn(document, queryCommandEnabled)
+mk_not_impl_fn(document, queryCommandIndeterm)
+mk_not_impl_fn(document, queryCommandState)
+mk_not_impl_fn(document, queryCommandSupported)
+mk_not_impl_fn(document, queryCommandValue)
+mk_not_impl_fn(document, write)
+mk_not_impl_fn(document, writeln)
+
 static const JSCFunctionListEntry document_fn_list[] = {
     JS_CGETSET_DEF("body",   document_body,      not_impl_setter_name__(document_body)),
     JS_CGETSET_DEF("head",   document_head,      not_impl_setter_name__(document_head)),
@@ -867,73 +1021,75 @@ static const JSCFunctionListEntry document_fn_list[] = {
     mk_not_impl_getset_list_entry(document, xmlStandalone),
     mk_not_impl_getset_list_entry(document, xmlVersion),
 
-    JS_CFUNC_DEF("adoptNode",                     0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("append",                        0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("ariaNotify",                    0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("browsingTopics",                0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("captureEvents",                 0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("caretPositionFromPoint",        0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("caretRangeFromPoint",           0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("createAttribute",               0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("createAttributeNS",             0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("createCDATASection",            0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("createComment",                 0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("createDocumentFragment",        0, jse_fn_not_implemented),
     JS_CFUNC_DEF("createElement",                 1, document_createElement),
-    JS_CFUNC_DEF("createElementNS",               0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("createEvent",                   0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("createNodeIterator",            0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("createProcessingInstruction",   0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("createRange",                   0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("createTextNode",                1, jse_fn_not_implemented),
-    JS_CFUNC_DEF("createTouch",                   0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("createTouchList",               0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("createTreeWalker",              0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("elementFromPoint",              0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("elementsFromPoint",             0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("enableStyleSheetsForSet",       0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("exitFullscreen",                0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("exitPictureInPicture",          0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("exitPointerLock",               0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("getAnimations",                 0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("getBoxQuads",                   0, jse_fn_not_implemented),
     JS_CFUNC_DEF("getElementById",                1, document_getElementById),
-    JS_CFUNC_DEF("getElementsByClassName",        0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("getElementsByTagName",          0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("getElementsByTagNameNS",        0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("getSelection",                  0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("hasPrivateToken",               0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("hasRedemptionRecord",           0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("hasStorageAccess",              0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("hasUnpartitionedCookieAccess",  0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("importNode",                    0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("moveBefore",                    0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("mozSetImageElement",            0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("prepend",                       0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("querySelector",                 0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("querySelectorAll",              0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("releaseCapture",                0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("releaseEvents",                 0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("replaceChildren",               0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("requestStorageAccess",          0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("requestStorageAccessFor",       0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("startViewTransition",           0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("createExpression",              0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("createNSResolver",              0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("evaluate",                      0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("clear",                         0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("close",                         0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("execCommand",                   0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("getElementsByName",             0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("hasFocus",                      0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("open",                          0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("queryCommandEnabled",           0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("queryCommandIndeterm",          0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("queryCommandState",             0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("queryCommandSupported",         0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("queryCommandValue",             0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("write",                         0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("writeln",                       0, jse_fn_not_implemented),
+
+    mk_not_impl_fn_list_entry(document, adoptNode),
+    mk_not_impl_fn_list_entry(document, append),
+    mk_not_impl_fn_list_entry(document, ariaNotify),
+    mk_not_impl_fn_list_entry(document, browsingTopics),
+    mk_not_impl_fn_list_entry(document, captureEvents),
+    mk_not_impl_fn_list_entry(document, caretPositionFromPoint),
+    mk_not_impl_fn_list_entry(document, caretRangeFromPoint),
+    mk_not_impl_fn_list_entry(document, createAttribute),
+    mk_not_impl_fn_list_entry(document, createAttributeNS),
+    mk_not_impl_fn_list_entry(document, createCDATASection),
+    mk_not_impl_fn_list_entry(document, createComment),
+    mk_not_impl_fn_list_entry(document, createDocumentFragment),
+    mk_not_impl_fn_list_entry(document, createElementNS),
+    mk_not_impl_fn_list_entry(document, createEvent),
+    mk_not_impl_fn_list_entry(document, createNodeIterator),
+    mk_not_impl_fn_list_entry(document, createProcessingInstruction),
+    mk_not_impl_fn_list_entry(document, createRange),
+    mk_not_impl_fn_list_entry(document, createTextNode),
+    mk_not_impl_fn_list_entry(document, createTouch),
+    mk_not_impl_fn_list_entry(document, createTouchList),
+    mk_not_impl_fn_list_entry(document, createTreeWalker),
+    mk_not_impl_fn_list_entry(document, elementFromPoint),
+    mk_not_impl_fn_list_entry(document, elementsFromPoint),
+    mk_not_impl_fn_list_entry(document, enableStyleSheetsForSet),
+    mk_not_impl_fn_list_entry(document, exitFullscreen),
+    mk_not_impl_fn_list_entry(document, exitPictureInPicture),
+    mk_not_impl_fn_list_entry(document, exitPointerLock),
+    mk_not_impl_fn_list_entry(document, getAnimations),
+    mk_not_impl_fn_list_entry(document, getBoxQuads),
+    mk_not_impl_fn_list_entry(document, getElementsByClassName),
+    mk_not_impl_fn_list_entry(document, getElementsByTagName),
+    mk_not_impl_fn_list_entry(document, getElementsByTagNameNS),
+    mk_not_impl_fn_list_entry(document, getSelection),
+    mk_not_impl_fn_list_entry(document, hasPrivateToken),
+    mk_not_impl_fn_list_entry(document, hasRedemptionRecord),
+    mk_not_impl_fn_list_entry(document, hasStorageAccess),
+    mk_not_impl_fn_list_entry(document, hasUnpartitionedCookieAccess),
+    mk_not_impl_fn_list_entry(document, importNode),
+    mk_not_impl_fn_list_entry(document, moveBefore),
+    mk_not_impl_fn_list_entry(document, mozSetImageElement),
+    mk_not_impl_fn_list_entry(document, prepend),
+    mk_not_impl_fn_list_entry(document, querySelector),
+    mk_not_impl_fn_list_entry(document, querySelectorAll),
+    mk_not_impl_fn_list_entry(document, releaseCapture),
+    mk_not_impl_fn_list_entry(document, releaseEvents),
+    mk_not_impl_fn_list_entry(document, replaceChildren),
+    mk_not_impl_fn_list_entry(document, requestStorageAccess),
+    mk_not_impl_fn_list_entry(document, requestStorageAccessFor),
+    mk_not_impl_fn_list_entry(document, startViewTransition),
+    mk_not_impl_fn_list_entry(document, createExpression),
+    mk_not_impl_fn_list_entry(document, createNSResolver),
+    mk_not_impl_fn_list_entry(document, evaluate),
+    mk_not_impl_fn_list_entry(document, clear),
+    mk_not_impl_fn_list_entry(document, close),
+    mk_not_impl_fn_list_entry(document, execCommand),
+    mk_not_impl_fn_list_entry(document, getElementsByName),
+    mk_not_impl_fn_list_entry(document, hasFocus),
+    mk_not_impl_fn_list_entry(document, open),
+    mk_not_impl_fn_list_entry(document, queryCommandEnabled),
+    mk_not_impl_fn_list_entry(document, queryCommandIndeterm),
+    mk_not_impl_fn_list_entry(document, queryCommandState),
+    mk_not_impl_fn_list_entry(document, queryCommandSupported),
+    mk_not_impl_fn_list_entry(document, queryCommandValue),
+    mk_not_impl_fn_list_entry(document, write),
+    mk_not_impl_fn_list_entry(document, writeln),
+
 };
 
 
@@ -976,6 +1132,11 @@ mk_not_impl_getset(location, search)
 mk_not_impl_getset(location, hash)
 mk_not_impl_getset(location, origin)
 
+mk_not_impl_fn(location, assign)
+mk_not_impl_fn(location, reload)
+mk_not_impl_fn(location, replace)
+mk_not_impl_fn(location, toString)
+
 static const JSCFunctionListEntry __attribute__((unused)) location_fn_list[] = {
     mk_not_impl_getset_list_entry(location, href),
     mk_not_impl_getset_list_entry(location, protocol),
@@ -986,10 +1147,12 @@ static const JSCFunctionListEntry __attribute__((unused)) location_fn_list[] = {
     mk_not_impl_getset_list_entry(location, search),
     mk_not_impl_getset_list_entry(location, hash),
     mk_not_impl_getset_list_entry(location, origin),
-    JS_CFUNC_DEF("assign",   1, jse_fn_not_implemented),
-    JS_CFUNC_DEF("reload",   0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("replace",  1, jse_fn_not_implemented),
-    JS_CFUNC_DEF("toString", 0, jse_fn_not_implemented)
+
+    mk_not_impl_fn_list_entry(location, assign),
+    mk_not_impl_fn_list_entry(location, reload),
+    mk_not_impl_fn_list_entry(location, replace),
+    mk_not_impl_fn_list_entry(location, toString),
+
 };
 
 //0static Err
@@ -1012,6 +1175,8 @@ static const JSCFunctionListEntry __attribute__((unused)) location_fn_list[] = {
 //0}
 
 /** locatiopn **/
+
+/* ---- Navigator ---- */
 mk_not_impl_getset(navigator, activeVRDisplays)
 mk_not_impl_getset(navigator, appCodeName)
 mk_not_impl_getset(navigator, appName)
@@ -1069,7 +1234,21 @@ mk_not_impl_getset(navigator, webdriver)
 mk_not_impl_getset(navigator, windowControlsOverlay)
 mk_not_impl_getset(navigator, xr)
 
-/* ---- Navigator ---- */
+mk_not_impl_fn(navigator, canShare)
+mk_not_impl_fn(navigator, clearAppBadge)
+mk_not_impl_fn(navigator, getAutoplayPolicy)
+mk_not_impl_fn(navigator, getBattery)
+mk_not_impl_fn(navigator, getGamepads)
+mk_not_impl_fn(navigator, getInstalledRelatedApps)
+mk_not_impl_fn(navigator, registerProtocolHandler)
+mk_not_impl_fn(navigator, requestMIDIAccess)
+mk_not_impl_fn(navigator, requestMediaKeySystemAccess)
+mk_not_impl_fn(navigator, sendBeacon)
+mk_not_impl_fn(navigator, setAppBadge)
+mk_not_impl_fn(navigator, share)
+mk_not_impl_fn(navigator, unregisterProtocolHandler)
+mk_not_impl_fn(navigator, vibrate)
+
 static const JSCFunctionListEntry  __attribute__((unused)) navigator_fn_list[] = {
     mk_not_impl_getset_list_entry(navigator, activeVRDisplays),
     mk_not_impl_getset_list_entry(navigator, appCodeName),
@@ -1127,20 +1306,22 @@ static const JSCFunctionListEntry  __attribute__((unused)) navigator_fn_list[] =
     mk_not_impl_getset_list_entry(navigator, webdriver),
     mk_not_impl_getset_list_entry(navigator, windowControlsOverlay),
     mk_not_impl_getset_list_entry(navigator, xr),
-    JS_CFUNC_DEF("canShare",                    0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("clearAppBadge",               0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("getAutoplayPolicy",           0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("getBattery",                  0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("getGamepads",                 0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("getInstalledRelatedApps",     0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("registerProtocolHandler",     0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("requestMIDIAccess",           0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("requestMediaKeySystemAccess", 0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("sendBeacon",                  0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("setAppBadge",                 0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("share",                       0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("unregisterProtocolHandler",   0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("vibrate",                     0, jse_fn_not_implemented),
+
+    mk_not_impl_fn_list_entry(navigator, canShare),
+    mk_not_impl_fn_list_entry(navigator, clearAppBadge),
+    mk_not_impl_fn_list_entry(navigator, getAutoplayPolicy),
+    mk_not_impl_fn_list_entry(navigator, getBattery),
+    mk_not_impl_fn_list_entry(navigator, getGamepads),
+    mk_not_impl_fn_list_entry(navigator, getInstalledRelatedApps),
+    mk_not_impl_fn_list_entry(navigator, registerProtocolHandler),
+    mk_not_impl_fn_list_entry(navigator, requestMIDIAccess),
+    mk_not_impl_fn_list_entry(navigator, requestMediaKeySystemAccess),
+    mk_not_impl_fn_list_entry(navigator, sendBeacon),
+    mk_not_impl_fn_list_entry(navigator, setAppBadge),
+    mk_not_impl_fn_list_entry(navigator, share),
+    mk_not_impl_fn_list_entry(navigator, unregisterProtocolHandler),
+    mk_not_impl_fn_list_entry(navigator, vibrate),
+
 };
 
 //0static Err
@@ -1247,9 +1428,66 @@ mk_not_impl_getset(window, viewport)
 mk_not_impl_getset(window, visualViewport)
 mk_not_impl_getset(window, window)
 
+mk_not_impl_fn(navigator, alert)
+mk_not_impl_fn(navigator, atob)
+mk_not_impl_fn(navigator, blur)
+mk_not_impl_fn(navigator, btoa)
+mk_not_impl_fn(navigator, cancelAnimationFrame)
+mk_not_impl_fn(navigator, cancelIdleCallback)
+mk_not_impl_fn(navigator, captureEvents)
+mk_not_impl_fn(navigator, clearImmediate)
+mk_not_impl_fn(navigator, clearInterval)
+mk_not_impl_fn(navigator, clearTimeout)
+mk_not_impl_fn(navigator, close)
+mk_not_impl_fn(navigator, confirm)
+mk_not_impl_fn(navigator, createImageBitmap)
+mk_not_impl_fn(navigator, dump)
+mk_not_impl_fn(navigator, fetch)
+mk_not_impl_fn(navigator, fetchLater)
+mk_not_impl_fn(navigator, find)
+mk_not_impl_fn(navigator, focus)
+mk_not_impl_fn(navigator, getComputedStyle)
+mk_not_impl_fn(navigator, getDefaultComputedStyle)
+mk_not_impl_fn(navigator, getScreenDetails)
+mk_not_impl_fn(navigator, getSelection)
+mk_not_impl_fn(navigator, matchMedia)
+mk_not_impl_fn(navigator, moveBy)
+mk_not_impl_fn(navigator, moveTo)
+mk_not_impl_fn(navigator, open)
+mk_not_impl_fn(navigator, postMessage)
+mk_not_impl_fn(navigator, print)
+mk_not_impl_fn(navigator, prompt)
+mk_not_impl_fn(navigator, queryLocalFonts)
+mk_not_impl_fn(navigator, releaseEvents)
+mk_not_impl_fn(navigator, reportError)
+mk_not_impl_fn(navigator, requestAnimationFrame)
+mk_not_impl_fn(navigator, requestFileSystem)
+mk_not_impl_fn(navigator, requestIdleCallback)
+mk_not_impl_fn(navigator, resizeBy)
+mk_not_impl_fn(navigator, resizeTo)
+mk_not_impl_fn(navigator, scroll)
+mk_not_impl_fn(navigator, scrollBy)
+mk_not_impl_fn(navigator, scrollByLines)
+mk_not_impl_fn(navigator, scrollByPages)
+mk_not_impl_fn(navigator, scrollTo)
+mk_not_impl_fn(navigator, setImmediate)
+mk_not_impl_fn(navigator, setInterval)
+mk_not_impl_fn(navigator, setResizable)
+mk_not_impl_fn(navigator, showDirectoryPicker)
+mk_not_impl_fn(navigator, showOpenFilePicker)
+mk_not_impl_fn(navigator, showSaveFilePicker)
+mk_not_impl_fn(navigator, sizeToContent)
+mk_not_impl_fn(navigator, stop)
+mk_not_impl_fn(navigator, structuredClone)
+mk_not_impl_fn(navigator, webkitConvertPointFromNodeToPage)
+mk_not_impl_fn(navigator, webkitConvertPointFromPageToNode)
+
 //TODO1: inherit from Event Target
 static const JSCFunctionListEntry window_fn_list[] = {
     /* JS_CGETSET_DEF("document",                 jse_get_not_implemented, jse_set_not_implemented), */
+    JS_CFUNC_DEF("setTimeout",                       2, setTimeout),
+    // TODO1: this makes  JS_DefineAutiInitProperty ot abort claiming property already exists?,
+    /* JS_CFUNC_DEF("queueMicrotask",                   0, jse_fn_not_implemented), */
 
     mk_not_impl_getset_list_entry(window, caches),
     mk_not_impl_getset_list_entry(window, clientInformation),
@@ -1317,62 +1555,60 @@ static const JSCFunctionListEntry window_fn_list[] = {
     mk_not_impl_getset_list_entry(window, visualViewport),
     mk_not_impl_getset_list_entry(window, window),
 
-    JS_CFUNC_DEF("alert",                            0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("atob",                             0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("blur",                             0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("btoa",                             0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("cancelAnimationFrame",             0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("cancelIdleCallback",               0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("captureEvents",                    0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("clearImmediate",                   0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("clearInterval",                    0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("clearTimeout",                     0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("close",                            0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("confirm",                          0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("createImageBitmap",                0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("dump",                             0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("fetch",                            0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("fetchLater",                       0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("find",                             0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("focus",                            0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("getComputedStyle",                 0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("getDefaultComputedStyle",          0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("getScreenDetails",                 0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("getSelection",                     0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("matchMedia",                       0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("moveBy",                           0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("moveTo",                           0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("open",                             0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("postMessage",                      0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("print",                            0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("prompt",                           0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("queryLocalFonts",                  0, jse_fn_not_implemented),
-    // this makes  JS_DefineAutiInitProperty ot abort claiming property already exists?
-    /* JS_CFUNC_DEF("queueMicrotask",                   0, jse_fn_not_implemented), */
-    JS_CFUNC_DEF("releaseEvents",                    0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("reportError",                      0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("requestAnimationFrame",            0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("requestFileSystem",                0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("requestIdleCallback",              0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("resizeBy",                         0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("resizeTo",                         0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("scroll",                           0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("scrollBy",                         0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("scrollByLines",                    0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("scrollByPages",                    0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("scrollTo",                         0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("setImmediate",                     0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("setInterval",                      0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("setResizable",                     0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("setTimeout",                       2, setTimeout),
-    JS_CFUNC_DEF("showDirectoryPicker",              0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("showOpenFilePicker",               0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("showSaveFilePicker",               0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("sizeToContent",                    0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("stop",                             0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("structuredClone",                  0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("webkitConvertPointFromNodeToPage", 0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("webkitConvertPointFromPageToNode", 0, jse_fn_not_implemented),
+    mk_not_impl_fn_list_entry(navigator, alert),
+    mk_not_impl_fn_list_entry(navigator, atob),
+    mk_not_impl_fn_list_entry(navigator, blur),
+    mk_not_impl_fn_list_entry(navigator, btoa),
+    mk_not_impl_fn_list_entry(navigator, cancelAnimationFrame),
+    mk_not_impl_fn_list_entry(navigator, cancelIdleCallback),
+    mk_not_impl_fn_list_entry(navigator, captureEvents),
+    mk_not_impl_fn_list_entry(navigator, clearImmediate),
+    mk_not_impl_fn_list_entry(navigator, clearInterval),
+    mk_not_impl_fn_list_entry(navigator, clearTimeout),
+    mk_not_impl_fn_list_entry(navigator, close),
+    mk_not_impl_fn_list_entry(navigator, confirm),
+    mk_not_impl_fn_list_entry(navigator, createImageBitmap),
+    mk_not_impl_fn_list_entry(navigator, dump),
+    mk_not_impl_fn_list_entry(navigator, fetch),
+    mk_not_impl_fn_list_entry(navigator, fetchLater),
+    mk_not_impl_fn_list_entry(navigator, find),
+    mk_not_impl_fn_list_entry(navigator, focus),
+    mk_not_impl_fn_list_entry(navigator, getComputedStyle),
+    mk_not_impl_fn_list_entry(navigator, getDefaultComputedStyle),
+    mk_not_impl_fn_list_entry(navigator, getScreenDetails),
+    mk_not_impl_fn_list_entry(navigator, getSelection),
+    mk_not_impl_fn_list_entry(navigator, matchMedia),
+    mk_not_impl_fn_list_entry(navigator, moveBy),
+    mk_not_impl_fn_list_entry(navigator, moveTo),
+    mk_not_impl_fn_list_entry(navigator, open),
+    mk_not_impl_fn_list_entry(navigator, postMessage),
+    mk_not_impl_fn_list_entry(navigator, print),
+    mk_not_impl_fn_list_entry(navigator, prompt),
+    mk_not_impl_fn_list_entry(navigator, queryLocalFonts),
+    mk_not_impl_fn_list_entry(navigator, releaseEvents),
+    mk_not_impl_fn_list_entry(navigator, reportError),
+    mk_not_impl_fn_list_entry(navigator, requestAnimationFrame),
+    mk_not_impl_fn_list_entry(navigator, requestFileSystem),
+    mk_not_impl_fn_list_entry(navigator, requestIdleCallback),
+    mk_not_impl_fn_list_entry(navigator, resizeBy),
+    mk_not_impl_fn_list_entry(navigator, resizeTo),
+    mk_not_impl_fn_list_entry(navigator, scroll),
+    mk_not_impl_fn_list_entry(navigator, scrollBy),
+    mk_not_impl_fn_list_entry(navigator, scrollByLines),
+    mk_not_impl_fn_list_entry(navigator, scrollByPages),
+    mk_not_impl_fn_list_entry(navigator, scrollTo),
+    mk_not_impl_fn_list_entry(navigator, setImmediate),
+    mk_not_impl_fn_list_entry(navigator, setInterval),
+    mk_not_impl_fn_list_entry(navigator, setResizable),
+    mk_not_impl_fn_list_entry(navigator, showDirectoryPicker),
+    mk_not_impl_fn_list_entry(navigator, showOpenFilePicker),
+    mk_not_impl_fn_list_entry(navigator, showSaveFilePicker),
+    mk_not_impl_fn_list_entry(navigator, sizeToContent),
+    mk_not_impl_fn_list_entry(navigator, stop),
+    mk_not_impl_fn_list_entry(navigator, structuredClone),
+    mk_not_impl_fn_list_entry(navigator, webkitConvertPointFromNodeToPage),
+    mk_not_impl_fn_list_entry(navigator, webkitConvertPointFromPageToNode),
+
 };
 
 
@@ -1403,13 +1639,22 @@ static const JSCFunctionListEntry global_fn_list[] = {
 /* ---- Storage ---- */
 
 mk_not_impl_getset(storage, length)
+
+mk_not_impl_fn(storage, getItem)
+mk_not_impl_fn(storage, setItem)
+mk_not_impl_fn(storage, removeItem)
+mk_not_impl_fn(storage, clear)
+mk_not_impl_fn(storage, key)
+
 static const JSCFunctionListEntry __attribute__((unused)) storage_fn_list[] = {
-    JS_CFUNC_DEF("getItem",    1, jse_fn_not_implemented),
-    JS_CFUNC_DEF("setItem",    2, jse_fn_not_implemented),
-    JS_CFUNC_DEF("removeItem", 1, jse_fn_not_implemented),
-    JS_CFUNC_DEF("clear",      0, jse_fn_not_implemented),
-    JS_CFUNC_DEF("key",        1, jse_fn_not_implemented),
     mk_not_impl_getset_list_entry(storage, length),
+
+    mk_not_impl_fn_list_entry(storage, getItem),
+    mk_not_impl_fn_list_entry(storage, setItem),
+    mk_not_impl_fn_list_entry(storage, removeItem),
+    mk_not_impl_fn_list_entry(storage, clear),
+    mk_not_impl_fn_list_entry(storage, key),
+
 };
 
 
