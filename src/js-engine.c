@@ -16,8 +16,6 @@
 #define tryjs(Expr) do{\
     Err ahre_jsv_=validate_jsv((Expr));if (JS_IsException(ahre_jsv_)) return ahre_jsv_;}while(0) 
 
-#define js_err_not_impl JS_ThrowPlainError(ctx, "Ahre jse: fn not implemented " file_line__ );
-
 #define err_jse(Msg) err_fmt("error jse: %s %s\n", Msg, file_line__)
 
 #define js_fn__(FnName) JSValue FnName(JSContext* ctx, JSValueConst this, int argc, JSValueConst *argv)
@@ -41,7 +39,7 @@ static JSClassID element_class_id   = 0;
 /* static JSClassID classList_class_id = 0; */
 static JSClassID document_class_id  = 0;
 static JSClassID window_class_id  = 0;
-/* static JSClassID location_class_id  = 0; */
+static JSClassID location_class_id  = 0;
 /* static JSClassID navigator_class_id = 0; */
 /* static JSClassID storage_class_id   = 0; */
 
@@ -109,6 +107,10 @@ init_instance(JSValue instance[_1_], JSClassID class_id, JSContext* ctx)
 
 #define set_property_str(Ctx, Obj, Name, Value) (\
      -1 == JS_SetPropertyStr(Ctx, Obj, Name, Value) ? err_fmt("ahjs error: could not set propery (in %s)", __func__) : Ok)
+
+#define set_property_fn_list_len(Ctx, Obj, Arr, ArrLen) (\
+    JS_SetPropertyFunctionList(Ctx, Obj, Arr, ArrLen) == 0 \
+    ? Ok : err_fmt("ahjs error: could not set property fn list (in %s)",  __func__ ))
 
 #define set_property_fn_list(Ctx, Obj, Arr) (\
     JS_SetPropertyFunctionList(Ctx, Obj, Arr, sizeof(Arr)/sizeof(*Arr)) == 0 \
@@ -190,25 +192,36 @@ static const JSCFunctionListEntry console_fn_list[] = {
 };
 
 
-
 static Err
-console_init(JSValue console[_1_], JSContext* ctx, HtmlDoc d[_1_]) {
-    try(init_class(&console_class_id, &(JSClassDef){ "Console", .finalizer=NULL }, ctx));
-    try(init_instance(console, console_class_id, ctx));
-    try(set_property_fn_list(ctx, *console, console_fn_list));
-    Str* buf = jse_consolebuf(htmldoc_js(d));
-    if (JS_SetOpaque(*console, buf)) err_jse("could not set the console buffer");
+singleton_init_add__(
+    JSValue                     global,
+    JSContext*                  ctx,
+    JSClassID                   class_id[1],
+    const char*                 class_name,
+    const JSCFunctionListEntry* fn_list,
+    size_t                      fn_list_len,
+    void*                       opaque
+) {
+    JSValue obj;
+    try(init_class(class_id, &(JSClassDef){ class_name, .finalizer=NULL }, ctx));
+    try(init_instance(&obj, *class_id, ctx));
+    try(set_property_fn_list_len(ctx, obj, fn_list, fn_list_len));
+    if (JS_SetOpaque(obj, opaque)) err_jse("could not set the singleton");
+    try( set_property_str(ctx, global, class_name, obj));
     return Ok;
 }
 
-static Err
-global_add_console(JSValue global, HtmlDoc d[_1_], JSContext* ctx) {
-    JSValue console   = JS_UNDEFINED;
-    try( console_init(&console, ctx, d));
-    try( set_property_str(ctx, global, "console", console));
-    return Ok;
-}
-/** console **/
+
+#define singleton_init_add(ClassName, Global, Ctx, Opaque) \
+    singleton_init_add__(\
+        Global,\
+        Ctx,\
+        & ClassName ## _ ## class_id,\
+        stringify(ClassName),\
+        ClassName ## _ ## fn_list,\
+        arr_len(ClassName ## _ ## fn_list),\
+        Opaque\
+    )
 
 
 static DomElem
@@ -859,7 +872,6 @@ mk_not_impl_getset(document, designMode)
 mk_not_impl_getset(document, dir)
 mk_not_impl_getset(document, fullscreenEnabled)
 mk_not_impl_getset(document, lastModified)
-mk_not_impl_getset(document, location)
 mk_not_impl_getset(document, readyState)
 mk_not_impl_getset(document, referrer)
 mk_not_impl_getset(document, URL)
@@ -952,10 +964,26 @@ mk_not_impl_fn(document, queryCommandValue)
 mk_not_impl_fn(document, write)
 mk_not_impl_fn(document, writeln)
 
+static js_get__(location_getter)
+{
+    (void)this;
+    JSValue global    = JS_GetGlobalObject(ctx);
+    JSValue location  = JS_GetPropertyStr(ctx, global, "location");
+    JS_FreeValue(ctx, global);
+    return location;
+}
+
+mk_not_impl_setter(document_location)
+
+
 static const JSCFunctionListEntry document_fn_list[] = {
-    JS_CGETSET_DEF("body",   document_body,      not_impl_setter_name__(document_body)),
-    JS_CGETSET_DEF("head",   document_head,      not_impl_setter_name__(document_head)),
-    JS_CGETSET_DEF("title",  document_get_title, document_set_title),
+    JS_CGETSET_DEF("body",     document_body,      not_impl_setter_name__(document_body)),
+    JS_CGETSET_DEF("head",     document_head,      not_impl_setter_name__(document_head)),
+    JS_CGETSET_DEF("location", location_getter,    not_impl_setter_name__(document_location)),
+    JS_CGETSET_DEF("title",    document_get_title, document_set_title),
+
+    JS_CFUNC_DEF("createElement",  1, document_createElement),
+    JS_CFUNC_DEF("getElementById", 1, document_getElementById),
 
     mk_not_impl_getset_list_entry(document, activeElement),
     mk_not_impl_getset_list_entry(document, activeViewTransition),
@@ -998,7 +1026,6 @@ static const JSCFunctionListEntry document_fn_list[] = {
     mk_not_impl_getset_list_entry(document, dir),
     mk_not_impl_getset_list_entry(document, fullscreenEnabled),
     mk_not_impl_getset_list_entry(document, lastModified),
-    mk_not_impl_getset_list_entry(document, location),
     mk_not_impl_getset_list_entry(document, readyState),
     mk_not_impl_getset_list_entry(document, referrer),
     mk_not_impl_getset_list_entry(document, URL),
@@ -1020,9 +1047,6 @@ static const JSCFunctionListEntry document_fn_list[] = {
     mk_not_impl_getset_list_entry(document, xmlEncoding),
     mk_not_impl_getset_list_entry(document, xmlStandalone),
     mk_not_impl_getset_list_entry(document, xmlVersion),
-
-    JS_CFUNC_DEF("createElement",                 1, document_createElement),
-    JS_CFUNC_DEF("getElementById",                1, document_getElementById),
 
     mk_not_impl_fn_list_entry(document, adoptNode),
     mk_not_impl_fn_list_entry(document, append),
@@ -1093,30 +1117,6 @@ static const JSCFunctionListEntry document_fn_list[] = {
 };
 
 
-static Err
-document_init(JSValue document[_1_], HtmlDoc d[_1_], JSContext* ctx)
-{
-    try(init_class(&document_class_id, &(JSClassDef){ "document", .finalizer=NULL }, ctx));
-    JSValue document_proto = JS_NewObject(ctx);
-    try(set_property_fn_list(ctx, document_proto, document_fn_list));
-    JS_SetClassProto(ctx, document_class_id, document_proto);
-
-    try(init_instance(document, document_class_id, ctx));
-
-    if (JS_SetOpaque(*document, d)) return err_jse("could not set document opaque");
-    
-    return Ok;
-}
-
-
-static Err
-global_add_document(JSValue global, HtmlDoc d[_1_], JSContext* ctx) {
-    JSValue document  = JS_UNDEFINED;
-    try( document_init(&document, d, ctx));
-    try( set_property_str(ctx, global, "document", document));
-    return Ok;
-}
-
 /** document */
 
 
@@ -1137,7 +1137,7 @@ mk_not_impl_fn(location, reload)
 mk_not_impl_fn(location, replace)
 mk_not_impl_fn(location, toString)
 
-static const JSCFunctionListEntry __attribute__((unused)) location_fn_list[] = {
+static const JSCFunctionListEntry location_fn_list[] = {
     mk_not_impl_getset_list_entry(location, href),
     mk_not_impl_getset_list_entry(location, protocol),
     mk_not_impl_getset_list_entry(location, host),
@@ -1154,29 +1154,11 @@ static const JSCFunctionListEntry __attribute__((unused)) location_fn_list[] = {
     mk_not_impl_fn_list_entry(location, toString),
 
 };
+/** location */
 
-//0static Err
-//0location_init(JSValue location[_1_], JSContext* ctx, HtmlDoc d[_1_]) {
-//0
-//0    try(init_class(&location_class_id, &(JSClassDef){ "location", .finalizer=NULL }, ctx));
-//0    try(init_instance(location, location_class_id, ctx));
-//0
-//0    if (JS_SetOpaque(*location, d)) err_jse("could not set the location buffer");
-//0    try(set_property_fn_list(ctx, *location, location_fn_list));
-//0    return Ok;
-//0}
-//0
-//0static Err
-//0global_add_location(JSValue global, HtmlDoc d[_1_], JSContext* ctx) {
-//0    JSValue location  = JS_UNDEFINED;
-//0    try( location_init(&location, ctx, d));
-//0    try( set_property_str(ctx, global, "location", location));
-//0    return Ok;
-//0}
-
-/** locatiopn **/
 
 /* ---- Navigator ---- */
+
 mk_not_impl_getset(navigator, activeVRDisplays)
 mk_not_impl_getset(navigator, appCodeName)
 mk_not_impl_getset(navigator, appName)
@@ -1323,22 +1305,7 @@ static const JSCFunctionListEntry  __attribute__((unused)) navigator_fn_list[] =
     mk_not_impl_fn_list_entry(navigator, vibrate),
 
 };
-
-//0static Err
-//0global_add_navigator(JSValue global, HtmlDoc d[_1_], JSContext* ctx) {
-//0    (void)d;
-//0
-//0    JSValue navigator   = JS_UNDEFINED;
-//0    try(init_class(&navigator_class_id, &(JSClassDef){"navigator",.finalizer=NULL}, ctx));
-//0    JSValue navigator_proto = JS_NewObject(ctx);
-//0    if (JS_IsException(navigator_proto)) return err_jse("new object failed");
-//0    try(set_property_fn_list(ctx, navigator_proto, navigator_fn_list));
-//0    JS_SetClassProto(ctx, navigator_class_id, navigator_proto);
-//0    try( set_property_str(ctx, global, "navigator", navigator));
-//0    return Ok;
-//0}
-
-/** navigaror **/
+/** navigator */
 
 
 /* ---- Window ---- */
@@ -1387,7 +1354,6 @@ mk_not_impl_getset(window, isSecureContext)
 mk_not_impl_getset(window, launchQueue)
 mk_not_impl_getset(window, length)
 mk_not_impl_getset(window, localStorage)
-mk_not_impl_getset(window, location)
 mk_not_impl_getset(window, locationbar)
 mk_not_impl_getset(window, menubar)
 mk_not_impl_getset(window, mozInnerScreenX)
@@ -1482,10 +1448,14 @@ mk_not_impl_fn(navigator, structuredClone)
 mk_not_impl_fn(navigator, webkitConvertPointFromNodeToPage)
 mk_not_impl_fn(navigator, webkitConvertPointFromPageToNode)
 
+
+mk_not_impl_setter(window_location)
+
 //TODO1: inherit from Event Target
 static const JSCFunctionListEntry window_fn_list[] = {
     /* JS_CGETSET_DEF("document",                 jse_get_not_implemented, jse_set_not_implemented), */
-    JS_CFUNC_DEF("setTimeout",                       2, setTimeout),
+    JS_CGETSET_DEF("location", location_getter, not_impl_setter_name__(window_location)),
+    JS_CFUNC_DEF("setTimeout", 2, setTimeout),
     // TODO1: this makes  JS_DefineAutiInitProperty ot abort claiming property already exists?,
     /* JS_CFUNC_DEF("queueMicrotask",                   0, jse_fn_not_implemented), */
 
@@ -1514,7 +1484,6 @@ static const JSCFunctionListEntry window_fn_list[] = {
     mk_not_impl_getset_list_entry(window, launchQueue),
     mk_not_impl_getset_list_entry(window, length),
     mk_not_impl_getset_list_entry(window, localStorage),
-    mk_not_impl_getset_list_entry(window, location),
     mk_not_impl_getset_list_entry(window, locationbar),
     mk_not_impl_getset_list_entry(window, menubar),
     mk_not_impl_getset_list_entry(window, mozInnerScreenX),
@@ -1612,30 +1581,11 @@ static const JSCFunctionListEntry window_fn_list[] = {
 };
 
 
-
-static Err
-window_init (JSValue window[_1_], JSContext* ctx, HtmlDoc d[_1_]) {
-    try(init_class(&window_class_id, &(JSClassDef){ "Window", .finalizer=NULL }, ctx));
-    try(init_instance(window, window_class_id, ctx));
-    try(set_property_fn_list(ctx, *window, window_fn_list));
-    if (JS_SetOpaque(*window, d)) err_jse("could not set the window buffer");
-    return Ok;
-}
-
-static Err
-global_add_window(JSValue global, HtmlDoc d[_1_], JSContext* ctx) {
-
-    JSValue window   = JS_UNDEFINED;
-    try(window_init(&window, ctx, d));
-    try(set_property_str(ctx, global, "window", window));
-    
-    return Ok;
-}
-
-
 static const JSCFunctionListEntry global_fn_list[] = {
     JS_CFUNC_DEF("setTimeout", 2, setTimeout),
 };
+
+
 /* ---- Storage ---- */
 
 mk_not_impl_getset(storage, length)
@@ -1656,9 +1606,7 @@ static const JSCFunctionListEntry __attribute__((unused)) storage_fn_list[] = {
     mk_not_impl_fn_list_entry(storage, key),
 
 };
-
-
-/** storage **/
+/** storage */
 
 
 Err
@@ -1679,15 +1627,16 @@ jse_init(HtmlDoc* htmldoc) {
 
     JS_SetContextOpaque(js->ctx, htmldoc);
 
-    JSValue global    = JS_GetGlobalObject(js->ctx);
+    JSValue global = JS_GetGlobalObject(js->ctx);
 
     tryjmp(e, Fail, node_class_init(js->ctx));
     tryjmp(e, Fail, element_class_init(js->ctx));
 
+    tryjmp(e,Fail, singleton_init_add(console, global, js->ctx, jse_consolebuf(htmldoc_js(htmldoc))));
+    tryjmp(e,Fail, singleton_init_add(location, global, js->ctx, htmldoc));
+    tryjmp(e,Fail, singleton_init_add(document, global, js->ctx, htmldoc));
+    tryjmp(e,Fail, singleton_init_add(window, global, js->ctx, htmldoc));
 
-    tryjmp(e,Fail, global_add_document(global, htmldoc, js->ctx));
-    tryjmp(e,Fail, global_add_console(global, htmldoc, js->ctx));
-    tryjmp(e,Fail, global_add_window(global, htmldoc, js->ctx));
     tryjmp(e,Fail, set_property_fn_list(js->ctx, global, global_fn_list));
 
     JS_FreeValue(js->ctx, global);

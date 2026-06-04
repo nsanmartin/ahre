@@ -10,6 +10,9 @@
 #endif
 
 
+#define arr_len(Arr) (sizeof(Arr)/sizeof(*(Arr)))
+
+
 #define typeof_is_unsigned__(X) _Generic((X),\
     int     : false,\
     size_t  : true,\
