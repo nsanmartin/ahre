@@ -6,6 +6,7 @@
 
 typedef struct {
     HttpMethod method;
+    CurlPtr    curl_handle;
     Url*       urlview;
     Url        url;
     Str        urlstr;
@@ -24,12 +25,14 @@ static inline Url* request_url(Request r[_1_]) { return &r->url; }
 static inline Str* request_postfields(Request r[_1_]) { return &r->postfields; }
 static inline ArlOf(Str)* request_query_keys(Request r[_1_]) { return &r->keys; }
 static inline ArlOf(Str)* request_query_values(Request r[_1_]) { return &r->values; }
+static inline CurlPtr* request_curl_handle(Request r[_1_]) { return &r->curl_handle; }
 static inline void request_clean(Request r[_1_]) {
     str_clean(request_urlstr(r));
     str_clean(request_postfields(r));
     arlfn(Str,clean)(request_query_keys(r));
     arlfn(Str,clean)(request_query_values(r));
     url_cleanup(request_url(r));
+    curl_easy_cleanup(*request_curl_handle(r));
 }
 
 #define T Request

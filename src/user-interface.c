@@ -461,10 +461,9 @@ static SessionCmd _cmd_doc_scripts_[] =
     "TODO: enumerate all available options.\n"
 Err cmd_curl_set(CmdParams p[_1_]);
 static SessionCmd _cmd_curl_[] =
-    { [0]={.name="cookies", .match=1, .fn=cmd_curl_cookies, .help=CMD_CURL_COOKIES_DOC}
-    , [1]={.name="version", .match=1, .fn=cmd_curl_version, .help=CMD_CURL_VERSION_DOC}
-    , [2]={.name="set",     .match=1, .fn=cmd_curl_set,     .help=CMD_CURL_SET}
-    , [3]={0}
+    { [0]={.name="version", .match=1, .fn=cmd_curl_version, .help=CMD_CURL_VERSION_DOC}
+    , [1]={.name="set",     .match=1, .fn=cmd_curl_set,     .help=CMD_CURL_SET}
+    , [2]={0}
     };
 
 
@@ -494,7 +493,8 @@ static SessionCmd _cmd_doc_[] =
     { {.name="",        .fn=cmd_doc_info,              .help=CMD_DOC_INFO_DOC,     .flags=CMD_EMPTY}
     , {.name="+",       .fn=cmd_doc_bookmark_add,      .help=CMD_DOC_BOOKMARK_ADD, .flags=CMD_CHAR}
     , {.name="\"",      .fn=cmd_doc_info,              .help=CMD_DOC_INFO_DOC,     .flags=CMD_CHAR}
-    , {.name="console", .match=1, .fn=cmd_doc_console, .help=CMD_DOC_CONSOLE}
+    , {.name="console", .match=3, .fn=cmd_doc_console, .help=CMD_DOC_CONSOLE}
+    , {.name="cookies", .match=3, .fn=cmd_doc_print_cookies, .help=NULL}
     , {.name="draw",    .match=1, .fn=cmd_doc_draw,    .help=CMD_DOC_DRAW}
     , {.name="fetch",   .match=1, .fn=cmd_doc_fetch,   .help=CMD_DOC_FETCH}
     , {.name="js",      .match=1, .fn=cmd_doc_js,      .help=CMD_DOC_JS}

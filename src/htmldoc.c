@@ -1974,7 +1974,9 @@ htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[_1_]) {
 Err
 htmldoc_console(HtmlDoc d[_1_], Session* s, const char* line, CmdOut* out) {
     if (!s) return "error: no session";
-    return jse_eval(htmldoc_js(d), s, sv(line), out);
+    StrView lineview = sv(line);
+    if (!lineview.len) fail("{console command requires some javascript input line}");
+    return jse_eval(htmldoc_js(d), s, lineview, out);
 }
 
 
@@ -2115,10 +2117,9 @@ htmldoc_fetch(
     FetchHistoryEntry he[_1_]
 )
 {
-    CurlPtr easy;
-    try(w_curl_easy_init(&easy));
-    Err e = curl_lexbor_fetch_document(url_client, htmldoc, fetch_scripts, cmd_out, he, easy);
-    curl_easy_cleanup(easy);
+    CurlPtr* easy = request_curl_handle(htmldoc_request(htmldoc));
+    if (!easy) fail("error: expecting an easy handled");
+    Err e = curl_lexbor_fetch_document(url_client, htmldoc, fetch_scripts, cmd_out, he, *easy);
     return e;
 }
 

@@ -62,6 +62,6 @@ preprocessed: $(AHRE_PREPROCESSED)
 	$(CC) $(AHRE_INCLUDE) -E -o $(AHRE_BUILD)/ahre__pre__.c $(REPO_DIR)/ahre.c
 
 
-tags: $(wildcard $(AHRE_SRCDIR)/*.c) clean-tags
+tags: $(wildcard $(AHRE_SRCDIR)/*.c)
 	ctags -R .
 

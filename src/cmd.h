@@ -52,9 +52,6 @@ Err shortcut_z(Session session[_1_], const char* rest, CmdOut cmd_out[_1_]);
  * Curl commands
  */
 
-#define CMD_CURL_COOKIES_DOC \
-    "Show the cookies.\n"
-Err cmd_curl_cookies(CmdParams p[_1_]);
 
 #define CMD_CURL_VERSION_DOC \
     "Shows curl's version.\n"
@@ -80,6 +77,9 @@ Err cmd_doc_js(CmdParams p[_1_]);
 Err cmd_doc_console(CmdParams p[_1_]);
 
 
+#define CMD_DOC_COOKIES \
+    "print cookies for doc's request's curl handle\n"
+Err cmd_doc_print_cookies(CmdParams p[_1_]);
 /*
  * Tabs commands
  */

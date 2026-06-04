@@ -40,29 +40,6 @@ Err url_client_init(
 }
 
 
-Err url_client_print_cookies(Session* s, UrlClient uc[_1_], CmdOut* out) {
-    if (!s) return "error: session is null";
-    CurlPtr            curl;
-    struct curl_slist* cookies = NULL;
-    Err                e       = Ok;
-    try(w_curl_easy_init(&curl));
-    tryjmp(e,Clean, url_client_set_basic_options_to_handle(uc, curl));
-    CURLcode curl_code = curl_easy_getinfo(curl, CURLINFO_COOKIELIST, &cookies);
-    if (curl_code != CURLE_OK) { e="error: could not retrieve cookies list"; goto Clean; }
-    if (!cookies) { msg_ln__(out, svl("No cookies")); e="no cookies"; goto Clean; }
-
-    struct curl_slist* it = cookies;
-    while (it) {
-        tryjmp(e, Clean, msg_ln__(out, cast__(const char*)it->data));
-        it = it->next;
-    }
-Clean:
-    curl_slist_free_all(cookies);
-    curl_easy_cleanup(curl);
-    return Ok;
-}
-
-
 static const char* _parse_opt(CmdParams p[_1_], CURLoption opt[_1_]) {
 
     const char* rest;

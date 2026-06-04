@@ -7,7 +7,8 @@ static Err _url_from_post_request_(Request r[_1_]);
 Err url_from_get_request(Request r[_1_]) ;
 
 
-static Err request_url_init(Request r[_1_]) {
+static Err request_curl_init(Request r[_1_]) {
+    try(w_curl_easy_init(request_curl_handle(r)));
     switch (r->method) {
         case http_post: return _url_from_post_request_(r);
         case http_get : return url_from_get_request(r);
@@ -141,7 +142,7 @@ Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method) {
 
     try(str_append_z(&r->urlstr, sv(url, url_len))); 
     if (params_len) try(str_append_z(&r->postfields, sv(params, params_len)));
-    return request_url_init(r);
+    return request_curl_init(r);
 }
 
 
@@ -218,7 +219,7 @@ Err request_from_form_node (Request r[_1_], DomNode form, bool is_https, Url* ur
         try( _mk_submit_post_request_(form, is_https, r));
     }
 
-    return request_url_init(r);
+    return request_curl_init(r);
 }
 
 
@@ -383,7 +384,7 @@ request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url) {
         .urlview=url
     };
     if (urlstr.len) try(str_append_z(request_urlstr(r), urlstr));
-    return request_url_init(r);
+    return request_curl_init(r);
 }
 
 Err
@@ -391,7 +392,7 @@ request_from_cli_params(Request r[_1_], HttpMethod method, StrView urlstr, StrVi
     *r = (Request) { .method=method, };
     try(str_append_z(request_urlstr(r), urlstr));
     try(str_append(request_postfields(r), postfields));
-    return request_url_init(r);
+    return request_curl_init(r);
 }
 
 
