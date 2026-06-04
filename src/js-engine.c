@@ -233,6 +233,15 @@ js_value_to_dom_elem(JSValueConst jsv)
     return elem;
 }
 
+/* ---- EventTarget ---- */
+//TODO
+static js_fn__(event_target_addEventListener)
+{
+    (void)ctx;(void)argc;(void)this;(void)argv;
+    return JS_UNDEFINED;
+}
+
+/** event target */
 
 /* ---- Node ---- */
 
@@ -247,7 +256,14 @@ static js_set_n__(_set_textContent_impl, DomElem elem) {
     if (e) return JS_ThrowTypeError(ctx, e);
     return JS_UNDEFINED;
 }
-       
+
+static js_fn__(node_appendChild)
+{
+    (void)argc;(void)this;
+    // TODO0: manipulate actual DOM
+    return JS_DupValue(ctx, argv[0]);
+}
+
 mk_not_impl_getter(node_textContent)
 static js_set__(node_set_textContent)
 {
@@ -269,7 +285,7 @@ mk_not_impl_getset(node, parentNode)
 mk_not_impl_getset(node, parentElement)
 mk_not_impl_getset(node, previousSibling)
 
-mk_not_impl_fn(node, appendChild)
+/* mk_not_impl_fn(node, appendChild) */
 mk_not_impl_fn(node, cloneNode)
 mk_not_impl_fn(node, compareDocumentPosition)
 mk_not_impl_fn(node, contains)
@@ -285,8 +301,39 @@ mk_not_impl_fn(node, normalize)
 mk_not_impl_fn(node, removeChild)
 mk_not_impl_fn(node, replaceChild)
 
+static js_get__(node_get_innerHtml) { (void)ctx; (void)this;
+    return JS_UNDEFINED;
+}
+
+static js_set__(node_set_innerHtml) { (void)ctx; (void)this;(void)val;
+    return JS_UNDEFINED;
+}
+
+static js_get__(node_get_className)
+{
+    DomElem elem = js_value_to_dom_elem(this);
+    StrView value = dom_elem_attr_value(elem, svl("class"));
+    if (!value.len || !value.items) return JS_NewString(ctx, "");
+    return JS_NewStringLen(ctx, (char*)value.items, value.len);
+}
+
+static js_set__(node_set_className)
+{
+    DomElem elem = js_value_to_dom_elem(this);
+    size_t len;
+    const char *cstr = JS_ToCStringLen(ctx, &len, val);
+    if (!cstr) return JS_EXCEPTION;
+    Err e = dom_elem_set_attr(elem, svl("class"), sv(cstr, len));
+    JS_FreeCString(ctx, cstr);
+    if (e) return JS_ThrowTypeError(ctx, e);
+    return JS_UNDEFINED;
+}
+
 static const JSCFunctionListEntry node_fn_list[] = {
     JS_CGETSET_DEF("textContent", not_impl_getter_name__(node_textContent), node_set_textContent),
+    JS_CGETSET_DEF("innerHTML", node_get_innerHtml, node_set_innerHtml),
+    JS_CGETSET_DEF("className", node_get_className, node_set_className),
+    JS_CFUNC_DEF("appendChild",  1, node_appendChild),
 
     mk_not_impl_getset_list_entry(node, baseURI),
     mk_not_impl_getset_list_entry(node, childNodes),
@@ -302,7 +349,7 @@ static const JSCFunctionListEntry node_fn_list[] = {
     mk_not_impl_getset_list_entry(node, parentElement),
     mk_not_impl_getset_list_entry(node, previousSibling),
 
-    mk_not_impl_fn_list_entry(node, appendChild),
+    /* mk_not_impl_fn_list_entry(node, appendChild), */
     mk_not_impl_fn_list_entry(node, cloneNode),
     mk_not_impl_fn_list_entry(node, compareDocumentPosition),
     mk_not_impl_fn_list_entry(node, contains),
@@ -437,6 +484,7 @@ element_js_value_from_dom_elem(JSContext *ctx, DomElem elem)
 }
 
 
+
 mk_not_impl_getset(node, assignedSlot)
 mk_not_impl_getset(node, attributes)
 mk_not_impl_getset(node, childElementCount)
@@ -451,7 +499,7 @@ mk_not_impl_getset(node, currentCSSZoom)
 mk_not_impl_getset(node, customElementRegistry)
 mk_not_impl_getset(node, elementTiming)
 mk_not_impl_getset(node, firstElementChild)
-mk_not_impl_getset(node, innerHTML)
+/* mk_not_impl_getset(node, innerHTML) */
 mk_not_impl_getset(node, lastElementChild)
 mk_not_impl_getset(node, localName)
 mk_not_impl_getset(node, namespaceURI)
@@ -577,6 +625,7 @@ mk_not_impl_fn(element, toggleAttribute)
 
 static const JSCFunctionListEntry element_fn_list[] = {
     JS_CGETSET_DEF("id", element_get_id, element_set_id),
+    JS_CFUNC_DEF("addEventListener", 1, event_target_addEventListener),/*TODO0: this should be inherited from event target */
 
     mk_not_impl_getset_list_entry(node, assignedSlot),
     mk_not_impl_getset_list_entry(node, attributes),
@@ -592,7 +641,7 @@ static const JSCFunctionListEntry element_fn_list[] = {
     mk_not_impl_getset_list_entry(node, customElementRegistry),
     mk_not_impl_getset_list_entry(node, elementTiming),
     mk_not_impl_getset_list_entry(node, firstElementChild),
-    mk_not_impl_getset_list_entry(node, innerHTML),
+    /* mk_not_impl_getset_list_entry(node, innerHTML), */
     mk_not_impl_getset_list_entry(node, lastElementChild),
     mk_not_impl_getset_list_entry(node, localName),
     mk_not_impl_getset_list_entry(node, namespaceURI),
@@ -865,7 +914,6 @@ mk_not_impl_getset(document, scrollingElement)
 mk_not_impl_getset(document, styleSheets)
 mk_not_impl_getset(document, timeline)
 mk_not_impl_getset(document, visibilityState)
-mk_not_impl_getset(document, cookie)
 mk_not_impl_getset(document, defaultView)
 mk_not_impl_getset(document, designMode)
 mk_not_impl_getset(document, dir)
@@ -914,7 +962,7 @@ mk_not_impl_fn(document, createEvent)
 mk_not_impl_fn(document, createNodeIterator)
 mk_not_impl_fn(document, createProcessingInstruction)
 mk_not_impl_fn(document, createRange)
-mk_not_impl_fn(document, createTextNode)
+/* mk_not_impl_fn(document, createTextNode) */
 mk_not_impl_fn(document, createTouch)
 mk_not_impl_fn(document, createTouchList)
 mk_not_impl_fn(document, createTreeWalker)
@@ -963,19 +1011,37 @@ mk_not_impl_fn(document, queryCommandValue)
 mk_not_impl_fn(document, write)
 mk_not_impl_fn(document, writeln)
 
+static js_fn__(document_createTextNode)
+{
+    (void)argv;(void)this;
+    if (argc != 1) return JS_ThrowTypeError(ctx, "createTextNode: data needed");
+    return element_js_value_from_dom_elem(ctx, (DomElem){0}); //TODO1: check this
+}
+
+
 static js_get__(location_getter) { (void)this; return get_global(ctx, "location"); }
 
 mk_not_impl_setter(document_location)
 
+//TODO
+static js_get__(document_get_cookie) { (void)this;
+    return JS_NewString(ctx, ""); }
+static js_set__(document_set_cookie) { (void)this;(void)ctx;(void)val;
+    return JS_UNDEFINED; }
 
 static const JSCFunctionListEntry document_fn_list[] = {
     JS_CGETSET_DEF("body",     document_body,      not_impl_setter_name__(document_body)),
+    JS_CGETSET_DEF("cookie",   document_get_cookie,document_set_cookie),
     JS_CGETSET_DEF("head",     document_head,      not_impl_setter_name__(document_head)),
     JS_CGETSET_DEF("location", location_getter,    not_impl_setter_name__(document_location)),
     JS_CGETSET_DEF("title",    document_get_title, document_set_title),
 
     JS_CFUNC_DEF("createElement",  1, document_createElement),
     JS_CFUNC_DEF("getElementById", 1, document_getElementById),
+    JS_CFUNC_DEF("createTextNode", 1, document_createTextNode),
+
+    JS_CFUNC_DEF("addEventListener", 1, event_target_addEventListener),/*TODO0: this should be inherited from event target */
+
 
     mk_not_impl_getset_list_entry(document, activeElement),
     mk_not_impl_getset_list_entry(document, activeViewTransition),
@@ -1012,7 +1078,6 @@ static const JSCFunctionListEntry document_fn_list[] = {
     mk_not_impl_getset_list_entry(document, styleSheets),
     mk_not_impl_getset_list_entry(document, timeline),
     mk_not_impl_getset_list_entry(document, visibilityState),
-    mk_not_impl_getset_list_entry(document, cookie),
     mk_not_impl_getset_list_entry(document, defaultView),
     mk_not_impl_getset_list_entry(document, designMode),
     mk_not_impl_getset_list_entry(document, dir),
@@ -1057,7 +1122,7 @@ static const JSCFunctionListEntry document_fn_list[] = {
     mk_not_impl_fn_list_entry(document, createNodeIterator),
     mk_not_impl_fn_list_entry(document, createProcessingInstruction),
     mk_not_impl_fn_list_entry(document, createRange),
-    mk_not_impl_fn_list_entry(document, createTextNode),
+    /* mk_not_impl_fn_list_entry(document, createTextNode), */
     mk_not_impl_fn_list_entry(document, createTouch),
     mk_not_impl_fn_list_entry(document, createTouchList),
     mk_not_impl_fn_list_entry(document, createTreeWalker),
@@ -1217,13 +1282,18 @@ mk_not_impl_fn(navigator, getInstalledRelatedApps)
 mk_not_impl_fn(navigator, registerProtocolHandler)
 mk_not_impl_fn(navigator, requestMIDIAccess)
 mk_not_impl_fn(navigator, requestMediaKeySystemAccess)
-mk_not_impl_fn(navigator, sendBeacon)
 mk_not_impl_fn(navigator, setAppBadge)
 mk_not_impl_fn(navigator, share)
 mk_not_impl_fn(navigator, unregisterProtocolHandler)
 mk_not_impl_fn(navigator, vibrate)
 
+//TODO:
+static js_fn__(navigator_sendBeacon) { (void)(ctx); (void)(this);(void)argc;(void)argv;
+    return JS_NewBool(ctx, true);
+}
+
 static const JSCFunctionListEntry navigator_fn_list[] = {
+    JS_CFUNC_DEF("sendBeacon", 0, navigator_sendBeacon),
     mk_not_impl_getset_list_entry(navigator, activeVRDisplays),
     mk_not_impl_getset_list_entry(navigator, appCodeName),
     mk_not_impl_getset_list_entry(navigator, appName),
@@ -1290,7 +1360,6 @@ static const JSCFunctionListEntry navigator_fn_list[] = {
     mk_not_impl_fn_list_entry(navigator, registerProtocolHandler),
     mk_not_impl_fn_list_entry(navigator, requestMIDIAccess),
     mk_not_impl_fn_list_entry(navigator, requestMediaKeySystemAccess),
-    mk_not_impl_fn_list_entry(navigator, sendBeacon),
     mk_not_impl_fn_list_entry(navigator, setAppBadge),
     mk_not_impl_fn_list_entry(navigator, share),
     mk_not_impl_fn_list_entry(navigator, unregisterProtocolHandler),
@@ -1635,11 +1704,17 @@ mk_not_impl_fn(Performance, getEntriesByType)
 mk_not_impl_fn(Performance, mark)
 mk_not_impl_fn(Performance, measure)
 mk_not_impl_fn(Performance, measureUserAgentSpecificMemory)
-mk_not_impl_fn(Performance, now)
 mk_not_impl_fn(Performance, setResourceTimingBufferSize)
 mk_not_impl_fn(Performance, toJSON)
 
+static js_fn__(performance_now) //TODO:
+{ (void)(ctx); (void)(this);(void)argc;(void)argv;
+    return JS_NewFloat64(ctx, 434.1209f);
+}
+
 static const JSCFunctionListEntry performance_fn_list[] = {
+
+    JS_CFUNC_DEF("now", 0, performance_now),
 
     mk_not_impl_getset_list_entry(Performance, eventCounts),
     mk_not_impl_getset_list_entry(Performance, interactionCount),
@@ -1657,7 +1732,6 @@ static const JSCFunctionListEntry performance_fn_list[] = {
     mk_not_impl_fn_list_entry(Performance, mark),
     mk_not_impl_fn_list_entry(Performance, measure),
     mk_not_impl_fn_list_entry(Performance, measureUserAgentSpecificMemory),
-    mk_not_impl_fn_list_entry(Performance, now),
     mk_not_impl_fn_list_entry(Performance, setResourceTimingBufferSize),
     mk_not_impl_fn_list_entry(Performance, toJSON),
 
