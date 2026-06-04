@@ -12,6 +12,21 @@
 #include "generic.h"
 
 
+static JSClassID console_class_id   = 0;
+static JSClassID node_class_id      = 0;
+static JSClassID element_class_id   = 0;
+/* static JSClassID dom_token_list_class_id = 0; */
+/* static JSClassID classList_class_id = 0; */
+static JSClassID document_class_id  = 0;
+static JSClassID window_class_id  = 0;
+static JSClassID location_class_id  = 0;
+static JSClassID navigator_class_id = 0;
+static JSClassID storage_class_id   = 0;
+
+/*
+ * I'm using many macros here to make this file shorted and write less
+*/
+
 #define validate_jsv(Value) _Generic((Value), JSValue: Value)
 #define tryjs(Expr) do{\
     Err ahre_jsv_=validate_jsv((Expr));if (JS_IsException(ahre_jsv_)) return ahre_jsv_;}while(0) 
@@ -24,35 +39,6 @@
 #define js_get_n__(FnName, ...) JSValue FnName(JSContext *ctx, JSValueConst this, __VA_ARGS__)
 #define js_set__(FnName) JSValue FnName(JSContext* ctx, JSValueConst this, JSValueConst val)
 #define js_set_n__(FnName, ...) JSValue FnName(JSContext* ctx, JSValueConst this, JSValueConst val, __VA_ARGS__)
-
-
-typedef struct {
-    const char* name;
-    JSClassID class_id[1];
-    JSCFunctionListEntry fn_list[];
-} JsClass;
-
-static JSClassID console_class_id   = 0;
-static JSClassID node_class_id      = 0;
-static JSClassID element_class_id   = 0;
-/* static JSClassID dom_token_list_class_id = 0; */
-/* static JSClassID classList_class_id = 0; */
-static JSClassID document_class_id  = 0;
-static JSClassID window_class_id  = 0;
-static JSClassID location_class_id  = 0;
-/* static JSClassID navigator_class_id = 0; */
-/* static JSClassID storage_class_id   = 0; */
-
-void
-jse_clean(JsEngine js[_1_])
-{
-    if (!js->rt) return;
-    JS_RunGC(js->rt);
-    JS_FreeContext(js->ctx);
-    JS_FreeRuntime(js->rt);
-    str_clean(jse_consolebuf(js));
-    *js = (JsEngine){0};
-}
 
 #define xstringify(N) #N
 #define stringify(N) xstringify(N)
@@ -85,6 +71,20 @@ jse_clean(JsEngine js[_1_])
     JS_CGETSET_DEF(stringify(Attr), not_impl_getter_name__(NS ## _ ## Attr), not_impl_setter_name__(NS ## _ ## Attr))
 
 
+#define set_property_str(Ctx, Obj, Name, Value) (\
+     -1 == JS_SetPropertyStr(Ctx, Obj, Name, Value) ? err_fmt("ahjs error: could not set propery (in %s)", __func__) : Ok)
+
+#define set_property_fn_list_len(Ctx, Obj, Arr, ArrLen) (\
+    JS_SetPropertyFunctionList(Ctx, Obj, Arr, ArrLen) == 0 \
+    ? Ok : err_fmt("ahjs error: could not set property fn list (in %s)",  __func__ ))
+
+#define set_property_fn_list(Ctx, Obj, Arr) (\
+    JS_SetPropertyFunctionList(Ctx, Obj, Arr, sizeof(Arr)/sizeof(*Arr)) == 0 \
+    ? Ok : err_fmt("ahjs error: could not set property fn list (in %s)",  __func__ ))
+
+
+
+
 static Err
 init_class(JSClassID class_id[_1_], JSClassDef cdef[_1_], JSContext* ctx)
 {
@@ -105,20 +105,17 @@ init_instance(JSValue instance[_1_], JSClassID class_id, JSContext* ctx)
 }
 
 
-#define set_property_str(Ctx, Obj, Name, Value) (\
-     -1 == JS_SetPropertyStr(Ctx, Obj, Name, Value) ? err_fmt("ahjs error: could not set propery (in %s)", __func__) : Ok)
-
-#define set_property_fn_list_len(Ctx, Obj, Arr, ArrLen) (\
-    JS_SetPropertyFunctionList(Ctx, Obj, Arr, ArrLen) == 0 \
-    ? Ok : err_fmt("ahjs error: could not set property fn list (in %s)",  __func__ ))
-
-#define set_property_fn_list(Ctx, Obj, Arr) (\
-    JS_SetPropertyFunctionList(Ctx, Obj, Arr, sizeof(Arr)/sizeof(*Arr)) == 0 \
-    ? Ok : err_fmt("ahjs error: could not set property fn list (in %s)",  __func__ ))
+static JSValue
+get_global(JSContext* ctx, const char* name)
+{
+    JSValue global    = JS_GetGlobalObject(ctx);
+    JSValue obj = JS_GetPropertyStr(ctx, global, name);
+    JS_FreeValue(ctx, global);
+    return obj;
+}
 
 
 /* ---- Console ---- */
-
 
 static JSValue
 console_msg(JSContext *ctx, JSValueConst this, int argc, JSValueConst *argv, StrView prefix) {
@@ -730,8 +727,9 @@ static Err
 element_class_init(JSContext* ctx) {
     try(init_class(&element_class_id, &(JSClassDef){ "Element", .finalizer=NULL }, ctx));
     JSValue element_proto = JS_NewObject(ctx);
-    try(set_property_fn_list(ctx, element_proto, element_fn_list));
+    /* element inherits methods from node */
     try(set_property_fn_list(ctx, element_proto, node_fn_list));
+    try(set_property_fn_list(ctx, element_proto, element_fn_list));
     JS_SetClassProto(ctx, element_class_id, element_proto);
     return Ok;
 }
@@ -964,14 +962,7 @@ mk_not_impl_fn(document, queryCommandValue)
 mk_not_impl_fn(document, write)
 mk_not_impl_fn(document, writeln)
 
-static js_get__(location_getter)
-{
-    (void)this;
-    JSValue global    = JS_GetGlobalObject(ctx);
-    JSValue location  = JS_GetPropertyStr(ctx, global, "location");
-    JS_FreeValue(ctx, global);
-    return location;
-}
+static js_get__(location_getter) { (void)this; return get_global(ctx, "location"); }
 
 mk_not_impl_setter(document_location)
 
@@ -1231,7 +1222,7 @@ mk_not_impl_fn(navigator, share)
 mk_not_impl_fn(navigator, unregisterProtocolHandler)
 mk_not_impl_fn(navigator, vibrate)
 
-static const JSCFunctionListEntry  __attribute__((unused)) navigator_fn_list[] = {
+static const JSCFunctionListEntry navigator_fn_list[] = {
     mk_not_impl_getset_list_entry(navigator, activeVRDisplays),
     mk_not_impl_getset_list_entry(navigator, appCodeName),
     mk_not_impl_getset_list_entry(navigator, appName),
@@ -1360,7 +1351,6 @@ mk_not_impl_getset(window, mozInnerScreenX)
 mk_not_impl_getset(window, mozInnerScreenY)
 mk_not_impl_getset(window, name)
 mk_not_impl_getset(window, navigation)
-mk_not_impl_getset(window, navigator)
 mk_not_impl_getset(window, opener)
 mk_not_impl_getset(window, orientation)
 mk_not_impl_getset(window, origin)
@@ -1450,11 +1440,19 @@ mk_not_impl_fn(navigator, webkitConvertPointFromPageToNode)
 
 
 mk_not_impl_setter(window_location)
+mk_not_impl_setter(window_navigator)
+mk_not_impl_setter(window_document)
+
+
+static js_get__(window_navigator) { (void)this; return get_global(ctx, "navigator"); }
+static js_get__(window_document) { (void)this; return get_global(ctx, "dociment"); }
+
 
 //TODO1: inherit from Event Target
 static const JSCFunctionListEntry window_fn_list[] = {
-    /* JS_CGETSET_DEF("document",                 jse_get_not_implemented, jse_set_not_implemented), */
+    JS_CGETSET_DEF("document", window_document, not_impl_setter_name__(window_document)),
     JS_CGETSET_DEF("location", location_getter, not_impl_setter_name__(window_location)),
+    JS_CGETSET_DEF("navigator", window_navigator, not_impl_setter_name__(window_navigator)),
     JS_CFUNC_DEF("setTimeout", 2, setTimeout),
     // TODO1: this makes  JS_DefineAutiInitProperty ot abort claiming property already exists?,
     /* JS_CFUNC_DEF("queueMicrotask",                   0, jse_fn_not_implemented), */
@@ -1490,7 +1488,6 @@ static const JSCFunctionListEntry window_fn_list[] = {
     mk_not_impl_getset_list_entry(window, mozInnerScreenY),
     mk_not_impl_getset_list_entry(window, name),
     mk_not_impl_getset_list_entry(window, navigation),
-    mk_not_impl_getset_list_entry(window, navigator),
     mk_not_impl_getset_list_entry(window, opener),
     mk_not_impl_getset_list_entry(window, orientation),
     mk_not_impl_getset_list_entry(window, origin),
@@ -1596,7 +1593,7 @@ mk_not_impl_fn(storage, removeItem)
 mk_not_impl_fn(storage, clear)
 mk_not_impl_fn(storage, key)
 
-static const JSCFunctionListEntry __attribute__((unused)) storage_fn_list[] = {
+static const JSCFunctionListEntry storage_fn_list[] = {
     mk_not_impl_getset_list_entry(storage, length),
 
     mk_not_impl_fn_list_entry(storage, getItem),
@@ -1606,7 +1603,30 @@ static const JSCFunctionListEntry __attribute__((unused)) storage_fn_list[] = {
     mk_not_impl_fn_list_entry(storage, key),
 
 };
+
+
+static Err
+storage_class_init(JSContext* ctx) {
+    try(init_class(&storage_class_id, &(JSClassDef){ "storage", .finalizer=NULL }, ctx));
+    JSValue storage_proto = JS_NewObject(ctx);
+    try(set_property_fn_list(ctx, storage_proto, storage_fn_list));
+    JS_SetClassProto(ctx, storage_class_id, storage_proto);
+    return Ok;
+}
+
 /** storage */
+
+
+void
+jse_clean(JsEngine js[_1_])
+{
+    if (!js->rt) return;
+    JS_RunGC(js->rt);
+    JS_FreeContext(js->ctx);
+    JS_FreeRuntime(js->rt);
+    str_clean(jse_consolebuf(js));
+    *js = (JsEngine){0};
+}
 
 
 Err
@@ -1631,9 +1651,11 @@ jse_init(HtmlDoc* htmldoc) {
 
     tryjmp(e, Fail, node_class_init(js->ctx));
     tryjmp(e, Fail, element_class_init(js->ctx));
+    tryjmp(e, Fail, storage_class_init(js->ctx));
 
     tryjmp(e,Fail, singleton_init_add(console, global, js->ctx, jse_consolebuf(htmldoc_js(htmldoc))));
     tryjmp(e,Fail, singleton_init_add(location, global, js->ctx, htmldoc));
+    tryjmp(e,Fail, singleton_init_add(navigator, global, js->ctx, htmldoc));
     tryjmp(e,Fail, singleton_init_add(document, global, js->ctx, htmldoc));
     tryjmp(e,Fail, singleton_init_add(window, global, js->ctx, htmldoc));
 
