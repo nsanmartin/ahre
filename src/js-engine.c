@@ -12,16 +12,17 @@
 #include "generic.h"
 
 
-static JSClassID console_class_id   = 0;
-static JSClassID node_class_id      = 0;
-static JSClassID element_class_id   = 0;
+static JSClassID console_class_id     = 0;
+static JSClassID node_class_id        = 0;
+static JSClassID element_class_id     = 0;
+static JSClassID document_class_id    = 0;
+static JSClassID window_class_id      = 0;
+static JSClassID location_class_id    = 0;
+static JSClassID navigator_class_id   = 0;
+static JSClassID storage_class_id     = 0;
+static JSClassID performance_class_id = 0;
 /* static JSClassID dom_token_list_class_id = 0; */
 /* static JSClassID classList_class_id = 0; */
-static JSClassID document_class_id  = 0;
-static JSClassID window_class_id  = 0;
-static JSClassID location_class_id  = 0;
-static JSClassID navigator_class_id = 0;
-static JSClassID storage_class_id   = 0;
 
 /*
  * I'm using many macros here to make this file shorted and write less
@@ -1360,7 +1361,6 @@ mk_not_impl_getset(window, outerWidth)
 mk_not_impl_getset(window, pageXOffset)
 mk_not_impl_getset(window, pageYOffset)
 mk_not_impl_getset(window, parent)
-mk_not_impl_getset(window, performance)
 mk_not_impl_getset(window, personalbar)
 mk_not_impl_getset(window, scheduler)
 mk_not_impl_getset(window, screen)
@@ -1442,17 +1442,20 @@ mk_not_impl_fn(navigator, webkitConvertPointFromPageToNode)
 mk_not_impl_setter(window_location)
 mk_not_impl_setter(window_navigator)
 mk_not_impl_setter(window_document)
+mk_not_impl_setter(window_performance)
 
 
 static js_get__(window_navigator) { (void)this; return get_global(ctx, "navigator"); }
-static js_get__(window_document) { (void)this; return get_global(ctx, "dociment"); }
+static js_get__(window_document) { (void)this; return get_global(ctx, "document"); }
+static js_get__(window_performance) { (void)this; return get_global(ctx, "performance"); }
 
 
 //TODO1: inherit from Event Target
 static const JSCFunctionListEntry window_fn_list[] = {
-    JS_CGETSET_DEF("document", window_document, not_impl_setter_name__(window_document)),
-    JS_CGETSET_DEF("location", location_getter, not_impl_setter_name__(window_location)),
-    JS_CGETSET_DEF("navigator", window_navigator, not_impl_setter_name__(window_navigator)),
+    JS_CGETSET_DEF("document",    window_document,    not_impl_setter_name__(window_document)),
+    JS_CGETSET_DEF("location",    location_getter,    not_impl_setter_name__(window_location)),
+    JS_CGETSET_DEF("navigator",   window_navigator,   not_impl_setter_name__(window_navigator)),
+    JS_CGETSET_DEF("performance", window_performance, not_impl_setter_name__(window_performance)),
     JS_CFUNC_DEF("setTimeout", 2, setTimeout),
     // TODO1: this makes  JS_DefineAutiInitProperty ot abort claiming property already exists?,
     /* JS_CFUNC_DEF("queueMicrotask",                   0, jse_fn_not_implemented), */
@@ -1497,7 +1500,6 @@ static const JSCFunctionListEntry window_fn_list[] = {
     mk_not_impl_getset_list_entry(window, pageXOffset),
     mk_not_impl_getset_list_entry(window, pageYOffset),
     mk_not_impl_getset_list_entry(window, parent),
-    mk_not_impl_getset_list_entry(window, performance),
     mk_not_impl_getset_list_entry(window, personalbar),
     mk_not_impl_getset_list_entry(window, scheduler),
     mk_not_impl_getset_list_entry(window, screen),
@@ -1616,6 +1618,51 @@ storage_class_init(JSContext* ctx) {
 
 /** storage */
 
+/* ---- Performance ---- */
+mk_not_impl_getset(Performance, eventCounts)
+mk_not_impl_getset(Performance, interactionCount)
+mk_not_impl_getset(Performance, navigation)
+mk_not_impl_getset(Performance, timing)
+mk_not_impl_getset(Performance, memory)
+mk_not_impl_getset(Performance, timeOrigin)
+
+mk_not_impl_fn(Performance, clearMarks)
+mk_not_impl_fn(Performance, clearMeasures)
+mk_not_impl_fn(Performance, clearResourceTimings)
+mk_not_impl_fn(Performance, getEntries)
+mk_not_impl_fn(Performance, getEntriesByName)
+mk_not_impl_fn(Performance, getEntriesByType)
+mk_not_impl_fn(Performance, mark)
+mk_not_impl_fn(Performance, measure)
+mk_not_impl_fn(Performance, measureUserAgentSpecificMemory)
+mk_not_impl_fn(Performance, now)
+mk_not_impl_fn(Performance, setResourceTimingBufferSize)
+mk_not_impl_fn(Performance, toJSON)
+
+static const JSCFunctionListEntry performance_fn_list[] = {
+
+    mk_not_impl_getset_list_entry(Performance, eventCounts),
+    mk_not_impl_getset_list_entry(Performance, interactionCount),
+    mk_not_impl_getset_list_entry(Performance, navigation),
+    mk_not_impl_getset_list_entry(Performance, timing),
+    mk_not_impl_getset_list_entry(Performance, memory),
+    mk_not_impl_getset_list_entry(Performance, timeOrigin),
+
+    mk_not_impl_fn_list_entry(Performance, clearMarks),
+    mk_not_impl_fn_list_entry(Performance, clearMeasures),
+    mk_not_impl_fn_list_entry(Performance, clearResourceTimings),
+    mk_not_impl_fn_list_entry(Performance, getEntries),
+    mk_not_impl_fn_list_entry(Performance, getEntriesByName),
+    mk_not_impl_fn_list_entry(Performance, getEntriesByType),
+    mk_not_impl_fn_list_entry(Performance, mark),
+    mk_not_impl_fn_list_entry(Performance, measure),
+    mk_not_impl_fn_list_entry(Performance, measureUserAgentSpecificMemory),
+    mk_not_impl_fn_list_entry(Performance, now),
+    mk_not_impl_fn_list_entry(Performance, setResourceTimingBufferSize),
+    mk_not_impl_fn_list_entry(Performance, toJSON),
+
+};
+/** performance */
 
 void
 jse_clean(JsEngine js[_1_])
@@ -1656,6 +1703,7 @@ jse_init(HtmlDoc* htmldoc) {
     tryjmp(e,Fail, singleton_init_add(console, global, js->ctx, jse_consolebuf(htmldoc_js(htmldoc))));
     tryjmp(e,Fail, singleton_init_add(location, global, js->ctx, htmldoc));
     tryjmp(e,Fail, singleton_init_add(navigator, global, js->ctx, htmldoc));
+    tryjmp(e,Fail, singleton_init_add(performance, global, js->ctx, htmldoc));
     tryjmp(e,Fail, singleton_init_add(document, global, js->ctx, htmldoc));
     tryjmp(e,Fail, singleton_init_add(window, global, js->ctx, htmldoc));
 
