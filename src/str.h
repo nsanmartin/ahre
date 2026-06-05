@@ -93,7 +93,7 @@ size_t mem_count_utf8(const char* s, size_t len);
 StrView     cstr_split_word(const char* s[_1__]);
 bool        cstr_mem_eq_case(const char* cstr, const char* mem, size_t len);
 bool        cstr_starts_with(const char* s, const char* t);
-bool        str_startswith(Str s[_1__], StrView v);
+bool        str_startswith(StrView s, StrView v);
 const char* cstr_cat_dup(const char* s, const char* t);
 const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen);
 //TODO1: replace all space functions by uspace (unicode) space functions
@@ -117,6 +117,8 @@ StrView     strview_from_strview_ptr(StrView s[_1__]);
 StrView     strview_id(StrView v);
 StrView     strview_split_line(StrView text[_1__]);
 StrView     strview_split_word(StrView s[_1__]);
+StrView     strview_rsplit(StrView s[_1__], char c);
+StrView     strview_split(StrView s[_1__], char c);
 bool        strview_is_empty(const StrView s[_1__]);
 bool        strview_skip_space_inplace(StrView s[_1__]);
 const char* strview_beg(const StrView s[_1__]);
@@ -153,7 +155,7 @@ Err    str_append_ui_as_base10(Str buf[_1__], uintmax_t ui);
 Err    str_append_ui_as_base36(Str buf[_1__], uintmax_t ui);
 Err    str_replace_char_inplace(Str s[_1__], char from, char to);
 bool   str_contains(Str s[_1__], char c);
-bool   str_startswith_mem(Str s[_1__], const char* mem, size_t len);
+bool   str_startswith_mem(StrView s, const char* mem, size_t len);
 size_t str_append_flip(const char* mem, size_t size, size_t nmemb, Str out[_1__]) ;
 void   str_trim_space(StrView* l);
 

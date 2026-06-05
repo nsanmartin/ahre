@@ -75,3 +75,13 @@ url_cstr_malloc(Url u, char* out[_1_]) {
     return w_curl_url_get_malloc(u.ptr, CURLUPART_URL, out);
 }
 
+Err
+url_append_host_to_str(Url u, char* out[_1_]) {
+    return w_curl_url_get_malloc(u.ptr, CURLUPART_HOST, out);
+}
+
+
+Err
+url_append_path_to_str(Url u, char* out[_1_]) {
+    return w_curl_url_get_malloc(u.ptr, CURLUPART_PATH, out);
+}

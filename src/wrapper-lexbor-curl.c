@@ -60,10 +60,8 @@ Err w_curl_set_url(CurlPtr curl, Url url[_1_]) {
 
 
 static Err _set_htmldoc_url_with_effective_url_(CurlPtr curl, HtmlDoc htmldoc[_1_]) {
-    char* effective_url = NULL;
-    if (CURLE_OK != curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &effective_url)) {
-        return "error: couldn't get effective url from curl";
-    }
+    char* effective_url;
+    try(w_curl_get_effective_url(curl, &effective_url));
     return curlu_set_url_or_fragment(url_cu(htmldoc_url(htmldoc)), effective_url);
 }
 
@@ -218,7 +216,9 @@ htmldoc_fetch_scripts(HtmlDoc htmldoc[_1_], UrlClient url_client[_1_], CurlPtr e
     tryjmp(e,Clean, w_curl_multi_perform_poll(multi, failed));
     tryjmp(e,CleanMulti, clear_scripts_that_failed_to_download(failed, easies, htmldoc, cmd_out));
     if (!e) {
-        try(msg_ln__(cmd_out, err_fmt("%d scripts downloaded, %d failed to download", len__(easies)-len__(failed), len__(failed))));
+        try(msg_ln__(cmd_out, err_fmt("%d scripts downloaded.", len__(easies)-len__(failed))));
+        if (len__(failed))
+            try(msg_ln__(cmd_out, err_fmt(" %d failed to download.", len__(easies)-len__(failed), len__(failed))));
     }
     tryjmp(e,CleanMulti, for_htmldoc_size_download_append(easies, cmd_out, easy, htmldoc_curlinfo_sz_download(htmldoc)));
 

@@ -81,5 +81,6 @@ static inline Err curlu_set_url_or_fragment(CURLU* u,  const char* cstr) {
 
 
 Err url_cstr_malloc(Url u, char* out[_1_]);
-
+Err url_append_host_to_str(Url u, char* out[_1_]);
+Err url_append_path_to_str(Url u, char* out[_1_]);
 #endif

@@ -131,4 +131,7 @@ void textmod_trim_left(TextBufMods mods[_1_], size_t n);
 bool htmldoc_content_is_html(HtmlDoc d[_1_]);
 Err htmldoc_reparse_source(HtmlDoc d[_1_]);
 Err htmldoc_fetch_scripts(HtmlDoc htmldoc[_1_], UrlClient url_client[_1_], CurlPtr easy, CmdOut cmd_out[_1_]);
+Err htmldoc_get_cookies(HtmlDoc d[_1_], ArlOf(Str) out[_1_]);
+Err htmldoc_get_all_cookies(HtmlDoc d[_1_], ArlOf(Str) out[_1_]);
+Err htmldoc_set_cookielist(HtmlDoc d[_1_], StrView cookie);
 #endif

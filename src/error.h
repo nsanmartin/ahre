@@ -12,7 +12,8 @@ typedef const char* Err;
 #define Ok ((Err)0x0)
 
 static inline Err err_skip(void) { return Ok; }
-#define fail(Msg) return Msg;
+#define fail(Msg) return Msg
+#define fail_e(Msg) return err_fmt("error: %s  %s\n", Msg, file_line__)
 
 #define INTERNAL_ERROR_PREFIX "error"
 

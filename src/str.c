@@ -287,6 +287,53 @@ StrView cstr_split_word(const char* s[_1_]) {
     return word;
 }
 
+
+StrView
+strview_split(StrView s[_1__], char c) {
+    StrView rv = (StrView){0};
+    if (len__(s) == 0) return rv;
+
+    char* end = memchr(items__(s), c, len__(s));
+    if (!end) {
+        rv = *s;
+        *s  = (StrView){0};
+        return rv;
+    }
+
+    size_t len = end - items__(s);
+    if (end == items__(s)) {
+        ++s->items;
+        --s->len;
+        return rv;
+    }
+
+    rv       = (StrView){.items=items__(s), .len=len};
+    s->len   -= rv.len + 1;
+    s->items += rv.len + 1;
+    return rv;
+}
+
+
+StrView
+strview_rsplit(StrView s[_1__], char c) {
+    StrView rv = (StrView){0};
+    if (len__(s) == 0) return rv;
+    size_t dot_ix = len__(s) - 1;
+    while (dot_ix && items__(s)[dot_ix] != c)
+        --dot_ix;
+    
+    if (!dot_ix && items__(s)[0] != c) {
+        rv = *s;
+        *s  = (StrView){0};
+        return rv;
+    }
+
+    rv       = (StrView){.items=items__(s) + dot_ix + 1, .len=len__(s) - dot_ix - 1};
+    s->len -= rv.len + 1;
+    return rv;
+}
+
+
 StrView strview_from_mem_trim(const char* s, size_t len) {
     StrView rv = strview_from_mem(s, len);
     strview_trim_space_in_place(&rv);
@@ -387,12 +434,12 @@ str_replace_char_inplace(Str s[_1_], char from, char to) {
 
 
 bool
-str_startswith_mem(Str s[_1_], const char* mem, size_t len) {
-    return len__(s) >= len && !strncmp(items__(s), mem, len);
+str_startswith_mem(StrView s, const char* mem, size_t len) {
+    return s.len >= len && !strncmp(s.items, mem, len);
 }
 
 
-bool str_startswith(Str s[_1_], StrView v) { return str_startswith_mem(s, v.items, v.len); }
+bool str_startswith(StrView s, StrView v) { return str_startswith_mem(s, v.items, v.len); }
 
 
 size_t

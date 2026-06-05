@@ -236,7 +236,7 @@ w_curl_url_get_malloc(CURLU* cu, CURLUPart part, char* out[_1_]) {
 }
 
 void
-w_curl_free(void* p) { curl_free(p); } 
+w_curl_free(void* p) { if (p) curl_free(p); } 
 
 
 CURLUcode w_curl_get_part(CURLU* cu, CURLUPart part, char** content, unsigned flags) {
@@ -304,5 +304,12 @@ Err w_curl_set_method_from_http_method(CurlPtr handle, HttpMethod m) {
     CURLoption method = curlopt_method_from_http_method(m);
     if (curl_easy_setopt(handle, method, 1L)) 
         return err_internal("curl failed to set method");
+    return Ok;
+}
+
+Err
+w_curl_get_effective_url(CurlPtr curl, char* effective_url[1]) {
+    if (CURLE_OK != curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, effective_url))
+        fail_e("couldn't get effective url from curl");
     return Ok;
 }

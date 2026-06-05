@@ -210,28 +210,19 @@ Err cmd_doc_bookmark_add(CmdParams p[_1_]) {
     return bookmark_add_to_section(p->s, p->ln, session_url_client(p->s), cmd_params_cmd_out(p));
 }
 
-Err cmd_doc_print_cookies(CmdParams p[_1_]) { // Session* s, UrlClient uc[_1_], CmdOut* out) {
-    if (!p->s) return "error: session is null";
+Err cmd_doc_print_cookies(CmdParams p[_1_]) {
     HtmlDoc* d;
     try( session_current_doc(p->s, &d));
-    CurlPtr*            curl = request_curl_handle(htmldoc_request(d));
-    if (!curl|| !*curl) fail("expecting a curl handle here");
-    struct curl_slist* cookies = NULL;
-    Err                e       = Ok;
-    /* try(w_curl_easy_init(&curl)); */
-    /* tryjmp(e,Clean, url_client_set_basic_options_to_handle(session_url_client(p->s), curl)); */
-    CURLcode curl_code = curl_easy_getinfo(*curl, CURLINFO_COOKIELIST, &cookies);
-    if (curl_code != CURLE_OK) { e="error: could not retrieve cookies list"; goto Clean; }
-    if (!cookies) { msg_ln__(p, svl("No cookies")); e="no cookies"; goto Clean; }
 
-    struct curl_slist* it = cookies;
-    while (it) {
-        tryjmp(e, Clean, msg_ln__(p, cast__(const char*)it->data));
-        it = it->next;
-    }
+    ArlOf(Str) cookies = (ArlOf(Str)){0};
+    Err e = Ok;
+    tryjmp(e,Clean, htmldoc_get_cookies(d, &cookies));
+
+    if (!cookies.len) tryjmp(e, Clean, msg_ln__(p, svl("no cookies for document")));
+    else foreach__(Str,&cookies, it) tryjmp(e, Clean, msg_ln__(p, it));
 Clean:
-    curl_slist_free_all(cookies);
-    return Ok;
+    arlfn(Str,clean)(&cookies);
+    return e;
 }
 
 

@@ -1014,6 +1014,61 @@ htmldoc_destroy(HtmlDoc* htmldoc) {
 }
 
 
+static bool
+is_cookie_in_domain(StrView host, StrView line) {
+    if (str_startswith(line, svl("#HttpOnly"))) return false;
+    StrView domain = strview_split_word(&line);
+    if (!domain.len && !host.len) return false;
+    do {
+        StrView dpart = strview_rsplit(&domain, '.');
+        StrView hpart = strview_rsplit(&host, '.');
+        if (!str_eq_case(dpart, hpart)) return false;
+    } while (domain.len && host.len);
+    //TODO0: should subdomins be actually included, if not return !domain.len && !host.len;
+    return !domain.len;
+}
+
+
+Err
+htmldoc_get_cookies(HtmlDoc d[_1_], ArlOf(Str) out[_1_]) {
+    Err      e    = Ok;
+    CurlPtr* curl = request_curl_handle(htmldoc_request(d));
+    Url*      url = request_url(htmldoc_request(d));
+    char*    host;
+    struct curl_slist* cookies = NULL;
+    if (!curl|| !*curl) fail("expecting a curl handle here");
+    if (!url) fail("expecting an url");
+    try(url_append_host_to_str(*url, &host));
+    CURLcode curl_code = curl_easy_getinfo(*curl, CURLINFO_COOKIELIST, &cookies);
+    if (curl_code != CURLE_OK) { e="error: could not retrieve cookies list"; goto Clean; }
+    if (!cookies) { e="no cookies"; goto Clean; }
+
+    for(struct curl_slist* it = cookies; it; it = it->next) {
+        StrView data = sv(it->data);
+        if (is_cookie_in_domain(sv(host), data)) {
+            Str* k;
+            tryjmp(e,Clean, arl_append_zero(Str, out, k));
+            tryjmp(e,Clean, str_append(k, data));
+        }
+    }
+Clean:
+    curl_free(host);
+    curl_slist_free_all(cookies);
+    return Ok;
+}
+
+
+Err
+htmldoc_set_cookielist(HtmlDoc d[_1_], StrView cookie) {
+    CurlPtr* curl = request_curl_handle(htmldoc_request(d));
+    if (!curl|| !*curl) fail("expecting a curl handle here");
+
+    CURLcode curl_code = curl_easy_setopt(*curl, CURLOPT_COOKIELIST, cookie.items);
+    if (curl_code != CURLE_OK) fail("could not set cookie");
+    return Ok;
+}
+
+
 Err
 htmldoc_print_info(HtmlDoc d[_1_], CmdOut* out) {
     try( msg_fmt(out, "download size: %ld\n", *htmldoc_curlinfo_sz_download(d)));
@@ -1031,15 +1086,37 @@ htmldoc_print_info(HtmlDoc d[_1_], CmdOut* out) {
     }
     
     {
+        //TODO1: remove the url in favour of effective Url
         try(msg__(out, "url: "));
         char* url = NULL;
         Err   e   = Ok;
         tryjmp(e,CleanUrl, url_cstr_malloc(*htmldoc_url(d), &url));
         if (url) tryjmp(e,CleanUrl, msg_ln__(out, url));
         else tryjmp(e, CleanUrl, msg_ln__(out, svl("<NO URL>")));
+
 CleanUrl:
         w_curl_free(url);
         try(e);
+    }
+
+    char* effective_url;
+    try(msg__(out, "effective url: "));
+    try(w_curl_get_effective_url(*request_curl_handle(htmldoc_request(d)), &effective_url));
+    if (effective_url) try(msg_ln__(out, sv(effective_url)));
+    else try(msg_ln__(out, svl("<NO EFFECTIVE URL>")));
+
+    {
+        Err e = Ok;
+        ArlOf(Str) cookies  = (ArlOf(Str)){0};
+        tryjmp(e,Clean_Cookies, htmldoc_get_cookies(d, &cookies));
+        try(msg__(out, "cookies: "));
+        if (!cookies.len) try(msg_ln__(out, svl("<NO COOKIES>")));
+        foreach__(Str,&cookies, it) {
+            tryjmp(e,CleanUrl, msg_ln__(out, it));
+        }
+
+Clean_Cookies:
+        arlfn(Str,clean)(&cookies);
     }
 
     Str* charset = htmldoc_http_charset(d);

@@ -298,9 +298,9 @@ static Err
 resolve_request_url_if_local(Request r[_1_]) {
     Str* url = request_urlstr(r);
     if (!len__(url)) return Ok;
-    if (str_startswith(url, svl(HTTP_SCHEMA))) return Ok;
-    if (str_startswith(url, svl(HTTPS_SCHEMA))) return Ok;
-    if (str_startswith(url, svl(FILE_SCHEMA))) {
+    if (str_startswith(sv(url), svl(HTTP_SCHEMA))) return Ok;
+    if (str_startswith(sv(url), svl(HTTPS_SCHEMA))) return Ok;
+    if (str_startswith(sv(url), svl(FILE_SCHEMA))) {
         request_set_local(r, true);
         return Ok;
     }

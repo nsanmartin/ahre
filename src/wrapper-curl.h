@@ -98,4 +98,5 @@ Err w_curl_set_basic_options(
 );
 Err w_curl_set_method_from_http_method(CurlPtr handle, HttpMethod m);
 Err w_curl_set_write_fn_and_data_for_download(CurlPtr curl, FILE* fp);
+Err w_curl_get_effective_url(CurlPtr curl, char* effective_url[_1_]);
 #endif

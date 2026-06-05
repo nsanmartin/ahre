@@ -30,9 +30,10 @@ static JSClassID performance_class_id = 0;
 
 #define validate_jsv(Value) _Generic((Value), JSValue: Value)
 #define tryjs(Expr) do{\
-    Err ahre_jsv_=validate_jsv((Expr));if (JS_IsException(ahre_jsv_)) return ahre_jsv_;}while(0) 
+    JSValueConst ahre_jsv_=validate_jsv((Expr));if (JS_IsException(ahre_jsv_)) return ahre_jsv_;}while(0) 
 
 #define err_jse(Msg) err_fmt("error jse: %s %s\n", Msg, file_line__)
+#define throw(Msg) return JS_ThrowPlainError(ctx, "ahre: %s: %s", Msg, file_line__)
 
 #define js_fn__(FnName) JSValue FnName(JSContext* ctx, JSValueConst this, int argc, JSValueConst *argv)
 #define js_fn_n__(FnName, ...) JSValue FnName(JSContext* ctx, JSValueConst this, int argc, JSValueConst *argv, __VA_ARGS__)
@@ -44,10 +45,11 @@ static JSClassID performance_class_id = 0;
 #define xstringify(N) #N
 #define stringify(N) xstringify(N)
 
+#define NOT_IMPL_MSG "not implemented. Please implement it and send patch to:\n  https://codeberg.org/nsm/ahre"
 #define not_impl_fn_name__(Name) jse_fn_not_implemented_ ## Name
 #define mk_not_imple_fn_with_name(Name) \
     static js_fn__(not_impl_fn_name__(Name)) {(void)this; (void)argc; (void)argv;\
-    return JS_ThrowPlainError(ctx, "ahjs: fn '"# Name "' not implemented."); }
+    return JS_ThrowPlainError(ctx, "ahjs: fn '"# Name "' " NOT_IMPL_MSG); }
 
 #define mk_not_impl_fn(NS, Fn) mk_not_imple_fn_with_name(NS ## _ ## Fn)
 
@@ -57,12 +59,12 @@ static JSClassID performance_class_id = 0;
 #define not_impl_getter_name__(Name) jse_getter_not_implemented_ ## Name
 #define mk_not_impl_getter(Name) \
     static js_get__(not_impl_getter_name__(Name)) {(void)this;\
-    return JS_ThrowPlainError(ctx, "ahjs: getter '"# Name "' not implemented."); }
+    return JS_ThrowPlainError(ctx, "ahjs: getter '"# Name "' " NOT_IMPL_MSG); }
 
 #define not_impl_setter_name__(Name) jse_setter_not_implemented_ ## Name
 #define mk_not_impl_setter(Name) \
     static js_set__(not_impl_setter_name__(Name)) {(void)this; (void)val;\
-    return JS_ThrowPlainError(ctx, "ahjs: setter '"# Name "' not implemented." # Name); }
+    return JS_ThrowPlainError(ctx, "ahjs: setter '"# Name "' " NOT_IMPL_MSG); }
 
 #define mk_not_impl_getset(NS, Attr) \
     mk_not_impl_getter(NS ## _ ## Attr) \
@@ -122,18 +124,23 @@ static JSValue
 console_msg(JSContext *ctx, JSValueConst this, int argc, JSValueConst *argv, StrView prefix) {
     JSValue rv  = JS_UNDEFINED;
     Str*    buf = JS_GetOpaque(this, console_class_id);
+    Err     e   = Ok;
     if (!buf) return JS_ThrowTypeError(ctx, "js-engine: could not get console");
-    if (prefix.len && str_append(buf, prefix)) return JS_ThrowOutOfMemory(ctx);
+    if (prefix.len) tryjmp(e,Ret, str_append(buf, prefix));
 
     for (int i = 0; i < argc; ++i) {
         size_t len;
         const char* arg = JS_ToCStringLen(ctx, &len, argv[i]);
         if (!arg) return JS_ThrowTypeError(ctx, "invalid arg");
-        Err e = str_append(buf, sv(arg, len));
-        JS_FreeCString(ctx, arg);
-        if (e) return JS_ThrowOutOfMemory(ctx);
+        if (len) {
+            e = str_append(buf, sv(arg, len));
+            JS_FreeCString(ctx, arg);
+            if (e) throw(e);
+        }
     }
-    if (str_append(buf, svl("\n"))) return JS_ThrowOutOfMemory(ctx);
+    tryjmp (e,Ret, str_append(buf, svl("\n")));
+Ret:
+    if (e) throw(e);
     return rv;
 }
 
@@ -233,11 +240,30 @@ js_value_to_dom_elem(JSValueConst jsv)
     return elem;
 }
 
+
+static JSValueConst
+console_log_not_implemented_impl(JSContext* ctx, StrView fname) {
+    JSValueConst console = get_global(ctx, "console");
+    Str*    buf = JS_GetOpaque(console, console_class_id);
+    Err e = Ok;
+    tryjmp(e,Clean, str_append(buf, svl("TODO: ")));
+    tryjmp(e,Clean, str_append(buf, fname));
+    tryjmp(e,Clean, str_append(buf, svl(" not implemented.\n Please implement it and send patch to https://codeberg.org/nsm/ahre")));
+Clean:
+    JS_FreeValue(ctx, console);
+    if (e) throw(e);
+    return JS_UNDEFINED;
+}
+
+#define console_log_not_implemented(Ctx) console_log_not_implemented_impl(Ctx, sv(__func__))
+
+
 /* ---- EventTarget ---- */
 //TODO
 static js_fn__(event_target_addEventListener)
 {
-    (void)ctx;(void)argc;(void)this;(void)argv;
+    (void)this;(void)argc;(void)argv;
+    tryjs(console_log_not_implemented(ctx));
     return JS_UNDEFINED;
 }
 
@@ -261,6 +287,7 @@ static js_fn__(node_appendChild)
 {
     (void)argc;(void)this;
     // TODO0: manipulate actual DOM
+    tryjs(console_log_not_implemented(ctx));
     return JS_DupValue(ctx, argv[0]);
 }
 
@@ -302,10 +329,12 @@ mk_not_impl_fn(node, removeChild)
 mk_not_impl_fn(node, replaceChild)
 
 static js_get__(node_get_innerHtml) { (void)ctx; (void)this;
+    tryjs(console_log_not_implemented(ctx));
     return JS_UNDEFINED;
 }
 
 static js_set__(node_set_innerHtml) { (void)ctx; (void)this;(void)val;
+    tryjs(console_log_not_implemented(ctx));
     return JS_UNDEFINED;
 }
 
@@ -625,7 +654,7 @@ mk_not_impl_fn(element, toggleAttribute)
 
 static const JSCFunctionListEntry element_fn_list[] = {
     JS_CGETSET_DEF("id", element_get_id, element_set_id),
-    JS_CFUNC_DEF("addEventListener", 1, event_target_addEventListener),/*TODO0: this should be inherited from event target */
+    JS_CFUNC_DEF("addEventListener", 1, event_target_addEventListener),/*TODO1: this should be inherited from event target */
 
     mk_not_impl_getset_list_entry(node, assignedSlot),
     mk_not_impl_getset_list_entry(node, attributes),
@@ -962,7 +991,6 @@ mk_not_impl_fn(document, createEvent)
 mk_not_impl_fn(document, createNodeIterator)
 mk_not_impl_fn(document, createProcessingInstruction)
 mk_not_impl_fn(document, createRange)
-/* mk_not_impl_fn(document, createTextNode) */
 mk_not_impl_fn(document, createTouch)
 mk_not_impl_fn(document, createTouchList)
 mk_not_impl_fn(document, createTreeWalker)
@@ -1023,11 +1051,90 @@ static js_get__(location_getter) { (void)this; return get_global(ctx, "location"
 
 mk_not_impl_setter(document_location)
 
-//TODO
-static js_get__(document_get_cookie) { (void)this;
-    return JS_NewString(ctx, ""); }
-static js_set__(document_set_cookie) { (void)this;(void)ctx;(void)val;
-    return JS_UNDEFINED; }
+static js_get__(document_get_cookie) {
+    HtmlDoc* d = JS_GetOpaque(this, document_class_id);
+    if (!d) throw("no document");
+    JSValue rv = JS_UNDEFINED;
+
+    ArlOf(Str) cookies = (ArlOf(Str)){0};
+    Str        joined  = (Str){0};
+    Err        e       = Ok;
+    tryjmp(e,Clean, htmldoc_get_cookies(d, &cookies));
+    foreach__(Str,&cookies, it) {
+        StrView line = sv(it);
+        for (size_t i = 0; i < 5; ++i) {
+            strview_trim_space_left(&line);
+            strview_split_word(&line);
+        }
+        strview_trim_space_left(&line);
+        StrView k = strview_split_word(&line);
+        if (!k.len) continue;
+        tryjmp(e,Clean, str_append(&joined, k));
+        tryjmp(e,Clean, str_append(&joined, svl("=")));
+        strview_trim_space_left(&line);
+        StrView v = strview_split_word(&line);
+        if (v.len) tryjmp(e,Clean, str_append(&joined, v));
+        if (it < arlfn(Str,end)(&cookies)) tryjmp(e,Clean, str_append(&joined, svl("; ")));
+
+    }
+
+    rv = JS_NewString(ctx, joined.items ? joined.items : "");
+Clean:
+    arlfn(Str,clean)(&cookies);
+    str_clean(&joined);
+    //TODO1: ignore errors?
+    return rv;
+}
+
+static js_set__(document_set_cookie) {
+    Err      e = Ok;
+    HtmlDoc* d = JS_GetOpaque(this, document_class_id);
+    if (!d) throw("no document");
+    const char* cookie = JS_ToCString(ctx, val);
+    if (!cookie) return JS_UNDEFINED;
+
+    Str   buf  = (Str){0};
+    char* host = NULL;
+    char* path = NULL;
+
+    Url*    url  = request_url(htmldoc_request(d));
+    StrView line = sv(cookie);
+
+    tryjmp(e,Clean, url_append_host_to_str(*url, &host));
+    tryjmp(e,Clean, url_append_path_to_str(*url, &path));
+
+    StrView kv;
+    while ((kv = strview_split(&line, ';')).len) {
+        if (!kv.len) continue;
+        str_reset(&buf);
+        /* "example.com"    /1* Hostname *1/ */
+        /* SEP "FALSE"      /1* Include subdomains *1/ */
+        /* SEP "/"          /1* Path *1/ */
+        /* SEP "FALSE"      /1* Secure *1/ */
+        /* SEP "0"          /1* Expiry in epoch time format. 0 == Session *1/ */
+        /* SEP "foo"        /1* Name *1/ */
+        /* SEP "bar";       /1* Value *1/ */
+        tryjmp(e,Clean, str_append(&buf, sv(host)));
+        tryjmp(e,Clean, str_append(&buf, svl("\tFALSE\t")));
+        tryjmp(e,Clean, str_append(&buf, sv(path)));
+        tryjmp(e,Clean, str_append(&buf, svl("\tTRUE\t0\t")));
+
+        StrView k = strview_split(&kv, '=');
+        tryjmp(e,Clean, str_append(&buf, k));
+        tryjmp(e,Clean, str_append(&buf, svl("\t")));
+        tryjmp(e,Clean, str_append(&buf, kv));
+
+        e = htmldoc_set_cookielist(d, sv(buf));
+        if (e) break;
+    }
+Clean:
+    JS_FreeCString(ctx, cookie);
+    str_clean(&buf);
+    w_curl_free(host);
+    w_curl_free(path);
+    if (e) throw(e);
+    return JS_UNDEFINED;
+}
 
 static const JSCFunctionListEntry document_fn_list[] = {
     JS_CGETSET_DEF("body",     document_body,      not_impl_setter_name__(document_body)),
@@ -1040,7 +1147,7 @@ static const JSCFunctionListEntry document_fn_list[] = {
     JS_CFUNC_DEF("getElementById", 1, document_getElementById),
     JS_CFUNC_DEF("createTextNode", 1, document_createTextNode),
 
-    JS_CFUNC_DEF("addEventListener", 1, event_target_addEventListener),/*TODO0: this should be inherited from event target */
+    JS_CFUNC_DEF("addEventListener", 1, event_target_addEventListener),/*TODO1: this should be inherited from event target */
 
 
     mk_not_impl_getset_list_entry(document, activeElement),
@@ -1122,7 +1229,6 @@ static const JSCFunctionListEntry document_fn_list[] = {
     mk_not_impl_fn_list_entry(document, createNodeIterator),
     mk_not_impl_fn_list_entry(document, createProcessingInstruction),
     mk_not_impl_fn_list_entry(document, createRange),
-    /* mk_not_impl_fn_list_entry(document, createTextNode), */
     mk_not_impl_fn_list_entry(document, createTouch),
     mk_not_impl_fn_list_entry(document, createTouchList),
     mk_not_impl_fn_list_entry(document, createTreeWalker),
