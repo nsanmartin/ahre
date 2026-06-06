@@ -16,7 +16,6 @@ static JSClassID console_class_id     = 0;
 static JSClassID node_class_id        = 0;
 static JSClassID element_class_id     = 0;
 static JSClassID document_class_id    = 0;
-static JSClassID window_class_id      = 0;
 static JSClassID location_class_id    = 0;
 static JSClassID navigator_class_id   = 0;
 static JSClassID storage_class_id     = 0;
@@ -1546,7 +1545,6 @@ mk_not_impl_getset(window, scrollMaxY)
 mk_not_impl_getset(window, scrollX)
 mk_not_impl_getset(window, scrollY)
 mk_not_impl_getset(window, scrollbars)
-mk_not_impl_getset(window, self)
 mk_not_impl_getset(window, sessionStorage)
 mk_not_impl_getset(window, sharedStorage)
 mk_not_impl_getset(window, speechSynthesis)
@@ -1557,7 +1555,6 @@ mk_not_impl_getset(window, top)
 mk_not_impl_getset(window, trustedTypes)
 mk_not_impl_getset(window, viewport)
 mk_not_impl_getset(window, visualViewport)
-mk_not_impl_getset(window, window)
 
 mk_not_impl_fn(navigator, alert)
 mk_not_impl_fn(navigator, atob)
@@ -1614,26 +1611,9 @@ mk_not_impl_fn(navigator, webkitConvertPointFromNodeToPage)
 mk_not_impl_fn(navigator, webkitConvertPointFromPageToNode)
 
 
-mk_not_impl_setter(window_location)
-mk_not_impl_setter(window_navigator)
-mk_not_impl_setter(window_document)
-mk_not_impl_setter(window_performance)
-
-
-static js_get__(window_navigator) { (void)this; return get_global(ctx, "navigator"); }
-static js_get__(window_document) { (void)this; return get_global(ctx, "document"); }
-static js_get__(window_performance) { (void)this; return get_global(ctx, "performance"); }
-
-
+//TODO0: define functions instead of window methods?
 //TODO1: inherit from Event Target
 static const JSCFunctionListEntry window_fn_list[] = {
-    JS_CGETSET_DEF("document",    window_document,    not_impl_setter_name__(window_document)),
-    JS_CGETSET_DEF("location",    location_getter,    not_impl_setter_name__(window_location)),
-    JS_CGETSET_DEF("navigator",   window_navigator,   not_impl_setter_name__(window_navigator)),
-    JS_CGETSET_DEF("performance", window_performance, not_impl_setter_name__(window_performance)),
-    JS_CFUNC_DEF("setTimeout", 2, setTimeout),
-    // TODO1: this makes  JS_DefineAutiInitProperty ot abort claiming property already exists?,
-    /* JS_CFUNC_DEF("queueMicrotask",                   0, jse_fn_not_implemented), */
 
     mk_not_impl_getset_list_entry(window, caches),
     mk_not_impl_getset_list_entry(window, clientInformation),
@@ -1685,7 +1665,6 @@ static const JSCFunctionListEntry window_fn_list[] = {
     mk_not_impl_getset_list_entry(window, scrollX),
     mk_not_impl_getset_list_entry(window, scrollY),
     mk_not_impl_getset_list_entry(window, scrollbars),
-    mk_not_impl_getset_list_entry(window, self),
     mk_not_impl_getset_list_entry(window, sessionStorage),
     mk_not_impl_getset_list_entry(window, sharedStorage),
     mk_not_impl_getset_list_entry(window, speechSynthesis),
@@ -1696,7 +1675,6 @@ static const JSCFunctionListEntry window_fn_list[] = {
     mk_not_impl_getset_list_entry(window, trustedTypes),
     mk_not_impl_getset_list_entry(window, viewport),
     mk_not_impl_getset_list_entry(window, visualViewport),
-    mk_not_impl_getset_list_entry(window, window),
 
     mk_not_impl_fn_list_entry(navigator, alert),
     mk_not_impl_fn_list_entry(navigator, atob),
@@ -1880,14 +1858,22 @@ jse_init(HtmlDoc* htmldoc) {
     tryjmp(e, Fail, element_class_init(js->ctx));
     tryjmp(e, Fail, storage_class_init(js->ctx));
 
+    try(set_property_str(js->ctx, global, "window",     JS_DupValue(js->ctx, global)));
+    try(set_property_str(js->ctx, global, "self",       JS_DupValue(js->ctx, global)));
+    try(set_property_str(js->ctx, global, "top",        JS_DupValue(js->ctx, global)));
+    try(set_property_str(js->ctx, global, "parent",     JS_DupValue(js->ctx, global)));
+    try(set_property_str(js->ctx, global, "globalThis", JS_DupValue(js->ctx, global)));
+
+
     tryjmp(e,Fail, singleton_init_add(console, global, js->ctx, jse_consolebuf(htmldoc_js(htmldoc))));
+
+    tryjmp(e,Fail, singleton_init_add(document, global, js->ctx, htmldoc));
     tryjmp(e,Fail, singleton_init_add(location, global, js->ctx, htmldoc));
     tryjmp(e,Fail, singleton_init_add(navigator, global, js->ctx, htmldoc));
     tryjmp(e,Fail, singleton_init_add(performance, global, js->ctx, htmldoc));
-    tryjmp(e,Fail, singleton_init_add(document, global, js->ctx, htmldoc));
-    tryjmp(e,Fail, singleton_init_add(window, global, js->ctx, htmldoc));
 
     tryjmp(e,Fail, set_property_fn_list(js->ctx, global, global_fn_list));
+    tryjmp(e,Fail, set_property_fn_list(js->ctx, global, window_fn_list));
 
     JS_FreeValue(js->ctx, global);
     return Ok;
