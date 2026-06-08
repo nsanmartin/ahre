@@ -32,7 +32,7 @@ static inline void request_clean(Request r[_1_]) {
     arlfn(Str,clean)(request_query_keys(r));
     arlfn(Str,clean)(request_query_values(r));
     url_cleanup(request_url(r));
-    curl_easy_cleanup(*request_curl_handle(r));
+    curl_ptr_clean(request_curl_handle(r));
 }
 
 #define T Request

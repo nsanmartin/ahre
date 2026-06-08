@@ -24,8 +24,8 @@ static inline CurlUrlPtr url_cu(Url u[_1_]) { return u->ptr; }
 
 /* dtor */
 static inline void url_cleanup(Url u[_1_]) {
-    if (u->ptr) curl_url_cleanup(u->ptr);
-    u->ptr = NULL;
+    if (!isnull(*u)) curl_url_cleanup(u->ptr);
+    *u = (Url){0};
 }
 //
 

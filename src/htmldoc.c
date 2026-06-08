@@ -2086,7 +2086,7 @@ htmldoc_js_enable(HtmlDoc d[_1_], Session* s, CmdOut* out) {
         CurlPtr easy;
         try(w_curl_easy_init(&easy));
         Err e = htmldoc_fetch_scripts(d, session_url_client(s), easy, out);
-        curl_easy_cleanup(easy);
+        curl_ptr_clean(&easy);
         try (e);
     }
 

@@ -140,8 +140,8 @@ Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method) {
 
     *r = (Request){ .method=method };
 
-    try(str_append_z(&r->urlstr, sv(url, url_len))); 
-    if (params_len) try(str_append_z(&r->postfields, sv(params, params_len)));
+    try(str_append(&r->urlstr, sv(url, url_len))); 
+    if (params_len) try(str_append(&r->postfields, sv(params, params_len)));
     return request_curl_init(r);
 }
 
@@ -175,7 +175,7 @@ Err request_to_file(Request r[_1_], UrlClient url_client[_1_], FILE* fp) {
 
     tryjmp(e,Clean, url_client_perform_with_cancel(url_client, curl, r));
 Clean:
-    curl_easy_cleanup(curl);
+    curl_ptr_clean(&curl);
     return e;
 }
 
@@ -207,7 +207,7 @@ Err request_from_form_node (Request r[_1_], DomNode form, bool is_https, Url* ur
     StrView method = dom_node_attr_value(form, svl("method"));
 
     if (action.items && action.len) 
-        try(str_append_z(request_urlstr(r), &action));
+        try(str_append(request_urlstr(r), &action));
 
 
     if (!method.len || str_eq_case(svl("get"), method)) {
@@ -307,7 +307,7 @@ resolve_request_url_if_local(Request r[_1_]) {
     bool file_exists;
     Err  e        = Ok;
     Str  resolved = (Str){0};
-    tryjmp(e,Clean, str_append_z(&resolved, svl(FILE_SCHEMA)));
+    tryjmp(e,Clean, str_append(&resolved, svl(FILE_SCHEMA)));
     tryjmp(e,Clean, resolve_path(items__(url), &file_exists, &resolved));
     if (file_exists) {
         str_clean(request_urlstr(r));
@@ -383,14 +383,14 @@ request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url) {
         .method=method,
         .urlview=url
     };
-    if (urlstr.len) try(str_append_z(request_urlstr(r), urlstr));
+    if (urlstr.len) try(str_append(request_urlstr(r), urlstr));
     return request_curl_init(r);
 }
 
 Err
 request_from_cli_params(Request r[_1_], HttpMethod method, StrView urlstr, StrView postfields) {
     *r = (Request) { .method=method, };
-    try(str_append_z(request_urlstr(r), urlstr));
+    try(str_append(request_urlstr(r), urlstr));
     try(str_append(request_postfields(r), postfields));
     return request_curl_init(r);
 }

@@ -221,7 +221,7 @@ request_arl_to_file(CmdParams p[_1_], ArlOf(Request) rs[_1_]) {
         if (msg) {
             msg_ln__(p,msg);
             if (pathp) { str_clean(pathp); *pathp = (Str){0}; }
-            if (cpp) { curl_easy_cleanup(*cpp); *cpp = NULL; }
+            if (cpp) { curl_ptr_clean(cpp); }
             if (fpp) { file_close(fpp->ptr); *fpp = (FilePtr){0}; };
             if (!fps.len || !fnames.len || !handles.len) {e=err_internal("arl appended but is empty"); goto Clean;}
             //TODO1: use pop
@@ -430,7 +430,7 @@ static Err cmd_doc_scripts_fetch(CmdParams p[_1_]) {
     CurlPtr easy;
     try(w_curl_easy_init(&easy));
     Err e = htmldoc_fetch_scripts(h, session_url_client(p->s), easy, cmd_params_cmd_out(p));
-    curl_easy_cleanup(easy);
+    curl_ptr_clean(&easy);
     return e;
 }
 

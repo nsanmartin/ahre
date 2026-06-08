@@ -207,7 +207,7 @@ Pop_Easy:
 Remove_Easy:
     curl_multi_remove_handle(multi, easy);
 Clean_Easy:
-    curl_easy_cleanup(easy);
+    curl_ptr_clean(&easy);
     if (len__(destlist)) --destlist->len;
 Clean_Dup:
     curl_url_cleanup(dup);
