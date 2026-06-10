@@ -918,7 +918,7 @@ htmldoc_init_move_request(
 
     tryjmp(e,Fail, htmldoc_fetch(d, uc, js_enabled, cmd_out, entry));
     if (js_enabled)
-        tryjmp(e, Fail, jse_init(d));
+        tryjmp(e, Fail, jse_init(s, d));
     htmldoc_eval_js_scripts_or_continue(d, s, cmd_out);
     tryjmp(e,Fail, _htmldoc_draw_(d, s, cmd_out));
     tryjmp(e,Fail, fetch_history_entry_update_title(entry, htmldoc_dom(d)));
@@ -2080,7 +2080,7 @@ jse_eval_doc_scripts(Session* s, HtmlDoc d[_1_], CmdOut* out) {
 Err
 htmldoc_js_enable(HtmlDoc d[_1_], Session* s, CmdOut* out) {
     if (!s) return err_internal("expecting non empty session");
-    try( jse_init(d));
+    try( jse_init(s, d));
 
     if (0 == len__(htmldoc_head_scripts(d)) + len__(htmldoc_body_scripts(d))) {
         CurlPtr easy;

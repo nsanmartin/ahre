@@ -20,8 +20,33 @@ static JSClassID location_class_id    = 0;
 static JSClassID navigator_class_id   = 0;
 static JSClassID storage_class_id     = 0;
 static JSClassID performance_class_id = 0;
+static JSClassID URLSearchParams_class_id = 0;
 /* static JSClassID dom_token_list_class_id = 0; */
 /* static JSClassID classList_class_id = 0; */
+
+
+typedef struct {
+    const JSCFunctionListEntry* fn_list;
+    size_t                      fn_count;
+    JSClassID*                  class_id;
+    JSClassID*                  base_class_id;
+    const char*                 name;
+    JSClassFinalizer*           finalizer;
+} JsClass;
+
+#define mk_jsclass(ClassName, BaseClassIdPtr, Finalizer) (JsClass){\
+    .fn_list       = ClassName ## _fn_list,\
+    .fn_count      = COUNT(ClassName ## _fn_list),\
+    .class_id      = & ClassName ## _class_id,\
+    .base_class_id = BaseClassIdPtr,\
+    .name          = stringify(ClassName),\
+    .finalizer     = Finalizer\
+}
+
+
+#define COUNT(X) (sizeof(X)/sizeof(*X))
+
+#define mk_proto_fns(Name) ((ProtoFns){.proto=Name ## _proto, .fn_list= Name ## _fn_list, .len=COUNT(Name ## _fn_list)})
 
 /*
  * I'm using many macros here to make this file shorted and write less
@@ -30,6 +55,12 @@ static JSClassID performance_class_id = 0;
 #define validate_jsv(Value) _Generic((Value), JSValue: Value)
 #define tryjs(Expr) do{\
     JSValueConst ahre_jsv_=validate_jsv((Expr));if (JS_IsException(ahre_jsv_)) return ahre_jsv_;}while(0) 
+
+#define tryjmpjs(Expr) do{\
+    JSValueConst ahre_jsv_=validate_jsv((Expr));if (JS_IsException(ahre_jsv_)) return ahre_jsv_;}while(0) 
+
+#define jsassert_has_params(N, Argc) do{\
+    if (Argc < N) return JS_ThrowTypeError(ctx, "fn %s requires %n params", __func__, N); }
 
 #define err_jse(Msg) err_fmt("error jse: %s %s\n", Msg, file_line__)
 #define throw(Msg) return JS_ThrowPlainError(ctx, "ahre: %s: %s", Msg, file_line__)
@@ -44,7 +75,7 @@ static JSClassID performance_class_id = 0;
 #define xstringify(N) #N
 #define stringify(N) xstringify(N)
 
-#define NOT_IMPL_MSG "not implemented. Please implement it and send patch to:\n  https://codeberg.org/nsm/ahre"
+#define NOT_IMPL_MSG "not implemented. You can send a patch to:\n  https://codeberg.org/nsm/ahre"
 #define not_impl_fn_name__(Name) jse_fn_not_implemented_ ## Name
 #define mk_not_imple_fn_with_name(Name) \
     static js_fn__(not_impl_fn_name__(Name)) {(void)this; (void)argc; (void)argv;\
@@ -85,15 +116,25 @@ static JSClassID performance_class_id = 0;
     ? Ok : err_fmt("ahjs error: could not set property fn list (in %s)",  __func__ ))
 
 
+static js_set__(js_set_noop) { (void)ctx; (void)this; (void)val; return JS_UNDEFINED; }
 
 
 static Err
-init_class(JSClassID class_id[_1_], JSClassDef cdef[_1_], JSContext* ctx)
+init_js_class(JsClass c[_1_], JSContext* ctx)
 {
     JSRuntime* rt = JS_GetRuntime(ctx);
-    JS_NewClassID(rt, class_id);
-    if (JS_NewClass(rt, *class_id, cdef))
+    JS_NewClassID(rt, c->class_id);
+    if (JS_NewClass(rt, *c->class_id, &(JSClassDef){c->name, .finalizer=c->finalizer}))
         return err_jse("could not initialize class");
+    if (c->fn_list && c->fn_count) {
+        JSValue proto;
+        if (c->base_class_id) proto = JS_NewObjectClass(ctx, *c->base_class_id);
+        else                  proto = JS_NewObject(ctx);
+        if (JS_IsException(proto)) fail("could not initialize prototype instance for js class");
+
+        try(set_property_fn_list_len(ctx, proto, c->fn_list, c->fn_count));
+        JS_SetClassProto(ctx, *c->class_id, proto);
+    }
     return Ok;
 }
 
@@ -197,35 +238,21 @@ static const JSCFunctionListEntry console_fn_list[] = {
 
 
 static Err
-singleton_init_add__(
-    JSValue                     global,
-    JSContext*                  ctx,
-    JSClassID                   class_id[1],
-    const char*                 class_name,
-    const JSCFunctionListEntry* fn_list,
-    size_t                      fn_list_len,
-    void*                       opaque
+singleton_add__(
+    JSClassID   class_id,
+    const char* name,
+    JSContext*  ctx,
+    JSValue     global,
+    void*       opaque
 ) {
     JSValue obj;
-    try(init_class(class_id, &(JSClassDef){ class_name, .finalizer=NULL }, ctx));
-    try(init_instance(&obj, *class_id, ctx));
-    try(set_property_fn_list_len(ctx, obj, fn_list, fn_list_len));
+    try(init_instance(&obj, class_id, ctx));
     if (JS_SetOpaque(obj, opaque)) err_jse("could not set the singleton");
-    try( set_property_str(ctx, global, class_name, obj));
+    try(set_property_str(ctx, global, name, obj));
     return Ok;
 }
 
-
-#define singleton_init_add(ClassName, Global, Ctx, Opaque) \
-    singleton_init_add__(\
-        Global,\
-        Ctx,\
-        & ClassName ## _ ## class_id,\
-        stringify(ClassName),\
-        ClassName ## _ ## fn_list,\
-        arr_len(ClassName ## _ ## fn_list),\
-        Opaque\
-    )
+#define singleton_add(Name, Global, Ctx, Opaque) singleton_add__(Name ## _class_id, stringify(Name), Ctx, Global, Opaque)
 
 
 static DomElem
@@ -247,7 +274,7 @@ console_log_not_implemented_impl(JSContext* ctx, StrView fname) {
     Err e = Ok;
     tryjmp(e,Clean, str_append(buf, svl("TODO: ")));
     tryjmp(e,Clean, str_append(buf, fname));
-    tryjmp(e,Clean, str_append(buf, svl(" not implemented.\n Please implement it and send patch to https://codeberg.org/nsm/ahre")));
+    tryjmp(e,Clean, str_append(buf, svl(" not implemented.\n You can send patch to https://codeberg.org/nsm/ahre")));
 Clean:
     JS_FreeValue(ctx, console);
     if (e) throw(e);
@@ -393,15 +420,6 @@ static const JSCFunctionListEntry node_fn_list[] = {
     mk_not_impl_fn_list_entry(node, removeChild),
     mk_not_impl_fn_list_entry(node, replaceChild),
 };
-
-static Err
-node_class_init(JSContext* ctx) {
-    try(init_class(&node_class_id, &(JSClassDef){ "Node", .finalizer=NULL }, ctx));
-    JSValue node_proto = JS_NewObject(ctx);
-    try(set_property_fn_list(ctx, node_proto, node_fn_list));
-    JS_SetClassProto(ctx, node_class_id, node_proto);
-    return Ok;
-}
 
 
 /* ---- Element ---- */
@@ -651,6 +669,7 @@ mk_not_impl_fn(element, setHTMLUnsafe)
 mk_not_impl_fn(element, setPointerCapture)
 mk_not_impl_fn(element, toggleAttribute)
 
+
 static const JSCFunctionListEntry element_fn_list[] = {
     JS_CGETSET_DEF("id", element_get_id, element_set_id),
     JS_CFUNC_DEF("addEventListener", 1, event_target_addEventListener),/*TODO1: this should be inherited from event target */
@@ -801,18 +820,6 @@ static const JSCFunctionListEntry element_fn_list[] = {
 };
 
 
-static Err
-element_class_init(JSContext* ctx) {
-    try(init_class(&element_class_id, &(JSClassDef){ "Element", .finalizer=NULL }, ctx));
-    JSValue element_proto = JS_NewObject(ctx);
-    /* element inherits methods from node */
-    try(set_property_fn_list(ctx, element_proto, node_fn_list));
-    try(set_property_fn_list(ctx, element_proto, element_fn_list));
-    JS_SetClassProto(ctx, element_class_id, element_proto);
-    return Ok;
-}
-
-
 /** element **/
 
 
@@ -918,7 +925,7 @@ mk_not_impl_getset(document, contentType)
 mk_not_impl_getset(document, currentScript)
 mk_not_impl_getset(document, customElementRegistry)
 mk_not_impl_getset(document, doctype)
-mk_not_impl_getset(document, documentElement)
+/* mk_not_impl_getset(document, documentElement) */
 mk_not_impl_getset(document, documentURI)
 mk_not_impl_getset(document, embeds)
 mk_not_impl_getset(document, featurePolicy)
@@ -1135,12 +1142,23 @@ Clean:
     return JS_UNDEFINED;
 }
 
+static js_get__(document_documentElement) {
+    HtmlDoc* d = JS_GetOpaque(this, document_class_id);
+    if (!d) throw("no document");
+    Dom dom = htmldoc_dom(d);
+    DomNode root = dom_root(dom);
+    DomElem doc_elem = dom_elem_from_node(root);
+    return element_js_value_from_dom_elem(ctx, doc_elem);
+}
+
+
 static const JSCFunctionListEntry document_fn_list[] = {
-    JS_CGETSET_DEF("body",     document_body,      not_impl_setter_name__(document_body)),
-    JS_CGETSET_DEF("cookie",   document_get_cookie,document_set_cookie),
-    JS_CGETSET_DEF("head",     document_head,      not_impl_setter_name__(document_head)),
-    JS_CGETSET_DEF("location", location_getter,    not_impl_setter_name__(document_location)),
-    JS_CGETSET_DEF("title",    document_get_title, document_set_title),
+    JS_CGETSET_DEF("body",             document_body,            not_impl_setter_name__(document_body)),
+    JS_CGETSET_DEF("cookie",           document_get_cookie,      document_set_cookie),
+    JS_CGETSET_DEF("head",             document_head,            not_impl_setter_name__(document_head)),
+    JS_CGETSET_DEF("location",         location_getter,          not_impl_setter_name__(document_location)),
+    JS_CGETSET_DEF("title",            document_get_title,       document_set_title),
+    JS_CGETSET_DEF("documentElemeent", document_documentElement, js_set_noop),
 
     JS_CFUNC_DEF("createElement",  1, document_createElement),
     JS_CFUNC_DEF("getElementById", 1, document_getElementById),
@@ -1160,7 +1178,7 @@ static const JSCFunctionListEntry document_fn_list[] = {
     mk_not_impl_getset_list_entry(document, currentScript),
     mk_not_impl_getset_list_entry(document, customElementRegistry),
     mk_not_impl_getset_list_entry(document, doctype),
-    mk_not_impl_getset_list_entry(document, documentElement),
+    /* mk_not_impl_getset_list_entry(document, documentElement), */
     mk_not_impl_getset_list_entry(document, documentURI),
     mk_not_impl_getset_list_entry(document, embeds),
     mk_not_impl_getset_list_entry(document, featurePolicy),
@@ -1514,8 +1532,6 @@ mk_not_impl_getset(window, frames)
 mk_not_impl_getset(window, fullScreen)
 mk_not_impl_getset(window, history)
 mk_not_impl_getset(window, indexedDB)
-mk_not_impl_getset(window, innerHeight)
-mk_not_impl_getset(window, innerWidth)
 mk_not_impl_getset(window, isSecureContext)
 mk_not_impl_getset(window, launchQueue)
 mk_not_impl_getset(window, length)
@@ -1611,9 +1627,15 @@ mk_not_impl_fn(navigator, webkitConvertPointFromNodeToPage)
 mk_not_impl_fn(navigator, webkitConvertPointFromPageToNode)
 
 
+static js_get__(window_innerWidth) { (void)this; return JS_NewFloat64(ctx, *session_ncols(JS_GetContextOpaque(ctx))); }
+static js_get__(window_innerHeight) { (void)this; return JS_NewFloat64(ctx, *session_nrows(JS_GetContextOpaque(ctx))); }
+
+
 //TODO0: define functions instead of window methods?
 //TODO1: inherit from Event Target
 static const JSCFunctionListEntry window_fn_list[] = {
+    JS_CGETSET_DEF("innerWidth",  window_innerWidth, js_set_noop),
+    JS_CGETSET_DEF("innerHeight", window_innerHeight, js_set_noop),
 
     mk_not_impl_getset_list_entry(window, caches),
     mk_not_impl_getset_list_entry(window, clientInformation),
@@ -1634,8 +1656,6 @@ static const JSCFunctionListEntry window_fn_list[] = {
     mk_not_impl_getset_list_entry(window, fullScreen),
     mk_not_impl_getset_list_entry(window, history),
     mk_not_impl_getset_list_entry(window, indexedDB),
-    mk_not_impl_getset_list_entry(window, innerHeight),
-    mk_not_impl_getset_list_entry(window, innerWidth),
     mk_not_impl_getset_list_entry(window, isSecureContext),
     mk_not_impl_getset_list_entry(window, launchQueue),
     mk_not_impl_getset_list_entry(window, length),
@@ -1760,15 +1780,6 @@ static const JSCFunctionListEntry storage_fn_list[] = {
 };
 
 
-static Err
-storage_class_init(JSContext* ctx) {
-    try(init_class(&storage_class_id, &(JSClassDef){ "storage", .finalizer=NULL }, ctx));
-    JSValue storage_proto = JS_NewObject(ctx);
-    try(set_property_fn_list(ctx, storage_proto, storage_fn_list));
-    JS_SetClassProto(ctx, storage_class_id, storage_proto);
-    return Ok;
-}
-
 /** storage */
 
 /* ---- Performance ---- */
@@ -1822,6 +1833,224 @@ static const JSCFunctionListEntry performance_fn_list[] = {
 };
 /** performance */
 
+
+/* ---- URLSearchParams ---- */
+#define T1 Str
+#define T2 Str
+#define T1Clean str_clean
+#define T2Clean str_clean
+#define T1Cpy str_append
+#define T2Cpy str_append
+#include <pair.h>
+
+typedef PairOf(Str,Str) UrlParam;
+static int url_param_cmp(const void* X, const void* Y){
+    const UrlParam* x = X;
+    const UrlParam* y = Y;
+    return str_cmp(&x->fst, &y->fst);
+}
+
+static int url_param_copy(UrlParam x[_1_], const UrlParam y[_1_]) {
+    return pairfn(Str,Str,copy)(x, &y->fst, &y->snd);
+}
+#define T UrlParam
+#define TCpy url_param_copy
+#define Tcmp url_param_cmp
+#include <arl.h>
+
+typedef ArlOf(UrlParam) URLSearchParams;
+
+static void
+url_search_params_finalizer(JSRuntime *rt, JSValue val) {
+    URLSearchParams* data = JS_GetOpaque(val, URLSearchParams_class_id);
+    if (!data) return;
+    arlfn(UrlParam,clean)(data);
+    js_free_rt(rt, data);
+}
+
+#define _str_from_view_(View) (Str){.items=(char*)(View).items, .len=(View).len}
+static Err
+url_search_params_append_impl(URLSearchParams data[_1_], StrView name, StrView value) {
+    UrlParam* pair = &(UrlParam){
+        .fst=_str_from_view_(name),
+        .snd=_str_from_view_(value),
+    };
+    if (!arlfn(UrlParam,append)(data, pair))
+        fail_e("arl append failure");
+    return Ok;
+}
+
+static js_fn__(url_search_params_append) {
+    if (argc < 2) return JS_ThrowTypeError(ctx, "URLSearchParams.append requires name and value");
+    URLSearchParams* data = JS_GetOpaque(this, URLSearchParams_class_id);
+    if (!data) return JS_ThrowTypeError(ctx, "invalid URLSearchParams object");
+    size_t name_len, value_len;
+    const char *name = JS_ToCStringLen(ctx, &name_len, argv[0]);
+    const char *value = JS_ToCStringLen(ctx, &value_len, argv[1]);
+    if (!name || !value) {
+        JS_FreeCString(ctx, name);
+        JS_FreeCString(ctx, value);
+        return JS_EXCEPTION;
+    }
+    //TODO0: manage error
+    url_search_params_append_impl(data, sv(name, name_len), sv(value, value_len));
+    JS_FreeCString(ctx, name);
+    JS_FreeCString(ctx, value);
+    return JS_UNDEFINED;
+}
+
+
+static void
+url_search_params_delete_impl(URLSearchParams data[_1_], StrView name)
+{
+    arlfn(UrlParam,remove)(data, &(UrlParam){.fst=_str_from_view_(name)});
+}
+static js_fn__(url_search_params_delete) {
+    if (argc < 1) return JS_ThrowTypeError(ctx, "delete requires name");
+    URLSearchParams* data = JS_GetOpaque(this, URLSearchParams_class_id);
+    if (!data) return JS_ThrowTypeError(ctx, "invalid URLSearchParams object");
+    size_t name_len;
+    const char *name = JS_ToCStringLen(ctx, &name_len, argv[0]);
+    if (!name) return JS_EXCEPTION;
+    url_search_params_delete_impl(data, sv(name, name_len));
+    JS_FreeCString(ctx, name);
+    return JS_UNDEFINED;
+}
+
+
+static StrView
+url_search_params_get_first(URLSearchParams *data, StrView name)
+{
+    UrlParam* p = arlfn(UrlParam,find)(data, &(UrlParam){.fst=_str_from_view_(name)});
+    if (p) return sv(p->snd);
+    return (StrView){0};
+}
+
+
+static void url_search_params_set_impl(URLSearchParams data[_1_], StrView name, StrView value)
+{
+    url_search_params_delete_impl(data, name);
+    url_search_params_append_impl(data, name, value);
+}
+static js_fn__(url_search_params_set)
+{
+    if (argc < 2) return JS_ThrowTypeError(ctx, "set requires name and value");
+    URLSearchParams* data = JS_GetOpaque(this, URLSearchParams_class_id);
+    if (!data) return JS_ThrowTypeError(ctx, "invalid URLSearchParams object");
+    size_t name_len, value_len;
+    const char *name = JS_ToCStringLen(ctx, &name_len, argv[0]);
+    const char *value = JS_ToCStringLen(ctx, &value_len, argv[1]);
+    if (!name || !value) {
+        JS_FreeCString(ctx, name);
+        JS_FreeCString(ctx, value);
+        return JS_EXCEPTION;
+    }
+    url_search_params_set_impl(data, sv(name, name_len), sv(value, value_len));
+    JS_FreeCString(ctx, name);
+    JS_FreeCString(ctx, value);
+    return JS_UNDEFINED;
+}
+
+static js_fn__(url_search_params_get)
+{
+    if (argc < 1) return JS_ThrowTypeError(ctx, "get requires name");
+    URLSearchParams *data = JS_GetOpaque(this, URLSearchParams_class_id);
+    if (!data) return JS_ThrowTypeError(ctx, "invalid URLSearchParams object");
+    size_t name_len;
+    const char *name = JS_ToCStringLen(ctx, &name_len, argv[0]);
+    if (!name) return JS_EXCEPTION;
+    StrView value = url_search_params_get_first(data, sv(name, name_len));
+    JS_FreeCString(ctx, name);
+    if (!value.items) return JS_NULL;
+    return JS_NewStringLen(ctx, value.items, value.len);
+}
+
+
+static js_fn__(url_search_params_has)
+{
+    if (argc < 1) return JS_ThrowTypeError(ctx, "has requires name");
+
+    URLSearchParams *data = JS_GetOpaque(this, URLSearchParams_class_id);
+    if (!data) return JS_ThrowTypeError(ctx, "invalid URLSearchParams object");
+
+    size_t name_len;
+    const char* name = JS_ToCStringLen(ctx, &name_len, argv[0]);
+    if (!name) return JS_EXCEPTION;
+
+    bool it_has = false;
+    foreach__(UrlParam,data,it)
+        if (str_eq_case(it->fst, sv(name,name_len))) { it_has = true; goto Clean; }
+Clean:
+    JS_FreeCString(ctx, name);
+    return JS_NewBool(ctx, it_has);
+}
+
+
+static js_fn__(url_search_params_sort)
+{
+    (void)argc; (void)argv;
+    URLSearchParams *data = JS_GetOpaque(this, URLSearchParams_class_id);
+    if (!data) return JS_ThrowTypeError(ctx, "invalid URLSearchParams object");
+    qsort(items__(data), len__(data), sizeof(*items__(data)), url_param_cmp);
+    return JS_UNDEFINED;
+}
+
+static js_fn__(url_search_params_toString)
+{
+    (void)argc; (void)argv;
+    URLSearchParams* data = JS_GetOpaque(this, URLSearchParams_class_id);
+    if (!data) return JS_ThrowTypeError(ctx, "invalid URLSearchParams object");
+    Str result = {0};
+    foreach__(UrlParam, data, it) {
+        //TODO1: manage str_append error
+        str_append(&result, "&");
+        str_append(&result, it->fst);
+        str_append(&result, "=");
+        str_append(&result, it->snd);
+    }
+
+    JSValue ret = JS_UNDEFINED;
+    if (!result.len) ret = JS_NewString(ctx, "");
+    else ret = JS_NewStringLen(ctx, result.items + 1, result.len - 1);
+    str_clean(&result);
+    return ret;
+}
+
+
+static js_get__(url_search_params_size)
+{
+    URLSearchParams* data = JS_GetOpaque(this, URLSearchParams_class_id);
+    if (!data) return JS_ThrowTypeError(ctx, "invalid URLSearchParams object");
+    return JS_NewInt32(ctx, len__(data));
+}
+/* static void url_search_params_get_all(URLSearchParams *data, StrView name, ArlOf(Str) *out) */
+/* { */
+/*     for (size_t i = 0; i < arl_len(&data->names); i++) { */
+/*         if (str_eq_view(&data->names.items[i], name)) { */
+/*             Str copy; */
+/*             str_init_from_view(&copy, str_view(&data->values.items[i])); */
+/*             arl_append(out, copy); */
+/*         } */
+/*     } */
+/* } */
+
+
+static const JSCFunctionListEntry URLSearchParams_fn_list[] = {
+    JS_CFUNC_DEF("append", 2, url_search_params_append),
+    JS_CFUNC_DEF("delete", 1, url_search_params_delete),
+    JS_CFUNC_DEF("get", 1, url_search_params_get),
+    /* JS_CFUNC_DEF("getAll", 1, url_search_params_getAll), */
+    JS_CFUNC_DEF("has", 1, url_search_params_has),
+    JS_CFUNC_DEF("set", 2, url_search_params_set),
+    JS_CFUNC_DEF("sort", 0, url_search_params_sort),
+    JS_CFUNC_DEF("toString", 0, url_search_params_toString),
+    /* JS_CFUNC_DEF("entries", 0, url_search_params_entries), */
+    /* JS_CFUNC_DEF("keys", 0, url_search_params_keys), */
+    /* JS_CFUNC_DEF("values", 0, url_search_params_values), */
+    JS_CGETSET_DEF("size", url_search_params_size, NULL),
+};
+
+
 void
 jse_clean(JsEngine js[_1_])
 {
@@ -1831,57 +2060,6 @@ jse_clean(JsEngine js[_1_])
     JS_FreeRuntime(js->rt);
     str_clean(jse_consolebuf(js));
     *js = (JsEngine){0};
-}
-
-
-Err
-jse_init(HtmlDoc* htmldoc) {
-    Err e = Ok;
-
-    if (!htmldoc) return err_internal("no HtmlDoc");
-
-    JsEngine* js = htmldoc_js(htmldoc);
-    if (!js) return err_internal("no JsEngine in HtmlDoc");
-
-    js->rt = JS_NewRuntime();
-    if (!js->rt) err_internal("could not initialize quickjs runtime");
-
-    js->ctx = JS_NewContext(js->rt);
-    if (!js->ctx) { e=err_internal("could not initialize quickjs runtime"); goto Fail; }
-
-
-    JS_SetContextOpaque(js->ctx, htmldoc);
-
-    JSValue global = JS_GetGlobalObject(js->ctx);
-
-    tryjmp(e, Fail, node_class_init(js->ctx));
-    tryjmp(e, Fail, element_class_init(js->ctx));
-    tryjmp(e, Fail, storage_class_init(js->ctx));
-
-    try(set_property_str(js->ctx, global, "window",     JS_DupValue(js->ctx, global)));
-    try(set_property_str(js->ctx, global, "self",       JS_DupValue(js->ctx, global)));
-    try(set_property_str(js->ctx, global, "top",        JS_DupValue(js->ctx, global)));
-    try(set_property_str(js->ctx, global, "parent",     JS_DupValue(js->ctx, global)));
-    try(set_property_str(js->ctx, global, "globalThis", JS_DupValue(js->ctx, global)));
-
-
-    tryjmp(e,Fail, singleton_init_add(console, global, js->ctx, jse_consolebuf(htmldoc_js(htmldoc))));
-
-    tryjmp(e,Fail, singleton_init_add(document, global, js->ctx, htmldoc));
-    tryjmp(e,Fail, singleton_init_add(location, global, js->ctx, htmldoc));
-    tryjmp(e,Fail, singleton_init_add(navigator, global, js->ctx, htmldoc));
-    tryjmp(e,Fail, singleton_init_add(performance, global, js->ctx, htmldoc));
-
-    tryjmp(e,Fail, set_property_fn_list(js->ctx, global, global_fn_list));
-    tryjmp(e,Fail, set_property_fn_list(js->ctx, global, window_fn_list));
-
-    JS_FreeValue(js->ctx, global);
-    return Ok;
-Fail:
-    JS_FreeValue(js->ctx, global);
-
-    jse_clean(js);
-    return e;
 }
 
 
@@ -1925,6 +2103,64 @@ jse_eval(JsEngine js[_1_], Session* s,  StrView script, CmdOut* out)
     
     JS_FreeValue(ctx, result);
     return err;
+}
+
+
+Err
+jse_init(Session* session, HtmlDoc* htmldoc) {
+    Err e = Ok;
+
+    if (!htmldoc) return err_internal("no HtmlDoc");
+    if (!session) return err_internal("no Session");
+
+    JsEngine* js = htmldoc_js(htmldoc);
+    if (!js) return err_internal("no JsEngine in HtmlDoc");
+
+    js->rt = JS_NewRuntime();
+    if (!js->rt) err_internal("could not initialize quickjs runtime");
+
+    js->ctx = JS_NewContext(js->rt);
+    if (!js->ctx) { e=err_internal("could not initialize quickjs runtime"); goto Fail; }
+
+
+    JS_SetContextOpaque(js->ctx, session);
+
+    JSValue global = JS_GetGlobalObject(js->ctx);
+
+    try(set_property_str(js->ctx, global, "window",     JS_DupValue(js->ctx, global)));
+    try(set_property_str(js->ctx, global, "self",       JS_DupValue(js->ctx, global)));
+    try(set_property_str(js->ctx, global, "top",        JS_DupValue(js->ctx, global)));
+    try(set_property_str(js->ctx, global, "parent",     JS_DupValue(js->ctx, global)));
+    try(set_property_str(js->ctx, global, "globalThis", JS_DupValue(js->ctx, global)));
+
+    tryjmp(e, Fail, init_js_class(&mk_jsclass(node, NULL, NULL), js->ctx));
+    tryjmp(e, Fail, init_js_class(&mk_jsclass(element, NULL, NULL), js->ctx));
+    tryjmp(e, Fail, init_js_class(&mk_jsclass(storage, NULL, NULL), js->ctx));
+    tryjmp(e, Fail, init_js_class( &mk_jsclass(URLSearchParams, NULL, url_search_params_finalizer), js->ctx));
+
+    tryjmp(e, Fail, init_js_class(&mk_jsclass(console, NULL, NULL), js->ctx));
+    tryjmp(e, Fail, init_js_class(&mk_jsclass(document, NULL, NULL), js->ctx));
+    tryjmp(e, Fail, init_js_class(&mk_jsclass(location, NULL, NULL), js->ctx));
+    tryjmp(e, Fail, init_js_class(&mk_jsclass(navigator, NULL, NULL), js->ctx));
+    tryjmp(e, Fail, init_js_class(&mk_jsclass(performance, NULL, NULL), js->ctx));
+
+    tryjmp(e,Fail, singleton_add(console, global, js->ctx, jse_consolebuf(htmldoc_js(htmldoc))));
+    tryjmp(e,Fail, singleton_add(document, global, js->ctx, htmldoc));
+    tryjmp(e,Fail, singleton_add(location, global, js->ctx, htmldoc));
+    tryjmp(e,Fail, singleton_add(navigator, global, js->ctx, htmldoc));
+    tryjmp(e,Fail, singleton_add(performance, global, js->ctx, htmldoc));
+
+
+    tryjmp(e,Fail, set_property_fn_list(js->ctx, global, global_fn_list));
+    tryjmp(e,Fail, set_property_fn_list(js->ctx, global, window_fn_list));
+
+    JS_FreeValue(js->ctx, global);
+    return Ok;
+Fail:
+    JS_FreeValue(js->ctx, global);
+
+    jse_clean(js);
+    return e;
 }
 
 

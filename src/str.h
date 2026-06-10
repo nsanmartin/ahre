@@ -107,14 +107,14 @@ void        cstr_replace_char_inplace(char* s, char from, char to);
 /* strview fns */
 
 Err         strview_join_lines_to_str(StrView view, Str out[_1__]);
-StrView     strview_from_arl_of_char(ArlOf(char) a[_1__]);
+StrView     strview_from_arl_of_char(const ArlOf(char) a[_1__]);
 StrView     strview_from_cstr(const char* s);
 StrView     strview_from_mem(const char* s, size_t len);
 StrView     strview_from_mem_trim(const char* s, size_t len);
-StrView     strview_from_str(Str s);
-StrView     strview_from_str_ptr(Str s[_1__]);
-StrView     strview_from_strview_ptr(StrView s[_1__]);
-StrView     strview_id(StrView v);
+StrView     strview_from_str(const Str s);
+StrView     strview_from_str_ptr(const Str s[_1__]);
+StrView     strview_from_strview_ptr(const StrView s[_1__]);
+StrView     strview_id(const StrView v);
 StrView     strview_split_line(StrView text[_1__]);
 StrView     strview_split_word(StrView s[_1__]);
 StrView     strview_rsplit(StrView s[_1__], char c);
@@ -133,13 +133,18 @@ size_t      strview_count_utf8(StrView s) { return mem_count_utf8(s.items, s.len
 #define svl(LitStr) _Generic((LitStr), char*: strview_from_mem(LitStr, (sizeof(LitStr)-1)))
 
 #define strview_from__(P) _Generic((P),\
-    Str         : strview_from_str,\
-    Str*        : strview_from_str_ptr,\
-    StrView     : strview_id,\
-    StrView*    : strview_from_strview_ptr,\
-    ArlOf(char)*: strview_from_arl_of_char,\
-    const char* : strview_from_cstr,\
-    char*       : strview_from_cstr\
+    Str                : strview_from_str,\
+    Str*               : strview_from_str_ptr,\
+    StrView            : strview_id,\
+    StrView*           : strview_from_strview_ptr,\
+    ArlOf(char)*       : strview_from_arl_of_char,\
+    char*              : strview_from_cstr,\
+    const Str          : strview_from_str,\
+    const Str*         : strview_from_str_ptr,\
+    const StrView      : strview_id,\
+    const StrView*     : strview_from_strview_ptr,\
+    const ArlOf(char)* : strview_from_arl_of_char,\
+    const char*        : strview_from_cstr\
 )(P)
 
 #define sv(...) \
@@ -166,8 +171,8 @@ void   str_trim_space(StrView* l);
 
 
 /* returns true on error */
-bool str_append_strview__(Str b[_1__], StrView v);
-bool str_append_strview_2_(Str s[_1__], StrView t, StrView u);
+bool str_append_strview__(Str b[_1__], const StrView v);
+bool str_append_strview_2_(Str s[_1__], const StrView t, const StrView u);
 
 #define str_append(S,P) (\
     (str_append_strview__(S,sv(P))\

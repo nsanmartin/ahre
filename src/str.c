@@ -257,8 +257,8 @@ Err str_append_ui_as_base36(Str buf[_1_], uintmax_t ui) {
 /* strview fns */
 
 StrView strview_from_mem(const char* s, size_t len) {return (StrView){.items=s, .len=len};}
-StrView strview_from_strview_ptr(StrView s[_1_]) { return *s; }
-StrView strview_id(StrView v) { return v; }
+StrView strview_from_strview_ptr(const StrView s[_1_]) { return *s; }
+StrView strview_id(const StrView v) { return v; }
 bool strview_is_empty(const StrView s[_1_]) { return !s->items || s->len == 0; }
 const char* strview_beg(const StrView s[_1_]) { return s->items; }
 const char* strview_end(const StrView s[_1_]) { return s->items + s->len; }
@@ -358,13 +358,13 @@ Err strview_join_lines_to_str(StrView view, Str out[_1_]) {
 }
 
 StrView
-strview_from_str_ptr(Str s[_1_]) {return strview_from_mem(items__(s), len__(s));}
+strview_from_str_ptr(const Str s[_1_]) {return strview_from_mem(items__(s), len__(s));}
 
 StrView
-strview_from_str(Str s) {return strview_from_mem(s.items, s.len);}
+strview_from_str(const Str s) {return strview_from_mem(s.items, s.len);}
 
 StrView
-strview_from_arl_of_char(ArlOf(char) a[_1_]) {
+strview_from_arl_of_char(const ArlOf(char) a[_1_]) {
     return strview_from_mem(items__(a), len__(a));
 }
 
@@ -395,7 +395,7 @@ strview_split_line(StrView text[_1_]) {
 /* str fns*/
 
 bool
-str_append_strview__(Str b[_1_], StrView v) {
+str_append_strview__(Str b[_1_], const StrView v) {
     char*  data = (char*)v.items;
     size_t len  = v.len;
 #define T char
@@ -409,7 +409,7 @@ str_append_strview__(Str b[_1_], StrView v) {
 #undef T
 }
 
-bool str_append_strview_2_(Str s[_1_], StrView t, StrView u) {
+bool str_append_strview_2_(Str s[_1_], const StrView t, const StrView u) {
     return str_append_strview__(s, t)
         || (u.len ? str_append_strview__(s,u) : false);
 }

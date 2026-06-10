@@ -24,7 +24,7 @@ static inline JSRuntime* jse_rt(JsEngine js[_1_]) { (void)js; return 0; }
 static inline JSContext* jse_ctx(JsEngine js[_1_]) { (void)js; return 0; }
 
 //TODO: pass htmldoc and evaluate scripts
-static inline Err jse_init(HtmlDoc* d) { (void)d; return AHRE_QUICKJS_DISABLED_MSG; }
+static inline Err jse_init(Session* s, HtmlDoc* d) { (void)d; return AHRE_QUICKJS_DISABLED_MSG; }
 
 static inline void jse_clean(JsEngine js[_1_]){ (void)js; }
 
@@ -54,7 +54,7 @@ static inline JSRuntime* jse_rt(JsEngine js[_1_]) { return js->rt; }
 static inline JSContext* jse_ctx(JsEngine js[_1_]) { return js->ctx; }
 
 //TODO: pass htmldoc and evaluate scripts
-Err jse_init(HtmlDoc* d);
+Err jse_init(Session* s, HtmlDoc* d);
 
 void jse_clean(JsEngine js[_1_]);
 
