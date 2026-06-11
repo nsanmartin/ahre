@@ -1875,8 +1875,9 @@ static int url_param_copy(UrlParam x[_1_], const UrlParam y[_1_]) {
     /* move semantics */
     /* memmove(x, y, sizeof*x); */
     *x = (UrlParam){0};
-    return str_append(&x->fst, y->fst)
-        || str_append(&x->snd, y->snd);
+    if (str_append(&x->fst, y->fst)) return -1;
+    if (y->snd.len && str_append(&x->snd, y->snd)) return -1;
+    return 0;
 }
 #define T UrlParam
 #define TCpy url_param_copy
@@ -2060,6 +2061,17 @@ static js_get__(url_search_params_size)
 /*     } */
 /* } */
 
+static Err
+url_search_params_parse_string(URLSearchParams p[_1_], StrView s) {
+    while (s.len) {
+        StrView kv = strview_split(&s, '&');
+        StrView key = strview_split(&kv, '=');
+        if (!key.len) continue;
+        try(url_search_params_append_impl(p, key, kv));
+    }
+    return Ok;
+}
+
 
 static js_fn__(url_search_params_ctor)
 {
@@ -2082,6 +2094,18 @@ static js_fn__(url_search_params_ctor)
     JS_SetOpaque(rv, data);
 
     if (argc == 0) return rv;
+    if (JS_IsString(argv[0])) {
+        size_t len;
+        const char *str = JS_ToCStringLen(ctx, &len, argv[0]);
+        if (!str) {
+            rv = JS_EXCEPTION;
+            goto Fail;
+        }
+        url_search_params_parse_string(data, sv(str, len));
+        JS_FreeCString(ctx, str);
+    }
+    return rv;
+
     rv = JS_ThrowPlainError(ctx, "URLSearchParams ctor does not implement params"); 
 Fail:
     js_free(ctx, data);
