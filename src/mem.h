@@ -10,6 +10,7 @@
 #define std_strdup  strdup
 #define std_free    free
 #define std_malloc  malloc
+#define std_calloc  calloc
 #define std_realloc realloc
 
 #endif

@@ -32,17 +32,26 @@ typedef struct {
     JSClassID*                  base_class_id;
     const char*                 name;
     JSClassFinalizer*           finalizer;
+    JSCFunction*                ctor;
 } JsClass;
 
-#define mk_jsclass(ClassName, BaseClassIdPtr, Finalizer) (JsClass){\
+#define mk_jsclass(ClassName, BaseClassIdPtr) (JsClass){\
+    .fn_list       = ClassName ## _fn_list,\
+    .fn_count      = COUNT(ClassName ## _fn_list),\
+    .class_id      = & ClassName ## _class_id,\
+    .base_class_id = BaseClassIdPtr,\
+    .name          = stringify(ClassName)\
+}
+
+#define mk_jsclass_ctor_fin(ClassName, BaseClassIdPtr, Ctor, Finalizer) (JsClass){\
     .fn_list       = ClassName ## _fn_list,\
     .fn_count      = COUNT(ClassName ## _fn_list),\
     .class_id      = & ClassName ## _class_id,\
     .base_class_id = BaseClassIdPtr,\
     .name          = stringify(ClassName),\
-    .finalizer     = Finalizer\
+    .finalizer     = Finalizer,\
+    .ctor          = Ctor\
 }
-
 
 #define COUNT(X) (sizeof(X)/sizeof(*X))
 
@@ -56,8 +65,8 @@ typedef struct {
 #define tryjs(Expr) do{\
     JSValueConst ahre_jsv_=validate_jsv((Expr));if (JS_IsException(ahre_jsv_)) return ahre_jsv_;}while(0) 
 
-#define tryjmpjs(Expr) do{\
-    JSValueConst ahre_jsv_=validate_jsv((Expr));if (JS_IsException(ahre_jsv_)) return ahre_jsv_;}while(0) 
+#define tryjmpjs(Lval, Label, Expr) do{\
+    Lval=validate_jsv((Expr));if (JS_IsException(Lval)) goto Label;}while(0)
 
 #define jsassert_has_params(N, Argc) do{\
     if (Argc < N) return JS_ThrowTypeError(ctx, "fn %s requires %n params", __func__, N); }
@@ -133,6 +142,18 @@ init_js_class(JsClass c[_1_], JSContext* ctx)
         if (JS_IsException(proto)) fail("could not initialize prototype instance for js class");
 
         try(set_property_fn_list_len(ctx, proto, c->fn_list, c->fn_count));
+
+        if (c->ctor) {
+            JSValue ctor_fn = JS_NewCFunction2(ctx, c->ctor, c->name, 2, JS_CFUNC_constructor, 0);
+            if (JS_IsException(ctor_fn)) {
+                JS_FreeValue(ctx, proto);
+                return err_jse("could not create constructor function");
+            }
+            JS_SetConstructor(ctx, ctor_fn, proto);
+            JSValue global = JS_GetGlobalObject(ctx);
+            try(set_property_str(ctx, global, c->name, ctor_fn));
+            JS_FreeValue(ctx, global);
+        }
         JS_SetClassProto(ctx, *c->class_id, proto);
     }
     return Ok;
@@ -1851,11 +1872,16 @@ static int url_param_cmp(const void* X, const void* Y){
 }
 
 static int url_param_copy(UrlParam x[_1_], const UrlParam y[_1_]) {
-    return pairfn(Str,Str,copy)(x, &y->fst, &y->snd);
+    /* move semantics */
+    /* memmove(x, y, sizeof*x); */
+    *x = (UrlParam){0};
+    return str_append(&x->fst, y->fst)
+        || str_append(&x->snd, y->snd);
 }
 #define T UrlParam
 #define TCpy url_param_copy
-#define Tcmp url_param_cmp
+#define TCmp url_param_cmp
+#define TClean pairfn(Str,Str,clean)
 #include <arl.h>
 
 typedef ArlOf(UrlParam) URLSearchParams;
@@ -2035,6 +2061,34 @@ static js_get__(url_search_params_size)
 /* } */
 
 
+static js_fn__(url_search_params_ctor)
+{
+    (void)this;(void)argv;
+    JSValue          rv   = JS_UNDEFINED;
+    URLSearchParams* data = js_mallocz(ctx, sizeof(URLSearchParams));
+    if (!data) return JS_ThrowOutOfMemory(ctx);
+    *data = (URLSearchParams){0};
+
+    JSValue proto = JS_GetPropertyStr(ctx, this, "prototype");
+    if (JS_IsException(proto)) {
+        rv = proto;
+        goto Fail;
+    }
+    rv = JS_NewObjectProtoClass(ctx, proto, URLSearchParams_class_id);
+    JS_FreeValue(ctx, proto);
+    if (JS_IsException(rv))
+        goto Fail;
+
+    JS_SetOpaque(rv, data);
+
+    if (argc == 0) return rv;
+    rv = JS_ThrowPlainError(ctx, "URLSearchParams ctor does not implement params"); 
+Fail:
+    js_free(ctx, data);
+    return rv;
+
+}
+
 static const JSCFunctionListEntry URLSearchParams_fn_list[] = {
     JS_CFUNC_DEF("append", 2, url_search_params_append),
     JS_CFUNC_DEF("delete", 1, url_search_params_delete),
@@ -2133,16 +2187,18 @@ jse_init(Session* session, HtmlDoc* htmldoc) {
     try(set_property_str(js->ctx, global, "parent",     JS_DupValue(js->ctx, global)));
     try(set_property_str(js->ctx, global, "globalThis", JS_DupValue(js->ctx, global)));
 
-    tryjmp(e, Fail, init_js_class(&mk_jsclass(node, NULL, NULL), js->ctx));
-    tryjmp(e, Fail, init_js_class(&mk_jsclass(element, NULL, NULL), js->ctx));
-    tryjmp(e, Fail, init_js_class(&mk_jsclass(storage, NULL, NULL), js->ctx));
-    tryjmp(e, Fail, init_js_class( &mk_jsclass(URLSearchParams, NULL, url_search_params_finalizer), js->ctx));
+    tryjmp(e, Fail, init_js_class(&mk_jsclass(node, NULL), js->ctx));
+    tryjmp(e, Fail, init_js_class(&mk_jsclass(element, NULL), js->ctx));
+    tryjmp(e, Fail, init_js_class(&mk_jsclass(storage, NULL), js->ctx));
+    tryjmp(e, Fail,
+        init_js_class(
+            &mk_jsclass_ctor_fin(URLSearchParams, NULL, url_search_params_ctor, url_search_params_finalizer), js->ctx));
 
-    tryjmp(e, Fail, init_js_class(&mk_jsclass(console, NULL, NULL), js->ctx));
-    tryjmp(e, Fail, init_js_class(&mk_jsclass(document, NULL, NULL), js->ctx));
-    tryjmp(e, Fail, init_js_class(&mk_jsclass(location, NULL, NULL), js->ctx));
-    tryjmp(e, Fail, init_js_class(&mk_jsclass(navigator, NULL, NULL), js->ctx));
-    tryjmp(e, Fail, init_js_class(&mk_jsclass(performance, NULL, NULL), js->ctx));
+    tryjmp(e, Fail, init_js_class(&mk_jsclass(console, NULL), js->ctx));
+    tryjmp(e, Fail, init_js_class(&mk_jsclass(document, NULL), js->ctx));
+    tryjmp(e, Fail, init_js_class(&mk_jsclass(location, NULL), js->ctx));
+    tryjmp(e, Fail, init_js_class(&mk_jsclass(navigator, NULL), js->ctx));
+    tryjmp(e, Fail, init_js_class(&mk_jsclass(performance, NULL), js->ctx));
 
     tryjmp(e,Fail, singleton_add(console, global, js->ctx, jse_consolebuf(htmldoc_js(htmldoc))));
     tryjmp(e,Fail, singleton_add(document, global, js->ctx, htmldoc));
