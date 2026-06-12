@@ -134,4 +134,5 @@ Err htmldoc_fetch_scripts(HtmlDoc htmldoc[_1_], UrlClient url_client[_1_], CurlP
 Err htmldoc_get_cookies(HtmlDoc d[_1_], ArlOf(Str) out[_1_]);
 Err htmldoc_get_all_cookies(HtmlDoc d[_1_], ArlOf(Str) out[_1_]);
 Err htmldoc_set_cookielist(HtmlDoc d[_1_], StrView cookie);
+Err htmldoc_get_effective_url(HtmlDoc d[_1_], StrView url[_1_]);
 #endif

@@ -1070,6 +1070,14 @@ htmldoc_set_cookielist(HtmlDoc d[_1_], StrView cookie) {
 
 
 Err
+htmldoc_get_effective_url(HtmlDoc d[_1_], StrView url[_1_]) {
+    char* effective_url;
+    try(w_curl_get_effective_url(*request_curl_handle(htmldoc_request(d)), &effective_url));
+    *url = sv(effective_url);
+    return Ok;
+}
+
+Err
 htmldoc_print_info(HtmlDoc d[_1_], CmdOut* out) {
     try( msg_fmt(out, "download size: %ld\n", *htmldoc_curlinfo_sz_download(d)));
     try( msg_fmt(out, "html size: %ld\n", htmldoc_sourcebuf(d)->buf.len));
@@ -1099,10 +1107,12 @@ CleanUrl:
         try(e);
     }
 
-    char* effective_url;
-    try(msg__(out, "effective url: "));
-    try(w_curl_get_effective_url(*request_curl_handle(htmldoc_request(d)), &effective_url));
-    if (effective_url) try(msg_ln__(out, sv(effective_url)));
+    /* char* effective_url; */
+    /* try(msg__(out, "effective url: ")); */
+    /* try(w_curl_get_effective_url(*request_curl_handle(htmldoc_request(d)), &effective_url)); */
+    StrView effective_url;
+    try(htmldoc_get_effective_url(d, &effective_url));
+    if (effective_url.len) try(msg_ln__(out, effective_url));
     else try(msg_ln__(out, svl("<NO EFFECTIVE URL>")));
 
     {

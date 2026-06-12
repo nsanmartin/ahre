@@ -57,6 +57,9 @@ typedef struct {
 
 #define mk_proto_fns(Name) ((ProtoFns){.proto=Name ## _proto, .fn_list= Name ## _fn_list, .len=COUNT(Name ## _fn_list)})
 
+static JSValueConst console_log_not_implemented_impl(JSContext* ctx, StrView fname);
+#define console_log_not_implemented(Ctx) console_log_not_implemented_impl(Ctx, sv(__func__))
+
 /*
  * I'm using many macros here to make this file shorted and write less
 */
@@ -88,7 +91,8 @@ typedef struct {
 #define not_impl_fn_name__(Name) jse_fn_not_implemented_ ## Name
 #define mk_not_imple_fn_with_name(Name) \
     static js_fn__(not_impl_fn_name__(Name)) {(void)this; (void)argc; (void)argv;\
-    return JS_ThrowPlainError(ctx, "ahjs: fn '"# Name "' " NOT_IMPL_MSG); }
+        console_log_not_implemented(ctx); return JS_UNDEFINED; }
+    /* return JS_ThrowPlainError(ctx, "ahjs: fn '"# Name "' " NOT_IMPL_MSG); } */
 
 #define mk_not_impl_fn(NS, Fn) mk_not_imple_fn_with_name(NS ## _ ## Fn)
 
@@ -98,12 +102,14 @@ typedef struct {
 #define not_impl_getter_name__(Name) jse_getter_not_implemented_ ## Name
 #define mk_not_impl_getter(Name) \
     static js_get__(not_impl_getter_name__(Name)) {(void)this;\
-    return JS_ThrowPlainError(ctx, "ahjs: getter '"# Name "' " NOT_IMPL_MSG); }
+        console_log_not_implemented(ctx); return JS_UNDEFINED; }
+    /* return JS_ThrowPlainError(ctx, "ahjs: getter '"# Name "' " NOT_IMPL_MSG); } */
 
 #define not_impl_setter_name__(Name) jse_setter_not_implemented_ ## Name
 #define mk_not_impl_setter(Name) \
     static js_set__(not_impl_setter_name__(Name)) {(void)this; (void)val;\
-    return JS_ThrowPlainError(ctx, "ahjs: setter '"# Name "' " NOT_IMPL_MSG); }
+        console_log_not_implemented(ctx); return JS_UNDEFINED; }
+    /* return JS_ThrowPlainError(ctx, "ahjs: setter '"# Name "' " NOT_IMPL_MSG); } */
 
 #define mk_not_impl_getset(NS, Attr) \
     mk_not_impl_getter(NS ## _ ## Attr) \
@@ -295,14 +301,24 @@ console_log_not_implemented_impl(JSContext* ctx, StrView fname) {
     Err e = Ok;
     tryjmp(e,Clean, str_append(buf, svl("TODO: ")));
     tryjmp(e,Clean, str_append(buf, fname));
-    tryjmp(e,Clean, str_append(buf, svl(" not implemented.\n You can send patch to https://codeberg.org/nsm/ahre")));
+    tryjmp(e,Clean, str_append(buf, svl(" not implemented.\n You can send patch to https://codeberg.org/nsm/ahre\n")));
 Clean:
     JS_FreeValue(ctx, console);
     if (e) throw(e);
     return JS_UNDEFINED;
 }
 
-#define console_log_not_implemented(Ctx) console_log_not_implemented_impl(Ctx, sv(__func__))
+static JSValueConst
+console_log_helper(JSContext* ctx, StrView msg) {
+    JSValueConst console = get_global(ctx, "console");
+    Str*    buf = JS_GetOpaque(console, console_class_id);
+    Err e = Ok;
+    tryjmp(e,Clean, str_append(buf, msg));
+Clean:
+    JS_FreeValue(ctx, console);
+    if (e) throw(e);
+    return JS_UNDEFINED;
+}
 
 
 /* ---- EventTarget ---- */
@@ -326,6 +342,7 @@ static js_set_n__(_set_textContent_impl, DomElem elem) {
     const char* new_content = JS_ToCStringLen(ctx, &len, val);
 
     Err e = dom_elem_set_text_content(elem, sv(new_content, len));
+    JS_FreeCString(ctx, new_content);
     if (e) return JS_ThrowTypeError(ctx, e);
     return JS_UNDEFINED;
 }
@@ -359,7 +376,6 @@ mk_not_impl_getset(node, parentNode)
 mk_not_impl_getset(node, parentElement)
 mk_not_impl_getset(node, previousSibling)
 
-/* mk_not_impl_fn(node, appendChild) */
 mk_not_impl_fn(node, cloneNode)
 mk_not_impl_fn(node, compareDocumentPosition)
 mk_not_impl_fn(node, contains)
@@ -425,7 +441,6 @@ static const JSCFunctionListEntry node_fn_list[] = {
     mk_not_impl_getset_list_entry(node, parentElement),
     mk_not_impl_getset_list_entry(node, previousSibling),
 
-    /* mk_not_impl_fn_list_entry(node, appendChild), */
     mk_not_impl_fn_list_entry(node, cloneNode),
     mk_not_impl_fn_list_entry(node, compareDocumentPosition),
     mk_not_impl_fn_list_entry(node, contains),
@@ -552,90 +567,89 @@ element_js_value_from_dom_elem(JSContext *ctx, DomElem elem)
 
 
 
-mk_not_impl_getset(node, assignedSlot)
-mk_not_impl_getset(node, attributes)
-mk_not_impl_getset(node, childElementCount)
-mk_not_impl_getset(node, children)
-mk_not_impl_getset(node, classList)
-mk_not_impl_getset(node, className)
-mk_not_impl_getset(node, clientHeight)
-mk_not_impl_getset(node, clientLeft)
-mk_not_impl_getset(node, clientTop)
-mk_not_impl_getset(node, clientWidth)
-mk_not_impl_getset(node, currentCSSZoom)
-mk_not_impl_getset(node, customElementRegistry)
-mk_not_impl_getset(node, elementTiming)
-mk_not_impl_getset(node, firstElementChild)
-/* mk_not_impl_getset(node, innerHTML) */
-mk_not_impl_getset(node, lastElementChild)
-mk_not_impl_getset(node, localName)
-mk_not_impl_getset(node, namespaceURI)
-mk_not_impl_getset(node, nextElementSibling)
-mk_not_impl_getset(node, outerHTML)
-mk_not_impl_getset(node, part)
-mk_not_impl_getset(node, prefix)
-mk_not_impl_getset(node, previousElementSibling)
-mk_not_impl_getset(node, scrollHeight)
-mk_not_impl_getset(node, scrollLeft)
-mk_not_impl_getset(node, scrollLeftMax)
-mk_not_impl_getset(node, scrollTop)
-mk_not_impl_getset(node, scrollTopMax)
-mk_not_impl_getset(node, scrollWidth)
-mk_not_impl_getset(node, shadowRoot)
-mk_not_impl_getset(node, slot)
-mk_not_impl_getset(node, tagName)
-mk_not_impl_getset(node, ariaAtomic)
-mk_not_impl_getset(node, ariaAutoComplete)
-mk_not_impl_getset(node, ariaBrailleLabel)
-mk_not_impl_getset(node, ariaBrailleRoleDescription)
-mk_not_impl_getset(node, ariaBusy)
-mk_not_impl_getset(node, ariaChecked)
-mk_not_impl_getset(node, ariaColCount)
-mk_not_impl_getset(node, ariaColIndex)
-mk_not_impl_getset(node, ariaColIndexText)
-mk_not_impl_getset(node, ariaColSpan)
-mk_not_impl_getset(node, ariaCurrent)
-mk_not_impl_getset(node, ariaDescription)
-mk_not_impl_getset(node, ariaDisabled)
-mk_not_impl_getset(node, ariaExpanded)
-mk_not_impl_getset(node, ariaHasPopup)
-mk_not_impl_getset(node, ariaHidden)
-mk_not_impl_getset(node, ariaInvalid)
-mk_not_impl_getset(node, ariaKeyShortcuts)
-mk_not_impl_getset(node, ariaLabel)
-mk_not_impl_getset(node, ariaLevel)
-mk_not_impl_getset(node, ariaLive)
-mk_not_impl_getset(node, ariaModal)
-mk_not_impl_getset(node, ariaMultiline)
-mk_not_impl_getset(node, ariaMultiSelectable)
-mk_not_impl_getset(node, ariaOrientation)
-mk_not_impl_getset(node, ariaPlaceholder)
-mk_not_impl_getset(node, ariaPosInSet)
-mk_not_impl_getset(node, ariaPressed)
-mk_not_impl_getset(node, ariaReadOnly)
-mk_not_impl_getset(node, ariaRelevant)
-mk_not_impl_getset(node, ariaRequired)
-mk_not_impl_getset(node, ariaRoleDescription)
-mk_not_impl_getset(node, ariaRowCount)
-mk_not_impl_getset(node, ariaRowIndex)
-mk_not_impl_getset(node, ariaRowIndexText)
-mk_not_impl_getset(node, ariaRowSpan)
-mk_not_impl_getset(node, ariaSelected)
-mk_not_impl_getset(node, ariaSetSize)
-mk_not_impl_getset(node, ariaSort)
-mk_not_impl_getset(node, ariaValueMax)
-mk_not_impl_getset(node, ariaValueMin)
-mk_not_impl_getset(node, ariaValueNow)
-mk_not_impl_getset(node, ariaValueText)
-mk_not_impl_getset(node, role)
-mk_not_impl_getset(node, ariaActiveDescendantElement)
-mk_not_impl_getset(node, ariaControlsElements)
-mk_not_impl_getset(node, ariaDescribedByElements)
-mk_not_impl_getset(node, ariaDetailsElements)
-mk_not_impl_getset(node, ariaErrorMessageElements)
-mk_not_impl_getset(node, ariaFlowToElements)
-mk_not_impl_getset(node, ariaLabelledByElements)
-mk_not_impl_getset(node, ariaOwnsElements)
+mk_not_impl_getset(element, assignedSlot)
+mk_not_impl_getset(element, attributes)
+mk_not_impl_getset(element, childElementCount)
+mk_not_impl_getset(element, children)
+mk_not_impl_getset(element, classList)
+mk_not_impl_getset(element, className)
+mk_not_impl_getset(element, clientHeight)
+mk_not_impl_getset(element, clientLeft)
+mk_not_impl_getset(element, clientTop)
+mk_not_impl_getset(element, clientWidth)
+mk_not_impl_getset(element, currentCSSZoom)
+mk_not_impl_getset(element, customElementRegistry)
+mk_not_impl_getset(element, elementTiming)
+mk_not_impl_getset(element, firstElementChild)
+mk_not_impl_getset(element, lastElementChild)
+mk_not_impl_getset(element, localName)
+mk_not_impl_getset(element, namespaceURI)
+mk_not_impl_getset(element, nextElementSibling)
+mk_not_impl_getset(element, outerHTML)
+mk_not_impl_getset(element, part)
+mk_not_impl_getset(element, prefix)
+mk_not_impl_getset(element, previousElementSibling)
+mk_not_impl_getset(element, scrollHeight)
+mk_not_impl_getset(element, scrollLeft)
+mk_not_impl_getset(element, scrollLeftMax)
+mk_not_impl_getset(element, scrollTop)
+mk_not_impl_getset(element, scrollTopMax)
+mk_not_impl_getset(element, scrollWidth)
+mk_not_impl_getset(element, shadowRoot)
+mk_not_impl_getset(element, slot)
+mk_not_impl_getset(element, tagName)
+mk_not_impl_getset(element, ariaAtomic)
+mk_not_impl_getset(element, ariaAutoComplete)
+mk_not_impl_getset(element, ariaBrailleLabel)
+mk_not_impl_getset(element, ariaBrailleRoleDescription)
+mk_not_impl_getset(element, ariaBusy)
+mk_not_impl_getset(element, ariaChecked)
+mk_not_impl_getset(element, ariaColCount)
+mk_not_impl_getset(element, ariaColIndex)
+mk_not_impl_getset(element, ariaColIndexText)
+mk_not_impl_getset(element, ariaColSpan)
+mk_not_impl_getset(element, ariaCurrent)
+mk_not_impl_getset(element, ariaDescription)
+mk_not_impl_getset(element, ariaDisabled)
+mk_not_impl_getset(element, ariaExpanded)
+mk_not_impl_getset(element, ariaHasPopup)
+mk_not_impl_getset(element, ariaHidden)
+mk_not_impl_getset(element, ariaInvalid)
+mk_not_impl_getset(element, ariaKeyShortcuts)
+mk_not_impl_getset(element, ariaLabel)
+mk_not_impl_getset(element, ariaLevel)
+mk_not_impl_getset(element, ariaLive)
+mk_not_impl_getset(element, ariaModal)
+mk_not_impl_getset(element, ariaMultiline)
+mk_not_impl_getset(element, ariaMultiSelectable)
+mk_not_impl_getset(element, ariaOrientation)
+mk_not_impl_getset(element, ariaPlaceholder)
+mk_not_impl_getset(element, ariaPosInSet)
+mk_not_impl_getset(element, ariaPressed)
+mk_not_impl_getset(element, ariaReadOnly)
+mk_not_impl_getset(element, ariaRelevant)
+mk_not_impl_getset(element, ariaRequired)
+mk_not_impl_getset(element, ariaRoleDescription)
+mk_not_impl_getset(element, ariaRowCount)
+mk_not_impl_getset(element, ariaRowIndex)
+mk_not_impl_getset(element, ariaRowIndexText)
+mk_not_impl_getset(element, ariaRowSpan)
+mk_not_impl_getset(element, ariaSelected)
+mk_not_impl_getset(element, ariaSetSize)
+mk_not_impl_getset(element, ariaSort)
+mk_not_impl_getset(element, ariaValueMax)
+mk_not_impl_getset(element, ariaValueMin)
+mk_not_impl_getset(element, ariaValueNow)
+mk_not_impl_getset(element, ariaValueText)
+mk_not_impl_getset(element, role)
+mk_not_impl_getset(element, ariaActiveDescendantElement)
+mk_not_impl_getset(element, ariaControlsElements)
+mk_not_impl_getset(element, ariaDescribedByElements)
+mk_not_impl_getset(element, ariaDetailsElements)
+mk_not_impl_getset(element, ariaErrorMessageElements)
+mk_not_impl_getset(element, ariaFlowToElements)
+mk_not_impl_getset(element, ariaLabelledByElements)
+mk_not_impl_getset(element, ariaOwnsElements)
 
 mk_not_impl_fn(element, after)
 mk_not_impl_fn(element, animate)
@@ -694,91 +708,95 @@ mk_not_impl_fn(element, toggleAttribute)
 static const JSCFunctionListEntry element_fn_list[] = {
     JS_CGETSET_DEF("id", element_get_id, element_set_id),
     JS_CFUNC_DEF("addEventListener", 1, event_target_addEventListener),/*TODO1: this should be inherited from event target */
+    JS_CFUNC_DEF("getAttribute",     1, element_getAttribute),
+    JS_CFUNC_DEF("remove",           0, element_remove),
+    JS_CFUNC_DEF("removeAttribute",  1, element_removeAttribute),
+    JS_CFUNC_DEF("setAttribute",     2, element_setAttribute),
 
-    mk_not_impl_getset_list_entry(node, assignedSlot),
-    mk_not_impl_getset_list_entry(node, attributes),
-    mk_not_impl_getset_list_entry(node, childElementCount),
-    mk_not_impl_getset_list_entry(node, children),
-    mk_not_impl_getset_list_entry(node, classList),
-    mk_not_impl_getset_list_entry(node, className),
-    mk_not_impl_getset_list_entry(node, clientHeight),
-    mk_not_impl_getset_list_entry(node, clientLeft),
-    mk_not_impl_getset_list_entry(node, clientTop),
-    mk_not_impl_getset_list_entry(node, clientWidth),
-    mk_not_impl_getset_list_entry(node, currentCSSZoom),
-    mk_not_impl_getset_list_entry(node, customElementRegistry),
-    mk_not_impl_getset_list_entry(node, elementTiming),
-    mk_not_impl_getset_list_entry(node, firstElementChild),
-    /* mk_not_impl_getset_list_entry(node, innerHTML), */
-    mk_not_impl_getset_list_entry(node, lastElementChild),
-    mk_not_impl_getset_list_entry(node, localName),
-    mk_not_impl_getset_list_entry(node, namespaceURI),
-    mk_not_impl_getset_list_entry(node, nextElementSibling),
-    mk_not_impl_getset_list_entry(node, outerHTML),
-    mk_not_impl_getset_list_entry(node, part),
-    mk_not_impl_getset_list_entry(node, prefix),
-    mk_not_impl_getset_list_entry(node, previousElementSibling),
-    mk_not_impl_getset_list_entry(node, scrollHeight),
-    mk_not_impl_getset_list_entry(node, scrollLeft),
-    mk_not_impl_getset_list_entry(node, scrollLeftMax),
-    mk_not_impl_getset_list_entry(node, scrollTop),
-    mk_not_impl_getset_list_entry(node, scrollTopMax),
-    mk_not_impl_getset_list_entry(node, scrollWidth),
-    mk_not_impl_getset_list_entry(node, shadowRoot),
-    mk_not_impl_getset_list_entry(node, slot),
-    mk_not_impl_getset_list_entry(node, tagName),
-    mk_not_impl_getset_list_entry(node, ariaAtomic),
-    mk_not_impl_getset_list_entry(node, ariaAutoComplete),
-    mk_not_impl_getset_list_entry(node, ariaBrailleLabel),
-    mk_not_impl_getset_list_entry(node, ariaBrailleRoleDescription),
-    mk_not_impl_getset_list_entry(node, ariaBusy),
-    mk_not_impl_getset_list_entry(node, ariaChecked),
-    mk_not_impl_getset_list_entry(node, ariaColCount),
-    mk_not_impl_getset_list_entry(node, ariaColIndex),
-    mk_not_impl_getset_list_entry(node, ariaColIndexText),
-    mk_not_impl_getset_list_entry(node, ariaColSpan),
-    mk_not_impl_getset_list_entry(node, ariaCurrent),
-    mk_not_impl_getset_list_entry(node, ariaDescription),
-    mk_not_impl_getset_list_entry(node, ariaDisabled),
-    mk_not_impl_getset_list_entry(node, ariaExpanded),
-    mk_not_impl_getset_list_entry(node, ariaHasPopup),
-    mk_not_impl_getset_list_entry(node, ariaHidden),
-    mk_not_impl_getset_list_entry(node, ariaInvalid),
-    mk_not_impl_getset_list_entry(node, ariaKeyShortcuts),
-    mk_not_impl_getset_list_entry(node, ariaLabel),
-    mk_not_impl_getset_list_entry(node, ariaLevel),
-    mk_not_impl_getset_list_entry(node, ariaLive),
-    mk_not_impl_getset_list_entry(node, ariaModal),
-    mk_not_impl_getset_list_entry(node, ariaMultiline),
-    mk_not_impl_getset_list_entry(node, ariaMultiSelectable),
-    mk_not_impl_getset_list_entry(node, ariaOrientation),
-    mk_not_impl_getset_list_entry(node, ariaPlaceholder),
-    mk_not_impl_getset_list_entry(node, ariaPosInSet),
-    mk_not_impl_getset_list_entry(node, ariaPressed),
-    mk_not_impl_getset_list_entry(node, ariaReadOnly),
-    mk_not_impl_getset_list_entry(node, ariaRelevant),
-    mk_not_impl_getset_list_entry(node, ariaRequired),
-    mk_not_impl_getset_list_entry(node, ariaRoleDescription),
-    mk_not_impl_getset_list_entry(node, ariaRowCount),
-    mk_not_impl_getset_list_entry(node, ariaRowIndex),
-    mk_not_impl_getset_list_entry(node, ariaRowIndexText),
-    mk_not_impl_getset_list_entry(node, ariaRowSpan),
-    mk_not_impl_getset_list_entry(node, ariaSelected),
-    mk_not_impl_getset_list_entry(node, ariaSetSize),
-    mk_not_impl_getset_list_entry(node, ariaSort),
-    mk_not_impl_getset_list_entry(node, ariaValueMax),
-    mk_not_impl_getset_list_entry(node, ariaValueMin),
-    mk_not_impl_getset_list_entry(node, ariaValueNow),
-    mk_not_impl_getset_list_entry(node, ariaValueText),
-    mk_not_impl_getset_list_entry(node, role),
-    mk_not_impl_getset_list_entry(node, ariaActiveDescendantElement),
-    mk_not_impl_getset_list_entry(node, ariaControlsElements),
-    mk_not_impl_getset_list_entry(node, ariaDescribedByElements),
-    mk_not_impl_getset_list_entry(node, ariaDetailsElements),
-    mk_not_impl_getset_list_entry(node, ariaErrorMessageElements),
-    mk_not_impl_getset_list_entry(node, ariaFlowToElements),
-    mk_not_impl_getset_list_entry(node, ariaLabelledByElements),
-    mk_not_impl_getset_list_entry(node, ariaOwnsElements),
+
+    mk_not_impl_getset_list_entry(element, assignedSlot),
+    mk_not_impl_getset_list_entry(element, attributes),
+    mk_not_impl_getset_list_entry(element, childElementCount),
+    mk_not_impl_getset_list_entry(element, children),
+    mk_not_impl_getset_list_entry(element, classList),
+    mk_not_impl_getset_list_entry(element, className),
+    mk_not_impl_getset_list_entry(element, clientHeight),
+    mk_not_impl_getset_list_entry(element, clientLeft),
+    mk_not_impl_getset_list_entry(element, clientTop),
+    mk_not_impl_getset_list_entry(element, clientWidth),
+    mk_not_impl_getset_list_entry(element, currentCSSZoom),
+    mk_not_impl_getset_list_entry(element, customElementRegistry),
+    mk_not_impl_getset_list_entry(element, elementTiming),
+    mk_not_impl_getset_list_entry(element, firstElementChild),
+    mk_not_impl_getset_list_entry(element, lastElementChild),
+    mk_not_impl_getset_list_entry(element, localName),
+    mk_not_impl_getset_list_entry(element, namespaceURI),
+    mk_not_impl_getset_list_entry(element, nextElementSibling),
+    mk_not_impl_getset_list_entry(element, outerHTML),
+    mk_not_impl_getset_list_entry(element, part),
+    mk_not_impl_getset_list_entry(element, prefix),
+    mk_not_impl_getset_list_entry(element, previousElementSibling),
+    mk_not_impl_getset_list_entry(element, scrollHeight),
+    mk_not_impl_getset_list_entry(element, scrollLeft),
+    mk_not_impl_getset_list_entry(element, scrollLeftMax),
+    mk_not_impl_getset_list_entry(element, scrollTop),
+    mk_not_impl_getset_list_entry(element, scrollTopMax),
+    mk_not_impl_getset_list_entry(element, scrollWidth),
+    mk_not_impl_getset_list_entry(element, shadowRoot),
+    mk_not_impl_getset_list_entry(element, slot),
+    mk_not_impl_getset_list_entry(element, tagName),
+    mk_not_impl_getset_list_entry(element, ariaAtomic),
+    mk_not_impl_getset_list_entry(element, ariaAutoComplete),
+    mk_not_impl_getset_list_entry(element, ariaBrailleLabel),
+    mk_not_impl_getset_list_entry(element, ariaBrailleRoleDescription),
+    mk_not_impl_getset_list_entry(element, ariaBusy),
+    mk_not_impl_getset_list_entry(element, ariaChecked),
+    mk_not_impl_getset_list_entry(element, ariaColCount),
+    mk_not_impl_getset_list_entry(element, ariaColIndex),
+    mk_not_impl_getset_list_entry(element, ariaColIndexText),
+    mk_not_impl_getset_list_entry(element, ariaColSpan),
+    mk_not_impl_getset_list_entry(element, ariaCurrent),
+    mk_not_impl_getset_list_entry(element, ariaDescription),
+    mk_not_impl_getset_list_entry(element, ariaDisabled),
+    mk_not_impl_getset_list_entry(element, ariaExpanded),
+    mk_not_impl_getset_list_entry(element, ariaHasPopup),
+    mk_not_impl_getset_list_entry(element, ariaHidden),
+    mk_not_impl_getset_list_entry(element, ariaInvalid),
+    mk_not_impl_getset_list_entry(element, ariaKeyShortcuts),
+    mk_not_impl_getset_list_entry(element, ariaLabel),
+    mk_not_impl_getset_list_entry(element, ariaLevel),
+    mk_not_impl_getset_list_entry(element, ariaLive),
+    mk_not_impl_getset_list_entry(element, ariaModal),
+    mk_not_impl_getset_list_entry(element, ariaMultiline),
+    mk_not_impl_getset_list_entry(element, ariaMultiSelectable),
+    mk_not_impl_getset_list_entry(element, ariaOrientation),
+    mk_not_impl_getset_list_entry(element, ariaPlaceholder),
+    mk_not_impl_getset_list_entry(element, ariaPosInSet),
+    mk_not_impl_getset_list_entry(element, ariaPressed),
+    mk_not_impl_getset_list_entry(element, ariaReadOnly),
+    mk_not_impl_getset_list_entry(element, ariaRelevant),
+    mk_not_impl_getset_list_entry(element, ariaRequired),
+    mk_not_impl_getset_list_entry(element, ariaRoleDescription),
+    mk_not_impl_getset_list_entry(element, ariaRowCount),
+    mk_not_impl_getset_list_entry(element, ariaRowIndex),
+    mk_not_impl_getset_list_entry(element, ariaRowIndexText),
+    mk_not_impl_getset_list_entry(element, ariaRowSpan),
+    mk_not_impl_getset_list_entry(element, ariaSelected),
+    mk_not_impl_getset_list_entry(element, ariaSetSize),
+    mk_not_impl_getset_list_entry(element, ariaSort),
+    mk_not_impl_getset_list_entry(element, ariaValueMax),
+    mk_not_impl_getset_list_entry(element, ariaValueMin),
+    mk_not_impl_getset_list_entry(element, ariaValueNow),
+    mk_not_impl_getset_list_entry(element, ariaValueText),
+    mk_not_impl_getset_list_entry(element, role),
+    mk_not_impl_getset_list_entry(element, ariaActiveDescendantElement),
+    mk_not_impl_getset_list_entry(element, ariaControlsElements),
+    mk_not_impl_getset_list_entry(element, ariaDescribedByElements),
+    mk_not_impl_getset_list_entry(element, ariaDetailsElements),
+    mk_not_impl_getset_list_entry(element, ariaErrorMessageElements),
+    mk_not_impl_getset_list_entry(element, ariaFlowToElements),
+    mk_not_impl_getset_list_entry(element, ariaLabelledByElements),
+    mk_not_impl_getset_list_entry(element, ariaOwnsElements),
 
     mk_not_impl_fn_list_entry(element, after),
     mk_not_impl_fn_list_entry(element, animate),
@@ -832,11 +850,6 @@ static const JSCFunctionListEntry element_fn_list[] = {
     mk_not_impl_fn_list_entry(element, setHTMLUnsafe),
     mk_not_impl_fn_list_entry(element, setPointerCapture),
     mk_not_impl_fn_list_entry(element, toggleAttribute),
-
-    JS_CFUNC_DEF("getAttribute",             1,     element_getAttribute),
-    JS_CFUNC_DEF("remove",                   0,     element_remove),
-    JS_CFUNC_DEF("removeAttribute",          1,     element_removeAttribute),
-    JS_CFUNC_DEF("setAttribute",             2,     element_setAttribute),
 
 };
 
@@ -1323,7 +1336,7 @@ static const JSCFunctionListEntry document_fn_list[] = {
 
 /* ---- Location ---- */
 
-mk_not_impl_getset(location, href)
+/* mk_not_impl_getset(location, href) */
 mk_not_impl_getset(location, protocol)
 mk_not_impl_getset(location, host)
 mk_not_impl_getset(location, hostname)
@@ -1338,8 +1351,33 @@ mk_not_impl_fn(location, reload)
 mk_not_impl_fn(location, replace)
 mk_not_impl_fn(location, toString)
 
+
+static js_get__(location_get_href) {
+    HtmlDoc* d = JS_GetOpaque(this, location_class_id);
+    if (!d) throw("no document in location");
+    StrView url;
+    Err e = htmldoc_get_effective_url(d, &url);
+    if (e) throw(e);
+    return JS_NewStringLen(ctx, url.items, url.len);
+}
+
+
+static js_set__(location_set_href) {
+    HtmlDoc* d = JS_GetOpaque(this, location_class_id);
+    if (!d) throw("no document in location");
+    const char* url = JS_ToCString(ctx, val);
+    if (!url) return JS_UNDEFINED;
+    //TODO0
+    console_log_helper(ctx, svl("TODO window.location.href set :)"));
+    console_log_helper(ctx, sv(url));
+    JS_FreeCString(ctx, url);
+    return JS_UNDEFINED;
+}
+
+
 static const JSCFunctionListEntry location_fn_list[] = {
-    mk_not_impl_getset_list_entry(location, href),
+    JS_CGETSET_DEF("href", location_get_href, location_set_href),
+    /* mk_not_impl_getset_list_entry(location, href), */
     mk_not_impl_getset_list_entry(location, protocol),
     mk_not_impl_getset_list_entry(location, host),
     mk_not_impl_getset_list_entry(location, hostname),
@@ -1571,7 +1609,6 @@ mk_not_impl_getset(window, outerHeight)
 mk_not_impl_getset(window, outerWidth)
 mk_not_impl_getset(window, pageXOffset)
 mk_not_impl_getset(window, pageYOffset)
-mk_not_impl_getset(window, parent)
 mk_not_impl_getset(window, personalbar)
 mk_not_impl_getset(window, scheduler)
 mk_not_impl_getset(window, screen)
@@ -1589,7 +1626,7 @@ mk_not_impl_getset(window, status)
 mk_not_impl_getset(window, statusbar)
 mk_not_impl_getset(window, toolbar)
 mk_not_impl_getset(window, top)
-mk_not_impl_getset(window, trustedTypes)
+/* mk_not_impl_getset(window, trustedTypes) */
 mk_not_impl_getset(window, viewport)
 mk_not_impl_getset(window, visualViewport)
 
@@ -1651,12 +1688,23 @@ mk_not_impl_fn(navigator, webkitConvertPointFromPageToNode)
 static js_get__(window_innerWidth) { (void)this; return JS_NewFloat64(ctx, *session_ncols(JS_GetContextOpaque(ctx))); }
 static js_get__(window_innerHeight) { (void)this; return JS_NewFloat64(ctx, *session_nrows(JS_GetContextOpaque(ctx))); }
 
+static js_get__(window_trustedTypes) { 
+    (void)this;
+    tryjs(console_log_not_implemented(ctx));
+    return JS_UNDEFINED;
+}
 
+mk_not_impl_setter(window_parent)
+static js_get__(window_get_parent) { return JS_DupValue(ctx, this); }
+
+mk_not_impl_setter(window_trustedTypes)
 //TODO0: define functions instead of window methods?
 //TODO1: inherit from Event Target
 static const JSCFunctionListEntry window_fn_list[] = {
-    JS_CGETSET_DEF("innerWidth",  window_innerWidth, js_set_noop),
-    JS_CGETSET_DEF("innerHeight", window_innerHeight, js_set_noop),
+    JS_CGETSET_DEF("innerWidth",   window_innerWidth,   js_set_noop),
+    JS_CGETSET_DEF("innerHeight",  window_innerHeight,  js_set_noop),
+    JS_CGETSET_DEF("trustedTypes", window_trustedTypes, jse_setter_not_implemented_window_trustedTypes),
+    JS_CGETSET_DEF("parent",       window_get_parent,   jse_setter_not_implemented_window_parent),
 
     mk_not_impl_getset_list_entry(window, caches),
     mk_not_impl_getset_list_entry(window, clientInformation),
@@ -1695,7 +1743,7 @@ static const JSCFunctionListEntry window_fn_list[] = {
     mk_not_impl_getset_list_entry(window, outerWidth),
     mk_not_impl_getset_list_entry(window, pageXOffset),
     mk_not_impl_getset_list_entry(window, pageYOffset),
-    mk_not_impl_getset_list_entry(window, parent),
+    /* mk_not_impl_getset_list_entry(window, parent), */
     mk_not_impl_getset_list_entry(window, personalbar),
     mk_not_impl_getset_list_entry(window, scheduler),
     mk_not_impl_getset_list_entry(window, screen),
@@ -1713,7 +1761,7 @@ static const JSCFunctionListEntry window_fn_list[] = {
     mk_not_impl_getset_list_entry(window, statusbar),
     mk_not_impl_getset_list_entry(window, toolbar),
     mk_not_impl_getset_list_entry(window, top),
-    mk_not_impl_getset_list_entry(window, trustedTypes),
+    /* mk_not_impl_getset_list_entry(window, trustedTypes), */
     mk_not_impl_getset_list_entry(window, viewport),
     mk_not_impl_getset_list_entry(window, visualViewport),
 
@@ -1872,8 +1920,6 @@ static int url_param_cmp(const void* X, const void* Y){
 }
 
 static int url_param_copy(UrlParam x[_1_], const UrlParam y[_1_]) {
-    /* move semantics */
-    /* memmove(x, y, sizeof*x); */
     *x = (UrlParam){0};
     if (str_append(&x->fst, y->fst)) return -1;
     if (y->snd.len && str_append(&x->snd, y->snd)) return -1;
@@ -2113,19 +2159,30 @@ Fail:
 
 }
 
+
+mk_not_impl_fn(URLSearchParams, getAll)
+mk_not_impl_fn(URLSearchParams, entries)
+mk_not_impl_fn(URLSearchParams, keys)
+mk_not_impl_fn(URLSearchParams, values)
+
 static const JSCFunctionListEntry URLSearchParams_fn_list[] = {
     JS_CFUNC_DEF("append", 2, url_search_params_append),
     JS_CFUNC_DEF("delete", 1, url_search_params_delete),
     JS_CFUNC_DEF("get", 1, url_search_params_get),
-    /* JS_CFUNC_DEF("getAll", 1, url_search_params_getAll), */
     JS_CFUNC_DEF("has", 1, url_search_params_has),
     JS_CFUNC_DEF("set", 2, url_search_params_set),
     JS_CFUNC_DEF("sort", 0, url_search_params_sort),
     JS_CFUNC_DEF("toString", 0, url_search_params_toString),
+    JS_CGETSET_DEF("size", url_search_params_size, NULL),
+
     /* JS_CFUNC_DEF("entries", 0, url_search_params_entries), */
     /* JS_CFUNC_DEF("keys", 0, url_search_params_keys), */
     /* JS_CFUNC_DEF("values", 0, url_search_params_values), */
-    JS_CGETSET_DEF("size", url_search_params_size, NULL),
+    /* JS_CFUNC_DEF("getAll", 1, url_search_params_getAll), */
+    mk_not_impl_fn_list_entry(URLSearchParams, getAll),
+    mk_not_impl_fn_list_entry(URLSearchParams, entries),
+    mk_not_impl_fn_list_entry(URLSearchParams, keys),
+    mk_not_impl_fn_list_entry(URLSearchParams, values),
 };
 
 
@@ -2212,7 +2269,7 @@ jse_init(Session* session, HtmlDoc* htmldoc) {
     try(set_property_str(js->ctx, global, "globalThis", JS_DupValue(js->ctx, global)));
 
     tryjmp(e, Fail, init_js_class(&mk_jsclass(node, NULL), js->ctx));
-    tryjmp(e, Fail, init_js_class(&mk_jsclass(element, NULL), js->ctx));
+    tryjmp(e, Fail, init_js_class(&mk_jsclass(element, &node_class_id), js->ctx));
     tryjmp(e, Fail, init_js_class(&mk_jsclass(storage, NULL), js->ctx));
     tryjmp(e, Fail,
         init_js_class(
