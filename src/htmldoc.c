@@ -14,6 +14,8 @@
 #include "cmd-out.h"
 
 
+static void textmod_trim_right(TextBufMods mods[_1_], size_t bound);
+
 static inline
 Err draw_ctx_esc_code_pop(DrawCtx ctx[_1_]) {
     return arlfn(EscCode, pop)(draw_ctx_esc_code_stack(ctx)) ? Ok : "error: empty stack";
@@ -36,17 +38,12 @@ append_to_arlof_lxb_node__(ArrayList, NodePtr) \
 
 
 static size_t _strview_trim_right_count_newlines_(StrView s[_1_]) {
-#define last_char__(S) items__(S)[len__(S)-1]
-//TODO1: use unicode space
-#define is_space_or_not_print__(C) (isspace(C) || !isprint(C))
     size_t newlines = 0;
-    while(s->len && is_space_or_not_print__(last_char__(s))) {
-        newlines += last_char__(s) == '\n';
-        --s->len;
-    }
+    size_t prev_len = len__(s);
+    strview_trim_right_utf8_space(s);
+    for (size_t i = len__(s); i < prev_len; ++i)
+        newlines += (items__(s)[i] == '\n');
     return newlines;
-#undef is_space_or_not_print__
-#undef last_char__
 }
 
 
@@ -135,9 +132,10 @@ draw_block_iter_childs(DomNode n, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
 static void
 draw_text_buf_trim_right(DrawTextBuf sub[_1_]) {
-    StrView content = strview_from_mem(sub->buf.items, sub->buf.len);
+    StrView content = sv(sub->buf);
     sub->right_newlines = _strview_trim_right_count_newlines_(&content);
     sub->buf.len = content.len;
+    textmod_trim_right(&sub->mods, content.len);
 }
 
 static Str*
@@ -158,7 +156,7 @@ draw_text_buf_hlen(DrawTextBuf text[_1_]) {
     StrView buf = strview_from_draw_text_buf(text);
     for (;buf.len;) {
         StrView line = strview_split_line(&buf);
-        strview_trim_left_utf8_space(&line);
+        strview_trim_utf8_space(&line);
         size_t utf8len = strview_count_utf8(line);
         if (utf8len > res) res = utf8len;
     }
@@ -380,6 +378,12 @@ draw_text_buf_trim_left(DrawTextBuf sub[_1_]) {
     return Ok;
 }
 
+static Err
+draw_text_buf_trim(DrawTextBuf sub[_1_]) {
+    try(draw_text_buf_trim_left(sub));
+    draw_text_buf_trim_right(sub);
+    return Ok;
+}
 
 static Err
 _hypertext_id_open_(
@@ -682,7 +686,7 @@ draw_tag_li(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     DrawTextBuf sub = (DrawTextBuf){0};
 
     Err err = draw_iter_childs(node, ctx, &sub);
-    if (!err) draw_text_buf_trim_left(&sub);
+    if (!err) draw_text_buf_trim(&sub);
 
     if (!err && sub.buf.len) {
         ok_then(err, draw_text_buf_append_lit__(text, " * "));
@@ -703,8 +707,7 @@ draw_tag_h(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
     try( draw_block_iter_childs(node,  ctx, &sub));
 
-    tryjmp(err, Clean, draw_text_buf_trim_left(&sub));
-    draw_text_buf_trim_right(&sub);
+    tryjmp(err, Clean, draw_text_buf_trim(&sub));
 
     tryjmp(err,Clean,_hypertext_open_(ctx, text, draw_ctx_push_bold, h_tag_open_str));
     if (sub.buf.len) tryjmp(err, Clean, draw_ctx_append_sub_text(text, &sub));
@@ -1181,8 +1184,7 @@ draw_tag_a(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
         bool div_child = draw_text_buf_div(sub_text); /* check whether any child is div */
 
-        ok_then(err, draw_text_buf_trim_left(sub_text));
-        draw_text_buf_trim_right(sub_text);
+        ok_then(err, draw_text_buf_trim(sub_text));
 
         if (requires_separation(sv(draw_text_buf_buf(text)))
         && _prev_is_separable_(node)) err = draw_text_buf_append_lit__(text, " ");
@@ -1433,10 +1435,10 @@ get_unsplitted_columns_widths(DrawTable table[_1_], ArlOf(ColWidth) out[_1_]) {
             if (cw->ix != ncol) return err_internal("expecting index match ncol here");
 
             StrView buf = strview_from_draw_text_buf(cell);
-            strview_trim_left_utf8_space(&buf);
+            strview_trim_utf8_space(&buf);
             for (;buf.len;) {
                 StrView line = strview_split_line(&buf);
-                strview_trim_left_utf8_space(&line);
+                strview_trim_utf8_space(&line);
                 size_t utf8len = strview_count_utf8(line);
                 if (utf8len > cw->w) {
                     cw->w  = utf8len;
@@ -1479,7 +1481,7 @@ static Err
 split_cell(size_t length, DrawTextBuf cell[_1_]) {
     if (!length) return err_internal("not expecting zero length cell");
     StrView buf = strview_from_draw_text_buf(cell);
-    strview_trim_left_utf8_space(&buf);
+    strview_trim_utf8_space(&buf);
     while (strview_count_utf8(buf) > length) {
 
         const char* nl = memchr(buf.items, '\n', buf.len);
@@ -1658,7 +1660,7 @@ static Err
 draw_text_buf_split(DrawTextBuf b[_1_], SplittedCell textviews[_1_]) {
     TextBufMods partmods = (TextBufMods){0};
     StrView     buf      = strview_from_draw_text_buf(b);
-    size_t      offset   = strview_trim_left_utf8_space(&buf);
+    size_t      offset   = strview_trim_utf8_space(&buf);
     ModAt*      modbeg   = arlfn(ModAt,begin)(draw_text_buf_mods(b));
     ModAt*      modend   = arlfn(ModAt,end)(draw_text_buf_mods(b));
     ModAt*      mod      = modbeg;
@@ -1714,7 +1716,7 @@ ErrClean:
 static size_t splitted_celL_vertical_len(SplittedCell c[_1_]) { return len__(c); }
 static size_t cell_part_horizontal_len(CellPart c[_1_]) {
     StrView part = sv(c->buf);
-    strview_trim_left_utf8_space(&part);
+    strview_trim_utf8_space(&part);
     return strview_count_utf8(part);
 
 }
@@ -1783,8 +1785,7 @@ static Err draw_tag_td(DomNode node, DrawCtx ctx[_1_], DrawRow r[_1_]) {
     for (DomNode txt = dom_node_first_child(node); !isnull(txt); txt = dom_node_next(txt)) {
         tryjmp(err, Clean, draw_rec(txt, ctx, &cell));
     }
-    tryjmp(err, Clean, draw_text_buf_trim_left(&cell));
-    draw_text_buf_trim_right(&cell);
+    tryjmp(err, Clean, draw_text_buf_trim(&cell));
     tryjmp(err, Clean, draw_row_append(r, &cell));
     cell = (DrawTextBuf){0};
 
@@ -2024,7 +2025,9 @@ Clean:
 static Err
 draw_tag_table (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     Err err = draw_tag_table_impl(node, ctx, text);
-    if (err != err_unexpected_tag_in_table) return err;
+    if (err != err_unexpected_tag_in_table) {
+        return err;
+    }
     try(msg_ln__(get_cmd_out_(ctx), err));
     return draw_iter_childs(node, ctx, text);
 }
@@ -2252,6 +2255,13 @@ textmod_trim_left(TextBufMods mods[_1_], size_t n) {
             else it->offset -= n;
         }
     }
+}
+
+
+static void
+textmod_trim_right(TextBufMods mods[_1_], size_t bound) {
+    foreach__(ModAt,mods,it) 
+        if (it->offset > bound) it->offset = bound;
 }
 
 

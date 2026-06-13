@@ -554,6 +554,87 @@ strview_trim_left_utf8_space(StrView s[_1_]) {
     return skipped;
 }
 
+
+static inline bool is_utf8_continuation_byte(unsigned char c) { return (c & 0xC0) == 0x80; }
+
+// Check if the UTF-8 sequence starting at 's' (with at most 'remaining' bytes)
+// represents a Unicode whitespace character.
+// Returns true and sets '*advance' to the number of bytes consumed if it is whitespace.
+// Returns false otherwise (non-whitespace or invalid UTF-8).
+static bool is_unicode_whitespace(const unsigned char* s, size_t remaining, size_t* advance) {
+    if (remaining == 0) return false;
+
+    // ASCII range (U+0000-U+007F)
+    if (s[0] < 0x80) {
+        if (isspace(s[0])) {
+            *advance = 1;
+            return true;
+        }
+        return false;
+    }
+
+    // 2-byte UTF-8 (U+0080-U+07FF)
+    if ((s[0] & 0xE0) == 0xC0 && remaining >= 2 && is_utf8_continuation_byte(s[1])) {
+        uint16_t cp = ((s[0] & 0x1F) << 6) | (s[1] & 0x3F);
+        if (cp == 0x00A0) {        // no-break space
+            *advance = 2;
+            return true;
+        }
+        return false;
+    }
+
+    // 3-byte UTF-8 (U+0800-U+FFFF)
+    if ((s[0] & 0xF0) == 0xE0 && remaining >= 3 &&
+        is_utf8_continuation_byte(s[1]) && is_utf8_continuation_byte(s[2])) {
+        uint32_t cp = ((s[0] & 0x0F) << 12) | ((s[1] & 0x3F) << 6) | (s[2] & 0x3F);
+        // Common Unicode spaces: U+2000–U+200A, U+2028, U+2029, U+202F, U+205F, U+3000
+        if ((cp >= 0x2000 && cp <= 0x200A) || cp == 0x2028 || cp == 0x2029 || cp == 0x202F
+            || cp == 0x205F || cp == 0x3000) {
+            *advance = 3;
+            return true;
+        }
+        return false;
+    }
+
+    // 4-byte UTF-8 (U+10000-U+10FFFF) – no common whitespace here
+    return false;
+}
+
+/**
+ * @brief Returns the length of the string after trimming trailing whitespace.
+ *
+ * Scans backwards from the end of the string (first 'len' bytes) and skips any
+ * ASCII or Unicode whitespace. The original string is not modified.
+ *
+ * returns removes chars (in bytes).
+ */
+size_t strview_trim_right_utf8_space(StrView s[_1_]) {
+    if (!s->len) return 0;
+
+    const unsigned char* ustr = (const unsigned char*)items__(s);
+    size_t pos = len__(s);
+
+    while (pos > 0) {
+        // Move backwards to the start of the last UTF-8 character
+        size_t char_start = pos - 1;
+        while (char_start > 0 && is_utf8_continuation_byte(ustr[char_start])) {
+            char_start--;
+        }
+        size_t char_len = pos - char_start;
+        size_t advance = 0;
+        if (is_unicode_whitespace(ustr + char_start, char_len, &advance) && advance == char_len) {
+            pos = char_start;
+        } else break;
+    }
+    size_t rv = len__(s) - pos;
+    s->len = pos;
+    return rv;
+}
+
+size_t strview_trim_utf8_space(StrView s[_1__]) {
+    return strview_trim_left_utf8_space(s) + strview_trim_right_utf8_space(s);
+}
+
 /* testing */
 #ifdef TESTING_FAILURES
 bool unsigned APPENDS__ = 0;

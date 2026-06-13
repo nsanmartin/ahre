@@ -127,6 +127,8 @@ size_t      strview_len(const StrView s[_1__]);
 void        strview_trim_space_in_place(StrView s[_1__]);
 void        strview_trim_space_left(StrView s[_1__]);
 size_t      strview_trim_left_utf8_space(StrView s[_1__]);
+size_t      strview_trim_right_utf8_space(StrView s[_1__]);
+size_t      strview_trim_utf8_space(StrView s[_1__]);
 static inline
 size_t      strview_count_utf8(StrView s) { return mem_count_utf8(s.items, s.len); }
 
