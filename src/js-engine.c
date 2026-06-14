@@ -343,7 +343,7 @@ static js_set_n__(_set_textContent_impl, DomElem elem) {
 
     Err e = dom_elem_set_text_content(elem, sv(new_content, len));
     JS_FreeCString(ctx, new_content);
-    if (e) return JS_ThrowTypeError(ctx, e);
+    if (e) return JS_ThrowTypeError(ctx, "%s", e);
     return JS_UNDEFINED;
 }
 
@@ -417,7 +417,7 @@ static js_set__(node_set_className)
     if (!cstr) return JS_EXCEPTION;
     Err e = dom_elem_set_attr(elem, svl("class"), sv(cstr, len));
     JS_FreeCString(ctx, cstr);
-    if (e) return JS_ThrowTypeError(ctx, e);
+    if (e) return JS_ThrowTypeError(ctx, "%s", e);
     return JS_UNDEFINED;
 }
 
@@ -488,7 +488,7 @@ static js_set__(element_set_id)
     }
     Err e = dom_elem_set_attr(elem, svl("id"), sv(cstr, len));
     JS_FreeCString(ctx, cstr);
-    if (e) return JS_ThrowTypeError(ctx, e);
+    if (e) return JS_ThrowTypeError(ctx, "%s", e);
     return JS_UNDEFINED;
 }
 
@@ -526,7 +526,7 @@ element_setAttribute(JSContext *ctx, JSValueConst self, int argc, JSValueConst *
     Err e = dom_elem_set_attr(elem, sv(name, name_len), sv(val, val_len));
     JS_FreeCString(ctx, name);
     JS_FreeCString(ctx, val);
-    if (e) return JS_ThrowTypeError(ctx, e);
+    if (e) return JS_ThrowTypeError(ctx, "%s", e);
     return JS_UNDEFINED;
 }
 
@@ -870,7 +870,7 @@ static js_fn__(document_createElement)
     DomElem elem;
     Err e = dom_elem_init(&elem, dom, sv(tag, len));
     JS_FreeCString(ctx, tag);
-    if (e) return JS_ThrowTypeError(ctx, e);
+    if (e) return JS_ThrowTypeError(ctx, "%s", e);
     return element_js_value_from_dom_elem(ctx, elem);
 }
 
@@ -898,7 +898,7 @@ static js_get__(document_head)
     HtmlDoc* d = JS_GetOpaque(this, document_class_id);
     DomElem head;
     Err e = dom_get_head_elem(htmldoc_dom(d), &head);
-    if (e) return JS_ThrowPlainError(ctx, e);
+    if (e) return JS_ThrowPlainError(ctx, "%s", e);
     if (isnull(head)) return JS_ThrowTypeError(ctx, "dom not properly initialized");
     JSValue head_js = element_js_value_from_dom_elem(ctx, head);
     return head_js;
@@ -910,7 +910,7 @@ static js_get__(document_body)
     HtmlDoc* d = JS_GetOpaque(this, document_class_id);
     DomElem body;
     Err e = dom_get_body_elem(htmldoc_dom(d), &body);
-    if (e) return JS_ThrowPlainError(ctx, e);
+    if (e) return JS_ThrowPlainError(ctx, "%s", e);
     if (isnull(body)) return JS_ThrowTypeError(ctx, "dom not properly initialized");
     JSValue body_js = element_js_value_from_dom_elem(ctx, body);
     return body_js;
@@ -927,7 +927,7 @@ static js_get__(document_get_title)
 Clean:
     str_clean(&title);
     if (JS_IsException(rv)) return rv;
-    if (e) return JS_ThrowPlainError(ctx, e);
+    if (e) return JS_ThrowPlainError(ctx, "%s", e);
     return rv;
 }
 
@@ -937,13 +937,13 @@ static js_set__(document_set_title)
     HtmlDoc* d = JS_GetOpaque(this, document_class_id);
     DomElem title;
     Err e = dom_get_title_elem(htmldoc_dom(d), &title);
-    if (e) return JS_ThrowPlainError(ctx, e);
+    if (e) return JS_ThrowPlainError(ctx, "%s", e);
 
     size_t len;
     const char* new_content = JS_ToCStringLen(ctx, &len, val);
 
     e = dom_elem_set_text_content(title, sv(new_content, len));
-    if (e) return JS_ThrowTypeError(ctx, e);
+    if (e) return JS_ThrowTypeError(ctx, "%s", e);
     return JS_UNDEFINED;
 }
 
@@ -1371,7 +1371,7 @@ static JSValue replace_doc_url (JSContext* ctx, JSValueConst this, JSValueConst 
     *jse_post_action(htmldoc_js(d)) = POST_ACTION_LOCATION_HREF_SET;
     JSValue rv = JS_UNDEFINED;
     Err e = url_set_url_or_fragment(htmldoc_url(d), url);
-    if (e) rv = JS_ThrowPlainError(ctx, e);
+    if (e) rv = JS_ThrowPlainError(ctx, "%s", e);
 
     JS_FreeCString(ctx, url);
     return rv;
