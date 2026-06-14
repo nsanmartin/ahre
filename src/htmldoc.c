@@ -926,6 +926,35 @@ htmldoc_init_move_request(
     tryjmp(e,Fail, _htmldoc_draw_(d, s, cmd_out));
     tryjmp(e,Fail, fetch_history_entry_update_title(entry, htmldoc_dom(d)));
 
+
+    PostAction pa = *jse_post_action(htmldoc_js(d));
+    if (pa) {
+        switch (pa) {
+            case POST_ACTION_LOCATION_HREF_SET:
+            case POST_ACTION_LOCATION_REPLACE: {
+                tryjmp(e,Fail, msg_ln__(cmd_out, svl("location replace")));
+
+                HtmlDoc doc_replace = (HtmlDoc){0};
+                Request req_replace = (Request){0};
+
+                tryjmp(e,Fail_Replace,
+                    request_init(&req_replace, request_method(htmldoc_request(d)), svl(""), htmldoc_url(d)));
+                tryjmp(e,Fail_Replace, htmldoc_init_move_request(&doc_replace, &req_replace, uc, s, cmd_out));
+
+                htmldoc_cleanup(d);
+                *d = doc_replace;
+                break;
+Fail_Replace:
+                htmldoc_cleanup(&doc_replace);
+                request_clean(&req_replace);
+                goto Fail;
+            }
+            default: fail("unsupported post action");
+        }
+    }
+
+
+
     *r = (Request){0};
     return Ok;
 

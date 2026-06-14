@@ -35,10 +35,17 @@ static inline void jse_clean(JsEngine js[_1_]){ (void)js; }
 typedef struct JSRuntime JSRuntime;
 typedef struct JSContext JSContext;
 
+typedef enum {
+    POST_ACTION_NO_ACTION = 0,
+    POST_ACTION_LOCATION_REPLACE,
+    POST_ACTION_LOCATION_HREF_SET
+} PostAction;
+
 typedef struct {
-    JSRuntime *rt;
-    JSContext *ctx;
-    Str consolebuf;
+    JSRuntime  *rt;
+    JSContext  *ctx;
+    Str        consolebuf;
+    PostAction post_action;
 } JsEngine;
 
 /* getters */
@@ -46,6 +53,7 @@ static inline JSRuntime* jse_runtime(JsEngine js[_1_]) { return js->rt; }
 static inline JSContext* jse_context(JsEngine js[_1_]) { return js->ctx; }
 static inline Str* jse_consolebuf(JsEngine js[_1_]) { return &js->consolebuf; }
 
+static inline PostAction* jse_post_action(JsEngine js[_1_]) { return &js->post_action; }
 static inline bool jse_is_enabled(JsEngine js[_1_]) { return js->rt; }
 
 Err jse_eval(JsEngine js[_1_], Session* s, StrView script, CmdOut* out);

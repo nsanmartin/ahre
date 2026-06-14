@@ -141,7 +141,7 @@ Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method) {
     *r = (Request){ .method=method };
 
     try(str_append(&r->urlstr, sv(url, url_len))); 
-    if (params_len) try(str_append(&r->postfields, sv(params, params_len)));
+    if (params_len) try(str_append(&r->fields, sv(params, params_len)));
     return request_curl_init(r);
 }
 
@@ -244,16 +244,16 @@ Clean_Url:
 
 
 static Err
-_url_fill_postfields_(Request r[_1_], CurlPtr curl, const char* postfields[_1_], size_t len[_1_]) {
+_url_fill_postfields_(Request r[_1_], CurlPtr curl, const char* fields[_1_], size_t len[_1_]) {
     ArlOf(Str)* ks = request_query_keys(r);
     ArlOf(Str)* vs = request_query_values(r);
 
-    if ((len__(ks) || len__(vs)) && len__(request_postfields(r)))
+    if ((len__(ks) || len__(vs)) && len__(request_fields(r)))
         return "error: request must have either postfiels or keys and values, not both";
 
-    if (len__(request_postfields(r))) {
-        *postfields = items__(request_postfields(r));
-        *len        = len__(request_postfields(r));
+    if (len__(request_fields(r))) {
+        *fields = items__(request_fields(r));
+        *len        = len__(request_fields(r));
         return Ok;
     }
 
@@ -271,19 +271,19 @@ _url_fill_postfields_(Request r[_1_], CurlPtr curl, const char* postfields[_1_],
         escaped = curl_easy_escape(curl, items__(vit), len__(vit));
         if (!escaped) return "error: curl_escape failure";
         tryjmp( e, Failure_Free_Escaped,
-            str_append(request_postfields(r), svl("&")));
+            str_append(request_fields(r), svl("&")));
         tryjmp(e, Failure_Free_Escaped,
-            str_append(request_postfields(r), kit));
+            str_append(request_fields(r), kit));
         tryjmp(e, Failure_Free_Escaped,
-            str_append(request_postfields(r), svl("=")));
+            str_append(request_fields(r), svl("=")));
         tryjmp(e, Failure_Free_Escaped,
-            str_append(request_postfields(r), escaped));
+            str_append(request_fields(r), escaped));
         curl_free(escaped);
     }
 
-    try(str_append(request_postfields(r), svl("\0")));
-    *postfields = items__(request_postfields(r)) + 1; /* ignore the first '&'! */
-    *len        = len__(request_postfields(r)) - 2; /* ignore first '&' and '\0' ! */
+    try(str_append(request_fields(r), svl("\0")));
+    *fields = items__(request_fields(r)) + 1; /* ignore the first '&'! */
+    *len        = len__(request_fields(r)) - 2; /* ignore first '&' and '\0' ! */
     return Ok;
 Failure_Free_Escaped:
     curl_free(escaped);
@@ -324,17 +324,11 @@ Clean:
 Err url_from_get_request(Request r[_1_]) {
     Url u = (Url){0};
     try(url_init(&u, r->urlview));
-    CURLU* cu   = url_cu(&u);
     Err    e    = Ok;
     Str    file = (Str){0};
     if (len__(request_urlstr(r)) && !str_eq_case(svl("/"), request_urlstr(r))) {
         tryjmp(e,Fail, resolve_request_url_if_local(r));
-        CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, request_urlstr(r)->items, CURLU_DEFAULT_SCHEME);
-        if (curl_code != CURLUE_OK) {
-            char* url = r->urlstr.len ? r->urlstr.items : "";
-            e = err_fmt("curl_url_set failed setting %s get request : %s\n", url, curl_url_strerror(curl_code));
-            goto Fail;
-        }
+        tryjmp(e,Fail, url_set_url_or_fragment(&u, items__(request_urlstr(r))));
     }
 
 
@@ -348,15 +342,15 @@ Err url_from_get_request(Request r[_1_]) {
     Str* kit = arlfn(Str,begin)(ks);
     Str* vit = arlfn(Str,begin)(vs);
     for ( ; kit != arlfn(Str,end)(ks) && vit != arlfn(Str,end)(vs) ; ++kit, ++vit) {
-        str_reset(request_postfields(r));
-        tryjmp(e, Fail, str_append(request_postfields(r), kit));
-        tryjmp(e, Fail, str_append(request_postfields(r), svl("=")));
-        tryjmp(e, Fail, str_append(request_postfields(r), vit));
-        tryjmp(e, Fail, str_append(request_postfields(r), svl("\0")));
+        str_reset(request_fields(r));
+        tryjmp(e, Fail, str_append(request_fields(r), kit));
+        tryjmp(e, Fail, str_append(request_fields(r), svl("=")));
+        tryjmp(e, Fail, str_append(request_fields(r), vit));
+        tryjmp(e, Fail, str_append(request_fields(r), svl("\0")));
         CURLUcode curl_code = curl_url_set(
-            cu,
+            url_cu(&u),
             CURLUPART_QUERY,
-            items__(request_postfields(r)),
+            items__(request_fields(r)),
             CURLU_APPENDQUERY | CURLU_URLENCODE
         );
         if (curl_code != CURLUE_OK) {
@@ -364,7 +358,7 @@ Err url_from_get_request(Request r[_1_]) {
             goto Fail;
         }
     }
-    str_reset(request_postfields(r));
+    str_reset(request_fields(r));
     str_clean(&file);
     r->url = u;
 
@@ -388,10 +382,10 @@ request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url) {
 }
 
 Err
-request_from_cli_params(Request r[_1_], HttpMethod method, StrView urlstr, StrView postfields) {
+request_from_cli_params(Request r[_1_], HttpMethod method, StrView urlstr, StrView fields) {
     *r = (Request) { .method=method, };
     try(str_append(request_urlstr(r), urlstr));
-    try(str_append(request_postfields(r), postfields));
+    try(str_append(request_fields(r), fields));
     return request_curl_init(r);
 }
 
@@ -411,18 +405,18 @@ request_query_append_key_value(Request r[_1_], const char*k, size_t klen, const 
 Err
 set_post_fields(Request r[_1_], CurlPtr curl) {
     if (r->method != http_post) return Ok;
-    const char* postfields;
+    const char* fields;
     size_t      len;
-    try (_url_fill_postfields_(r, curl, &postfields, &len));
+    try (_url_fill_postfields_(r, curl, &fields, &len));
 
-    if (!len) return err_internal("unexpected empty postfields");
+    if (!len) return err_internal("unexpected empty fields");
 
     CURLcode code;
     code = curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, len);
-    if (CURLE_OK != code) return err_internal("curl postfields size set failure");
+    if (CURLE_OK != code) return err_internal("curl fields size set failure");
 
-    code = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postfields);
-    if (CURLE_OK != code) return err_internal("curl postfields set failure");
+    code = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, fields);
+    if (CURLE_OK != code) return err_internal("curl fields set failure");
     return Ok;
 }
 

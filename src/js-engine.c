@@ -308,7 +308,7 @@ Clean:
     return JS_UNDEFINED;
 }
 
-static JSValueConst
+static JSValueConst __attribute__((unused))
 console_log_helper(JSContext* ctx, StrView msg) {
     JSValueConst console = get_global(ctx, "console");
     Str*    buf = JS_GetOpaque(console, console_class_id);
@@ -1348,36 +1348,48 @@ mk_not_impl_getset(location, origin)
 
 mk_not_impl_fn(location, assign)
 mk_not_impl_fn(location, reload)
-mk_not_impl_fn(location, replace)
 mk_not_impl_fn(location, toString)
 
 
 static js_get__(location_get_href) {
     HtmlDoc* d = JS_GetOpaque(this, location_class_id);
     if (!d) throw("no document in location");
-    StrView url;
-    Err e = htmldoc_get_effective_url(d, &url);
+    char* url;
+    Err e = url_cstr_malloc(*htmldoc_url(d), &url);
     if (e) throw(e);
-    return JS_NewStringLen(ctx, url.items, url.len);
+    JSValue rv = JS_NewString(ctx, url);
+    w_curl_free(url);
+    return rv;
 }
 
-
-static js_set__(location_set_href) {
+static JSValue replace_doc_url (JSContext* ctx, JSValueConst this, JSValueConst val) {
     HtmlDoc* d = JS_GetOpaque(this, location_class_id);
     if (!d) throw("no document in location");
     const char* url = JS_ToCString(ctx, val);
     if (!url) return JS_UNDEFINED;
-    //TODO0
-    console_log_helper(ctx, svl("TODO window.location.href set :)"));
-    console_log_helper(ctx, sv(url));
+
+    *jse_post_action(htmldoc_js(d)) = POST_ACTION_LOCATION_HREF_SET;
+    JSValue rv = JS_UNDEFINED;
+    Err e = url_set_url_or_fragment(htmldoc_url(d), url);
+    if (e) rv = JS_ThrowPlainError(ctx, e);
+
     JS_FreeCString(ctx, url);
-    return JS_UNDEFINED;
+    return rv;
+}
+
+static js_set__(location_set_href) { return replace_doc_url(ctx, this, val); }
+static js_fn__(location_replace) {
+    //TODO1: check error type
+    if (argc != 1) return JS_ThrowTypeError(ctx, "invalid parameter to location replace");
+    return replace_doc_url(ctx, this, argv[0]);
 }
 
 
 static const JSCFunctionListEntry location_fn_list[] = {
     JS_CGETSET_DEF("href", location_get_href, location_set_href),
-    /* mk_not_impl_getset_list_entry(location, href), */
+
+    JS_CFUNC_DEF("replace", 1, location_replace),
+
     mk_not_impl_getset_list_entry(location, protocol),
     mk_not_impl_getset_list_entry(location, host),
     mk_not_impl_getset_list_entry(location, hostname),
@@ -1389,7 +1401,6 @@ static const JSCFunctionListEntry location_fn_list[] = {
 
     mk_not_impl_fn_list_entry(location, assign),
     mk_not_impl_fn_list_entry(location, reload),
-    mk_not_impl_fn_list_entry(location, replace),
     mk_not_impl_fn_list_entry(location, toString),
 
 };

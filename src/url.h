@@ -64,21 +64,7 @@ static inline Err url_init(Url u[_1_], Url* from) {
 }
 
 
-//TODO make url_int call this one
-static inline Err curlu_set_url_or_fragment(CURLU* u,  const char* cstr) {
-    if (!*cstr) return "error: no url";
-    CURLUcode code = (*cstr == '#' && cstr[1])
-        ? curl_url_set(u, CURLUPART_FRAGMENT, cstr + 1, CURLU_DEFAULT_SCHEME)
-        : curl_url_set(u, CURLUPART_URL, cstr, CURLU_DEFAULT_SCHEME);
-
-    switch (code) {
-        case CURLUE_OK:
-            return Ok;
-        default:
-            return err_fmt("error setting CURLU with '%s': %s", cstr, curl_url_strerror(code));
-    }
-}
-
+Err url_set_url_or_fragment(Url u[_1_], const char* s);
 
 Err url_cstr_malloc(Url u, char* out[_1_]);
 Err url_append_host_to_str(Url u, char* out[_1_]);

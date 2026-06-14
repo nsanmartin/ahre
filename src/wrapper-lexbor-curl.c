@@ -62,7 +62,7 @@ Err w_curl_set_url(CurlPtr curl, Url url[_1_]) {
 static Err _set_htmldoc_url_with_effective_url_(CurlPtr curl, HtmlDoc htmldoc[_1_]) {
     char* effective_url;
     try(w_curl_get_effective_url(curl, &effective_url));
-    return curlu_set_url_or_fragment(url_cu(htmldoc_url(htmldoc)), effective_url);
+    return url_set_url_or_fragment(htmldoc_url(htmldoc), effective_url);
 }
 
 
