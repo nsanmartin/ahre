@@ -1745,7 +1745,8 @@ ErrClean:
 static size_t splitted_celL_vertical_len(SplittedCell c[_1_]) { return len__(c); }
 static size_t cell_part_horizontal_len(CellPart c[_1_]) {
     StrView part = sv(c->buf);
-    strview_trim_utf8_space(&part);
+    //TODO? trim only left?
+    strview_trim_left_utf8_space(&part);
     return strview_count_utf8(part);
 
 }
