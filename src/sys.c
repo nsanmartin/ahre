@@ -33,7 +33,7 @@ Err file_open(const char* file_path, const char* mode, FILE* fpp[_1_]) {
     if (!file_path) return "error: cannot open NULL file";
     if (!*file_path) return "cannot open empty string file";
     file_path = cstr_trim_space((char*)file_path);
-    if (!*file_path) return "cannot open all whitespace file";
+    if (!*file_path) return "cannot open all whitespace filename";
     Str path = (Str){0};
     try( resolve_path(file_path, NULL, &path));
     *fpp = fopen(path.items, mode);
@@ -125,6 +125,16 @@ bool path_is_dir(const char* path) {
     struct stat st;
     return stat(path, &st) == 0 && S_ISDIR(st.st_mode);
 }
+
+
+Err
+file_read(FilePtr fp[1], char* mem, size_t len, size_t read[1]) {
+    *read = fread(mem, 1, len, fp->ptr);
+    if (ferror(fp->ptr)) return err_from(errno);
+    if (*read < len && !feof(fp->ptr)) return err_from("fread read less but did not read eof?");
+    return Ok;
+}
+
 // file utils
 
 

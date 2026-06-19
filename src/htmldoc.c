@@ -2108,6 +2108,18 @@ htmldoc_console(HtmlDoc d[_1_], Session* s, const char* line, CmdOut* out) {
 }
 
 
+Err
+htmldoc_eval_js_file(HtmlDoc d[_1_], Session* s, const char* filename, CmdOut* out) {
+    Err e        = Ok;
+    Str contents = (Str){0};
+    tryjmp(e,Clean, str_append_file(&contents, filename));
+    tryjmp(e,Clean, jse_eval(htmldoc_js(d), s, sv(contents), out));
+
+Clean:
+    str_clean(&contents);
+    return e;
+}
+
 static Err
 jse_eval_doc_scripts(Session* s, HtmlDoc d[_1_], CmdOut* out) {
 
@@ -2156,12 +2168,8 @@ htmldoc_eval_js_scripts_or_continue(HtmlDoc d[_1_], Session* s, CmdOut* out) {
 }
 
 
-static Err
-_htmldoc_scripts_range_from_parsed_range_(
-    HtmlDoc          h[_1_],
-    RangeParse p[_1_],
-    Range            r[_1_]
-) {
+Err
+htmldoc_scripts_range_from_parsed_range( HtmlDoc h[_1_], RangeParse p[_1_], Range r[_1_]) {
     *r = (Range){0};
     size_t head_script_count = len__(htmldoc_head_scripts(h));
     size_t body_script_count = len__(htmldoc_body_scripts(h));
@@ -2204,25 +2212,28 @@ _htmldoc_scripts_range_from_parsed_range_(
 
 
 Err
-htmldoc_scripts_write(HtmlDoc h[_1_], RangeParse rp[_1_], Writer w[_1_]) {
-    Range r;
-    try(_htmldoc_scripts_range_from_parsed_range_(h, rp, &r));
-    for (size_t it = r.beg; it < r.end; ++it) {
-        char buf[UINT_TO_STR_BUFSZ] = {0};
-        size_t len;
-        try( unsigned_to_str(it, buf, UINT_TO_STR_BUFSZ, &len));
-        Str* sc;
-        try( htmldoc_script_at(h, it, &sc));
-        try(writer_write_lit__(w, "// script: "));
-        try(writer_write(w, buf, len));
-        if (len__(sc) <= 1) {
-            try(writer_write_lit__(w, " is empty!"));
-        } else {
-            try(writer_write_lit__(w, "\n"));
-            try(writer_write(w, items__(sc), len__(sc) - 1));
-        }
+htmldoc_script_write(HtmlDoc h[_1_], size_t script, Writer w[_1_]) {
+    char buf[UINT_TO_STR_BUFSZ] = {0};
+    size_t len;
+    try( unsigned_to_str(script, buf, UINT_TO_STR_BUFSZ, &len));
+    Str* sc;
+    try( htmldoc_script_at(h, script, &sc));
+    try(writer_write_lit__(w, "// script: "));
+    try(writer_write(w, buf, len));
+    if (len__(sc) <= 1) {
+        try(writer_write_lit__(w, " is empty!"));
+    } else {
         try(writer_write_lit__(w, "\n"));
+        try(writer_write(w, items__(sc), len__(sc) - 1));
     }
+    try(writer_write_lit__(w, "\n"));
+    return Ok;
+}
+
+
+Err
+htmldoc_script_write_all(HtmlDoc h[_1_], Range r[_1_], Writer w[_1_]) {
+    for (size_t it = r->beg; it < r->end; ++it) try(htmldoc_script_write(h, it, w));
     return Ok;
 }
 

@@ -254,6 +254,34 @@ Err str_append_ui_as_base36(Str buf[_1_], uintmax_t ui) {
 }
 
 
+Err
+str_append_file(Str s[1], const char* filename)
+{
+    *s  = (Str){0};
+    Err e = Ok;
+    FilePtr fp;
+    try(file_open(filename, "rb", &fp.ptr));
+
+    if (fseek(fp.ptr, 0, SEEK_END) != 0) { e=err_from(errno); goto Close; }
+    long long_size = ftell(fp.ptr);
+    if (long_size < 0) { e=err_from(errno); goto Close; }
+    size_t size;
+    try(cast_from(&size, long_size));
+    if (fseek(fp.ptr, 0, SEEK_SET) != 0) { e=err_from(errno); goto Close; }
+    rewind (fp.ptr);
+
+    s->capacity = size + 1;
+    s->items = std_malloc(s->capacity);
+    if (!s->items)  { e=err_from(errno); goto Close; }
+
+    tryjmp(e,Close, file_read(&fp, s->items, size, &s->len));
+
+    s->items[s->len] = '\0';
+
+Close:
+    file_close(fp.ptr);
+    return e;
+}
 /* strview fns */
 
 StrView strview_from_mem(const char* s, size_t len) {return (StrView){.items=s, .len=len};}

@@ -131,7 +131,11 @@ static JSValueConst console_log_not_implemented_impl(JSContext* ctx, StrView fna
     ? Ok : err_fmt("ahjs error: could not set property fn list (in %s)",  __func__ ))
 
 
-static js_set__(js_set_noop) { (void)ctx; (void)this; (void)val; return JS_UNDEFINED; }
+static js_set__(js_set_noop) {
+    (void)ctx; (void)this; (void)val;
+    tryjs(console_log_not_implemented(ctx));
+    return JS_UNDEFINED;
+}
 
 
 static Err
@@ -335,7 +339,9 @@ static js_fn__(event_target_addEventListener)
 /* ---- Node ---- */
 
 
-static js_set_n__(_set_textContent_impl, DomElem elem) {
+static
+js_set_n__(_set_textContent_impl, DomElem elem) 
+{
     (void)this;
     if (isnull(elem)) return JS_ThrowTypeError(ctx, "ahre: cannot set textContext of NULL");
     size_t len;
@@ -349,16 +355,16 @@ static js_set_n__(_set_textContent_impl, DomElem elem) {
 
 static js_fn__(node_appendChild)
 {
-    (void)argc;(void)this;
-    // TODO0: manipulate actual DOM
+    (void)this;(void)argc;(void)argv;
     tryjs(console_log_not_implemented(ctx));
-    return JS_DupValue(ctx, argv[0]);
+    return JS_UNDEFINED;
 }
 
 mk_not_impl_getter(node_textContent)
 static js_set__(node_set_textContent)
 {
     DomElem elem = js_value_to_dom_elem(this);
+    if (isnull(elem)) return JS_ThrowTypeError(ctx, "ahjs: cannot convert js to dom elem");
     return _set_textContent_impl(ctx, this, val, elem);
 }
 
@@ -391,34 +397,42 @@ mk_not_impl_fn(node, normalize)
 mk_not_impl_fn(node, removeChild)
 mk_not_impl_fn(node, replaceChild)
 
-static js_get__(node_get_innerHtml) { (void)ctx; (void)this;
+static js_get__(node_get_innerHtml) {
+    (void)ctx; (void)this;
     tryjs(console_log_not_implemented(ctx));
     return JS_UNDEFINED;
 }
 
-static js_set__(node_set_innerHtml) { (void)ctx; (void)this;(void)val;
+static js_set__(node_set_innerHtml) {
+    (void)ctx; (void)this;(void)val;
     tryjs(console_log_not_implemented(ctx));
     return JS_UNDEFINED;
 }
 
 static js_get__(node_get_className)
 {
-    DomElem elem = js_value_to_dom_elem(this);
-    StrView value = dom_elem_attr_value(elem, svl("class"));
-    if (!value.len || !value.items) return JS_NewString(ctx, "");
-    return JS_NewStringLen(ctx, (char*)value.items, value.len);
+    (void)ctx; (void)this;
+    tryjs(console_log_not_implemented(ctx));
+    return JS_UNDEFINED;
+    /* DomElem elem = js_value_to_dom_elem(this); */
+    /* StrView value = dom_elem_attr_value(elem, svl("class")); */
+    /* if (!value.len || !value.items) return JS_NewString(ctx, ""); */
+    /* return JS_NewStringLen(ctx, (char*)value.items, value.len); */
 }
 
 static js_set__(node_set_className)
 {
-    DomElem elem = js_value_to_dom_elem(this);
-    size_t len;
-    const char *cstr = JS_ToCStringLen(ctx, &len, val);
-    if (!cstr) return JS_EXCEPTION;
-    Err e = dom_elem_set_attr(elem, svl("class"), sv(cstr, len));
-    JS_FreeCString(ctx, cstr);
-    if (e) return JS_ThrowTypeError(ctx, "%s", e);
+    (void)ctx; (void)this;(void)val;
+    tryjs(console_log_not_implemented(ctx));
     return JS_UNDEFINED;
+    /* DomElem elem = js_value_to_dom_elem(this); */
+    /* size_t len; */
+    /* const char *cstr = JS_ToCStringLen(ctx, &len, val); */
+    /* if (!cstr) return JS_EXCEPTION; */
+    /* Err e = dom_elem_set_attr(elem, svl("class"), sv(cstr, len)); */
+    /* JS_FreeCString(ctx, cstr); */
+    /* if (e) return JS_ThrowTypeError(ctx, "%s", e); */
+    /* return JS_UNDEFINED; */
 }
 
 static const JSCFunctionListEntry node_fn_list[] = {
@@ -463,6 +477,7 @@ static const JSCFunctionListEntry node_fn_list[] = {
 static js_get__(element_get_id)
 {
     DomElem elem = js_value_to_dom_elem(this);
+    if (isnull(elem)) return JS_ThrowTypeError(ctx, "ahjs: cannot convert js to dom elem");
 
     StrView value = dom_elem_attr_value(elem, svl("id"));
     if (!value.len || !value.items) return JS_NULL;
@@ -477,8 +492,6 @@ static js_set__(element_set_id)
 
     StrView value = dom_elem_attr_value(elem, svl("id"));
     if (!value.len || !value.items) return JS_NULL;
-
-    return JS_NewStringLen(ctx, (char*)value.items, value.len);
 
     size_t len;
     const char *cstr = JS_ToCStringLen(ctx, &len, val);
@@ -497,6 +510,7 @@ element_getAttribute(JSContext *ctx, JSValueConst this, int argc, JSValueConst *
 {
     if (argc != 1) return JS_ThrowTypeError(ctx, "Expected 1 argument");
     DomElem elem = js_value_to_dom_elem(this);
+    if (isnull(elem)) return JS_ThrowTypeError(ctx, "ahjs: cannot convert js to dom elem");
 
     size_t attrlen;
     const char* attr = JS_ToCStringLen(ctx, &attrlen, argv[0]);
@@ -512,46 +526,55 @@ element_getAttribute(JSContext *ctx, JSValueConst this, int argc, JSValueConst *
 static JSValue
 element_setAttribute(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv)
 {
-    if (argc != 2) return JS_ThrowTypeError(ctx, "setAttribute: name and value needed");
-    DomElem elem = js_value_to_dom_elem(self);
-    if (isnull(elem)) return JS_ThrowTypeError(ctx, "invalid element");
-    size_t name_len, val_len;
-    const char *name = JS_ToCStringLen(ctx, &name_len, argv[0]);
-    const char *val  = JS_ToCStringLen(ctx, &val_len, argv[1]);
-    if (!name || !val) {
-        JS_FreeCString(ctx, name);
-        JS_FreeCString(ctx, val);
-        return JS_EXCEPTION;
-    }
-    Err e = dom_elem_set_attr(elem, sv(name, name_len), sv(val, val_len));
-    JS_FreeCString(ctx, name);
-    JS_FreeCString(ctx, val);
-    if (e) return JS_ThrowTypeError(ctx, "%s", e);
+    (void)self; (void)argc;(void)argv;
+    tryjs(console_log_not_implemented(ctx));
     return JS_UNDEFINED;
+    /* if (argc != 2) return JS_ThrowTypeError(ctx, "setAttribute: name and value needed"); */
+    /* DomElem elem = js_value_to_dom_elem(self); */
+    /* if (isnull(elem)) return JS_ThrowTypeError(ctx, "invalid element"); */
+    /* size_t name_len, val_len; */
+    /* const char *name = JS_ToCStringLen(ctx, &name_len, argv[0]); */
+    /* const char *val  = JS_ToCStringLen(ctx, &val_len, argv[1]); */
+    /* if (!name || !val) { */
+    /*     JS_FreeCString(ctx, name); */
+    /*     JS_FreeCString(ctx, val); */
+    /*     return JS_EXCEPTION; */
+    /* } */
+    /* Err e = dom_elem_set_attr(elem, sv(name, name_len), sv(val, val_len)); */
+    /* JS_FreeCString(ctx, name); */
+    /* JS_FreeCString(ctx, val); */
+    /* if (e) return JS_ThrowTypeError(ctx, "%s", e); */
+    /* return JS_UNDEFINED; */
 }
 
 static JSValue
 element_removeAttribute(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv)
 {
-    if (argc != 1) return JS_ThrowTypeError(ctx, "removeAttribute: name needed");
-    DomElem elem = js_value_to_dom_elem(self);
-    if (isnull(elem)) return JS_ThrowTypeError(ctx, "invalid element");
-    size_t len;
-    const char *name = JS_ToCStringLen(ctx, &len, argv[0]);
-    if (!name) return JS_EXCEPTION;
-    dom_node_remove_attr(dom_node_from_elem(elem), sv(name, len));
-    JS_FreeCString(ctx, name);
+    (void)self; (void)argc;(void)argv;
+    tryjs(console_log_not_implemented(ctx));
     return JS_UNDEFINED;
+    /* if (argc != 1) return JS_ThrowTypeError(ctx, "removeAttribute: name needed"); */
+    /* DomElem elem = js_value_to_dom_elem(self); */
+    /* if (isnull(elem)) return JS_ThrowTypeError(ctx, "invalid element"); */
+    /* size_t len; */
+    /* const char *name = JS_ToCStringLen(ctx, &len, argv[0]); */
+    /* if (!name) return JS_EXCEPTION; */
+    /* dom_node_remove_attr(dom_node_from_elem(elem), sv(name, len)); */
+    /* JS_FreeCString(ctx, name); */
+    /* return JS_UNDEFINED; */
 }
 
 
 static JSValue
 element_remove(JSContext *ctx, JSValueConst self, int argc, JSValueConst *argv) {
-    (void)argc; (void)argv;
-    DomElem elem = js_value_to_dom_elem(self);
-    if (isnull(elem)) return JS_ThrowTypeError(ctx, "invalid element");
-    lxb_dom_node_destroy(dom_node_from_elem(elem).ptr);
+    (void)self; (void)argc;(void)argv;
+    tryjs(console_log_not_implemented(ctx));
     return JS_UNDEFINED;
+    /* (void)argc; (void)argv; */
+    /* DomElem elem = js_value_to_dom_elem(self); */
+    /* if (isnull(elem)) return JS_ThrowTypeError(ctx, "invalid element"); */
+    /* lxb_dom_node_destroy(dom_node_from_elem(elem).ptr); */
+    /* return JS_UNDEFINED; */
 }
 
 
@@ -859,6 +882,7 @@ static const JSCFunctionListEntry element_fn_list[] = {
 
 /* Document */
 
+//TODO0: add finalizer
 static js_fn__(document_createElement)
 {
     if (argc != 1) return JS_ThrowTypeError(ctx, "createElement: tagName needed");

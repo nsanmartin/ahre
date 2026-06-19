@@ -21,6 +21,7 @@
 
 #include "cmd-params.h"
 #include "draw.h"
+#include "utils.h"
 
 /* cmd-params.h */
 #define get_cmd_out_(P) _Generic((P),\
@@ -47,4 +48,7 @@
 #define arl_append_zero(Type, Arl, Ptr) ((Ptr = arlfn(Type,append)(Arl,&(Type){0})) \
     ? Ok : err_fmt("error: arl_append failure ("__FILE__":%d)", __LINE__))
 
+#define cast_from(To, From) _Generic((To),\
+    size_t*:_Generic((From), long: size_t_from_long)\
+)(To, From)
 #endif

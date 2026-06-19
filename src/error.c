@@ -44,6 +44,12 @@ Err _err_fmt_vsnprinf_(Err fmt, ...) {
     return MSGBUF;
 }
 
+Err
+err_from_cstr(const char* msg) { return msg; }
+
+Err
+err_from_errno(int en) { return strerror(en); }
+
 #ifdef AHRE_SIMULATE_ERR
 static size_t ntry = 0;
 bool simulate_error(void) { return ++ntry % AHRE_SIMULATE_ERR == 0; }

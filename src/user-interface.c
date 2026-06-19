@@ -405,20 +405,57 @@ static Err cmd_doc_scripts_list(CmdParams p[_1_]) {
 }
 
 
-static Err cmd_doc_scripts_save(CmdParams p[_1_]) {
+static Err cmd_doc_scripts_local(CmdParams p[_1_]) {
+    HtmlDoc* h;
+    try(session_current_doc(p->s, &h));
+    return htmldoc_eval_js_file(h, p->s, p->ln, cmd_params_cmd_out(p));
+}
+
+static Err
+cmd_doc_scripts_save_single_file(HtmlDoc h[1], const char* filename, Range r[_1_], CmdOut out[1]) {
+    Err     e  = Ok;
+    FilePtr fp = (FilePtr){0};
+    Writer  w;
+    try(file_open(filename, "w", &fp.ptr));
+    tryjmp(e, Clean, file_writer_init(&w, fp.ptr));
+    tryjmp(e, Clean, htmldoc_script_write_all(h, r, &w));
+Clean:
+    Err e1 = file_close(fp.ptr);
+    if (!e1) e = msg__(out, svl("script(s) saved\n"));
+    else e = e1;
+    return e;
+}
+
+static Err
+cmd_doc_scripts_save(CmdParams p[_1_]) {
     Err e = Ok;
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
-    Writer w;
-    FILE* fp;
-    try(file_open(p->ln, "w", &fp));
-    tryjmp(e, Failure, file_writer_init(&w, fp));
-    tryjmp(e, Failure, htmldoc_scripts_write(h, &p->rp, &w));
-    e = file_close(fp);
-    ok_then(e, msg__(cmd_params_cmd_out(p), svl("script(s) saved\n")));
-    return Ok;
-Failure:
-    file_close(fp);
+    const char* filename = p->ln;
+    Range r;
+    try(htmldoc_scripts_range_from_parsed_range(h, &p->rp, &r));
+    if (!path_is_dir(filename))
+        return cmd_doc_scripts_save_single_file(h, filename, &r, cmd_params_cmd_out(p));
+
+    Str script_filename = (Str){0};
+    for (size_t it = r.beg; it < r.end; ++it) {
+        FILE* fp = NULL;
+        Writer w;
+        tryjmp(e,Clean, str_append(&script_filename, sv(p->ln)));
+        tryjmp(e,Clean, str_append(&script_filename, svl("/script-")));
+        tryjmp(e,Clean, str_append_ui_as_base10(&script_filename, it));
+        tryjmp(e,Clean, str_append(&script_filename, svl(".js")));
+
+        tryjmp(e,Clean, file_open(script_filename.items, "w", &fp));
+        tryjmp(e,Clean, file_writer_init(&w, fp));
+        tryjmp(e,Clean, htmldoc_script_write(h, it, &w));
+        tryjmp(e, Clean, msg__(cmd_params_cmd_out(p), svl("script(s) saved\n")));
+Clean:
+        str_reset(&script_filename);
+        if (fp) { file_close(fp); fp = NULL; }
+        if (e) break;
+    }
+    str_clean(&script_filename);
     return e;
 }
 
@@ -442,7 +479,9 @@ static Err cmd_doc_scripts_msg(CmdParams p[_1_]) {
     try(session_current_doc(p->s, &h));
     Writer w;
     try(msg_writer_init(&w, cmd_out_msg(cmd_params_cmd_out(p))));
-    return htmldoc_scripts_write(h, &p->rp, &w);
+    Range r;
+    try(htmldoc_scripts_range_from_parsed_range(h, &p->rp, &r));
+    return htmldoc_script_write_all(h, &r, &w);
 }
 
 
@@ -452,6 +491,8 @@ static SessionCmd _cmd_doc_scripts_[] =
     , {.name="'",    .fn=cmd_doc_scripts_list, .help=NULL, .flags=CMD_CHAR}
     , {.name="\"",   .fn=cmd_doc_scripts_msg,  .help=NULL, .flags=CMD_CHAR}
     , {.name="fetch",.fn=cmd_doc_scripts_fetch,.help=NULL, .match=1}
+    //TODO0 move, not range cmd
+    , {.name="local",.fn=cmd_doc_scripts_local,.help=NULL, .match=1}
     , {.name="save", .fn=cmd_doc_scripts_save, .help=NULL, .match=1}
     , {0}
 };

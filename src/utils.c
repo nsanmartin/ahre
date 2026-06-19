@@ -2,6 +2,8 @@
 
 #include "utils.h"
 
+Err _err_int_overflow_ = "int overflow";
+Err err_int_overflow(void) { return _err_int_overflow_; }
 
 const char _base36digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
@@ -85,3 +87,21 @@ Err parse_size_t_err(const char* tk, size_t out[_1_], const char* endptr[_1_], i
     *out = (size_t)llu;
     return Ok;
 }
+
+Err
+char_from_int(char c[1], int i) {
+    if (i < CHAR_MIN || CHAR_MAX < i) return err_int_overflow();
+    *c = (char)i;
+    return Ok;
+}
+
+
+Err
+size_t_from_long(size_t sz[1], long l)
+{
+    if (l < 0) return err_from("negative long cannot be casted to size_t");
+    if (SIZE_MAX < (long long unsigned)l) return err_from("long too large to cast it to size_t");
+    *sz = (size_t)l;
+    return Ok;
+}
+

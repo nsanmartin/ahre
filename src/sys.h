@@ -28,6 +28,7 @@ Err file_close(FILE* fp);
 Err _file_write_sep_(
     const char* mem, size_t len, const char* sep, size_t seplen, FILE* fp, const char* caller
 );
+Err file_read(FilePtr fp[1], char* mem, size_t len, size_t read[1]);
 Err expand_path(const char *path, Str out[_1_]);
 bool path_is_dir(const char* path);
 struct sigaction get_interrupt_action(void);

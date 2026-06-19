@@ -29,6 +29,9 @@ static inline bool   file_exists(const char* filename) { return !access(filename
 static inline size_t size_t_min(size_t x, size_t y) { return x <= y ? x : y; }
 static inline size_t size_t_max(size_t x, size_t y) { return x >= y ? x : y; }
 
+Err char_from_int(char c[1], int i);
+Err size_t_from_long(size_t sz[1], long l);
+Err err_int_overflow(void);
 
 #define cast__(T) (T)
 #define typeof_max__(X) _Generic((X),\

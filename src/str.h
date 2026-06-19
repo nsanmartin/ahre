@@ -160,6 +160,7 @@ Err    str_append_datetime_now(Str [_1__]);
 Err    str_append_timespec(Str out[_1__], struct timespec ts[_1__]);
 Err    str_append_ui_as_base10(Str buf[_1__], uintmax_t ui);
 Err    str_append_ui_as_base36(Str buf[_1__], uintmax_t ui);
+Err str_append_file(Str s[1], const char* filename);
 Err    str_replace_char_inplace(Str s[_1__], char from, char to);
 bool   str_contains(Str s[_1__], char c);
 bool   str_startswith_mem(StrView s, const char* mem, size_t len);
