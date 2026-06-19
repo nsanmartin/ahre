@@ -21,6 +21,7 @@ Err         parse_ll_err(const char* tk, intmax_t llp[_1_], const char* endptr[_
 Err         parse_size_t_err(const char* tk, size_t out[_1_], const char* endptr[_1_], int base);
 Err         parse_size_t_or_throw(const char** strptr, size_t* num, int base) ;
 Err         uint_to_base36_str(char* buf, size_t buf_sz, uintmax_t n, size_t len[_1_]);
+Err         int_to_hex_str(intmax_t i, char* buf, size_t size , size_t len[_1_]);
 const char* parse_l(const char* tk, long lptr[_1_]);
 const char* parse_ull(const char* tk, uintmax_t* ullp);
 

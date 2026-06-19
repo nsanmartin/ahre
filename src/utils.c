@@ -22,6 +22,13 @@ Err uint_to_base36_str(char* buf, size_t buf_sz, uintmax_t n, size_t len[_1_]) {
     return Ok;
 }
 
+Err int_to_hex_str(intmax_t i, char* buf, size_t size , size_t len[_1_]) {
+    int printlen = snprintf(buf, size, "%lx", i);
+    if (printlen < 0) return "error: snprintf returned 0";
+    if (lt__(size, printlen)) return "error: number too large for string buffer";
+    *len = cast__(size_t)printlen;
+    return Ok;
+}
 
 const char* parse_ull(const char* tk, uintmax_t* ullp) {
     if (!tk || !*tk) { return NULL; }

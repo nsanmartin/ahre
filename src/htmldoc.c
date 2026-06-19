@@ -1500,7 +1500,7 @@ static Err err_could_not_fit_the_table_impl(int linenum) {
 static char err_unexpected_tag_in_table[ sizeof(ERR_TAG_MSG__) + TAG_STR_MAX_LEN ] = {  ERR_TAG_MSG__ };
 static Err err_from_unexpected_tag_in_table(HtmlTag tag) {
     size_t len;
-    try(int_to_str(tag, err_unexpected_tag_in_table + lit_len__(ERR_TAG_MSG__), TAG_STR_MAX_LEN, &len));
+    try(int_to_hex_str(tag, err_unexpected_tag_in_table + lit_len__(ERR_TAG_MSG__), TAG_STR_MAX_LEN, &len));
     err_unexpected_tag_in_table[lit_len__(ERR_TAG_MSG__) + len] = '\0';
     return err_unexpected_tag_in_table;
 }
@@ -1977,6 +1977,7 @@ static Err
 draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     Err           err                     = Ok;
     DrawTextBuf*  caption                 = &(DrawTextBuf){0};
+    DrawTextBuf*  unexpected_tag          = &(DrawTextBuf){0};
     DrawTable     table                   = (DrawTable){0};
     DomNode       it                      = dom_skip_text(dom_node_first_child(node));
     SplittedTable splitted_table          = (SplittedTable){0};
@@ -2013,7 +2014,10 @@ draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
             }
             break;
             case HTML_TAG_COLGROUP: continue;
-            default: { err = err_from_unexpected_tag_in_table(dom_node_tag(it)); goto Clean; }
+            default: {
+                tryjmp(err,Clean, msg_ln__(get_cmd_out_(ctx), err_from_unexpected_tag_in_table(dom_node_tag(it))));
+                tryjmp(err,Clean, draw_rec(it, ctx, unexpected_tag));
+            }
         }
     }
 
@@ -2035,6 +2039,10 @@ draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
     draw_text_buf_append(caption, svl("\n"));
     draw_ctx_append_sub_text(text, caption);
+    StrView buf = strview_from_draw_text_buf(unexpected_tag);
+    strview_trim_utf8_space(&buf);
+    if (strview_count_utf8(buf))
+        draw_ctx_append_sub_text(text, unexpected_tag);
 
     if (!ends_with_newline(strview_from_draw_text_buf(text))) draw_text_buf_append(text, svl("\n"));
     tryjmp(err, Clean,
@@ -2047,6 +2055,7 @@ Clean:
     splitted_table_clean(&splitted_table);
     draw_table_clean(&table);
     draw_text_buf_clean(caption);
+    draw_text_buf_clean(unexpected_tag);
     return err;
 }
 
