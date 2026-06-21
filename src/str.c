@@ -13,6 +13,9 @@
 #include "str.h"
 #include "sys.h"
 
+static bool is_unicode_whitespace(const unsigned char* s, size_t remaining, size_t* advance);
+
+
 /* mem fns */
 char* mem_is_whitespace(char* s, size_t len) {
     while(len && *s && !isspace(*s)) { ++s; --len; } //TODO1: why !
@@ -302,9 +305,24 @@ void strview_trim_space_in_place(StrView s[_1_]) {
     while(s->len > 1 && isspace(s->items[s->len-1])) { --s->len; }
 }
 
+
 StrView strview_split_word(StrView s[_1_]) {
     StrView word = (StrView){.items=items__(s)};
     while(s->len && is_visible(*(items__(s)))) { ++word.len; ++s->items; --s->len; }
+    return word;
+}
+
+
+StrView strview_split_utf8_word(StrView s[_1_]) {
+    StrView word = sv(s);
+    size_t len = 0;
+    size_t advance = 0;
+    while (len < word.len && !is_unicode_whitespace((unsigned char*)word.items + len, word.len - len, &advance))
+        ++len;
+    word.len  = len;
+    s->items += len;
+    s->len   -= len;
+    strview_trim_left_utf8_space(s);
     return word;
 }
 
@@ -368,8 +386,13 @@ StrView strview_from_mem_trim(const char* s, size_t len) {
     return rv;
 }
 
+
+/*
+ * Returns true is s is not only space
+ */
 bool strview_skip_space_inplace(StrView s[_1_]) {
     strview_trim_left_utf8_space(s);
+    strview_trim_right_utf8_space(s);
     return s->len != 0;
 }
 

@@ -58,6 +58,7 @@ typedef struct {
     size_t      right_newlines;
 } DrawTextBuf;
 
+static Err draw_text_buf_trim(DrawTextBuf sub[_1_]);
 
 typedef struct { size_t col, row; } Coordinates;
 #define T Coordinates
@@ -129,14 +130,6 @@ draw_block_iter_childs(DomNode n, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     return draw_list_block(dom_node_first_child(n), dom_node_last_child(n), ctx, text);
 }
 
-
-static void
-draw_text_buf_trim_right(DrawTextBuf sub[_1_]) {
-    StrView content = sv(sub->buf);
-    sub->right_newlines = _strview_trim_right_count_newlines_(&content);
-    sub->buf.len = content.len;
-    textmod_trim_right(&sub->mods, content.len);
-}
 
 static Str*
 draw_text_buf_buf(DrawTextBuf sub_text[_1_]) { return &sub_text->buf; }
@@ -377,6 +370,16 @@ draw_text_buf_trim_left(DrawTextBuf sub[_1_]) {
     textmod_trim_left(&sub->mods, sub->left_trim);
     return Ok;
 }
+
+
+static void
+draw_text_buf_trim_right(DrawTextBuf sub[_1_]) {
+    StrView content = sv(sub->buf);
+    sub->right_newlines = _strview_trim_right_count_newlines_(&content);
+    sub->buf.len = content.len;
+    textmod_trim_right(&sub->mods, content.len);
+}
+
 
 static Err
 draw_text_buf_trim(DrawTextBuf sub[_1_]) {
@@ -805,7 +808,7 @@ draw_strview_skipping_space(StrView s, DomNode prev, DrawTextBuf text[_1_]) {
     /* if it starts with a punctuation mark we undo the space added in draw space */
     if (!isnull(prev) && !ispunct(s.items[0])) try( draw_text_buf_append_lit__(text, " "));
     while(s.len) {
-        StrView word = strview_split_word(&s);
+        StrView word = strview_split_utf8_word(&s);
         if (!word.len) break;
         try( draw_text_buf_append(text, word));
         strview_trim_space_left(&s);
@@ -1789,7 +1792,8 @@ splitted_table_col_horizonal_lengths(SplittedTable t[_1_], ColSpan colspan[_1_],
             size_t* maxlen = arlfn(size_t,at)(cols_hlengths, ncol);
 
             foreach__(CellPart,cell,cellpart) {
-                if (cell_part_horizontal_len(cellpart) > *maxlen) *maxlen = cell_part_horizontal_len(cellpart);
+                const size_t parthlen = cell_part_horizontal_len(cellpart);
+                if (parthlen > *maxlen) *maxlen = parthlen;
             }
         }
     }
@@ -1973,7 +1977,12 @@ static Err _expecting_err_could_not_fit_the_table(Err expr, StrView caption, Dra
     } else return expr;
 }
 
-
+//TODO2:
+// when ew have nested tables, the outer table inteprets the inner as a cell,
+// hence if because of the screen width the cell is resized the table apparence
+// is broken bencase it is looked as if it where a list of lines. We can improve
+// these either by keeping the table information (maybe too much work not worth)
+// or fixing the table's with size before (is it possible?) or another way.
 static Err
 draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     Err           err                     = Ok;
