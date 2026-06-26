@@ -2,7 +2,7 @@ REPO_DIR=..
 QUICKJS_REPO=$(REPO_DIR)/quickjs
 QUICKJS_INCLUDE=$(QUICKJS_REPO)
 QUICKJS_BUILD=$(QUICKJS_REPO)/build
-QUICKJS_LIB=$(QUICKJS_BUILD)/libqjs.a $(QUICKJS_BUILD)/libqjs-libc.a
+QUICKJS_LIB=$(QUICKJS_BUILD)/libqjs.a
 
 AHRE_CFLAGS=$(CFLAGS) -g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition \
 			-Wmissing-prototypes \
