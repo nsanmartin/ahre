@@ -2234,7 +2234,7 @@ htmldoc_script_write(HtmlDoc h[_1_], size_t script, Writer w[_1_]) {
         try(writer_write_lit__(w, " is empty!"));
     } else {
         try(writer_write_lit__(w, "\n"));
-        try(writer_write(w, items__(sc), len__(sc) - 1));
+        try(writer_write(w, items__(sc), len__(sc)));
     }
     try(writer_write_lit__(w, "\n"));
     return Ok;

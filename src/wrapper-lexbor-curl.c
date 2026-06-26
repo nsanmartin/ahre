@@ -71,12 +71,22 @@ static Err _fetch_tag_script_from_text_(lxb_dom_node_t node[_1_], ArlOf(Str) out
     StrView data = dom_node_text_view((DomNode){.ptr=node});
     if (strview_skip_space_inplace(&data)) {
         Str* s = &(Str){0};
-        try( str_append_z(s, &data));
+        try( str_append(s, &data));
         if (!arlfn(Str,append)(out,s)) {
             str_clean(s);
             return "error: append failure";
         }
     }
+    return Ok;
+}
+
+
+static Err application_ldjson_script_node(lxb_dom_node_t node[_1_], ArlOf(Str) out[_1_]) {
+
+    (void)node;
+    Str* ptr = NULL;
+    try(arl_append_zero(Str,out, ptr));
+    try(str_append(ptr, svl("// aplication/ld+json script")));
     return Ok;
 }
 
@@ -108,8 +118,12 @@ static Err _split_remote_local_(
         if (!element) return "error: lexbor collection failed to retrieve element";
         lxb_dom_node_t*   node = lxb_dom_interface_node(element);
 
+        StrView type = dom_node_attr_value((DomNode){.ptr=node}, svl("type"));
         StrView src = dom_node_attr_value((DomNode){.ptr=node}, svl("src"));
-        if (src.len) {
+        if (str_eq_case(type, sv("application/ld+json"))) {
+            //TODO1: isntead of this, attach metadata to script and decide not to evaluate it
+            try(application_ldjson_script_node(node, scripts));
+        } else if (src.len) {
             Str* url = &(Str){0};
             try( str_append_z(url, &src));
             //TODO1: manage error

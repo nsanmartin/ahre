@@ -177,6 +177,8 @@ Err w_curl_multi_add(
     tryjmp(e, Clean_Dup, w_curl_easy_init(&easy));
     ++destlist->len;
     tryjmp(e, Clean_Easy, w_curl_url_set(dup, CURLUPART_URL, urlstr, CURLU_DEFAULT_SCHEME));
+    tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_NOPROGRESS,     1L));
+    tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L));
     tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_CURLU        , dup));
     tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, str_append_flip));
     tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_WRITEDATA , arlfn(Str,back)(destlist)));
