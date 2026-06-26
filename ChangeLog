@@ -1,3 +1,9 @@
+v0.2.5 (26 Jun 2026)
+	Changes:
+	* js: implement document.cookie.
+	* js: minimal javascript dom bindings with stubs.
+	* ui: paginate msg log.
+
 v0.2.4 (15 May 2026)
 
 	Changes:
