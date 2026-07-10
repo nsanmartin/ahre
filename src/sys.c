@@ -4,14 +4,22 @@
 #include <limits.h>
 #include <wordexp.h>
 
+static bool is_wordexp_failure(Err e);
+
 
 /* file utils */
 
 
 Err resolve_path(const char *path, bool* file_exists, Str out[_1_]) {
+    if (file_exists) *file_exists = false;
     Err err      = Ok;
     Str expanded = (Str){0};
-    try(expand_path(path, &expanded));
+    err = expand_path(path, &expanded);
+    if (is_wordexp_failure(err)) {
+        err = Ok;
+        tryjmp(err, Clean, str_append_z(&expanded, sv(path)));
+    }
+    else if (err) { goto Clean; }
     char buf[PATH_MAX];
     char *real = realpath(expanded.items, buf);
     if (!real && errno != ENOENT) {
@@ -90,6 +98,25 @@ Err file_close(FILE* fp) {
     return Ok;
 }
 
+#define WRDE_FAIL_MSG    "wordexp failure: "
+#define WRDE_BADVAL_MSG  "undefined enviroment variable in path"
+#define WRDE_NOSPACE_MSG "error: out of memory parsing path"
+#define WRDE_CMDSUB_MSG  "Command substitution requested, but the WRDE_NOCMD flag told us to consider this an error."
+#define WRDE_SYNTAX_MSG  "Shell syntax error, such as unbalanced parentheses or unmatched quotes."
+#define WRDE_BADCHAR_MSG "Illegal occurrence of newline or one of |, &, ;, <, >, (, ), {, }."
+
+#define WRDE_SUBMSG_MAX_LEN sizeof(WRDE_CMDSUB_MSG) - 1
+#define WRDE_FAIL_MSG_LEN sizeof(WRDE_FAIL_MSG) - 1
+
+static char wordexp_failure__[WRDE_FAIL_MSG_LEN + WRDE_SUBMSG_MAX_LEN + 1] = { WRDE_FAIL_MSG };
+static Err
+wordexp_failure(StrView msg) { 
+    if (msg.len > WRDE_SUBMSG_MAX_LEN) return err_internal("invalid wordexp failure msg");
+    char* buffer = wordexp_failure__ + lit_len__(WRDE_FAIL_MSG);
+    if (msg.len) memcpy(buffer, msg.items, msg.len);
+    buffer[msg.len] = '\0';
+    return wordexp_failure__;
+}
 
 Err expand_path(const char *path, Str out[_1_]) {
     wordexp_t result = {0};
@@ -98,16 +125,16 @@ Err expand_path(const char *path, Str out[_1_]) {
         case 0: break;
         case WRDE_BADVAL: 
             wordfree (&result);
-            return "undefined enviroment variable in path";
+            return wordexp_failure(svl(WRDE_BADVAL_MSG));
         case WRDE_NOSPACE:
             wordfree (&result);
-            return "error: out of memory parsing path";
+            return wordexp_failure(svl(WRDE_NOSPACE_MSG));
         case WRDE_CMDSUB:
-            return "Command substitution requested, but the WRDE_NOCMD flag told us to consider this an error.";
+            return wordexp_failure(svl(WRDE_CMDSUB_MSG));
         case WRDE_SYNTAX:
-             return "Shell syntax error, such as unbalanced parentheses or unmatched quotes.";
+            return wordexp_failure(svl(WRDE_SYNTAX_MSG));
         case WRDE_BADCHAR:
-             return "Illegal occurrence of newline or one of |, &, ;, <, >, (, ), {, }.";
+            return wordexp_failure(svl(WRDE_BADCHAR_MSG));
 
         default: return "invalid path, wordexp could not parse";
     }
@@ -120,6 +147,10 @@ Err expand_path(const char *path, Str out[_1_]) {
 
     return err;
 }
+
+static bool
+is_wordexp_failure(Err e) { return e == wordexp_failure__; }
+
 
 bool path_is_dir(const char* path) {
     struct stat st;
