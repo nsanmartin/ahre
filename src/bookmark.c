@@ -354,12 +354,14 @@ bookmarks_save_to_disc(HtmlDoc bm[_1_], StrView bm_path) {
     try( bookmark_to_source(bm, &source));
 
     FILE* fp;
-    try(file_open(bm_path.items, "w", &fp));
-
     Err err = Ok;
+    tryjmp(err,Clean,file_open(bm_path.items, "w", &fp));
+
     size_t written = fwrite(source.items, 1, source.len, fp);
     if (written != source.len) err = "error: could not write to bookmarks file";
-    try(file_close(fp));
+    Err close_err = file_close(fp);
+    if (close_err) err = close_err;
+Clean:
     str_clean(&source);
     return err;
 }

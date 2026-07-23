@@ -1,5 +1,7 @@
 #include "session-conf.h"
 #include "config.h"
+#include "sys.h"
+
 
 Err session_conf_set_paths(SessionConf sc[_1_]) {
 
@@ -14,8 +16,14 @@ Err session_conf_set_paths(SessionConf sc[_1_]) {
     tryjmp(err, Fail, str_append(&sc->cookies_fname, &sc->confdirname));
     tryjmp(err, Fail, append_cookies_filename(&sc->cookies_fname));
 
-    tryjmp(err, Fail, str_append(&sc->bookmarks_fname, &sc->confdirname));
-    tryjmp(err, Fail, append_bookmark_filename(NULL, &sc->bookmarks_fname));
+    if (path_is_dir(sc->bookmarks_fname.items)) {
+        err = err_fmt("bookmark should be a file, but %s is a dir", sc->bookmarks_fname.items);
+        goto Fail;
+    }
+    if (!sc->bookmarks_fname.len) {
+        tryjmp(err, Fail, str_append(&sc->bookmarks_fname, &sc->confdirname));
+        tryjmp(err, Fail, append_bookmark_filename(NULL, &sc->bookmarks_fname));
+    }
 
     tryjmp(err, Fail,
         str_append(&sc->input_history_fname, &sc->confdirname));
