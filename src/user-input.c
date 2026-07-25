@@ -18,6 +18,7 @@ typedef enum {
     keycmd_left_curly_bracket  = '{',
     keycmd_pipe                = '|',
     keycmd_inverted_bar        = '\\',
+    keycmd_prev_history        = KeyCtrl_P,
     keycmd_scroll_up,
     keycmd_scroll_down
 } KeyCmd;
@@ -33,6 +34,7 @@ static bool _is_cmd_char_(char c) {
         || c == keycmd_left_curly_bracket
         || c == keycmd_pipe
         || c == keycmd_inverted_bar
+        || c == keycmd_prev_history
         ;
 }
 
@@ -72,6 +74,7 @@ static Err _ui_vi_read_vi_mode_keys_(Session s[_1_], KeyCmd cmd[_1_]) {
             case KeySpace: _ui_keystroke_ctrl_f_(s); *cmd = keycmd_scroll_up; break; 
             case KeyBackSpace:
             case KeyCtrl_B: _ui_keystroke_ctrl_b_(s); *cmd = keycmd_scroll_down; break; 
+            case KeyCtrl_P: *cmd = keycmd_prev_history; break; 
             default:
                 if (_is_cmd_char_(c)) {
                     *cmd = (KeyCmd)c; break;
@@ -81,7 +84,8 @@ static Err _ui_vi_read_vi_mode_keys_(Session s[_1_], KeyCmd cmd[_1_]) {
     return Ok;
 }
 
-static inline Err _raw_reditline_(char first, ArlOf(const_cstr) history[_1_], char* out[_1_]) {
+static inline Err
+_raw_reditline_(char first, ArlOf(const_cstr) history[_1_], char* out[_1_]) {
     char buf[] = { first, '\0' };
     *out = reditline(NULL, buf, history);
     if (reditline_error(*out)) return *out;

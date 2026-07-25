@@ -1154,7 +1154,7 @@ CleanUrl:
         Err e = Ok;
         ArlOf(Str) cookies  = (ArlOf(Str)){0};
         tryjmp(e,Clean_Cookies, htmldoc_get_cookies(d, &cookies));
-        try(msg__(out, "cookies: "));
+        try(msg__(out, "cookies:\n"));
         if (!cookies.len) try(msg_ln__(out, svl("<NO COOKIES>")));
         foreach__(Str,&cookies, it) {
             tryjmp(e,CleanUrl, msg_ln__(out, it));

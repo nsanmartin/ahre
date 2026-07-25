@@ -79,7 +79,7 @@ static inline const_cstr* rl_history_entry(ReditLine rl[_1_]) {
 static inline RlError rl_init(ReditLine rl[_1_], ArlOf(const_cstr) h[_1_], const char* line) {
     *rl = (ReditLine) {.history = h };
     if (!(rl_buf(rl)->items = std_malloc(RL_DEFAULT_LINE_CAPACITY))) return RlErrorMalloc;
-    if (line && *line) {
+    if (line && *line && isprint(line)) {
         rl_try (rlbuf_append(rl_buf(rl), line, strlen(line)));
         rl_buf(rl)->pos = rl_buf(rl)->len;
     }
@@ -151,7 +151,25 @@ static inline RlError rl_history_prev(ReditLine rl[_1_]) {
         ;
 }
 
-static RlError rl_edit(ReditLine rl[_1_]) {
+
+static RlError
+rl_write_prev_hist(ReditLine rl[1]) {
+   rl_try(rl_history_prev(rl));
+   rl_try(rl_erase_line());
+   return rl_buf_write(rl);
+}
+
+
+static RlError
+rl_write_next_hist(ReditLine rl[1]) {
+   rl_try(rl_history_next(rl));
+   rl_try( rl_erase_line());
+   return rl_buf_write(rl);
+}
+
+
+static RlError
+rl_edit(ReditLine rl[_1_]) {
     while (1) {
         int c = fgetc(stdin);
         switch (c) {
@@ -175,14 +193,10 @@ static RlError rl_edit(ReditLine rl[_1_]) {
                    rl_try( rl_erase_line());
                    return ReditlineOk;
             case KeyCtrl_P: 
-                   rl_try(rl_history_prev(rl));
-                   rl_try(rl_erase_line());
-                   rl_try(rl_buf_write(rl));
+                   rl_write_prev_hist(rl);
                    continue;
             case KeyCtrl_N: 
-                   rl_try(rl_history_next(rl));
-                   rl_try( rl_erase_line());
-                   rl_try(rl_buf_write(rl));
+                   rl_write_next_hist(rl);
                    continue;
             case KeyEnter: return rlbuf_append(rl_buf(rl), "\0", 1);
             case '\033':
@@ -214,7 +228,8 @@ static char* _reditline_error_ = "error: reditline failure";
 bool reditline_error(char* res) { return res == _reditline_error_; }
 
  
-char* reditline(const char* prompt, char* line, ArlOf(const_cstr) history[_1_]) {
+char*
+reditline(const char* prompt, char* line, ArlOf(const_cstr) history[_1_]) {
     fwrite(EscCodeSaveCursor, 1, lit_len__(EscCodeSaveCursor), stdout);
     if (prompt && *prompt) fwrite(prompt, 1, strlen(prompt), stdout);
         
@@ -223,6 +238,13 @@ char* reditline(const char* prompt, char* line, ArlOf(const_cstr) history[_1_]) 
     if (rl_buf_write(&rl) != ReditlineOk) {
         rl_cleanup(&rl);
         return _reditline_error_;
+    }
+
+    if (line) {
+        switch (*line) {
+            case KeyCtrl_P: rl_write_prev_hist(&rl); break;
+            default: break;
+        }
     }
 
     RlError err = rl_edit(&rl);
