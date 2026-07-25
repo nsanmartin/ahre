@@ -1,10 +1,13 @@
 # TODO
+[ ] [ui] reditline: edit line, backspace, Ctrl_W, etc.
+[ ] [ui] implement Ctrl_P (without any typed char).
+[ ] [ui] enable some inputs in tab mode (to switch to tab etc) and "links".
+[ ] [html] implement unsupported inputs
 [ ] [build] add build option to disable js (and not require quickjs)
 [ ] [build] fix tcc quick-check build
 [ ] [curl] implement other curlopt setter in user interface
 [ ] [curl] use CULROPT_SHARE for multi interface
 [ ] [draw] browse ul/li
-[ ] [draw] draw properly blockquote 
 [ ] [draw] draw properly center 
 [ ] [draw] support default and bright colour pallets (like w3m)
 [ ] [feat] use libchafa for images (or open a separate process with custom viewer)
@@ -92,3 +95,4 @@
 [*] [draw] draw tables as tables
 [*] [hotl] implement hotl arl reset
 [*] [refa][?] separate more htmldoc init from draw
+[*] [draw] draw properly blockquote 
