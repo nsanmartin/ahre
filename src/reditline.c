@@ -82,7 +82,7 @@ static inline const_cstr* rl_history_entry(ReditLine rl[_1_]) {
 static inline RlError rl_init(ReditLine rl[_1_], ArlOf(const_cstr) h[_1_], const char* line) {
     *rl = (ReditLine) {.history = h };
     if (!(rl_buf(rl)->items = std_malloc(RL_DEFAULT_LINE_CAPACITY))) return RlErrorMalloc;
-    if (line && *line && isprint(line)) {
+    if (line && *line && isprint(*line)) {
         rl_try (rlbuf_append(rl_buf(rl), line, strlen(line)));
         rl_buf(rl)->pos = rl_buf(rl)->len;
     }
