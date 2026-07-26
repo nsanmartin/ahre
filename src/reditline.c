@@ -19,7 +19,9 @@ typedef enum {
     RlErrorStrdup,
     RlErrorArlAppend,
     RlErrorHistoryIndexOutOfRange,
-    RlErrorReadingInput
+    RlErrorReadingInput,
+    RlErrorUnexpectedEmptyLine,
+    RlErrorInvalidInput
 } RlError;
 
 #define validate_rl_err(Value) _Generic((Value), RlError: Value)
@@ -41,6 +43,7 @@ Err switch_tty_to_raw_mode(struct termios prev_termios[_1_]) {
     if (tcsetattr(STDIN_FILENO,TCSAFLUSH, &new_termios) < 0) return "error: tcsetattr failure";
     return Ok;
 }
+
 
 
 static inline void rlbuf_reset(RLBuf b[_1_]) { b->len = b->pos = 0; }
@@ -94,10 +97,8 @@ static inline RlError rl_buf_write(ReditLine rl[_1_]) {
 }
 
 static inline RlError rl_erase_line(void) {
-    if (fwrite(EscCodeEraseLine, 1, lit_len__(EscCodeEraseLine), stdout)
-            != lit_len__(EscCodeEraseLine)
-    || fwrite(EscCodeUnsaveCursor, 1, lit_len__(EscCodeUnsaveCursor), stdout)
-            != lit_len__(EscCodeUnsaveCursor))
+    if (fwrite(EscCodeEraseLine, 1, lit_len__(EscCodeEraseLine), stdout) != lit_len__(EscCodeEraseLine)
+    ||  fwrite(EscCodeUnsaveCursor, 1, lit_len__(EscCodeUnsaveCursor), stdout) != lit_len__(EscCodeUnsaveCursor))
         return RlErrorFwrite;
     return ReditlineOk;
 }
@@ -110,19 +111,53 @@ static inline void rl_cleanup(ReditLine rl[_1_]) {
 }
 
 
+static RlError
+rl_redraw_line(ReditLine rl[1]) {
+   rl_try(rl_erase_line());
+   return rl_buf_write(rl);
+}
+
+
+static RlError
+rl_move_left_cursor(ReditLine rl[1], size_t num) {
+    if (num > 999) return RlErrorInvalidInput;
+    char buf[] = { EscCodeBackwardDigit };
+    int len    = snprintf(buf + 2, 3, "%lu", num);
+    if (len < 0 || (len > 3))
+        return RlErrorInvalidInput;
+    buf[2 + len] = 'D';
+    if (*rl_pos(rl) > 1) { fwrite(buf, 1, 2 + len + 1, stdout); }
+    return ReditlineOk;
+}
+
+
+
+
 static RlError rl_insert_char(ReditLine rl[_1_], char c) {
+    bool redraw = false;
     rl_try(rlbuf_ensure_extra_capacity_(rl_buf(rl), 1));
     if (rl->buf.pos < rl->buf.len) {
         char* dest = rl->buf.items + rl->buf.pos + 1;
         char* src  = rl->buf.items + rl->buf.pos;
-        size_t n   = rl->buf.len - ++rl->buf.pos;
+        size_t n   = rl->buf.len - rl->buf.pos;
         memmove(dest, src, n);
+        redraw = true;
     }
     rl->buf.items[rl->buf.pos] = c;
     ++rl->buf.len;
     ++rl->buf.pos;
+    rl->buf.items[rl->buf.len] = '\0';
+    if (redraw) {
+        rl_try(rl_redraw_line(rl));
+        const size_t delta = rl->buf.len - rl->buf.pos;
+        rl_try(rl_move_left_cursor(rl, delta));
+    } else putchar(c);
     return ReditlineOk;
 }
+
+/* unsafe method, caller should check `*rl_pos(rl) > 1` */
+static char
+rl_unsafe_get_pos_char(ReditLine rl[1]) { return rl_buf(rl)->items[*rl_pos(rl)-1]; }
 
 #define REDITLINE_HISTORY_PREV 1
 #define REDITLINE_HISTORY_NEXT -1
@@ -155,49 +190,86 @@ static inline RlError rl_history_prev(ReditLine rl[_1_]) {
 static RlError
 rl_write_prev_hist(ReditLine rl[1]) {
    rl_try(rl_history_prev(rl));
-   rl_try(rl_erase_line());
-   return rl_buf_write(rl);
+   return rl_redraw_line(rl);
 }
 
 
 static RlError
 rl_write_next_hist(ReditLine rl[1]) {
    rl_try(rl_history_next(rl));
-   rl_try( rl_erase_line());
-   return rl_buf_write(rl);
+   return rl_redraw_line(rl);
 }
 
+
+static RlError
+rl_erase_and_cleanup(ReditLine rl[1]) {
+    rl_try( rl_erase_line());
+    rl_cleanup(rl);
+    return ReditlineOk;
+}
+
+
+static RlError
+rl_delete_char_back(ReditLine rl[1]) {
+    if (*rl_pos(rl) > 1) {
+        const size_t prevpos = *rl_pos(rl);
+       --(*rl_pos(rl)); 
+       --rl_buf(rl)->len;
+       rl_try( rl_erase_line());
+       rl_try(rl_buf_write(rl));
+        if (prevpos < rl_buf(rl)->len)
+            memmove(rl_buf(rl)->items + *rl_pos(rl), rl_buf(rl)->items + prevpos, rl_buf(rl)->len - prevpos);
+       return ReditlineOk;
+    } else return RlErrorUnexpectedEmptyLine;
+}
+
+
+static RlError
+rl_delete_word_back(ReditLine rl[1]) {
+    const size_t prevpos = *rl_pos(rl);
+    while (*rl_pos(rl) > 1 && isspace(rl_unsafe_get_pos_char(rl))) {
+       --(*rl_pos(rl)); 
+       --rl_buf(rl)->len;
+    }
+    while (*rl_pos(rl) > 1 && !isspace(rl_unsafe_get_pos_char(rl))) {
+       --(*rl_pos(rl)); 
+       --rl_buf(rl)->len;
+    }
+
+    if (prevpos < rl_buf(rl)->len)
+        memmove(rl_buf(rl)->items + *rl_pos(rl), rl_buf(rl)->items + prevpos, rl_buf(rl)->len - prevpos);
+
+    if (prevpos > *rl_pos(rl)) rl_redraw_line(rl);
+    return ReditlineOk;
+}
+
+
+static RlError
+rl_move_left1(ReditLine rl[1]) {
+    if (*rl_pos(rl) > 1) {
+       --(*rl_pos(rl)); //TODO0: do not
+        fwrite(EscCodeBackward1, 1, lit_len__(EscCodeBackward1), stdout);
+    }
+    return ReditlineOk;
+}
 
 static RlError
 rl_edit(ReditLine rl[_1_]) {
     while (1) {
         int c = fgetc(stdin);
         switch (c) {
+            case KeyCtrl_B: rl_try(rl_move_left1(rl)); continue;
+            case KeyCtrl_W: rl_try(rl_delete_word_back(rl)); continue;
             case KeyCtrl_H:
             case KeyBackSpace: {
-               if (*rl_pos(rl) > 1) {
-                   --(*rl_pos(rl)); 
-                   --rl_buf(rl)->len;
-                   rl_try( rl_erase_line());
-                   rl_try(rl_buf_write(rl));
-                   continue;
-               } else {
-                   rl_try( rl_erase_line());
-                   rl_cleanup(rl);
-                   return ReditlineOk;
-               }
+               if (*rl_pos(rl) <= 1) return rl_erase_and_cleanup(rl);
+               rl_try(rl_delete_char_back(rl));
+               continue;
             }
             case KeyCtrl_C: 
-            case KeyCtrl_D:
-                   rl_cleanup(rl);
-                   rl_try( rl_erase_line());
-                   return ReditlineOk;
-            case KeyCtrl_P: 
-                   rl_write_prev_hist(rl);
-                   continue;
-            case KeyCtrl_N: 
-                   rl_write_next_hist(rl);
-                   continue;
+            case KeyCtrl_D: return rl_erase_and_cleanup(rl);
+            case KeyCtrl_P: rl_try(rl_write_prev_hist(rl)); continue;
+            case KeyCtrl_N: rl_try(rl_write_next_hist(rl)); continue;
             case KeyEnter: return rlbuf_append(rl_buf(rl), "\0", 1);
             case '\033':
                            c = fgetc(stdin);
@@ -206,7 +278,6 @@ rl_edit(ReditLine rl[_1_]) {
             default: {
                 if (!isprint(c)) continue;
                 rl_try(rl_insert_char(rl, c));
-                putchar(c);
                 continue;
             }
         }

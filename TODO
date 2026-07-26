@@ -1,6 +1,5 @@
 # TODO
 [ ] [ui] reditline: edit line, backspace, Ctrl_W, etc.
-[ ] [ui] implement Ctrl_P (without any typed char).
 [ ] [ui] enable some inputs in tab mode (to switch to tab etc) and "links".
 [ ] [html] implement unsupported inputs
 [ ] [build] add build option to disable js (and not require quickjs)
@@ -96,3 +95,4 @@
 [*] [hotl] implement hotl arl reset
 [*] [refa][?] separate more htmldoc init from draw
 [*] [draw] draw properly blockquote 
+[*] [ui] implement Ctrl_P (without any typed char).

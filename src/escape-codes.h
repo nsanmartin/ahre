@@ -24,6 +24,7 @@
 #define EscCodeClsScr "\033[1;1H\033[2J" 
 #define EscCodeEraseLine "\033[2K" 
 #define EscCodeBackward1 "\033[D" 
+#define EscCodeBackwardDigit "\033[##########" 
 #define EscCodeSaveCursor "\033[s" 
 #define EscCodeUnsaveCursor "\033[u"
 #define EscCodeDown1 "\033[B" 
