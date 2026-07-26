@@ -111,37 +111,55 @@ static inline void rl_cleanup(ReditLine rl[_1_]) {
 }
 
 
+/*
+ * Cursor movement direction could be:
+ * A: up
+ * B: down
+ * C: forward
+ * D: backward
+ */
+#define EscCodeDirectionUp          'A'
+#define EscCodeDirectionDown        'B'
+#define EscCodeDirectionForward     'C'
+#define EscCodeDirectionBackward    'D'
 static RlError
-rl_redraw_line(ReditLine rl[1]) {
-   rl_try(rl_erase_line());
-   return rl_buf_write(rl);
+rl_move_cursor(size_t num, char direction) {
+    if (direction != EscCodeDirectionUp && direction != EscCodeDirectionDown
+    && direction != EscCodeDirectionForward && direction != EscCodeDirectionBackward)
+        return RlErrorInvalidInput;
+    if (num > 999) return RlErrorInvalidInput;
+    char buf[] = { EscCodePrefix };
+    int len    = snprintf(buf + 2, 3, "%lu", num);
+    if (len < 0 || (len > 3))
+        return RlErrorInvalidInput;
+    buf[2 + len] = direction;
+    fwrite(buf, 1, 2 + len + 1, stdout);
+    return ReditlineOk;
 }
 
 
 static RlError
-rl_move_left_cursor(ReditLine rl[1], size_t num) {
-    if (num > 999) return RlErrorInvalidInput;
-    char buf[] = { EscCodeBackwardDigit };
-    int len    = snprintf(buf + 2, 3, "%lu", num);
-    if (len < 0 || (len > 3))
-        return RlErrorInvalidInput;
-    buf[2 + len] = 'D';
-    if (*rl_pos(rl) > 1) { fwrite(buf, 1, 2 + len + 1, stdout); }
-    return ReditlineOk;
+rl_redraw_line(ReditLine rl[1]) {
+   rl_try(rl_erase_line());
+   rl_try(rl_buf_write(rl));
+   const size_t left_movement = rl_buf(rl)->len - rl_buf(rl)->pos;
+   if (left_movement)
+       rl_try(rl_move_cursor(left_movement, EscCodeDirectionBackward));
+   return ReditlineOk;
 }
 
 
 
 
 static RlError rl_insert_char(ReditLine rl[_1_], char c) {
-    bool redraw = false;
     rl_try(rlbuf_ensure_extra_capacity_(rl_buf(rl), 1));
-    if (rl->buf.pos < rl->buf.len) {
+
+    bool redraw = rl->buf.pos < rl->buf.len;
+    if (redraw) {
         char* dest = rl->buf.items + rl->buf.pos + 1;
         char* src  = rl->buf.items + rl->buf.pos;
         size_t n   = rl->buf.len - rl->buf.pos;
         memmove(dest, src, n);
-        redraw = true;
     }
     rl->buf.items[rl->buf.pos] = c;
     ++rl->buf.len;
@@ -149,8 +167,8 @@ static RlError rl_insert_char(ReditLine rl[_1_], char c) {
     rl->buf.items[rl->buf.len] = '\0';
     if (redraw) {
         rl_try(rl_redraw_line(rl));
-        const size_t delta = rl->buf.len - rl->buf.pos;
-        rl_try(rl_move_left_cursor(rl, delta));
+        /* const size_t left_movement = rl->buf.len - (rl->buf.pos + 1); */
+        /* rl_try(rl_move_cursor(left_movement, EscCodeDirectionBackward)); */
     } else putchar(c);
     return ReditlineOk;
 }
@@ -211,35 +229,91 @@ rl_erase_and_cleanup(ReditLine rl[1]) {
 
 static RlError
 rl_delete_char_back(ReditLine rl[1]) {
-    if (*rl_pos(rl) > 1) {
-        const size_t prevpos = *rl_pos(rl);
-       --(*rl_pos(rl)); 
-       --rl_buf(rl)->len;
-       rl_try( rl_erase_line());
-       rl_try(rl_buf_write(rl));
-        if (prevpos < rl_buf(rl)->len)
-            memmove(rl_buf(rl)->items + *rl_pos(rl), rl_buf(rl)->items + prevpos, rl_buf(rl)->len - prevpos);
-       return ReditlineOk;
-    } else return RlErrorUnexpectedEmptyLine;
+    const size_t prevpos = rl_buf(rl)->pos;
+    const size_t prevlen = rl_buf(rl)->len;
+    if (*rl_pos(rl) <= 1) return ReditlineOk;
+
+    --rl_buf(rl)->pos;
+    --rl_buf(rl)->len;
+    if (rl_buf(rl)->pos < rl_buf(rl)->len)
+        memmove(
+            rl_buf(rl)->items + rl_buf(rl)->pos,
+            rl_buf(rl)->items + prevpos,
+            prevlen - prevpos
+        );
+    rl_try(rl_redraw_line(rl));
+    return ReditlineOk;
+}
+
+
+static RlError
+rl_delete_char_forward(ReditLine rl[1]) {
+    if (rl_buf(rl)->len == rl_buf(rl)->pos) return ReditlineOk;
+    --rl_buf(rl)->len;
+    const size_t chars_to_move = rl_buf(rl)->len - (rl_buf(rl)->pos - 1);
+    memmove(
+        rl_buf(rl)->items + rl_buf(rl)->pos,
+        rl_buf(rl)->items + rl_buf(rl)->pos + 1,
+        chars_to_move
+    );
+    rl_try(rl_redraw_line(rl));
+    return ReditlineOk;
 }
 
 
 static RlError
 rl_delete_word_back(ReditLine rl[1]) {
-    const size_t prevpos = *rl_pos(rl);
+    const size_t prevpos = rl_buf(rl)->pos;
+    const size_t prevlen = rl_buf(rl)->len;
     while (*rl_pos(rl) > 1 && isspace(rl_unsafe_get_pos_char(rl))) {
-       --(*rl_pos(rl)); 
+       --rl_buf(rl)->pos;
        --rl_buf(rl)->len;
     }
     while (*rl_pos(rl) > 1 && !isspace(rl_unsafe_get_pos_char(rl))) {
-       --(*rl_pos(rl)); 
+       --rl_buf(rl)->pos;
        --rl_buf(rl)->len;
     }
 
-    if (prevpos < rl_buf(rl)->len)
-        memmove(rl_buf(rl)->items + *rl_pos(rl), rl_buf(rl)->items + prevpos, rl_buf(rl)->len - prevpos);
+   if (rl_buf(rl)->pos < rl_buf(rl)->len)
+        memmove(
+            rl_buf(rl)->items + rl_buf(rl)->pos,
+            rl_buf(rl)->items + prevpos,
+            prevlen - prevpos
+        );
 
-    if (prevpos > *rl_pos(rl)) rl_redraw_line(rl);
+    if (prevpos > rl_buf(rl)->pos) rl_redraw_line(rl);
+    return ReditlineOk;
+}
+
+
+static RlError
+rl_move_right1(ReditLine rl[1]) {
+    if (*rl_pos(rl) < len__(rl_buf(rl))) {
+       ++(*rl_pos(rl));
+       rl_try(rl_move_cursor(1, EscCodeDirectionForward));
+    }
+    return ReditlineOk;
+}
+
+
+static RlError
+rl_move_beg(ReditLine rl[1]) {
+    if (rl_buf(rl)->pos > 1) {
+       const size_t left_movement = rl_buf(rl)->pos - 1;
+       rl_buf(rl)->pos = 1;
+       rl_try(rl_move_cursor(left_movement, EscCodeDirectionBackward));
+    }
+    return ReditlineOk;
+}
+
+
+static RlError
+rl_move_end(ReditLine rl[1]) {
+    const size_t right_movement = len__(rl_buf(rl)) - rl_buf(rl)->pos;
+    if (right_movement) {
+       rl_buf(rl)->pos = len__(rl_buf(rl));
+       rl_try(rl_move_cursor(right_movement, EscCodeDirectionForward));
+    }
     return ReditlineOk;
 }
 
@@ -247,38 +321,47 @@ rl_delete_word_back(ReditLine rl[1]) {
 static RlError
 rl_move_left1(ReditLine rl[1]) {
     if (*rl_pos(rl) > 1) {
-       --(*rl_pos(rl)); //TODO0: do not
+       --(*rl_pos(rl));
         fwrite(EscCodeBackward1, 1, lit_len__(EscCodeBackward1), stdout);
     }
     return ReditlineOk;
 }
+
 
 static RlError
 rl_edit(ReditLine rl[_1_]) {
     while (1) {
         int c = fgetc(stdin);
         switch (c) {
-            case KeyCtrl_B: rl_try(rl_move_left1(rl)); continue;
-            case KeyCtrl_W: rl_try(rl_delete_word_back(rl)); continue;
+            case KeyCtrl_A: rl_try(rl_move_beg(rl)); break;
+            case KeyCtrl_E: rl_try(rl_move_end(rl)); break;
+            case KeyCtrl_F: rl_try(rl_move_right1(rl)); break;
+            case KeyCtrl_B: rl_try(rl_move_left1(rl)); break;
+            case KeyCtrl_W: rl_try(rl_delete_word_back(rl)); break;
             case KeyCtrl_H:
             case KeyBackSpace: {
-               if (*rl_pos(rl) <= 1) return rl_erase_and_cleanup(rl);
+               if (rl_buf(rl)->len <= 1) return rl_erase_and_cleanup(rl);
+               if (rl_buf(rl)->pos <= 1) break;
                rl_try(rl_delete_char_back(rl));
-               continue;
+               break;
             }
-            case KeyCtrl_C: 
-            case KeyCtrl_D: return rl_erase_and_cleanup(rl);
-            case KeyCtrl_P: rl_try(rl_write_prev_hist(rl)); continue;
-            case KeyCtrl_N: rl_try(rl_write_next_hist(rl)); continue;
+            case KeyCtrl_D: {
+               if (rl_buf(rl)->len == rl_buf(rl)->pos) break;
+               rl_try(rl_delete_char_forward(rl));
+               break;
+            }
+            case KeyCtrl_C: return rl_erase_and_cleanup(rl);
+            case KeyCtrl_P: rl_try(rl_write_prev_hist(rl)); break;
+            case KeyCtrl_N: rl_try(rl_write_next_hist(rl)); break;
             case KeyEnter: return rlbuf_append(rl_buf(rl), "\0", 1);
             case '\033':
                            c = fgetc(stdin);
                            if (c == '[') c = fgetc(stdin);
-                           continue;
+                           break;
             default: {
-                if (!isprint(c)) continue;
+                if (!isprint(c)) break;
                 rl_try(rl_insert_char(rl, c));
-                continue;
+                break;
             }
         }
     }
