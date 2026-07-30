@@ -1748,8 +1748,8 @@ ErrClean:
 static size_t splitted_celL_vertical_len(SplittedCell c[_1_]) { return len__(c); }
 static size_t cell_part_horizontal_len(CellPart c[_1_]) {
     StrView part = sv(c->buf);
-    //TODO? trim only left?
     strview_trim_left_utf8_space(&part);
+    strview_trim_right_utf8_space(&part);
     return strview_count_utf8(part);
 
 }
@@ -1945,8 +1945,8 @@ draw_splitted_table(
                 CellPart* part = arlfn(CellPart,at)(cell, subrow);
                 size_t cell_part_hlen = 0;
                 if (part && strview_from_draw_text_buf(part).len) {
-                    try(draw_ctx_append_sub_text(text, part));
                     cell_part_hlen = cell_part_horizontal_len(part);
+                    try(draw_ctx_append_sub_text(text, part));
                 }
 
                 if (col_hlen < cell_part_hlen) return err_internal("column length computation failed");
