@@ -186,7 +186,7 @@ static RlError _rl_buf_from_history_(ReditLine rl[_1_], int direction) {
     if (!entry) return RlErrorHistoryIndexOutOfRange;
     rlbuf_reset(rl_buf(rl));
     rl_try(rlbuf_append(rl_buf(rl),(char*)*entry, strlen(*entry)));
-    *rl_pos(rl) = len__(rl_buf(rl)) - 1;
+    *rl_pos(rl) = len__(rl_buf(rl));
     return ReditlineOk;
 }
 
