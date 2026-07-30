@@ -1114,12 +1114,24 @@ htmldoc_get_effective_url(HtmlDoc d[_1_], StrView url[_1_]) {
 
 Err
 htmldoc_print_info(HtmlDoc d[_1_], CmdOut* out) {
-    try( msg_fmt(out, "download size: %ld\n", *htmldoc_curlinfo_sz_download(d)));
-    try( msg_fmt(out, "html size: %ld\n", htmldoc_sourcebuf(d)->buf.len));
+
+#define PRINT_INFO_DWN_SZ_    "  download size:      %ld\n"
+#define PRINT_INFO_HTML_SZ_   "  html size:          %ld\n"
+#define PRINT_INFO_TITLE_     "  title:              "
+#define PRINT_INFO_COOKIES_   "  cookies:"
+#define PRINT_INFO_CHARSET_   "  charset:            "
+#define PRINT_INFO_CNTYPE_    "  content-type:       "
+#define PRINT_INFO_SCRIPT_CT_ "  script count:       %ld\n"
+#define PRINT_INFO_DWN_SC_CT_ "  downloaded scripts: %ld\n"
+#define PRINT_INFO_EFFCT_URL_ "  effective url:"
+
+
+    try( msg_fmt(out, PRINT_INFO_DWN_SZ_, *htmldoc_curlinfo_sz_download(d)));
+    try( msg_fmt(out, PRINT_INFO_HTML_SZ_, htmldoc_sourcebuf(d)->buf.len));
 
     {
         Err e = Ok;
-        try(msg__(out, "title: "));
+        try(msg__(out, PRINT_INFO_TITLE_));
         Str title = (Str){0};
         try(dom_get_title_text_line(htmldoc_dom(d), &title));
         if (!title.len) e = msg__(out,  svl("<NO TITLE>\n"));
@@ -1127,37 +1139,15 @@ htmldoc_print_info(HtmlDoc d[_1_], CmdOut* out) {
         str_clean(&title);
         try(e);
     }
-    
-    {
-        //TODO1: remove the url in favour of effective Url
-        try(msg__(out, "url: "));
-        char* url = NULL;
-        Err   e   = Ok;
-        tryjmp(e,CleanUrl, url_cstr_malloc(*htmldoc_url(d), &url));
-        if (url) tryjmp(e,CleanUrl, msg_ln__(out, url));
-        else tryjmp(e, CleanUrl, msg_ln__(out, svl("<NO URL>")));
-
-CleanUrl:
-        w_curl_free(url);
-        try(e);
-    }
-
-    /* char* effective_url; */
-    /* try(msg__(out, "effective url: ")); */
-    /* try(w_curl_get_effective_url(*request_curl_handle(htmldoc_request(d)), &effective_url)); */
-    StrView effective_url;
-    try(htmldoc_get_effective_url(d, &effective_url));
-    if (effective_url.len) try(msg_ln__(out, effective_url));
-    else try(msg_ln__(out, svl("<NO EFFECTIVE URL>")));
 
     {
         Err e = Ok;
         ArlOf(Str) cookies  = (ArlOf(Str)){0};
         tryjmp(e,Clean_Cookies, htmldoc_get_cookies(d, &cookies));
-        try(msg__(out, "cookies:\n"));
+        try(msg_ln__(out, PRINT_INFO_COOKIES_));
         if (!cookies.len) try(msg_ln__(out, svl("<NO COOKIES>")));
         foreach__(Str,&cookies, it) {
-            tryjmp(e,CleanUrl, msg_ln__(out, it));
+            tryjmp(e,Clean_Cookies, msg_ln__(out, it));
         }
 
 Clean_Cookies:
@@ -1166,19 +1156,35 @@ Clean_Cookies:
 
     Str* charset = htmldoc_http_charset(d);
     if (len__(charset)) {
-        try( msg__(out, svl("charset: ")));
+        try( msg__(out, svl(PRINT_INFO_CHARSET_)));
         try( msg_ln__(out, charset));
     }
 
     Str* content_type = htmldoc_http_content_type(d);
     if (len__(content_type)) {
-        try( msg__(out, svl("content-type: ")));
+        try( msg__(out, svl(PRINT_INFO_CNTYPE_)));
         try( msg_ln__(out, content_type));
     }
 
-    try( msg_fmt(out, "script count: %ld\n", len__(htmldoc_scripts(d))));
-    try( msg_fmt(out, "downloaded script count: %ld\n", len__(htmldoc_body_scripts(d)) + len__(htmldoc_head_scripts(d))));
+    try( msg_fmt(out, PRINT_INFO_SCRIPT_CT_, len__(htmldoc_scripts(d))));
+    try( msg_fmt(out, PRINT_INFO_DWN_SC_CT_, len__(htmldoc_body_scripts(d)) + len__(htmldoc_head_scripts(d))));
+
+    /* keep this at the end */
+    StrView effective_url;
+    try(htmldoc_get_effective_url(d, &effective_url));
+    try( msg_ln__(out, svl(PRINT_INFO_EFFCT_URL_)));
+    if (effective_url.len) try(msg_ln__(out, effective_url));
+    else try(msg_ln__(out, svl("<NO EFFECTIVE URL>")));
     return Ok;
+#undef PRINT_INFO_DWN_SZ_
+#undef PRINT_INFO_HTML_SZ_
+#undef PRINT_INFO_TITLE_
+#undef PRINT_INFO_COOKIES_
+#undef PRINT_INFO_CHARSET_
+#undef PRINT_INFO_CNTYPE_
+#undef PRINT_INFO_SCRIPT_CT_
+#undef PRINT_INFO_DWN_SC_CT_
+#undef PRINT_INFO_EFFCT_URL_
 }
 
 
