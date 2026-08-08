@@ -64,9 +64,9 @@ typedef struct { size_t col, row; } Coordinates;
 #define T Coordinates
 #include "arl.h"
 
-#define KT Coordinates
-#define VT unsigned
-#include "lip.h"
+#define Hotl_LipMap_KT Coordinates
+#define Hotl_LipMap_VT unsigned
+#include "lipmap.h"
 
 typedef LipOf(Coordinates,unsigned) CoordToUint;
 typedef struct { CoordToUint map; ArlOf(Coordinates) lst; } ColSpan;

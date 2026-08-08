@@ -32,9 +32,9 @@ typedef Err nodeCmdCallback (CmdParams p[_1_], DomNode n);
 typedef ArlOf(DomNode)* nodeCollectionCallback (HtmlDoc h[_1_]);
 
 
-#define KT CurlPtr
-#define VT Str
-#include "lip.h"
+#define Hotl_LipMap_KT CurlPtr
+#define Hotl_LipMap_VT Str
+#include "lipmap.h"
 
 
 /* internal linkage */
