@@ -31,7 +31,7 @@ static inline void curl_ptr_clean(CurlPtr* p) {
 
 static inline void curlu_ptr_clean(CurlUrlPtr* p) { curl_url_cleanup((void*)*p); }
 #define Hotl_Arl_T CurlUrlPtr
-#define Hotl_Arl_TClean curlu_ptr_clean
+#define Hotl_Arl_T_Clean curlu_ptr_clean
 #include <arl.h>
 
 
