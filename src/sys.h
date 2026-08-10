@@ -6,7 +6,7 @@
 #include <signal.h>
 
 typedef struct { FILE* ptr; } FilePtr;
-#define T FilePtr
+#define Hotl_Arl_T FilePtr
 #include <arl.h>
 
 Err resolve_path(const char *path, bool* file_exists, Str out[_1_]);

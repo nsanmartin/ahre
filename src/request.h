@@ -35,8 +35,8 @@ static inline void request_clean(Request r[_1_]) {
     curl_ptr_clean(request_curl_handle(r));
 }
 
-#define T Request
-#define TClean request_clean
+#define Hotl_Arl_T Request
+#define Hotl_Arl_T_Clean request_clean
 #include <arl.h>
 
 Err request_to_file(Request r[_1_], UrlClient url_client[_1_], FILE* fp);

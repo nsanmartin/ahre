@@ -61,7 +61,7 @@ typedef struct {
 static Err draw_text_buf_trim(DrawTextBuf sub[_1_]);
 
 typedef struct { size_t col, row; } Coordinates;
-#define T Coordinates
+#define Hotl_Arl_T Coordinates
 #include "arl.h"
 
 #define Hotl_LipMap_KT Coordinates
@@ -1321,8 +1321,8 @@ draw_rec_tag(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
  * DrawRow == ArlOf(DrawTextBuf)
  */
 
-#define T DrawTextBuf
-#define TClean draw_text_buf_clean
+#define Hotl_Arl_T DrawTextBuf
+#define Hotl_Arl_T_Clean draw_text_buf_clean
 #include <arl.h>
 typedef ArlOf(DrawTextBuf) DrawRow;
 
@@ -1335,8 +1335,8 @@ typedef ArlOf(DrawTextBuf) DrawRow;
  * DrawTable == ArlOf(DrawRow)
  */
 
-#define T DrawRow
-#define TClean arlfn(DrawTextBuf,clean)
+#define Hotl_Arl_T DrawRow
+#define Hotl_Arl_T_Clean arlfn(DrawTextBuf,clean)
 #include <arl.h>
 
 
@@ -1361,7 +1361,7 @@ typedef struct { size_t nrows, ncols; } CellDims;
 /*
  * ArlOf(CellDims)
  */
-#define T CellDims
+#define Hotl_Arl_T CellDims
 #include <arl.h>
 /********************************/
 
@@ -1373,8 +1373,8 @@ static void cell_part_clean(DrawTextBuf c[_1_]) { arlfn(ModAt, clean)(&c->mods);
 /*
  * SplittedCell == ArlOf(CellPart) == ArlOf(DrawTextBuf)
  */
-#define T CellPart
-#define TClean cell_part_clean
+#define Hotl_Arl_T CellPart
+#define Hotl_Arl_T_Clean cell_part_clean
 #include <arl.h>
 typedef ArlOf(CellPart) SplittedCell;
 #define splitted_cell_append(C,T) ((!arlfn(CellPart,append)(C,T))?"error: arl append":Ok)
@@ -1387,8 +1387,8 @@ typedef ArlOf(CellPart) SplittedCell;
  * SplittedRow == ArlOf(SplittedCell)
  */
 
-#define T SplittedCell
-#define TClean splitted_cell_clean
+#define Hotl_Arl_T SplittedCell
+#define Hotl_Arl_T_Clean splitted_cell_clean
 #include <arl.h>
 typedef ArlOf(SplittedCell) SplittedRow;
 #define splitted_row_append_cell(C,T) ((!arlfn(SplittedCell,append)(C,T))?"error: arl append":Ok)
@@ -1401,8 +1401,8 @@ typedef ArlOf(SplittedCell) SplittedRow;
  * SplittedTable == ArlOf(SplittedRow)
  */
 
-#define T SplittedRow
-#define TClean arlfn(SplittedCell,clean)
+#define Hotl_Arl_T SplittedRow
+#define Hotl_Arl_T_Clean arlfn(SplittedCell,clean)
 #include <arl.h>
 typedef ArlOf(SplittedRow) SplittedTable;
 
@@ -1414,7 +1414,7 @@ typedef ArlOf(SplittedRow) SplittedTable;
 
 
 typedef struct  { size_t w,ix,splits; } ColWidth;
-#define T ColWidth
+#define Hotl_Arl_T ColWidth
 #include <arl.h>
 static int colwidth_cmp(const void* a, const void* b) {
 #define splitted_col_width__(C) _Generic((C),\

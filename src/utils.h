@@ -89,17 +89,17 @@ typedef const char const_char;
 #define Hotl_Buf_T const_char
 #include <buf.h>
 
-#define T size_t
+#define Hotl_Arl_T size_t
 #include <arl.h>
 
 typedef const char* cstr_view;
-#define T cstr_view
+#define Hotl_Arl_T cstr_view
 #include <arl.h>
 
 typedef const char* const_cstr;
 static inline void const_cstr_free(const_cstr* p) { std_free((void*)*p); }
-#define T const_cstr
-#define TClean const_cstr_free
+#define Hotl_Arl_T const_cstr
+#define Hotl_Arl_T_Clean const_cstr_free
 #include <arl.h>
 
 

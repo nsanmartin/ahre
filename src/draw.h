@@ -8,7 +8,7 @@
 #include "url-client.h"
 #include "utils.h"
 
-#define T EscCode
+#define Hotl_Arl_T EscCode
 #include <arl.h>
 
 

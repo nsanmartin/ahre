@@ -18,11 +18,11 @@ typedef enum {
     text_mod_last_entry
 } TextMod;
 
-#define T TextMod
+#define Hotl_Arl_T TextMod
 #include <arl.h>
 typedef struct { size_t offset; TextMod tmod; } ModAt;
 
-#define T ModAt
+#define Hotl_Arl_T ModAt
 //static inline void mods_at_clean(ModAt* ma) { arlfn(TextMod,clean)(&ma->mods); }
 //#define TClean mods_at_clean
 #include <arl.h>

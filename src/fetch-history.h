@@ -37,8 +37,8 @@ Err fetch_history_entry_update_title(FetchHistoryEntry e[_1_], Dom np);
 Err fetch_history_write_to_file(FetchHistoryEntry e[_1_], FILE* fp);
 void fetch_history_entry_clean(FetchHistoryEntry e[_1_]);
 
-#define T FetchHistoryEntry
-#define TClean fetch_history_entry_clean
+#define Hotl_Arl_T FetchHistoryEntry
+#define Hotl_Arl_T_Clean fetch_history_entry_clean
 #include <arl.h>
 
 

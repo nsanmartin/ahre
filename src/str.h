@@ -34,18 +34,18 @@ static inline int str_cmp(const void* xp, const void* yp) {
     size_t max = (x->len > y->len) ? x->len : y->len;
     return strncmp(x->items, y->items, max);
 }
-#define T Str
-#define TClean buffn(char,clean)
-#define TCmp str_cmp
+#define Hotl_Arl_T Str
+#define Hotl_Arl_T_Clean buffn(char,clean)
+#define Hotl_Arl_T_Cmp str_cmp
 #include <arl.h>
 
 
-#define T char
+#define Hotl_Arl_T char
 #include <arl.h>
 
 
-#define T ArlOf(Str)
-#define TClean arlfn(Str,clean)
+#define Hotl_Arl_T ArlOf(Str)
+#define Hotl_Arl_T_Clean arlfn(Str,clean)
 #include <arl.h>
 
 
@@ -54,7 +54,7 @@ typedef struct {
 	size_t      len;
 } StrView;
 
-#define T StrView
+#define Hotl_Arl_T StrView
 #include <arl.h>
 
 typedef StrView (*StrViewProvider)(void);

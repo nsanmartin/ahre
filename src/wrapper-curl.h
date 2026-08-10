@@ -22,16 +22,16 @@ static inline void curl_ptr_clean(CurlPtr* p) {
         *p = (CURL*){0};
     }
 }
-#define T CurlPtr
-#define TClean curl_ptr_clean
+#define Hotl_Arl_T CurlPtr
+#define Hotl_Arl_T_Clean curl_ptr_clean
 #include <arl.h>
 
-#define T CurlMultiSgPtr
+#define Hotl_Arl_T CurlMultiSgPtr
 #include <arl.h>
 
 static inline void curlu_ptr_clean(CurlUrlPtr* p) { curl_url_cleanup((void*)*p); }
-#define T CurlUrlPtr
-#define TClean curlu_ptr_clean
+#define Hotl_Arl_T CurlUrlPtr
+#define Hotl_Arl_TClean curlu_ptr_clean
 #include <arl.h>
 
 

@@ -9,7 +9,7 @@ typedef struct { DomElemPtr ptr; }           DomElem;
 typedef struct { lxb_dom_text_t* ptr; }      DomText;
 typedef struct { lxb_dom_attr_t* ptr; }      DomAttr;
 
-#define T DomNode
+#define Hotl_Arl_T DomNode
 #include <arl.h>
 
 /* DOM */

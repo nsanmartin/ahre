@@ -1960,10 +1960,10 @@ static int url_param_copy(UrlParam x[_1_], const UrlParam y[_1_]) {
     if (y->snd.len && str_append(&x->snd, y->snd)) return -1;
     return 0;
 }
-#define T UrlParam
-#define TCpy url_param_copy
-#define TCmp url_param_cmp
-#define TClean pairfn(Str,Str,clean)
+#define Hotl_Arl_T UrlParam
+#define Hotl_Arl_T_Cpy url_param_copy
+#define Hotl_Arl_T_Cmp url_param_cmp
+#define Hotl_Arl_T_Clean pairfn(Str,Str,clean)
 #include <arl.h>
 
 typedef ArlOf(UrlParam) URLSearchParams;
