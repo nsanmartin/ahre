@@ -86,7 +86,7 @@ static inline void set_flag(unsigned flags[_1_], unsigned mask, bool value) {
 #define lit_len__(Lit) (Lit == NULL ? 0 : sizeof(Lit)-1)
 
 typedef const char const_char;
-#define T const_char
+#define Hotl_Buf_T const_char
 #include <buf.h>
 
 #define T size_t

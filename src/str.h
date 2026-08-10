@@ -22,7 +22,7 @@
 
 #include "error.h"
 
-#define T char
+#define Hotl_Buf_T char
 #include <buf.h>
 
 typedef BufOf(char) Str;
