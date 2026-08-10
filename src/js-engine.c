@@ -1939,12 +1939,12 @@ static const JSCFunctionListEntry performance_fn_list[] = {
 
 
 /* ---- URLSearchParams ---- */
-#define T1 Str
-#define T2 Str
-#define T1Clean str_clean
-#define T2Clean str_clean
-#define T1Cpy str_append
-#define T2Cpy str_append
+#define Hotl_Pair_T1       Str
+#define Hotl_Pair_T2       Str
+#define Hotl_Pair_T1_Clean str_clean
+#define Hotl_Pair_T2_Clean str_clean
+#define Hotl_Pair_T1_Cpy   str_append
+#define Hotl_Pair_T2_Cpy   str_append
 #include <pair.h>
 
 typedef PairOf(Str,Str) UrlParam;
