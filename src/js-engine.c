@@ -1665,59 +1665,59 @@ mk_not_impl_getset(window, top)
 mk_not_impl_getset(window, viewport)
 mk_not_impl_getset(window, visualViewport)
 
-mk_not_impl_fn(navigator, alert)
-mk_not_impl_fn(navigator, atob)
-mk_not_impl_fn(navigator, blur)
-mk_not_impl_fn(navigator, btoa)
-mk_not_impl_fn(navigator, cancelAnimationFrame)
-mk_not_impl_fn(navigator, cancelIdleCallback)
-mk_not_impl_fn(navigator, captureEvents)
-mk_not_impl_fn(navigator, clearImmediate)
-mk_not_impl_fn(navigator, clearInterval)
-mk_not_impl_fn(navigator, clearTimeout)
-mk_not_impl_fn(navigator, close)
-mk_not_impl_fn(navigator, confirm)
-mk_not_impl_fn(navigator, createImageBitmap)
-mk_not_impl_fn(navigator, dump)
-mk_not_impl_fn(navigator, fetch)
-mk_not_impl_fn(navigator, fetchLater)
-mk_not_impl_fn(navigator, find)
-mk_not_impl_fn(navigator, focus)
-mk_not_impl_fn(navigator, getComputedStyle)
-mk_not_impl_fn(navigator, getDefaultComputedStyle)
-mk_not_impl_fn(navigator, getScreenDetails)
-mk_not_impl_fn(navigator, getSelection)
-mk_not_impl_fn(navigator, matchMedia)
-mk_not_impl_fn(navigator, moveBy)
-mk_not_impl_fn(navigator, moveTo)
-mk_not_impl_fn(navigator, open)
-mk_not_impl_fn(navigator, postMessage)
-mk_not_impl_fn(navigator, print)
-mk_not_impl_fn(navigator, prompt)
-mk_not_impl_fn(navigator, queryLocalFonts)
-mk_not_impl_fn(navigator, releaseEvents)
-mk_not_impl_fn(navigator, reportError)
-mk_not_impl_fn(navigator, requestAnimationFrame)
-mk_not_impl_fn(navigator, requestFileSystem)
-mk_not_impl_fn(navigator, requestIdleCallback)
-mk_not_impl_fn(navigator, resizeBy)
-mk_not_impl_fn(navigator, resizeTo)
-mk_not_impl_fn(navigator, scroll)
-mk_not_impl_fn(navigator, scrollBy)
-mk_not_impl_fn(navigator, scrollByLines)
-mk_not_impl_fn(navigator, scrollByPages)
-mk_not_impl_fn(navigator, scrollTo)
-mk_not_impl_fn(navigator, setImmediate)
-mk_not_impl_fn(navigator, setInterval)
-mk_not_impl_fn(navigator, setResizable)
-mk_not_impl_fn(navigator, showDirectoryPicker)
-mk_not_impl_fn(navigator, showOpenFilePicker)
-mk_not_impl_fn(navigator, showSaveFilePicker)
-mk_not_impl_fn(navigator, sizeToContent)
-mk_not_impl_fn(navigator, stop)
-mk_not_impl_fn(navigator, structuredClone)
-mk_not_impl_fn(navigator, webkitConvertPointFromNodeToPage)
-mk_not_impl_fn(navigator, webkitConvertPointFromPageToNode)
+mk_not_impl_fn(window, alert)
+/* mk_not_impl_fn(window, atob) */
+mk_not_impl_fn(window, blur)
+/* mk_not_impl_fn(window, btoa) */
+mk_not_impl_fn(window, cancelAnimationFrame)
+mk_not_impl_fn(window, cancelIdleCallback)
+mk_not_impl_fn(window, captureEvents)
+mk_not_impl_fn(window, clearImmediate)
+mk_not_impl_fn(window, clearInterval)
+mk_not_impl_fn(window, clearTimeout)
+mk_not_impl_fn(window, close)
+mk_not_impl_fn(window, confirm)
+mk_not_impl_fn(window, createImageBitmap)
+mk_not_impl_fn(window, dump)
+mk_not_impl_fn(window, fetch)
+mk_not_impl_fn(window, fetchLater)
+mk_not_impl_fn(window, find)
+mk_not_impl_fn(window, focus)
+mk_not_impl_fn(window, getComputedStyle)
+mk_not_impl_fn(window, getDefaultComputedStyle)
+mk_not_impl_fn(window, getScreenDetails)
+mk_not_impl_fn(window, getSelection)
+mk_not_impl_fn(window, matchMedia)
+mk_not_impl_fn(window, moveBy)
+mk_not_impl_fn(window, moveTo)
+mk_not_impl_fn(window, open)
+mk_not_impl_fn(window, postMessage)
+mk_not_impl_fn(window, print)
+mk_not_impl_fn(window, prompt)
+mk_not_impl_fn(window, queryLocalFonts)
+mk_not_impl_fn(window, releaseEvents)
+mk_not_impl_fn(window, reportError)
+mk_not_impl_fn(window, requestAnimationFrame)
+mk_not_impl_fn(window, requestFileSystem)
+mk_not_impl_fn(window, requestIdleCallback)
+mk_not_impl_fn(window, resizeBy)
+mk_not_impl_fn(window, resizeTo)
+mk_not_impl_fn(window, scroll)
+mk_not_impl_fn(window, scrollBy)
+mk_not_impl_fn(window, scrollByLines)
+mk_not_impl_fn(window, scrollByPages)
+mk_not_impl_fn(window, scrollTo)
+mk_not_impl_fn(window, setImmediate)
+mk_not_impl_fn(window, setInterval)
+mk_not_impl_fn(window, setResizable)
+mk_not_impl_fn(window, showDirectoryPicker)
+mk_not_impl_fn(window, showOpenFilePicker)
+mk_not_impl_fn(window, showSaveFilePicker)
+mk_not_impl_fn(window, sizeToContent)
+mk_not_impl_fn(window, stop)
+mk_not_impl_fn(window, structuredClone)
+mk_not_impl_fn(window, webkitConvertPointFromNodeToPage)
+mk_not_impl_fn(window, webkitConvertPointFromPageToNode)
 
 
 static js_get__(window_innerWidth) { (void)this; return JS_NewFloat64(ctx, *session_ncols(JS_GetContextOpaque(ctx))); }
@@ -1800,59 +1800,59 @@ static const JSCFunctionListEntry window_fn_list[] = {
     mk_not_impl_getset_list_entry(window, viewport),
     mk_not_impl_getset_list_entry(window, visualViewport),
 
-    mk_not_impl_fn_list_entry(navigator, alert),
-    mk_not_impl_fn_list_entry(navigator, atob),
-    mk_not_impl_fn_list_entry(navigator, blur),
-    mk_not_impl_fn_list_entry(navigator, btoa),
-    mk_not_impl_fn_list_entry(navigator, cancelAnimationFrame),
-    mk_not_impl_fn_list_entry(navigator, cancelIdleCallback),
-    mk_not_impl_fn_list_entry(navigator, captureEvents),
-    mk_not_impl_fn_list_entry(navigator, clearImmediate),
-    mk_not_impl_fn_list_entry(navigator, clearInterval),
-    mk_not_impl_fn_list_entry(navigator, clearTimeout),
-    mk_not_impl_fn_list_entry(navigator, close),
-    mk_not_impl_fn_list_entry(navigator, confirm),
-    mk_not_impl_fn_list_entry(navigator, createImageBitmap),
-    mk_not_impl_fn_list_entry(navigator, dump),
-    mk_not_impl_fn_list_entry(navigator, fetch),
-    mk_not_impl_fn_list_entry(navigator, fetchLater),
-    mk_not_impl_fn_list_entry(navigator, find),
-    mk_not_impl_fn_list_entry(navigator, focus),
-    mk_not_impl_fn_list_entry(navigator, getComputedStyle),
-    mk_not_impl_fn_list_entry(navigator, getDefaultComputedStyle),
-    mk_not_impl_fn_list_entry(navigator, getScreenDetails),
-    mk_not_impl_fn_list_entry(navigator, getSelection),
-    mk_not_impl_fn_list_entry(navigator, matchMedia),
-    mk_not_impl_fn_list_entry(navigator, moveBy),
-    mk_not_impl_fn_list_entry(navigator, moveTo),
-    mk_not_impl_fn_list_entry(navigator, open),
-    mk_not_impl_fn_list_entry(navigator, postMessage),
-    mk_not_impl_fn_list_entry(navigator, print),
-    mk_not_impl_fn_list_entry(navigator, prompt),
-    mk_not_impl_fn_list_entry(navigator, queryLocalFonts),
-    mk_not_impl_fn_list_entry(navigator, releaseEvents),
-    mk_not_impl_fn_list_entry(navigator, reportError),
-    mk_not_impl_fn_list_entry(navigator, requestAnimationFrame),
-    mk_not_impl_fn_list_entry(navigator, requestFileSystem),
-    mk_not_impl_fn_list_entry(navigator, requestIdleCallback),
-    mk_not_impl_fn_list_entry(navigator, resizeBy),
-    mk_not_impl_fn_list_entry(navigator, resizeTo),
-    mk_not_impl_fn_list_entry(navigator, scroll),
-    mk_not_impl_fn_list_entry(navigator, scrollBy),
-    mk_not_impl_fn_list_entry(navigator, scrollByLines),
-    mk_not_impl_fn_list_entry(navigator, scrollByPages),
-    mk_not_impl_fn_list_entry(navigator, scrollTo),
-    mk_not_impl_fn_list_entry(navigator, setImmediate),
-    mk_not_impl_fn_list_entry(navigator, setInterval),
-    mk_not_impl_fn_list_entry(navigator, setResizable),
-    mk_not_impl_fn_list_entry(navigator, showDirectoryPicker),
-    mk_not_impl_fn_list_entry(navigator, showOpenFilePicker),
-    mk_not_impl_fn_list_entry(navigator, showSaveFilePicker),
-    mk_not_impl_fn_list_entry(navigator, sizeToContent),
-    mk_not_impl_fn_list_entry(navigator, stop),
-    mk_not_impl_fn_list_entry(navigator, structuredClone),
-    mk_not_impl_fn_list_entry(navigator, webkitConvertPointFromNodeToPage),
-    mk_not_impl_fn_list_entry(navigator, webkitConvertPointFromPageToNode),
+    mk_not_impl_fn_list_entry(window, alert),
+    /* mk_not_impl_fn_list_entry(window, atob), atob defined in quickjs.c:62652,i 62573 */
+    mk_not_impl_fn_list_entry(window, blur),
+    /* mk_not_impl_fn_list_entry(window, btoa), btoa defined in quickjs.c:62651,i 62511 */
+    mk_not_impl_fn_list_entry(window, cancelAnimationFrame),
+    mk_not_impl_fn_list_entry(window, cancelIdleCallback),
+    mk_not_impl_fn_list_entry(window, captureEvents),
+    mk_not_impl_fn_list_entry(window, clearImmediate),
+    mk_not_impl_fn_list_entry(window, clearInterval),
+    mk_not_impl_fn_list_entry(window, clearTimeout),
+    mk_not_impl_fn_list_entry(window, close),
+    mk_not_impl_fn_list_entry(window, confirm),
+    mk_not_impl_fn_list_entry(window, createImageBitmap),
+    mk_not_impl_fn_list_entry(window, dump),
+    mk_not_impl_fn_list_entry(window, fetch),
+    mk_not_impl_fn_list_entry(window, fetchLater),
+    mk_not_impl_fn_list_entry(window, find),
+    mk_not_impl_fn_list_entry(window, focus),
+    mk_not_impl_fn_list_entry(window, getComputedStyle),
+    mk_not_impl_fn_list_entry(window, getDefaultComputedStyle),
+    mk_not_impl_fn_list_entry(window, getScreenDetails),
+    mk_not_impl_fn_list_entry(window, getSelection),
+    mk_not_impl_fn_list_entry(window, matchMedia),
+    mk_not_impl_fn_list_entry(window, moveBy),
+    mk_not_impl_fn_list_entry(window, moveTo),
+    mk_not_impl_fn_list_entry(window, open),
+    mk_not_impl_fn_list_entry(window, postMessage),
+    mk_not_impl_fn_list_entry(window, print),
+    mk_not_impl_fn_list_entry(window, prompt),
+    mk_not_impl_fn_list_entry(window, queryLocalFonts),
+    mk_not_impl_fn_list_entry(window, releaseEvents),
+    mk_not_impl_fn_list_entry(window, reportError),
+    mk_not_impl_fn_list_entry(window, requestAnimationFrame),
+    mk_not_impl_fn_list_entry(window, requestFileSystem),
+    mk_not_impl_fn_list_entry(window, requestIdleCallback),
+    mk_not_impl_fn_list_entry(window, resizeBy),
+    mk_not_impl_fn_list_entry(window, resizeTo),
+    mk_not_impl_fn_list_entry(window, scroll),
+    mk_not_impl_fn_list_entry(window, scrollBy),
+    mk_not_impl_fn_list_entry(window, scrollByLines),
+    mk_not_impl_fn_list_entry(window, scrollByPages),
+    mk_not_impl_fn_list_entry(window, scrollTo),
+    mk_not_impl_fn_list_entry(window, setImmediate),
+    mk_not_impl_fn_list_entry(window, setInterval),
+    mk_not_impl_fn_list_entry(window, setResizable),
+    mk_not_impl_fn_list_entry(window, showDirectoryPicker),
+    mk_not_impl_fn_list_entry(window, showOpenFilePicker),
+    mk_not_impl_fn_list_entry(window, showSaveFilePicker),
+    mk_not_impl_fn_list_entry(window, sizeToContent),
+    mk_not_impl_fn_list_entry(window, stop),
+    mk_not_impl_fn_list_entry(window, structuredClone),
+    mk_not_impl_fn_list_entry(window, webkitConvertPointFromNodeToPage),
+    mk_not_impl_fn_list_entry(window, webkitConvertPointFromPageToNode),
 
 };
 
