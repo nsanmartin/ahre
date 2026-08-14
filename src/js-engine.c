@@ -1660,15 +1660,12 @@ mk_not_impl_getset(window, speechSynthesis)
 mk_not_impl_getset(window, status)
 mk_not_impl_getset(window, statusbar)
 mk_not_impl_getset(window, toolbar)
-mk_not_impl_getset(window, top)
 /* mk_not_impl_getset(window, trustedTypes) */
 mk_not_impl_getset(window, viewport)
 mk_not_impl_getset(window, visualViewport)
 
 mk_not_impl_fn(window, alert)
-/* mk_not_impl_fn(window, atob) */
 mk_not_impl_fn(window, blur)
-/* mk_not_impl_fn(window, btoa) */
 mk_not_impl_fn(window, cancelAnimationFrame)
 mk_not_impl_fn(window, cancelIdleCallback)
 mk_not_impl_fn(window, captureEvents)
@@ -1731,6 +1728,8 @@ static js_get__(window_trustedTypes) {
 
 mk_not_impl_setter(window_parent)
 static js_get__(window_get_parent) { return JS_DupValue(ctx, this); }
+mk_not_impl_setter(window_top)
+static js_get__(window_get_top) { return JS_DupValue(ctx, this); }
 
 mk_not_impl_setter(window_trustedTypes)
 //TODO0: define functions instead of window methods?
@@ -1740,6 +1739,7 @@ static const JSCFunctionListEntry window_fn_list[] = {
     JS_CGETSET_DEF("innerHeight",  window_innerHeight,  js_set_noop),
     JS_CGETSET_DEF("trustedTypes", window_trustedTypes, jse_setter_not_implemented_window_trustedTypes),
     JS_CGETSET_DEF("parent",       window_get_parent,   jse_setter_not_implemented_window_parent),
+    JS_CGETSET_DEF("top",          window_get_top,      jse_setter_not_implemented_window_top),
 
     mk_not_impl_getset_list_entry(window, caches),
     mk_not_impl_getset_list_entry(window, clientInformation),
@@ -1778,7 +1778,6 @@ static const JSCFunctionListEntry window_fn_list[] = {
     mk_not_impl_getset_list_entry(window, outerWidth),
     mk_not_impl_getset_list_entry(window, pageXOffset),
     mk_not_impl_getset_list_entry(window, pageYOffset),
-    /* mk_not_impl_getset_list_entry(window, parent), */
     mk_not_impl_getset_list_entry(window, personalbar),
     mk_not_impl_getset_list_entry(window, scheduler),
     mk_not_impl_getset_list_entry(window, screen),
@@ -1795,7 +1794,6 @@ static const JSCFunctionListEntry window_fn_list[] = {
     mk_not_impl_getset_list_entry(window, status),
     mk_not_impl_getset_list_entry(window, statusbar),
     mk_not_impl_getset_list_entry(window, toolbar),
-    mk_not_impl_getset_list_entry(window, top),
     /* mk_not_impl_getset_list_entry(window, trustedTypes), */
     mk_not_impl_getset_list_entry(window, viewport),
     mk_not_impl_getset_list_entry(window, visualViewport),
