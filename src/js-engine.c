@@ -2233,6 +2233,10 @@ jse_clean(JsEngine js[_1_])
 }
 
 
+/* _Thread_local */  size_t JS_EVAL__MSG_LEN = 0;
+/* _Thread_local  */ char   JS_EVAL__MSGBUF[MAX_MSG_LEN+1] = {0};
+bool is_js_eval_err(Err e) { return e == JS_EVAL__MSGBUF; }
+
 Err
 jse_eval(JsEngine js[_1_], Session* s,  StrView script, CmdOut* out)
 {
@@ -2255,7 +2259,7 @@ jse_eval(JsEngine js[_1_], Session* s,  StrView script, CmdOut* out)
     if (JS_IsException(result)) {
         JSValue error = JS_GetException(ctx);
         const char *error_str = JS_ToCString(ctx, error);
-        err = err_fmt("warn: evaluating js: %s\n", error_str ? error_str : "(unknown error)");
+        err = js_eval_err_fmt("warn: evaluating js: %s\n", error_str ? error_str : "(unknown error)");
         JS_FreeCString(ctx, error_str);
         JS_FreeValue(ctx, error);
 #ifdef AHRE_DEBUG

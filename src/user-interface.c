@@ -408,7 +408,24 @@ static Err cmd_doc_scripts_list(CmdParams p[_1_]) {
 static Err cmd_doc_scripts_local(CmdParams p[_1_]) {
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
-    return htmldoc_eval_js_file(h, p->s, p->ln, cmd_params_cmd_out(p));
+    CmdOut* out = cmd_params_cmd_out(p);
+    if (path_is_dir(p->ln)) {
+        ArlOf(Str) fnames = (ArlOf(Str)){0};
+        Err err = Ok;
+        tryjmp(err, Clean_Fnames, append_fnames_from_dir(p->ln, &fnames));
+        foreach__(Str, &fnames, filename) {
+            Err js_eval_err = htmldoc_eval_js_file(h, p->s, filename->items, out);
+            if (is_js_eval_err(js_eval_err)) {
+                tryjmp(err,Clean_Fnames, msg_ln__(out, sv(js_eval_err)));
+            }
+            else tryjmp(err, Clean_Fnames, js_eval_err);
+        }
+
+Clean_Fnames:
+        arlfn(Str,clean)(&fnames);
+        return err;
+    }
+    return htmldoc_eval_js_file(h, p->s, p->ln, out);
 }
 
 static Err

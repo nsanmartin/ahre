@@ -6,7 +6,7 @@
 #include "error.h"
 #include "utils.h"
 
-//static constexpr size_t MAX_MSG_LEN = 512;
+/* size_t MAX_MSG_LEN = 512; */
 #define TRUNC_ERR "TRERR:"
 
 /* _Thread_local */ size_t ERR_MSG_LEN = 0;
@@ -14,7 +14,8 @@
 
 
 
-Err _err_fmt_vsnprinf_(Err fmt, ...) {
+Err err_fmt_buf(char* buf, size_t len, Err fmt, ...) {
+    if (len > MAX_MSG_LEN) return "error: error message buffer greater than MAX_MSG_LEN";
     va_list ap;
     va_start(ap, fmt);
     const char* beg = fmt;
@@ -24,25 +25,27 @@ Err _err_fmt_vsnprinf_(Err fmt, ...) {
         else if (beg <= end) { beg = end + 1; }
 
         if(*beg == 's') {
-            if (va_arg(ap, const char *) == MSGBUF)
+            if (va_arg(ap, const char *) == buf)
                 return "error: err_fmt can't receive as parameter an err_fmt return value";
         } else  va_arg(ap, int);
     }
     va_end(ap);
 
-    char err_msg_buf[MAX_MSG_LEN+1] = {0};
+    char err_msg_buf[MAX_MSG_LEN] = {0};
     va_start(ap, fmt);
-    int bytes = vsnprintf(err_msg_buf, MAX_MSG_LEN, fmt, ap);
+    int bytes = vsnprintf(err_msg_buf, len, fmt, ap);
     va_end(ap);
     if (bytes < 0) return "error: while processing another error mesage, a failure was produced";
-    if (cast__(size_t)bytes >= MAX_MSG_LEN) {
+    if (cast__(size_t)bytes >= len) {
         // message was truncated
-        bytes = MAX_MSG_LEN;
+        bytes = len;
         memcpy(err_msg_buf, TRUNC_ERR, sizeof(TRUNC_ERR)-1);
     }
-    memcpy(MSGBUF, err_msg_buf, cast__(size_t)bytes + 1);
-    return MSGBUF;
+    memcpy(buf, err_msg_buf, cast__(size_t)bytes + 1);
+    return buf;
 }
+
+
 
 Err
 err_from_cstr(const char* msg) { return msg; }

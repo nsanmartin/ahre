@@ -1,6 +1,10 @@
 #ifndef __AHRE_JS_ENGINE_H__
 #define __AHRE_JS_ENGINE_H__
 
+extern size_t JS_EVAL__ERR_MSG_LEN;
+extern char   JS_EVAL__MSGBUF[MAX_MSG_LEN+1];
+#define js_eval_err_fmt(Fmt, ...) err_fmt_buf(JS_EVAL__MSGBUF, MAX_MSG_LEN, Fmt,__VA_ARGS__)
+bool is_js_eval_err(Err e);
 
 typedef struct HtmlDoc HtmlDoc;
 

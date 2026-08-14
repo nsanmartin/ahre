@@ -33,4 +33,5 @@ Err expand_path(const char *path, Str out[_1_]);
 bool path_is_dir(const char* path);
 struct sigaction get_interrupt_action(void);
 bool interrupt_flag(void);
+Err append_fnames_from_dir(const char* dir_path, ArlOf(Str) fnames[1]);
 #endif

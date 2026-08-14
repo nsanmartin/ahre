@@ -2142,12 +2142,14 @@ jse_eval_doc_scripts(Session* s, HtmlDoc d[_1_], CmdOut* out) {
     foreach__(Str, htmldoc_head_scripts(d), it) {
         if (len__(it)) {
             Err e = jse_eval(htmldoc_js(d), s, sv(it), out);
+            //TODO0: check j_eval error
             if (e) msg__(out, e);
         }
     }
     foreach__(Str, htmldoc_body_scripts(d), it) {
         if (len__(it)) {
             Err e = jse_eval(htmldoc_js(d), s, sv(it), out);
+            //TODO0: check j_eval error
             if (e) msg__(out, e);
         }
     }
@@ -2161,16 +2163,16 @@ htmldoc_js_enable(HtmlDoc d[_1_], Session* s, CmdOut* out) {
     if (!s) return err_internal("expecting non empty session");
     try( jse_init(s, d));
 
-    if (0 == len__(htmldoc_head_scripts(d)) + len__(htmldoc_body_scripts(d))) {
-        CurlPtr easy;
-        try(w_curl_easy_init(&easy));
-        Err e = htmldoc_fetch_scripts(d, session_url_client(s), easy, out);
-        curl_ptr_clean(&easy);
-        try (e);
-    }
+    /* if (0 == len__(htmldoc_head_scripts(d)) + len__(htmldoc_body_scripts(d))) { */
+    /*     CurlPtr easy; */
+    /*     try(w_curl_easy_init(&easy)); */
+    /*     Err e = htmldoc_fetch_scripts(d, session_url_client(s), easy, out); */
+    /*     curl_ptr_clean(&easy); */
+    /*     try (e); */
+    /* } */
 
-    Err e = jse_eval_doc_scripts(s, d, out);
-    if (e) msg__(out, (char*)e);
+    /* Err e = jse_eval_doc_scripts(s, d, out); */
+    msg__(out, "js engine enabled in doc, you may load local scripts with ':$load fname'");
     return Ok;
 }
 

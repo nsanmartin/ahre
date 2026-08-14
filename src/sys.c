@@ -1,5 +1,10 @@
 #include "sys.h"
+#include "generic.h"
 #include <sys/stat.h>
+#include <stdio.h>
+#include <dirent.h>
+#include <stdlib.h>
+
 
 #include <limits.h>
 #include <wordexp.h>
@@ -186,3 +191,29 @@ struct sigaction get_interrupt_action(void) {
     return res;
 }
 
+Err
+append_fnames_from_dir(const char* dir_path, ArlOf(Str) fnames[1]) {
+    if (!dir_path || !*dir_path) return "invalid empty path";
+
+    DIR *dir = opendir(dir_path);
+
+    if (!dir) return err_fmt("warn: %s", strerror(errno));
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_name[0] == '.' &&
+            (entry->d_name[1] == '\0' || (entry->d_name[1] == '.' && entry->d_name[2] == '\0')))
+            continue;
+
+        Str* sptr = NULL;
+        try(arl_append_zero(Str, fnames, sptr));
+        try(str_append(sptr, sv(dir_path)));
+        try(str_append(sptr, svl("/")));
+        try(str_append(sptr, sv(entry->d_name)));
+
+        if (path_is_dir(sptr->items)) arlfn(Str,pop)(fnames);
+    }
+
+    closedir(dir);
+    return Ok;
+}

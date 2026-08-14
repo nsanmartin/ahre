@@ -260,6 +260,8 @@ Err str_append_ui_as_base36(Str buf[_1_], uintmax_t ui) {
 Err
 str_append_file(Str s[1], const char* filename)
 {
+    if (!filename||!*filename) return "invalid empty filename";
+    if (path_is_dir(filename)) return "invalid path: is a directory";
     *s  = (Str){0};
     Err e = Ok;
     FilePtr fp;

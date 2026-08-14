@@ -46,9 +46,25 @@ bool simulate_error(void);
 #define validate_size(value) _Generic((value), \
         size_t: value)
 
-Err _err_fmt_vsnprinf_(Err fmt, ...);
 
-#define err_fmt(Fmt, ...) _err_fmt_vsnprinf_(Fmt,__VA_ARGS__)
+Err err_fmt_buf(char* buf, size_t len, Err fmt, ...);
+/*
+ * Tis is ho you define custom error:
+ * decclare buffer and len in header as extern, and define a macro for it
+ * The .c wil have:
+ * _Thread_local  size_t MSG_LEN = 0;
+ * _Thread_local  char   MSGBUF[MAX_MSG_LEN+1] = {0};
+ *
+ * And probably you'd want:
+ * bool is_custom_err(Err* e) { return e == CUSTOM__MSGBUF; }
+ *
+ *
+ * */
+extern size_t ERR_MSG_LEN;
+extern char MSGBUF[MAX_MSG_LEN+1];
+#define err_fmt(Fmt, ...) err_fmt_buf(MSGBUF, MAX_MSG_LEN, Fmt,__VA_ARGS__)
+
+
 #define to_lit__impl__(X) #X
 #define to_lit__(X) to_lit__impl__(X)
 
