@@ -39,7 +39,7 @@ sudo make install
 You may need also to:
 
 ```
-sudo echo /usr/local/lib > /etc/ls.so.conf.d/lexbor.conf
+sudo echo /usr/local/lib > /etc/ld.so.conf.d/lexbor.conf
 sudo ldconfig
 ```
 
