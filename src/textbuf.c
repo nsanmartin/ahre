@@ -344,7 +344,7 @@ static Err _textbuf_range_parse_to_range_(
 Err textbuf_get_lines_matching_regex(TextBuf tb[_1_], StrView pattern, ArlOf(size_t) lines[_1_]) {
     *textbuf_current_offset(tb) = 0;
     const char* buf             = textbuf_items(tb);
-    size_t      match_offset;
+    size_t      match_offset    = 0;
 
     do {
         Err err =  _regex_search_pattern_in_buf_(&pattern, buf + *textbuf_current_offset(tb), &match_offset);

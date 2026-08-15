@@ -1,4 +1,13 @@
 #ifndef AHRE_QUICKJS_DISABLED
+
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 500
+#endif
+#include <time.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <unistd.h>
+
 #include <stdio.h>
 #include <quickjs.h>
 #include <quickjs-libc.h>
@@ -24,6 +33,21 @@ static JSClassID URLSearchParams_class_id = 0;
 /* static JSClassID dom_token_list_class_id = 0; */
 /* static JSClassID classList_class_id = 0; */
 
+
+// TODO0: make timeout time configurable
+static int
+qjs_interrupt_handler(JSRuntime *rt, void *opaque) {
+    (void)rt;
+    struct timespec* start = (struct timespec*)opaque;
+	if (!start) return 0;
+
+    struct timespec now = *start;
+    if (clock_gettime(CLOCK_MONOTONIC, &now) == -1) return 1;
+    uintmax_t delta_sec  = now.tv_sec - start->tv_sec;
+    uintmax_t delta_nano = now.tv_nsec - start->tv_nsec;
+    if  (delta_sec >= 1 || (delta_sec == 0 && delta_nano >= 999999999)) return 1;
+    return 0;
+}
 
 typedef struct {
     const JSCFunctionListEntry* fn_list;
@@ -2244,6 +2268,13 @@ jse_eval(JsEngine js[_1_], Session* s,  StrView script, CmdOut* out)
     JSContext *ctx = jse_context(js);
     if (!ctx) return err_jse("no js context (js engine is enabled with .js)");
     
+    struct timespec start;
+    if ((clock_gettime(CLOCK_MONOTONIC, &start) == -1))
+        return err_fmt("could not get time: %", strerror(errno));
+
+    //TODO0: add Ctrl-C interrption
+	JS_SetInterruptHandler (js->rt, qjs_interrupt_handler, &start);
+
     JSValue result = JS_Eval(ctx, script.items, script.len, NULL, JS_EVAL_TYPE_GLOBAL);
     
     Err err = Ok;
@@ -2274,6 +2305,7 @@ jse_eval(JsEngine js[_1_], Session* s,  StrView script, CmdOut* out)
     }
     
     JS_FreeValue(ctx, result);
+	JS_SetInterruptHandler (js->rt, NULL, NULL);
     return err;
 }
 

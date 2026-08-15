@@ -736,7 +736,7 @@ Clean:
 
 Err
 dom_get_title_elem(Dom dom, DomElem title[_1_]) {
-    DomNode node;
+    DomNode node = (DomNode){0};
     try(dom_get_title_node(dom, &node));
     *title = dom_elem_from_node(node);
     return Ok;

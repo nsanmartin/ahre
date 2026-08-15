@@ -137,6 +137,7 @@ draw_text_buf_buf(DrawTextBuf sub_text[_1_]) { return &sub_text->buf; }
 
 static StrView strview_from_draw_text_buf(DrawTextBuf dtb[_1_]) {
     Str* buf = draw_text_buf_buf(dtb);
+    if (!buf) return (StrView){0}; /* not actually needed but compiler complaints */
     return (StrView){
         .items = buf->items + dtb->left_trim,
         .len   = buf->len - size_t_min(buf->len,dtb->left_trim)
@@ -1645,7 +1646,7 @@ expand_columns_for_colspans(DrawTable table[_1_], size_t screen_width, ColSpan c
         if (!chl) { err=err_internal("expecting column in arl"); goto Clean; }
 
 
-        DrawTextBuf* cell;
+        DrawTextBuf* cell = NULL;
         try( draw_table_get_coords(table, coord, &cell));
         size_t cell_hlen = draw_text_buf_hlen(cell);
 
