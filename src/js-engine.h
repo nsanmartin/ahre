@@ -8,6 +8,14 @@ bool is_js_eval_err(Err e);
 
 typedef struct HtmlDoc HtmlDoc;
 
+
+typedef enum {
+    POST_ACTION_NO_ACTION = 0,
+    POST_ACTION_LOCATION_REPLACE,
+    POST_ACTION_LOCATION_HREF_SET,
+    POST_ACTION__MAX__    = POST_ACTION_LOCATION_HREF_SET
+} PostAction;
+
 #ifdef AHRE_QUICKJS_DISABLED
 #define AHRE_QUICKJS_DISABLED_MSG \
     "warn: quickjs not supported in this build. Disable js with \\set session js 0"
@@ -28,9 +36,14 @@ static inline JSRuntime* jse_rt(JsEngine js[_1_]) { (void)js; return 0; }
 static inline JSContext* jse_ctx(JsEngine js[_1_]) { (void)js; return 0; }
 
 //TODO: pass htmldoc and evaluate scripts
-static inline Err jse_init(Session* s, HtmlDoc* d) { (void)d; return AHRE_QUICKJS_DISABLED_MSG; }
+static inline Err jse_init(Session* s, HtmlDoc* d) {
+	(void)d;(void)s;
+	return AHRE_QUICKJS_DISABLED_MSG;
+}
 
 static inline void jse_clean(JsEngine js[_1_]){ (void)js; }
+static inline PostAction jse_get_post_action(JsEngine js[_1_]) { return POST_ACTION_NO_ACTION; }
+static inline Err jse_set_post_action(JsEngine js[_1_], PostAction pa) { (void)js; return Ok; }
 
 #else /*
      /   quickjs enabled:
@@ -38,12 +51,6 @@ static inline void jse_clean(JsEngine js[_1_]){ (void)js; }
 
 typedef struct JSRuntime JSRuntime;
 typedef struct JSContext JSContext;
-
-typedef enum {
-    POST_ACTION_NO_ACTION = 0,
-    POST_ACTION_LOCATION_REPLACE,
-    POST_ACTION_LOCATION_HREF_SET
-} PostAction;
 
 typedef struct {
     JSRuntime  *rt;
@@ -57,7 +64,6 @@ static inline JSRuntime* jse_runtime(JsEngine js[_1_]) { return js->rt; }
 static inline JSContext* jse_context(JsEngine js[_1_]) { return js->ctx; }
 static inline Str* jse_consolebuf(JsEngine js[_1_]) { return &js->consolebuf; }
 
-static inline PostAction* jse_post_action(JsEngine js[_1_]) { return &js->post_action; }
 static inline bool jse_is_enabled(JsEngine js[_1_]) { return js->rt; }
 
 Err jse_eval(JsEngine js[_1_], Session* s, StrView script, CmdOut* out);
@@ -69,6 +75,8 @@ static inline JSContext* jse_ctx(JsEngine js[_1_]) { return js->ctx; }
 Err jse_init(Session* s, HtmlDoc* d);
 
 void jse_clean(JsEngine js[_1_]);
+static inline PostAction jse_get_post_action(JsEngine js[_1_]) { return js->post_action; }
+Err jse_set_post_action(JsEngine js[_1_], PostAction pa);
 
 #endif /* AHRE_QUICKJS_DISABLED */
 #endif /* __AHRE_JS_ENGINE_H__ */

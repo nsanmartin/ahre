@@ -542,19 +542,19 @@ Err dom_node_remove_attr(DomNode n, StrView attr) {
     return LXB_STATUS_OK == status ? Ok : "error: could not set element's attribte";
 }
 
-
-static inline void
-_search_title_rec_(lxb_dom_node_t* node, lxb_dom_node_t* title[_1_]) {
-    if (!node) return;
-    else if (node->local_name == LXB_TAG_TITLE) *title = node; 
-    else {
-        for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
-            _search_title_rec_(it, title);
-            if (*title) break;
-        }
-    }
-    return;
-}
+//TODO0: delete
+//static inline void
+//_search_title_rec_(lxb_dom_node_t* node, lxb_dom_node_t* title[_1_]) {
+//    if (!node) return;
+//    else if (node->local_name == LXB_TAG_TITLE) *title = node; 
+//    else {
+//        for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
+//            _search_title_rec_(it, title);
+//            if (*title) break;
+//        }
+//    }
+//    return;
+//}
 
 
 Err dom_get_title_text_line(Dom dom, Str* out) {

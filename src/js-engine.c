@@ -20,6 +20,12 @@
 #include "cmd-out.h"
 #include "generic.h"
 
+Err jse_set_post_action(JsEngine js[_1_], PostAction pa) {
+   if (pa < POST_ACTION_NO_ACTION || POST_ACTION__MAX__  < pa)
+       fail_e("error: invalid post-action"); 
+   js->post_action = pa;
+   return Ok;
+}
 
 static JSClassID console_class_id     = 0;
 static JSClassID node_class_id        = 0;
@@ -967,15 +973,16 @@ static js_get__(document_body)
 
 static js_get__(document_get_title)
 {
+    JSValue rv = JS_UNDEFINED;
     HtmlDoc* d = JS_GetOpaque(this, document_class_id);
     Str title = (Str){0};
     Err e = dom_get_title_text_line(htmldoc_dom(d), &title);
     if (e) goto Clean;
-    JSValue rv = JS_NewString(ctx, title.items);
+    rv = JS_NewString(ctx, title.items);
 Clean:
     str_clean(&title);
-    if (JS_IsException(rv)) return rv;
     if (e) return JS_ThrowPlainError(ctx, "%s", e);
+    if (JS_IsException(rv)) return rv;
     return rv;
 }
 
@@ -1416,7 +1423,7 @@ static JSValue replace_doc_url (JSContext* ctx, JSValueConst this, JSValueConst 
     const char* url = JS_ToCString(ctx, val);
     if (!url) return JS_UNDEFINED;
 
-    *jse_post_action(htmldoc_js(d)) = POST_ACTION_LOCATION_HREF_SET;
+    jse_set_post_action(htmldoc_js(d), POST_ACTION_LOCATION_HREF_SET);
     JSValue rv = JS_UNDEFINED;
     Err e = url_set_url_or_fragment(htmldoc_url(d), url);
     if (e) rv = JS_ThrowPlainError(ctx, "%s", e);
@@ -2313,6 +2320,7 @@ jse_eval(JsEngine js[_1_], Session* s,  StrView script, CmdOut* out)
 Err
 jse_init(Session* session, HtmlDoc* htmldoc) {
     Err e = Ok;
+    JSValue global = JS_UNDEFINED;;
 
     if (!htmldoc) return err_internal("no HtmlDoc");
     if (!session) return err_internal("no Session");
@@ -2329,7 +2337,7 @@ jse_init(Session* session, HtmlDoc* htmldoc) {
 
     JS_SetContextOpaque(js->ctx, session);
 
-    JSValue global = JS_GetGlobalObject(js->ctx);
+    global = JS_GetGlobalObject(js->ctx);
 
     try(set_property_str(js->ctx, global, "window",     JS_DupValue(js->ctx, global)));
     try(set_property_str(js->ctx, global, "self",       JS_DupValue(js->ctx, global)));
