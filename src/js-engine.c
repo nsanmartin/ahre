@@ -1418,15 +1418,23 @@ static js_get__(location_get_href) {
 }
 
 static JSValue replace_doc_url (JSContext* ctx, JSValueConst this, JSValueConst val) {
+    JSValue rv = JS_UNDEFINED;
     HtmlDoc* d = JS_GetOpaque(this, location_class_id);
     if (!d) throw("no document in location");
     const char* url = JS_ToCString(ctx, val);
-    if (!url) return JS_UNDEFINED;
+    if (!url) return rv;
 
-    jse_set_post_action(htmldoc_js(d), POST_ACTION_LOCATION_HREF_SET);
-    JSValue rv = JS_UNDEFINED;
-    Err e = url_set_url_or_fragment(htmldoc_url(d), url);
+    StrView effective_url;
+    Err e = htmldoc_get_effective_url(d, &effective_url);
     if (e) rv = JS_ThrowPlainError(ctx, "%s", e);
+
+    if (str_eq_case(effective_url, sv(url))) {
+        jse_set_post_action(htmldoc_js(d), POST_ACTION_NO_ACTION_SET_SAME_LOCATION);
+    } else {
+        jse_set_post_action(htmldoc_js(d), POST_ACTION_LOCATION_HREF_SET);
+        e = url_set_url_or_fragment(htmldoc_url(d), url);
+        if (e) rv = JS_ThrowPlainError(ctx, "%s", e);
+    }
 
     JS_FreeCString(ctx, url);
     return rv;
@@ -2280,7 +2288,7 @@ jse_eval(JsEngine js[_1_], Session* s,  StrView script, CmdOut* out)
         return err_fmt("could not get time: %", strerror(errno));
 
     //TODO0: add Ctrl-C interrption
-	JS_SetInterruptHandler (js->rt, qjs_interrupt_handler, &start);
+    JS_SetInterruptHandler(js->rt, qjs_interrupt_handler, &start);
 
     JSValue result = JS_Eval(ctx, script.items, script.len, NULL, JS_EVAL_TYPE_GLOBAL);
     

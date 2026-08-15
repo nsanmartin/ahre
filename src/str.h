@@ -143,9 +143,7 @@ size_t      strview_count_utf8(StrView s) { return mem_count_utf8(s.items, s.len
     StrView*           : strview_from_strview_ptr,\
     ArlOf(char)*       : strview_from_arl_of_char,\
     char*              : strview_from_cstr,\
-    const Str          : strview_from_str,\
     const Str*         : strview_from_str_ptr,\
-    const StrView      : strview_id,\
     const StrView*     : strview_from_strview_ptr,\
     const ArlOf(char)* : strview_from_arl_of_char,\
     const char*        : strview_from_cstr\

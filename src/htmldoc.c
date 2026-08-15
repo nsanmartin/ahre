@@ -934,6 +934,10 @@ htmldoc_init_move_request(
     PostAction pa = jse_get_post_action(htmldoc_js(d));
     switch (pa) {
         case POST_ACTION_NO_ACTION: break;
+        case POST_ACTION_NO_ACTION_SET_SAME_LOCATION:
+            tryjmp(e,Fail, msg_ln__(cmd_out, svl("location replace ignored: SAME URL")));
+            break;
+
         case POST_ACTION_LOCATION_HREF_SET:
         case POST_ACTION_LOCATION_REPLACE: {
             tryjmp(e,Fail, msg_ln__(cmd_out, svl("location replace")));
@@ -948,6 +952,7 @@ htmldoc_init_move_request(
             htmldoc_cleanup(d);
             *d = doc_replace;
             break;
+
 Fail_Replace:
             htmldoc_cleanup(&doc_replace);
             request_clean(&req_replace);

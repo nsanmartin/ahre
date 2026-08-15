@@ -23,8 +23,6 @@ A hypertext reference www navigator or text web browser for linux.
 ## Build instructions
 ### Lexbor installation
 
-In debian sid you can use apt-get liblexbor-dev and avoid this step.
-
 checkout v3.0.0 and follow [INSTALL.md](https://github.com/lexbor/lexbor/blob/master/INSTALL.md)
 in lexbor repo. But basically:
 ```bash
@@ -39,7 +37,7 @@ sudo make install
 You may need also to:
 
 ```
-sudo echo /usr/local/lib > /etc/ld.so.conf.d/lexbor.conf
+sudo echo /usr/local/lib > /etc/ls.so.conf.d/lexbor.conf
 sudo ldconfig
 ```
 
@@ -63,13 +61,6 @@ or
 sudo apt install libcurl4-gnutls-dev
 ```
 
-#### Debian sid
-```bash
-sudo apt install libcurl4-gnutls-dev liblexbor-dev libqjs-dev
-```
-This may potentially be risky because the used versions in development
-of lexbor and quickjs-ng may not match those brought by apt-get.
-
 ### Clone Repo
 
 ```bash
@@ -78,8 +69,6 @@ git submodule update --init
 ```
 
 (to update: `git submodule update --recursive --remote`)
-
-If using apt's quickjs, modify the Makefile not to use the quickjs submodule.
 
 ### Build
 ```bash
