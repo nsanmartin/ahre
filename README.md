@@ -1,6 +1,13 @@
 # Ahre
+```
+     _/_/_/_/_/_/_/_/_/_/_/_/_/___/
+    __/_/_/_/_/_/_/_/_/_/_/_/_/__/
+   ___/_/_/_/_/_/_/_/_/_/_/_/___/
+  ____/_/_/_/_/_/_/_/_/_/_/____/
+ __/__/__/___________/__/__/__/
+```
 
-A hypertext reference www navigator or text web browser for linux.
+A text based web browser for the terminal.
 
 ## Website
 [ahre web page](https://ahre.pages.dev/)

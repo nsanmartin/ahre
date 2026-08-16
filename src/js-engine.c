@@ -1756,8 +1756,15 @@ mk_not_impl_fn(window, webkitConvertPointFromNodeToPage)
 mk_not_impl_fn(window, webkitConvertPointFromPageToNode)
 
 
-static js_get__(window_innerWidth) { (void)this; return JS_NewFloat64(ctx, *session_ncols(JS_GetContextOpaque(ctx))); }
-static js_get__(window_innerHeight) { (void)this; return JS_NewFloat64(ctx, *session_nrows(JS_GetContextOpaque(ctx))); }
+static js_get__(window_innerWidth) {
+    (void)this;
+    return JS_NewFloat64(ctx, *session_ncols(JS_GetContextOpaque(ctx)) * 8);
+}
+
+static js_get__(window_innerHeight) {
+    (void)this;
+    return JS_NewFloat64(ctx, *session_nrows(JS_GetContextOpaque(ctx)) * 16);
+}
 
 static js_get__(window_trustedTypes) { 
     (void)this;
