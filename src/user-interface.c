@@ -405,6 +405,8 @@ static Err cmd_doc_scripts_list(CmdParams p[_1_]) {
 }
 
 
+#define CMD_SCRIPTS_LOCAL \
+    "Load script frfom local file using current documnt's javascript runtime.\n"
 static Err cmd_doc_scripts_local(CmdParams p[_1_]) {
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
@@ -477,10 +479,16 @@ Clean:
 }
 
 
+#define CMD_SCRIPTS_FETCH \
+    "Fetch scripts for current document.\n" \
+    "Useful while debugging when document wan initially fetched with javascript disabled.\n"\
+    "If scripts were alredy fetched, it does nothing."
 static Err cmd_doc_scripts_fetch(CmdParams p[_1_]) {
     if (!range_parse_is_none(&p->rp)) return "cmd doc scripts fetch does not allow range. ";
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
+    if (len__(htmldoc_head_scripts(h)) + len__(htmldoc_body_scripts(h)))
+        return "warn: htmldoc must have no scripts before fetching them";
     CurlPtr easy;
     try(w_curl_easy_init(&easy));
     Err e = htmldoc_fetch_scripts(h, session_url_client(p->s), easy, cmd_params_cmd_out(p));
@@ -507,9 +515,9 @@ static SessionCmd _cmd_doc_scripts_[] =
     { {.name="",     .fn=cmd_doc_scripts_msg,  .help=NULL, .flags=CMD_EMPTY}
     , {.name="'",    .fn=cmd_doc_scripts_list, .help=NULL, .flags=CMD_CHAR}
     , {.name="\"",   .fn=cmd_doc_scripts_msg,  .help=NULL, .flags=CMD_CHAR}
-    , {.name="fetch",.fn=cmd_doc_scripts_fetch,.help=NULL, .match=1}
+    , {.name="fetch",.fn=cmd_doc_scripts_fetch,.help=CMD_SCRIPTS_FETCH, .match=1}
     //TODO0 move, not range cmd
-    , {.name="local",.fn=cmd_doc_scripts_local,.help=NULL, .match=1}
+    , {.name="local",.fn=cmd_doc_scripts_local,.help=CMD_SCRIPTS_LOCAL, .match=1}
     , {.name="save", .fn=cmd_doc_scripts_save, .help=NULL, .match=1}
     , {0}
 };
