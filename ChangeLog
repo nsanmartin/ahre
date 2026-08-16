@@ -1,3 +1,9 @@
+v0.2.6 (15 Aug 2026)
+	Changes:
+	* ui: support url input with (,{,[.
+	* ui: some readline (reditline) features: Ctrl-a, Ctrl-b, Ctrl-e, Ctrl-d, Ctrl-p.
+	* js: set a timeout to jse_eval.
+
 v0.2.5 (26 Jun 2026)
 	Changes:
 	* js: implement document.cookie.
