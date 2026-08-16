@@ -4,7 +4,6 @@
 extern size_t JS_EVAL__ERR_MSG_LEN;
 extern char   JS_EVAL__MSGBUF[MAX_MSG_LEN+1];
 #define js_eval_err_fmt(Fmt, ...) err_fmt_buf(JS_EVAL__MSGBUF, MAX_MSG_LEN, Fmt,__VA_ARGS__)
-bool is_js_eval_err(Err e);
 
 typedef struct HtmlDoc HtmlDoc;
 
@@ -25,6 +24,8 @@ typedef int JSRuntime;
 typedef int JSContext;
 typedef int JsEngine;
 
+static inline bool is_js_eval_err(Err e) { (void)e; return false; }
+
 /* getters */
 
 static inline bool jse_is_enabled(JsEngine js[_1_]) { (void)js; return 0; }
@@ -43,8 +44,8 @@ static inline Err jse_init(Session* s, HtmlDoc* d) {
 }
 
 static inline void jse_clean(JsEngine js[_1_]){ (void)js; }
-static inline PostAction jse_get_post_action(JsEngine js[_1_]) { return POST_ACTION_NO_ACTION; }
-static inline Err jse_set_post_action(JsEngine js[_1_], PostAction pa) { (void)js; return Ok; }
+static inline PostAction jse_get_post_action(JsEngine js[_1_]) { (void)js; return POST_ACTION_NO_ACTION; }
+static inline Err jse_set_post_action(JsEngine js[_1_], PostAction pa) { (void)js; (void)pa; return Ok; }
 
 #else /*
      /   quickjs enabled:
@@ -59,6 +60,9 @@ typedef struct {
     Str        consolebuf;
     PostAction post_action;
 } JsEngine;
+
+
+bool is_js_eval_err(Err e);
 
 /* getters */
 static inline JSRuntime* jse_runtime(JsEngine js[_1_]) { return js->rt; }
