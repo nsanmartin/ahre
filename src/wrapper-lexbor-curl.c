@@ -31,10 +31,10 @@ static Err _lexbor_parse_chunk_end_(HtmlDoc htmldoc[_1_]) {
 
 static Err url_client_set_write_fn_and_data_for_htmldoc(CurlPtr curl, HtmlDoc htmldoc[_1_]) {
     if (
-       curl_easy_setopt(curl, CURLOPT_HEADERDATA, htmldoc)
+       curl_easy_setopt(curl, CURLOPT_HEADERDATA, (HtmlDoc*)htmldoc)
     || curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, curl_header_callback)
     || curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, lexbor_parse_chunk_callback)
-    || curl_easy_setopt(curl, CURLOPT_WRITEDATA, htmldoc)) {
+    || curl_easy_setopt(curl, CURLOPT_WRITEDATA, (HtmlDoc*)htmldoc)) {
         return "error configuring curl write fn/data";
     }
     return Ok;
@@ -128,7 +128,7 @@ static Err _split_remote_local_(
             try( str_append_z(url, &src));
             //TODO1: manage error
             arlfn(Str, append)(urls, url);
-        } else {
+        } else { /* a local script */
             for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
                 e = _fetch_tag_script_from_text_(it, scripts);
                if (e || it == node->last_child) break;
@@ -213,8 +213,13 @@ htmldoc_fetch_scripts(HtmlDoc htmldoc[_1_], UrlClient url_client[_1_], CurlPtr e
     tryjmp(e, Clean, _split_remote_local_(head_scripts, htmldoc_head_scripts(htmldoc), head_urls, cmd_out));
     tryjmp(e, Clean, _split_remote_local_(body_scripts, htmldoc_body_scripts(htmldoc), body_urls, cmd_out));
 
-    if (len__(head_urls) + len__(body_urls) == 0)
+    if (len__(head_urls) + len__(body_urls) == 0) {
+        if (len__(htmldoc_head_scripts(htmldoc)) + len__(htmldoc_body_scripts(htmldoc)))
+            try(msg__(cmd_out, svl("no remote scripts, all local.\n")));
+        else
+            try(msg__(cmd_out, svl("no remote nor local scripts.\n")));
         goto Clean;
+    }
 
     e = url_client_multi_add_handles(url_client, curlu, head_urls, htmldoc_head_scripts(htmldoc), easies, curlus, cmd_out);
     if (e) {

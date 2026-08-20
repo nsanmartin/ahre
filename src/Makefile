@@ -1,8 +1,4 @@
 REPO_DIR=..
-QUICKJS_REPO=$(REPO_DIR)/quickjs
-QUICKJS_INCLUDE=$(QUICKJS_REPO)
-QUICKJS_BUILD=$(QUICKJS_REPO)/build
-QUICKJS_LIB=$(QUICKJS_BUILD)/libqjs.a
 
 AHRE_CFLAGS=$(CFLAGS) -g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition \
 			-Wmissing-prototypes \
@@ -18,7 +14,6 @@ AHRE_CFLAGS=$(CFLAGS) -g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-de
 			-Wnull-dereference \
 			-Winit-self
 			#-Wconversion
-AHRE_INCLUDE=-I. -I$(REPO_DIR)/hotl/include -I$(REPO_DIR)/isocline/include -I$(QUICKJS_INCLUDE)
 
 AHRE_LDFLAGS=$(LDFLAGS) -lcurl -llexbor -lm
 
@@ -32,12 +27,41 @@ AHRE_PREPROCESSED=$(AHRE_SRCS:$(AHRE_SRCDIR)/%.c=$(AHRE_OBJDIR)/__pre__%.c)
 
 all: $(AHRE_BUILD)/ahre
 
+###########################
+ifdef AHRE_QUICKJS_DISABLED
+###########################
+
+AHRE_CFLAGS += -DAHRE_QUICKJS_DISABLED
+AHRE_INCLUDE=-I. -I$(REPO_DIR)/hotl/include -I$(REPO_DIR)/isocline/include
+$(AHRE_BUILD)/ahre: $(AHRE_OBJ) $(AHRE_BUILD)/isocline.o
+	$(CC) $(AHRE_CFLAGS) $(AHRE_INCLUDE) \
+		$(REPO_DIR)/ahre.c -o $@ \
+		$^ \
+		$(AHRE_LDFLAGS) $(LDFLAGS)
+
+###########################
+else
+###########################
+
+QUICKJS_REPO=$(REPO_DIR)/quickjs
+QUICKJS_INCLUDE=$(QUICKJS_REPO)
+QUICKJS_BUILD=$(QUICKJS_REPO)/build
+QUICKJS_LIB=$(QUICKJS_BUILD)/libqjs.a
+AHRE_INCLUDE=-I. -I$(REPO_DIR)/hotl/include -I$(REPO_DIR)/isocline/include -I$(QUICKJS_INCLUDE)
+
 $(AHRE_BUILD)/ahre: $(AHRE_OBJ) $(AHRE_BUILD)/isocline.o $(QUICKJS_LIB)
 	$(CC) $(AHRE_CFLAGS) $(AHRE_INCLUDE) \
 		$(REPO_DIR)/ahre.c -o $@ \
 		$^ \
 		-L$(QUICKJS_BUILD) \
 		$(AHRE_LDFLAGS) $(LDFLAGS)
+
+$(QUICKJS_LIB):
+	$(MAKE) -C $(QUICKJS_REPO)
+
+###########################
+endif
+###########################
 
 
 $(AHRE_OBJDIR)/%.o: $(AHRE_SRCDIR)/%.c $(AHRE_HEADERS)
@@ -49,9 +73,6 @@ $(AHRE_BUILD)/isocline.o:
 	$(CC) -c -I$(REPO_DIR)/isocline/include -o $@ $(REPO_DIR)/isocline/src/isocline.c
 
 
-
-$(QUICKJS_LIB):
-	$(MAKE) -C $(QUICKJS_REPO)
 
 
 $(AHRE_OBJDIR)/__pre__%.c: $(AHRE_SRCDIR)/%.c

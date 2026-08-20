@@ -180,10 +180,10 @@ Err w_curl_multi_add(
     tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_NOPROGRESS,     1L));
     tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L));
     tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_CURLU        , dup));
-    tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, str_append_flip));
+    tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, (curl_write_callback)str_append_flip));
     tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_WRITEDATA , arlfn(Str,back)(destlist)));
 
-    tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_VERBOSE, url_client_verbose(uc)));
+    tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_VERBOSE, (long)url_client_verbose(uc)));
     tryjmp(e, Clean_Easy, w_curl_easy_setopt(easy, CURLOPT_USERAGENT, url_client_user_agent(uc)));
 
     //TODO: use CURLOPT_SHARE to share cookies etc between handles.

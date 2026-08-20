@@ -58,6 +58,15 @@ pkg install libiconv
 export LDFLAGS="-landroid-wordexp -liconv"
 ```
 
+setting 
+```
+extra-keys = [\
+    ['ESC','TAB','~','$','/','*','-','+','UP'],\
+    ['CRTL',"'",'"',':',';','{','[','BACKSLASH','DOWN']\
+]
+```
+in `.termux/termux-properties` may be useful (apply them with `termux-reload-sttings`).
+
 #### Debian/Ubuntu
 ```bash
 sudo apt install libcurl4-openssl-dev

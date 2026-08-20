@@ -27,11 +27,12 @@ Err resolve_path(const char *path, bool* file_exists, Str out[_1_]) {
     else if (err) { goto Clean; }
     char buf[PATH_MAX];
     char *real = realpath(expanded.items, buf);
-    if (!real && errno != ENOENT) {
-        err=err_fmt("could not resolve path: %s", strerror(errno));
+    const int realpath_errno = errno;
+    if (!real && realpath_errno != ENOENT) {
+        err=err_fmt("could not resolve path: %s", strerror(realpath_errno));
         goto Clean;
     }
-    if (file_exists) *file_exists =  real && errno != ENOENT;
+    if (file_exists) *file_exists =  real || realpath_errno != ENOENT;
     if (real) err = str_append_z(out, sv(real, strlen(real)));
     else if (expanded.len) { err = str_append_z(out, expanded); }
 
