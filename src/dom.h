@@ -12,6 +12,10 @@ typedef struct { lxb_dom_attr_t* ptr; }      DomAttr;
 #define Hotl_Arl_T DomNode
 #include <arl.h>
 
+#define Hotl_LipMap_KT DomNodePtr
+#define Hotl_LipMap_VT bool
+#include <lipmap.h>
+
 /* DOM */
 Dom     dom_from_ptr(DomPtr ptr);
 DomElem dom_get_elem_by_id(Dom dom, StrView id);

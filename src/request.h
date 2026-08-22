@@ -44,7 +44,7 @@ Err request_query_append_key_value(Request r[_1_], const char*k, size_t klen, co
 
 /* ctors */
 Err request_from_cli_params(Request r[_1_], HttpMethod method, StrView urlstr, StrView fields);
-Err request_from_form_node (Request r[_1_], DomNode form, bool is_https, Url* urlview);
+Err request_from_form_node (Request r[_1_], DomNode form, bool is_https, Url* urlview, LipOf(DomNodePtr,bool) checkbokes[1]);
 Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method);
 Err request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url);
 /* ctors **/

@@ -3,16 +3,16 @@
 Ahre can be launched without parameters (`./ahre`) or specifying a url, ie:
 
 ```
-> ./ahre file:///home/user/file.html
+> ./ahre file.html
 ```
 
-If schema is not provided, https is assumed. So 
+If the file does not exist locally and schema is not provided, https is assumed. So 
 
 ```
-> ./ahre curl.se
+> ./ahre duckduckgo.com/lite
 ```
 
-assumes https://curl.se
+assumes https://duckduckgo.com/lite.
 
 In ahre, some tags are wrapped with specific chars:
 + anchors are wrapped within `[]`
@@ -30,10 +30,11 @@ beginning with d).
 
 ## Modes
 
-Ahre has different "modes": two line modes (fgets and isocline) and a visual mode (vi). The main
-difference is that line modes only print what you ask for while vi mode alway shows something after
-each user input. Another difference is that the "session commands" must be preceeded by \ in visual
-mode while that's not neeed in line modes. So for example you type:
+Ahre has different "modes": two line modes (fgets and isocline) and a visual
+mode (vi). The main difference is that line modes only print what you ask for
+while vi mode shows a screen after each user input that does not print itself.
+Another difference is that the "session commands" must be preceeded by \ in
+visual mode while that's not neeed in line modes. So for example you type:
 `\go <URL>`
 in visual mode to navigate to <URL> but in text mode yuou may just write 
 `go <URL>`.
@@ -42,7 +43,7 @@ You change the mode by cli parameter or by setting session configuration inside 
 
 ## Help (or ? command)
 
-You get some help and the list of available subcommand by typing <CMD>?, that is teh command itself
+You get some help and the list of available subcommand by typing <CMD>?, that is the command itself
 followed by the quetion mark ?.
 
 Examples:

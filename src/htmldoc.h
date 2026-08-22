@@ -41,6 +41,7 @@ typedef struct {
     ArlOf(DomNode) inputs;
     ArlOf(DomNode) forms;
     ArlOf(DomNode) scripts;
+    LipOf(DomNodePtr,bool) checked_boxes;
 } DocDrawCache;
 
 
@@ -70,6 +71,7 @@ static inline ArlOf(DomNode)* htmldoc_anchors(HtmlDoc d[_1_]) { return &d->draw_
 static inline ArlOf(DomNode)* htmldoc_forms(HtmlDoc d[_1_]) { return &d->draw_cache.forms; }
 static inline ArlOf(DomNode)* htmldoc_imgs(HtmlDoc d[_1_]) { return &d->draw_cache.imgs; }
 static inline ArlOf(DomNode)* htmldoc_inputs(HtmlDoc d[_1_]) { return &d->draw_cache.inputs; }
+static inline LipOf(DomNodePtr,bool)* htmldoc_checked_boxes(HtmlDoc d[_1_]) { return &d->draw_cache.checked_boxes; }
 static inline ArlOf(DomNode)* htmldoc_scripts(HtmlDoc d[_1_]) { return &d->draw_cache.scripts; }
 static inline ArlOf(Str)* htmldoc_body_scripts(HtmlDoc d[_1_]) { return &d->fetch_cache.body_scripts; }
 static inline ArlOf(Str)* htmldoc_head_scripts(HtmlDoc d[_1_]) { return &d->fetch_cache.head_scripts; }

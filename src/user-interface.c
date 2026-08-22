@@ -336,7 +336,7 @@ Err cmd_input_save_node(CmdParams p[_1_], DomNode node) {
 
     HtmlDoc*       htmldoc;
     try( session_current_doc(p->s, &htmldoc));
-
+    LipOf(DomNodePtr,bool)* checkboxes = htmldoc_checked_boxes(htmldoc);
     DomNode form = dom_node_find_parent_form(node);
     if (isnull(form)) return "expected form, not found";
     Err e = Ok;
@@ -344,7 +344,7 @@ Err cmd_input_save_node(CmdParams p[_1_], DomNode node) {
     ArlOf(Request) rs = (ArlOf(Request)){0};
     Request* r;
     try(arl_append_zero(Request,&rs,r));
-    tryjmp(e,Clean, request_from_form_node(r, form, true, htmldoc_url(htmldoc)));
+    tryjmp(e,Clean, request_from_form_node(r, form, true, htmldoc_url(htmldoc), checkboxes));
     tryjmp(e,Clean, request_arl_to_file(p, &rs));
 
 Clean:

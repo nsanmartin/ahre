@@ -17,10 +17,15 @@ static Err request_curl_init(Request r[_1_]) {
 }
 
 static Err
-_make_submit_get_request_rec_(DomNode node, Request r[_1_]) {
+_make_submit_get_request_rec_(DomNode node, Request r[_1_], LipOf(DomNodePtr,bool) checkboxes[1]) {
     if (isnull(node)) return Ok;
-    else if (dom_node_has_tag_input(node)
-            && !dom_node_attr_has_value(node, svl("type"), svl("submit"))) {
+    else if (dom_node_has_tag_input(node)) {
+         if (dom_node_attr_has_value(node, svl("type"), svl("submit"))) goto Continue_;
+         if (dom_node_attr_has_value(node, svl("type"), svl("checkbox"))) {
+            bool* checked = lipfn(DomNodePtr,bool,get)(checkboxes, &node.ptr);
+            if (!checked) fail_e("could not find input checkbox node in internal set");
+            if (!*checked) goto Continue_;
+         }
 
         StrView value = dom_node_attr_value(node, svl("value"));
         if (!value.len) return Ok;
@@ -36,8 +41,9 @@ _make_submit_get_request_rec_(DomNode node, Request r[_1_]) {
         );
     } 
 
+Continue_:
     for(DomNode it = dom_node_first_child(node); ; it = dom_node_next(it)) {
-        try( _make_submit_get_request_rec_(it, r));
+        try( _make_submit_get_request_rec_(it, r, checkboxes));
         if (dom_node_eq(it, dom_node_last_child(node))) { break; }
     }
     return Ok;
@@ -84,10 +90,12 @@ static Err _request_append_lexbor_name_value_attrs_if_both_(
 }
 
 
+
 static Err _make_submit_post_request_rec(
     DomNode node,
     bool is_https,
-    Request r[_1_]
+    Request r[_1_],
+    LipOf(DomNodePtr,bool) checkboxes[1]
 ) {
     if (isnull(node)) return Ok;
     if (dom_node_has_tag_form(node)) {
@@ -96,26 +104,34 @@ static Err _make_submit_post_request_rec(
        return Ok;
     }
 
-    if (dom_node_has_tag_input(node)
-        && !str_eq_case(svl("submit"), dom_node_attr_value(node, svl("type"))))
+    if (dom_node_has_tag_input(node)) {
+
+        StrView type = dom_node_attr_value(node, svl("type"));
+        if (str_eq_case(svl("submit"), type)) goto Continue_;
+        if (str_eq_case(svl("checkbox"), type)) {
+            bool* checked = lipfn(DomNodePtr,bool,get)(checkboxes, &node.ptr);
+            if (!checked) fail_e("could not find input checkbox node in internal set");
+            if (!*checked) goto Continue_;
+        }
         return _request_append_lexbor_name_value_attrs_if_both_(node, is_https, r);
-    else if (dom_node_has_tag_select(node)) {
+    } else if (dom_node_has_tag_select(node)) {
         return _request_append_select_(node, r);
     }
 
+Continue_:
     /* recursive case */
     for(DomNode it = dom_node_first_child(node); !isnull(it) ; it = dom_node_next(it))
-        try( _make_submit_post_request_rec(it, is_https, r));
+        try( _make_submit_post_request_rec(it, is_https, r, checkboxes));
     return Ok;
 }
 
 
 
 static Err
-_mk_submit_post_request_(DomNode form, bool is_https, Request r[_1_]) { 
+_mk_submit_post_request_(DomNode form, bool is_https, Request r[_1_], LipOf(DomNodePtr,bool) checkboxes[1]) { 
 
     for(DomNode it = dom_node_first_child(form); !isnull(it) ; it = dom_node_next(it)) {
-        try(_make_submit_post_request_rec(it, is_https, r));
+        try(_make_submit_post_request_rec(it, is_https, r, checkboxes));
         if (dom_node_eq(it, dom_node_last_child(form))) break;
     }
 
@@ -201,7 +217,7 @@ request_to_handle(
 }
 
 
-Err request_from_form_node (Request r[_1_], DomNode form, bool is_https, Url* urlview) {
+Err request_from_form_node (Request r[_1_], DomNode form, bool is_https, Url* urlview, LipOf(DomNodePtr,bool) checkboxes[1]) {
     *r = (Request){.urlview=urlview};
     StrView action = dom_node_attr_value(form, svl("action"));
     StrView method = dom_node_attr_value(form, svl("method"));
@@ -212,11 +228,11 @@ Err request_from_form_node (Request r[_1_], DomNode form, bool is_https, Url* ur
 
     if (!method.len || str_eq_case(svl("get"), method)) {
         r->method = http_get;
-        try( _make_submit_get_request_rec_(form, r));
+        try( _make_submit_get_request_rec_(form, r, checkboxes));
     }
     if (method.len && str_eq_case(svl("post"), method)) {
         r->method = http_post;
-        try( _mk_submit_post_request_(form, is_https, r));
+        try( _mk_submit_post_request_(form, is_https, r, checkboxes));
     }
 
     return request_curl_init(r);

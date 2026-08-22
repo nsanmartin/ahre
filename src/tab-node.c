@@ -60,14 +60,14 @@ Err tab_node_tree_append_submit_input_node(
     HtmlDoc* d;
     try( tab_node_current_node(t, &tab_node));
     try( tab_node_current_doc(t, &d));
-
+    LipOf(DomNodePtr,bool)* checkedboxes = htmldoc_checked_boxes(d);
     DomNode form = dom_node_find_parent_form(input_node);
     if (isnull(form)) { return "expected form, not found"; }
 
     Request r       = (Request){0};
     TabNode newnode = (TabNode){0};
     Err e = Ok;
-    tryjmp(e,Clean, request_from_form_node(&r, form, true, htmldoc_url(d)));
+    tryjmp(e,Clean, request_from_form_node(&r, form, true, htmldoc_url(d), checkedboxes));
     tryjmp(e,Clean, tab_node_init_move_request(&newnode, tab_node, url_client, &r, s, out));
     tryjmp(e,Clean, tab_node_append_move_child(tab_node, &newnode));
     return Ok;

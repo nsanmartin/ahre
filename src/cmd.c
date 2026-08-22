@@ -419,6 +419,22 @@ Err cmd_select_elem_show_options(DomNode lbn[_1_], CmdOut out [_1_]) {
     return Ok;
 }
 
+static Err
+cmd_toggle_checkbox(Session session[_1_], DomNode n, const char* line, CmdOut cout [_1_]) {
+
+    line = cstr_skip_space(line);
+
+    HtmlDoc* d;
+    try( session_current_doc(session, &d));
+
+    bool* checked = lipfn(DomNodePtr,bool,get)(htmldoc_checked_boxes(d), &n.ptr);
+    if (!checked) fail_e("could not find input checkbox node in internal set");
+    if (!*line) *checked = !*checked;
+    else return "unexpected checkbox input. To toggle just type {N";
+    return session_doc_draw(session, cout);
+}
+
+
 
 Err
 cmd_input_default_node(CmdParams p[_1_], DomNode node) {
@@ -430,6 +446,9 @@ cmd_input_default_node(CmdParams p[_1_], DomNode node) {
         return tab_node_tree_append_submit_input_node(
             tab, node, session_url_client(p->s), p->s, cmd_params_cmd_out(p)
         );
+    else if (dom_node_tag(node) == HTML_TAG_INPUT
+    &&  dom_node_attr_has_value(node, svl("type"), svl("checkbox"))) 
+        return cmd_toggle_checkbox(p->s, node, p->ln, cmd_params_cmd_out(p));
     else if (dom_node_tag(node) == HTML_TAG_BUTTON
     &&  (dom_node_attr_has_value(node, svl("type"), svl("submit"))
         || !dom_node_has_attr(node, svl("type"))))
@@ -473,7 +492,8 @@ _cmd_input_text_set_(Session session[_1_], DomNode n[_1_], const char* line, Cmd
 }
 
 
-static Err _cmd_input_select_set_(Session session[_1_], DomNode n[_1_], const char* line, CmdOut cmd_out[_1_]) {
+static Err
+_cmd_input_select_set_(Session session[_1_], DomNode n[_1_], const char* line, CmdOut cmd_out[_1_]) {
     ArlOf(DomNode)* matches = &(ArlOf(DomNode)){0};
     Err e = Ok;
 
@@ -508,6 +528,26 @@ Clean_Matches:
 }
 
 
+/* static Err */
+/* _cmd_input_checkbox_set_(Session session[_1_], DomNode n[_1_], const char* line, CmdOut cout[_1_]) { */
+/*     line = cstr_skip_space(line); */
+
+/*     HtmlDoc* d; */
+/*     try( session_current_doc(session, &d)); */
+
+/*     const bool checked = lipfn(DomNode,find)(htmldoc_checked_boxes(d), n); */
+/*     if (*line == '*')  { */
+/*         if (!checked && lipfn(DomNode,insert)(htmldoc_checked_boxes(d), n)) fail_e("lip insert"); */
+/*     } else if (*line == '_') { */
+/*         if (checked && lipfn(DomNode,del)(htmldoc_checked_boxes(d), n)) fail_e("lip del"); */
+/*     } else if (!*line) { */
+/*         if (!checked) if (lipfn(DomNode,insert)(htmldoc_checked_boxes(d), n)) fail_e("lip insert"); */
+/*         if (checked) if (lipfn(DomNode,del)(htmldoc_checked_boxes(d), n)) fail_e("lip del"); */
+/*     } else return "unexpected checkbox input"; */
+/*     return session_doc_draw(session, cout); */
+/* } */
+
+
 Err
 cmd_input_info_node(CmdParams p[_1_], DomNode n) {
     Str* buf = &(Str){0};
@@ -527,6 +567,9 @@ Err cmd_input_set_node(CmdParams p[_1_], DomNode node) {
         return _cmd_input_text_set_(session, &node, ln, cmd_params_cmd_out(p));
     else if (dom_node_tag(node) == HTML_TAG_SELECT)
         return _cmd_input_select_set_(session, &node, ln, cmd_params_cmd_out(p));
+    /* else if (str_eq_case(svl("checkbox"), type)) { */
+    /*     return _cmd_input_checkbox_set_(session, &node, ln, cmd_params_cmd_out(p)); */
+    /* } */
 
     return "input set not supported for element";
 }
