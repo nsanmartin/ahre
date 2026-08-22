@@ -1142,6 +1142,34 @@ htmldoc_get_effective_url(HtmlDoc d[_1_], StrView url[_1_]) {
     return Ok;
 }
 
+
+static Err
+htmldoc_print_info_request(Request r[1], CmdOut* out) {
+#define PRINT_INFO_REQ_FIELDS_ "  fields:             "
+#define PRINT_INFO_REQ_KV_     "  key/values:         "
+    try( msg__(out, svl(PRINT_INFO_REQ_FIELDS_)));
+    if (len__(request_fields(r))) try( msg__(out, request_fields(r)));
+    else try( msg__(out, svl("\"\"")));
+    try( msg__(out, svl("\n")));
+
+    try( msg__(out, svl(PRINT_INFO_REQ_KV_)));
+    for (size_t ix = 0;;++ix) {
+        Str* kp = arlfn(Str,at)(request_query_keys(r), ix);
+        Str* vp = arlfn(Str,at)(request_query_values(r), ix);
+        if (!kp && !vp) break;
+        if (kp) try( msg__(out,kp));
+        else try( msg__(out, svl("\"\"") ));
+        try( msg__(out, svl("=") ));
+        if (vp) try( msg__(out,vp));
+        else try( msg__(out, svl("\"\"") ));
+        try( msg__(out, svl(";") ));
+    }
+    try( msg__(out, svl("\n")));
+    return Ok;
+#undef PRINT_INFO_REQ_FIELDS_ 
+#undef PRINT_INFO_REQ_KV_
+}
+
 Err
 htmldoc_print_info(HtmlDoc d[_1_], CmdOut* out) {
 
@@ -1153,7 +1181,7 @@ htmldoc_print_info(HtmlDoc d[_1_], CmdOut* out) {
 #define PRINT_INFO_CNTYPE_    "  content-type:       "
 #define PRINT_INFO_SCRIPT_CT_ "  script count:       %ld\n"
 #define PRINT_INFO_DWN_SC_CT_ "  downloaded scripts: %ld\n"
-#define PRINT_INFO_EFFCT_URL_ "  effective url:"
+#define PRINT_INFO_EFFCT_URL_ "  effective url:\\"
 
 
     try( msg_fmt(out, PRINT_INFO_DWN_SZ_, *htmldoc_curlinfo_sz_download(d)));
@@ -1199,6 +1227,7 @@ Clean_Cookies:
     try( msg_fmt(out, PRINT_INFO_SCRIPT_CT_, len__(htmldoc_scripts(d))));
     try( msg_fmt(out, PRINT_INFO_DWN_SC_CT_, len__(htmldoc_body_scripts(d)) + len__(htmldoc_head_scripts(d))));
 
+    try(htmldoc_print_info_request(htmldoc_request(d), out));
     /* keep this at the end */
     StrView effective_url;
     try(htmldoc_get_effective_url(d, &effective_url));
