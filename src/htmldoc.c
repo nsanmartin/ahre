@@ -49,7 +49,6 @@ static size_t _strview_trim_right_count_newlines_(StrView s[_1_]) {
 
 static Err
 doc_draw_cache_init(DocDrawCache cache[1]) {
-    //
     *cache = (DocDrawCache){0};
     if ( lipfn(DomNodePtr,bool,init)(&cache->checked_boxes, (LipInitArgs){.sz=4}) )
         fail_e("lip init");
@@ -655,7 +654,6 @@ static Err draw_tag_input(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_])
     } else if (str_eq_case(svl("checkbox"), type)) {
 
         bool default_check = dom_node_has_attr(node, svl("checked"));
-        //
         bool* actual_value = lipfn(DomNodePtr,bool,get_or_set)(htmldoc_checked_boxes(d), &node.ptr,&default_check);
         if (!actual_value) fail_e("lip get or set");
         if (*actual_value) try( draw_text_buf_append_lit__(text, "[*]"));
