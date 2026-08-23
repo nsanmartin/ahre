@@ -34,8 +34,10 @@ Err mock_w_curl_multi_add(
 Err mock_curl_lexbor_fetch_document(
     UrlClient         url_client[_1_],
     HtmlDoc           htmldoc[_1_],
+    bool              fetch_scripts,
     CmdOut            out[_1_],
-    FetchHistoryEntry histentry[_1_]
+    FetchHistoryEntry histentry[_1_],
+    CurlPtr           easy
 );
 
 Err mock_w_curl_set_url(UrlClient url_client[_1_], Url url[_1_]) ;
@@ -72,9 +74,15 @@ Err mock_w_curl_multi_add(
 }
 
 Err mock_curl_lexbor_fetch_document(
-    UrlClient url_client[_1_], HtmlDoc htmldoc[_1_], CmdOut out[_1_], FetchHistoryEntry histentry[_1_]
+    UrlClient         url_client[_1_],
+    HtmlDoc           htmldoc[_1_],
+    bool              fetch_scripts,
+    CmdOut            out[_1_],
+    FetchHistoryEntry histentry[_1_],
+    CurlPtr           easy
 ) {
-    utest_ignore_params(url_client, htmldoc, out, histentry);
+    utest_ignore_params(url_client, htmldoc, fetch_scripts, out);
+    utest_ignore_params(easy, histentry);
     return Ok;
 }
 

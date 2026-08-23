@@ -38,8 +38,9 @@ Err err_fmt_buf(char* buf, size_t len, Err fmt, ...) {
     if (bytes < 0) return "error: while processing another error mesage, a failure was produced";
     if (cast__(size_t)bytes >= len) {
         // message was truncated
-        bytes = len;
+        bytes = len - 1;
         memcpy(err_msg_buf, TRUNC_ERR, sizeof(TRUNC_ERR)-1);
+        err_msg_buf[bytes] = '\0';
     }
     memcpy(buf, err_msg_buf, cast__(size_t)bytes + 1);
     return buf;

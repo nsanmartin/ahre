@@ -5,6 +5,8 @@ SANITIZE_FLAGS:= -fsanitize=leak,address,undefined,null,bounds,pointer-overflow
 
 run_tests: run_test_ed_write run_test_range run_test_buf run_test_error run_test_iconv run_test_url
 
+all_tests: test_ed_write test_range test_buf test_error test_iconv test_url
+
 run_test_ed_write: test_ed_write
 	../build/test_ed_write
 
@@ -30,7 +32,7 @@ test_range: $(AHRE_UTESTS)/test_range.c $(AHRE_BUILD)/isocline.o \
 	$(AHRE_BUILD)/utils.o $(AHRE_BUILD)/tab-node.o $(AHRE_BUILD)/request.o \
 	$(AHRE_BUILD)/readpass.o $(AHRE_BUILD)/reditline.o \
 	$(AHRE_BUILD)/user-interface.o $(AHRE_BUILD)/fetch-history.o \
-	$(AHRE_BUILD)/user-input.o $(AHRE_BUILD)/user-out.o \
+	$(AHRE_BUILD)/user-input.o $(AHRE_BUILD)/user-out.o $(AHRE_BUILD)/cmd-out.o \
 	$(AHRE_BUILD)/tabs.o $(AHRE_BUILD)/bookmark.o $(AHRE_BUILD)/cmd.o $(AHRE_BUILD)/url.o \
 	$(AHRE_BUILD)/js-engine.o $(AHRE_BUILD)/wrapper-curl.o $(AHRE_BUILD)/sys.o \
 	$(AHRE_BUILD)/config.o $(AHRE_BUILD)/session-conf.o $(AHRE_BUILD)/dom.o $(AHRE_BUILD)/cmd-params.o \
@@ -58,7 +60,7 @@ test_ed_write: $(AHRE_UTESTS)/test_ed_write.c \
 	$(AHRE_BUILD)/session.o $(AHRE_BUILD)/htmldoc.o $(AHRE_BUILD)/request.o \
 	$(AHRE_BUILD)/tab-node.o  $(AHRE_BUILD)/readpass.o $(AHRE_BUILD)/reditline.o \
 	$(AHRE_BUILD)/isocline.o $(AHRE_BUILD)/user-interface.o \
-	$(AHRE_BUILD)/user-out.o $(AHRE_BUILD)/user-input.o \
+	$(AHRE_BUILD)/user-out.o $(AHRE_BUILD)/user-input.o $(AHRE_BUILD)/cmd-out.o \
 	$(AHRE_BUILD)/tabs.o $(AHRE_BUILD)/bookmark.o $(AHRE_BUILD)/js-engine.o \
 	$(AHRE_BUILD)/wrapper-curl.o $(AHRE_BUILD)/fetch-history.o \
 	$(AHRE_BUILD)/session-conf.o $(AHRE_BUILD)/url.o $(AHRE_BUILD)/dom.o $(AHRE_BUILD)/cmd-params.o \
@@ -71,7 +73,8 @@ test_ed_write: $(AHRE_UTESTS)/test_ed_write.c \
 		-lcurl -llexbor -lm
 
 
-test_iconv: $(AHRE_UTESTS)/test_iconv.c $(AHRE_BUILD)/error.o $(AHRE_BUILD)/utils.o
+test_iconv: $(AHRE_UTESTS)/test_iconv.c $(AHRE_BUILD)/error.o $(AHRE_BUILD)/utils.o \
+	$(AHRE_BUILD)/sys.o
 	$(CC) $(AHRE_CFLAGS) $(SANITIZE_FLAGS) $(AHRE_INCLUDE) -I. -I$(AHRE_UTESTS) \
 		-o $(AHRE_BUILD)/$@ $^ \
 		-lcurl -llexbor
@@ -79,7 +82,7 @@ test_iconv: $(AHRE_UTESTS)/test_iconv.c $(AHRE_BUILD)/error.o $(AHRE_BUILD)/util
 test_url: $(AHRE_UTESTS)/test_url.c \
 	$(AHRE_BUILD)/config.o $(AHRE_BUILD)/re.o $(AHRE_BUILD)/utils.o \
 	$(AHRE_BUILD)/session.o $(AHRE_BUILD)/session-conf.o $(AHRE_BUILD)/draw.o \
-	$(AHRE_BUILD)/textbuf.o $(AHRE_BUILD)/reditline.o \
+	$(AHRE_BUILD)/textbuf.o $(AHRE_BUILD)/reditline.o $(AHRE_BUILD)/cmd-out.o \
 	$(AHRE_BUILD)/wrapper-lexbor.o $(AHRE_BUILD)/wrapper-curl.o \
 	$(AHRE_BUILD)/js-engine.o $(AHRE_BUILD)/dom.o $(AHRE_BUILD)/sys.o $(AHRE_BUILD)/cmd-params.o \
 	$(QUICKJS_LIB)

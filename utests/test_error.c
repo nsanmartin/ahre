@@ -22,7 +22,7 @@ int test_0(void) {
 
     const char* f3 = "will it be formatted? %s";
     utest_assert(strcmp(
-        _err_fmt_vsnprinf_(f3, e2),
+        err_fmt(f3, e2),
         "error: err_fmt can't receive as parameter an err_fmt return value"
     ) == 0, fail); 
 
@@ -30,36 +30,36 @@ int test_0(void) {
     const char* f4   = "a number: %d";
     int i4           = 713;
     const char* exp4 =  "a number: 713";
-    utest_assert(strcmp(_err_fmt_vsnprinf_(f4, i4), exp4) == 0, fail); 
+    utest_assert(strcmp(err_fmt(f4, i4), exp4) == 0, fail); 
 
 
     const char* f5   = "another number: %d";
     int i5           = 1816113;
     const char* exp5 = "another number: 1816113";
-    utest_assert(strcmp(_err_fmt_vsnprinf_(f5, i5), exp5) == 0, fail); 
+    utest_assert(strcmp(err_fmt(f5, i5), exp5) == 0, fail); 
 
 
     const char* f6   = "a negative number: %d";
     int i6           = -816113;
     const char* exp6 = "a negative number: -816113";
-    utest_assert(strcmp(_err_fmt_vsnprinf_(f6, i6), exp6) == 0, fail); 
+    utest_assert(strcmp(err_fmt(f6, i6), exp6) == 0, fail); 
 
 
     const char* f7   = "another negative number: %d";
     int i7           = -7;
     const char* exp7 = "another negative number: -7";
-    utest_assert(strcmp(_err_fmt_vsnprinf_(f7, i7), exp7) == 0, fail); 
+    utest_assert(strcmp(err_fmt(f7, i7), exp7) == 0, fail); 
 
 
     const char* f8   = "Zero: %d";
     int i8           = 0;
     const char* exp8 = "Zero: 0";
-    utest_assert(strcmp(_err_fmt_vsnprinf_(f8, i8), exp8) == 0, fail); 
+    utest_assert(strcmp(err_fmt(f8, i8), exp8) == 0, fail); 
 
 
     const char* f9   = "a small number: %d";
     utest_assert(strcmp(
-        _err_fmt_vsnprinf_(f9, -2147483648),
+        err_fmt(f9, -2147483648),
         "a small number: -2147483648"
     ) == 0, fail); 
 
@@ -117,7 +117,7 @@ int test_1(void) {
         "FOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOO"
         "FOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOOFOO"
         ;
-    utest_assert(strncmp(_err_fmt_vsnprinf_("%s", s0),  "TRERR:", 6) == 0, fail);
+    utest_assert(strncmp(err_fmt("%s", s0),  "TRERR:", 6) == 0, fail);
 
     const char* f1 = 
         "__FOO__________________________________________________________"
@@ -195,7 +195,7 @@ int test_1(void) {
         "()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()"
         "()"
     ;
-    utest_assert(strncmp(_err_fmt_vsnprinf_(f1, s1),  "TRERR:", 6) == 0, fail);
+    utest_assert(strncmp(err_fmt(f1, s1),  "TRERR:", 6) == 0, fail);
 
     const char* f2 = 
         "_____________________________________________________One  _________________________"
@@ -261,7 +261,7 @@ int test_1(void) {
         "________________________________________________________________________________"
         "_______________"
     ;
-    utest_assert(strncmp(_err_fmt_vsnprinf_(f2, s2_1, s2_2),  "TRERR:", 6) == 0, fail);
+    utest_assert(strncmp(err_fmt(f2, s2_1, s2_2),  "TRERR:", 6) == 0, fail);
 
 
     const char* f3 = 
@@ -352,7 +352,7 @@ int test_1(void) {
 
     int i3 = 1234567890;
     
-    utest_assert(strncmp(_err_fmt_vsnprinf_(f3, i3),  "TRERR:", 6) == 0, fail);
+    utest_assert(strncmp(err_fmt(f3, i3),  "TRERR:", 6) == 0, fail);
 
 
     const char* f4 = 
@@ -403,7 +403,7 @@ int test_1(void) {
         ;
     int i4 = -1234567890;
 
-    utest_assert(strncmp(_err_fmt_vsnprinf_(f4, i4),  "TRERR:", 6) == 0, fail);
+    utest_assert(strncmp(err_fmt(f4, i4),  "TRERR:", 6) == 0, fail);
 
     return 0;
 fail:
