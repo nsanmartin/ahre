@@ -49,9 +49,15 @@ Err switch_tty_to_raw_mode(struct termios prev_termios[_1_]) {
 static inline void rlbuf_reset(RLBuf b[_1_]) { b->len = b->pos = 0; }
 static inline RlError rlbuf_ensure_extra_capacity_(RLBuf b[_1_], size_t size) {
     if (b->capacity < b->len + size) {
-        b->capacity += RL_DEFAULT_LINE_CAPACITY;
-        b->items = std_realloc(b->items, b->capacity);
-        if (!b->items) return RlErrorRealloc;
+        const size_t new_capacity = b->capacity + RL_DEFAULT_LINE_CAPACITY;
+        char* realloc_res         = std_realloc(b->items, new_capacity);
+        if (!realloc_res) {
+            std_free(b->items);
+            *b = (RLBuf){0};
+            return RlErrorRealloc;
+        }
+        b->capacity = new_capacity;
+        b->items    = realloc_res;
     }
     return ReditlineOk;
 }

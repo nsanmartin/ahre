@@ -193,15 +193,17 @@ Err mem_convert_to_utf8(
         if (nconv == (size_t)-1) {
             switch(errno) {
             case E2BIG: 
-                outleft += allocated;
+                outleft   += allocated;
                 allocated *= 2;
-                *outbuf = realloc((char*)*outbuf, allocated);
-                if (!*outbuf) {
+                char* realloc_res =  std_realloc((char*)*outbuf, allocated);
+                if (!realloc_res) {
+                    std_free((char*)*outbuf);
                     if (iconv_close(cd)) return "error: iconv_close failure after realloc failure";
                     return "error: realloc failure";
                 }
-                inbeg = inbuf + inlen - inleft;
-                outptr = (char*)*outbuf + written_so_far;
+                *outbuf = realloc_res;
+                inbeg   = inbuf + inlen - inleft;
+                outptr  = (char*)*outbuf + written_so_far;
                 continue;
             case EINVAL: 
                 if (iconv_close(cd)) return "error: iconv_close failure";
