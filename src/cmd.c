@@ -230,11 +230,12 @@ Err cmd_fetch(Session session[_1_], CmdOut* out) {
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
 
+    Err err = Ok;
     HtmlDoc newdoc;
     /* we reuse the request, but the Url is duplicated on fetch. We could
      * instead try to not duplicate it in this specific case, but this is
      * easier because the rest of the fetchs need to duplicate. */
-    try(htmldoc_init_move_request(
+    tryjmp(err, Fail, htmldoc_init_move_request(
         &newdoc,
         htmldoc_request(htmldoc),
         session_url_client(session),
@@ -244,6 +245,10 @@ Err cmd_fetch(Session session[_1_], CmdOut* out) {
     htmldoc_cleanup(htmldoc);
     *htmldoc = newdoc;
     return Ok;
+Fail:
+
+    htmldoc_cleanup(&newdoc);
+    return err;
 }
 
 

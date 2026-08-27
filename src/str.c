@@ -199,7 +199,7 @@ Err mem_convert_to_utf8(
                 if (!realloc_res) {
                     std_free((char*)*outbuf);
                     if (iconv_close(cd)) return "error: iconv_close failure after realloc failure";
-                    return "error: realloc failure";
+                    return "error: realloc failure converting to utf8";
                 }
                 *outbuf = realloc_res;
                 inbeg   = inbuf + inlen - inleft;
