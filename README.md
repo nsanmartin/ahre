@@ -13,6 +13,7 @@ A text based web browser for the terminal.
 [ahre web page](https://ahre.pages.dev/)
 
 ## Other text browsers:
++ [lynx](https://github.com/ThomasDickey/lynx-snapshots)
 + [edbrowse](https://github.com/CMB/edbrowse)
 + [w3m](https://git.sr.ht/~rkta/w3m)
 
