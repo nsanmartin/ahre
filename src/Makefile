@@ -1,6 +1,6 @@
-REPO_DIR=..
+REPO_DIR = ..
 
-AHRE_CFLAGS=$(CFLAGS) -g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition \
+AHRE_CFLAGS = $(CFLAGS) -g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-definition \
 			-Wmissing-prototypes \
 			-Wunused-result \
 			-Wunused-function \
@@ -15,53 +15,61 @@ AHRE_CFLAGS=$(CFLAGS) -g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-de
 			-Winit-self
 			#-Wconversion
 
-AHRE_LDFLAGS=$(LDFLAGS) -lcurl -llexbor -lm
 
-AHRE_OBJDIR=$(REPO_DIR)/build
-AHRE_BUILD=$(REPO_DIR)/build
-AHRE_SRCDIR=$(REPO_DIR)/src
-AHRE_HEADERS=$(wildcard $(=$(REPO_DIR))/src/*.h)
-AHRE_SRCS=$(wildcard $(AHRE_SRCDIR)/*.c)
-AHRE_OBJ=$(AHRE_SRCS:$(AHRE_SRCDIR)/%.c=$(AHRE_OBJDIR)/%.o)
-AHRE_PREPROCESSED=$(AHRE_SRCS:$(AHRE_SRCDIR)/%.c=$(AHRE_OBJDIR)/__pre__%.c)
+AHRE_CFLAGS += $(shell pkg-config -cflags libcurl)
+AHRE_CFLAGS += $(shell pkg-config -cflags lexbor)
+
+
+LDLIBS += $(shell pkg-config -libs libcurl)
+LDLIBS += $(shell pkg-config -libs lexbor)
+LDLIBS += -lm
+
+
+AHRE_OBJDIR       = $(REPO_DIR)/build
+AHRE_BUILD        = $(REPO_DIR)/build
+AHRE_SRCDIR       = $(REPO_DIR)/src
+AHRE_HEADERS      = $(wildcard $(=$(REPO_DIR))/src/*.h)
+AHRE_SRCS         = $(wildcard $(AHRE_SRCDIR)/*.c)
+AHRE_OBJ          = $(AHRE_SRCS:$(AHRE_SRCDIR)/%.c=$(AHRE_OBJDIR)/%.o)
+AHRE_PREPROCESSED = $(AHRE_SRCS:$(AHRE_SRCDIR)/%.c=$(AHRE_OBJDIR)/__pre__%.c)
 
 all: $(AHRE_BUILD)/ahre
+
+AHRE_INCLUDE = -I. -I$(REPO_DIR)/hotl/include -I$(REPO_DIR)/isocline/include
+
 
 ###########################
 ifdef AHRE_QUICKJS_DISABLED
 ###########################
 
 AHRE_CFLAGS += -DAHRE_QUICKJS_DISABLED
-AHRE_INCLUDE=-I. -I$(REPO_DIR)/hotl/include -I$(REPO_DIR)/isocline/include
-$(AHRE_BUILD)/ahre: $(AHRE_OBJ) $(AHRE_BUILD)/isocline.o
-	$(CC) $(AHRE_CFLAGS) $(AHRE_INCLUDE) \
-		$(REPO_DIR)/ahre.c -o $@ \
-		$^ \
-		$(AHRE_LDFLAGS) $(LDFLAGS)
+AHRE_LDFLAGS = $(LDFLAGS)
+AHRE_LDLIBS  = $(LDLIBS)
 
 ###########################
 else
 ###########################
-
-QUICKJS_REPO=$(REPO_DIR)/quickjs
-QUICKJS_INCLUDE=$(QUICKJS_REPO)
-QUICKJS_BUILD=$(QUICKJS_REPO)/build
-QUICKJS_LIB=$(QUICKJS_BUILD)/libqjs.a
-AHRE_INCLUDE=-I. -I$(REPO_DIR)/hotl/include -I$(REPO_DIR)/isocline/include -I$(QUICKJS_INCLUDE)
-
-$(AHRE_BUILD)/ahre: $(AHRE_OBJ) $(AHRE_BUILD)/isocline.o $(QUICKJS_LIB)
-	$(CC) $(AHRE_CFLAGS) $(AHRE_INCLUDE) \
-		$(REPO_DIR)/ahre.c -o $@ \
-		$^ \
-		-L$(QUICKJS_BUILD) \
-		$(AHRE_LDFLAGS) $(LDFLAGS)
-
-$(QUICKJS_LIB):
-	$(MAKE) -C $(QUICKJS_REPO)
+ifeq ($(shell pkg-config --exists qjs; echo $?),0) ## qjs exists
+AHRE_CFLAGS += $(shell pkg-config -cflags qjs 2> /dev/null)
+AHRE_LDLIBS  = $(shell pkg-config -libs qjs 2> /dev/null) $(LDLIBS)
+else
+QUICKJS_DIR   = $(REPO_DIR)/quickjs
+QUICKJS_LIB   = $(QUICKJS_DIR)/build
+AHRE_CFLAGS  += -I$(QUICKJS_DIR)
+AHRE_LDFLAGS += -L$(QUICKJS_LIB)
+AHRE_LDLIBS  += -lqjs $(LDLIBS)
+endif
 
 ###########################
 endif
 ###########################
+
+
+$(AHRE_BUILD)/ahre: $(AHRE_OBJ) $(AHRE_BUILD)/isocline.o
+	$(CC) $(AHRE_CFLAGS) $(AHRE_INCLUDE) \
+		$(REPO_DIR)/ahre.c -o $@ \
+		$^ \
+		$(AHRE_LDFLAGS) $(AHRE_LDLIBS)
 
 
 $(AHRE_OBJDIR)/%.o: $(AHRE_SRCDIR)/%.c $(AHRE_HEADERS)
@@ -71,7 +79,6 @@ $(AHRE_OBJDIR)/%.o: $(AHRE_SRCDIR)/%.c $(AHRE_HEADERS)
 
 $(AHRE_BUILD)/isocline.o:
 	$(CC) -c -I$(REPO_DIR)/isocline/include -o $@ $(REPO_DIR)/isocline/src/isocline.c
-
 
 
 
