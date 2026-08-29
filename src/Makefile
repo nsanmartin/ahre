@@ -72,7 +72,7 @@ $(AHRE_BUILD)/ahre: $(AHRE_OBJ) $(AHRE_BUILD)/isocline.o
 		$(AHRE_LDFLAGS) $(AHRE_LDLIBS)
 
 
-$(AHRE_OBJDIR)/%.o: $(AHRE_SRCDIR)/%.c $(AHRE_HEADERS)
+$(AHRE_OBJDIR)/%.o: $(AHRE_SRCDIR)/%.c $(AHRE_HEADERS) $(AHRE_BUILD)
 	$(CC) $(AHRE_CFLAGS) $(AHRE_INCLUDE) \
 		-c -o $@ \
 		$< 
@@ -81,6 +81,8 @@ $(AHRE_BUILD)/isocline.o:
 	$(CC) -c -I$(REPO_DIR)/isocline/include -o $@ $(REPO_DIR)/isocline/src/isocline.c
 
 
+$(AHRE_BUILD):
+	mkdir -p $@
 
 $(AHRE_OBJDIR)/__pre__%.c: $(AHRE_SRCDIR)/%.c
 	$(CC) $(AHRE_INCLUDE) -E -o $@ $<
