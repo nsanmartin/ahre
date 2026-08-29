@@ -161,7 +161,7 @@ static inline Err session_read_user_input(Session s[_1_], UserLine ul[_1_]) {
 
 static inline Err session_consume_line(Session s[_1_], UserLine userln[_1_], CmdOut cout[_1_]) {
     const char* cmd = *user_line_remaining(userln);
-    char* rest = strchr(cmd, ';');
+    char* rest = (char*)strchr(cmd, ';');
     if (rest) {
         *user_line_remaining(userln) = rest + 1;
         rest[0] = '\0';

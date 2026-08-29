@@ -57,7 +57,7 @@ _parse_range_addr_(const char* tk, RangeAddr out[_1_], const char* endptr[_1_], 
     if (**endptr == '/') {
         *out = (RangeAddr) { .tag = range_addr_search_tag };
         ++*endptr;
-        char* end = strchr(*endptr, '/');
+        const char* end = strchr(*endptr, '/');
         if (end) {
             size_t l = 1 + (end - *endptr);
             out->s = (StrView){.items=*endptr, .len=l};

@@ -343,7 +343,7 @@ strview_split(StrView s[_1__], char c) {
     StrView rv = (StrView){0};
     if (len__(s) == 0) return rv;
 
-    char* end = memchr(items__(s), c, len__(s));
+    const char* end = memchr(items__(s), c, len__(s));
     if (!end) {
         rv = *s;
         *s  = (StrView){0};
