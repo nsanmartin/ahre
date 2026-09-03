@@ -773,27 +773,23 @@ check_radio_buttons_in_form__rec_(DomNode form, LipOf(StrView,ArlOf(DomNode)) ra
 
 Err
 check_radio_buttons_in_form(DomNode form) {
-    if (dom_node_tag(form) != HTML_TAG_FORM) fail_e("should not check radio buttons in a not form element");
+    if (dom_node_tag(form) != HTML_TAG_FORM)
+        fail_e("should not check radio buttons in a not form element");
+
     LipOf(StrView,ArlOf(DomNode)) radio_groups = (LipOf(StrView,ArlOf(DomNode))){0};
-    if (lipfn(StrView,ArlOf(DomNode),init)(&radio_groups, (LipInitArgs){.sz=4})) return err_internal("lip init failure");
+    if (lipfn(StrView,ArlOf(DomNode),init)(&radio_groups, (LipInitArgs){.sz=4}))
+        return err_internal("lip init failure");
 
     Err err = Ok;
     tryjmp(err,Clean,check_radio_buttons_in_form__rec_(form, &radio_groups));
 
-    //TODO: we should move this into hotl lib by providing a iteration interface
-#define EntryT     LipMapEntryOf(StrView,ArlOf(DomNode))
-#define Fun(FName) lipmapfn(StrView,ArlOf(DomNode),FName)
-    EntryT* it  = buffn(EntryT,begin)(liptab(&radio_groups));
-    EntryT* end = buffn(EntryT,end)(liptab(&radio_groups));
-    for(; it != end; ++it) {
-        if (!Fun(is_zero)(&it->k) && len__(&it->v) > 1) {
-                for (DomNode* rad = arlfn(DomNode,begin)(&it->v); rad < arlfn(DomNode,back)(&it->v); ++rad) {
-                    tryjmp(err,Clean,dom_node_remove_attr(*rad, svl("checked")));
-                }
-        }
+    LipEntryOf(StrView,ArlOf(DomNode))* it  = lipfn(StrView, ArlOf(DomNode), entry_begin)(&radio_groups);
+    LipEntryOf(StrView,ArlOf(DomNode))* end = lipfn(StrView, ArlOf(DomNode), entry_end)(&radio_groups);
+    for (; it < end; it = lipfn(StrView,ArlOf(DomNode), entry_next)(&radio_groups, it)) {
+        if (len__(&it->v) > 1)
+            for (DomNode* rad = arlfn(DomNode,begin)(&it->v); rad < arlfn(DomNode,back)(&it->v); ++rad)
+                tryjmp(err,Clean,dom_node_remove_attr(*rad, svl("checked")));
     }
-#undef EntryT
-#undef Fun
 Clean:
     lipfn(StrView,ArlOf(DomNode),clean)(&radio_groups);
     return err;
