@@ -36,7 +36,7 @@ AHRE_PREPROCESSED = $(AHRE_SRCS:$(AHRE_SRCDIR)/%.c=$(AHRE_OBJDIR)/__pre__%.c)
 all: $(AHRE_BUILD)/ahre
 
 AHRE_INCLUDE = -I. -I$(REPO_DIR)/hotl/include -I$(REPO_DIR)/isocline/include
-
+AHRE_DEPS    = $(AHRE_OBJ) $(AHRE_BUILD)/isocline.o
 
 ###########################
 ifdef AHRE_QUICKJS_DISABLED
@@ -54,10 +54,17 @@ AHRE_CFLAGS += $(shell pkg-config -cflags qjs 2> /dev/null)
 AHRE_LDLIBS  = $(shell pkg-config -libs qjs 2> /dev/null) $(LDLIBS)
 else
 QUICKJS_DIR   = $(REPO_DIR)/quickjs
-QUICKJS_LIB   = $(QUICKJS_DIR)/build
+QUICKJS_BUILD = $(QUICKJS_DIR)/build
+QUICKJS_LIB   = $(QUICKJS_BUILD)/libqjs.a
 AHRE_CFLAGS  += -I$(QUICKJS_DIR)
-AHRE_LDFLAGS += -L$(QUICKJS_LIB)
+AHRE_LDFLAGS += -L$(QUICKJS_BUILD)
 AHRE_LDLIBS  += -lqjs $(LDLIBS)
+AHRE_DEPS	 += $(QUICKJS_LIB)
+
+$(QUICKJS_LIB):
+	$(MAKE) -C $(QUICKJS_DIR)
+
+
 endif
 
 ###########################
@@ -65,7 +72,7 @@ endif
 ###########################
 
 
-$(AHRE_BUILD)/ahre: $(AHRE_OBJ) $(AHRE_BUILD)/isocline.o
+$(AHRE_BUILD)/ahre: $(AHRE_DEPS)
 	$(CC) $(AHRE_CFLAGS) $(AHRE_INCLUDE) \
 		$(REPO_DIR)/ahre.c -o $@ \
 		$^ \
