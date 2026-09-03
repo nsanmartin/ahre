@@ -548,7 +548,7 @@ Err cmd_input_set_node(CmdParams p[_1_], DomNode node) {
     const char* ln   = p->ln;
     StrView type = dom_node_attr_value(node, svl("type"));
 
-    if (html_input_type_is_text_like(type))
+    if (html_input_type_is_text_like(type) || str_eq_case(type, svl("password")))
         return _cmd_input_text_set_(session, &node, ln, cmd_params_cmd_out(p));
     else if (dom_node_tag(node) == HTML_TAG_SELECT)
         return _cmd_input_select_set_(session, &node, ln, cmd_params_cmd_out(p));
