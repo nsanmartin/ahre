@@ -2,6 +2,7 @@
 #define __DOM_WRAPPER_AHRE_H__
 
 #include "wrapper-lexbor.h"
+#include "nongeneric.h"
 
 typedef struct { lxb_html_document_t* ptr; } Dom;
 typedef struct { DomNodePtr ptr; }           DomNode;
@@ -15,6 +16,14 @@ typedef struct { lxb_dom_attr_t* ptr; }      DomAttr;
 #define Hotl_LipMap_KT DomNodePtr
 #define Hotl_LipMap_VT bool
 #include <lipmap.h>
+
+#define Hotl_LipMap_KT        StrView
+#define Hotl_LipMap_KT_Cmp    strview_strview_cmp
+#define Hotl_LipMap_VT        ArlOf(DomNode)
+#define Hotl_LipMap_VT_Clean  arlfn(DomNode,clean)
+#define Hotl_LipMap_K_Hash(S) hotl_djb2_k33((char*)items__(S),len__(S))
+#include <lipmap.h>
+
 
 /* DOM */
 Dom     dom_from_ptr(DomPtr ptr);
@@ -330,4 +339,6 @@ StrView dom_attr_value_view(DomAttr attr);
 
 bool html_input_type_is_text_like(StrView type);
 Err dom_get_tag_nodes_in_doc(Dom dom, StrView tag, ArlOf(DomNode) nodes[_1_]);
+Err mark_radio_button(DomNode radio);
+Err check_radio_buttons_in_form(DomNode form);
 #endif

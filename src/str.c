@@ -67,6 +67,19 @@ int memstr_cmp(const char* mem, size_t len, const char* cstr) {
 }
 
 
+static int
+mem_cmp(const char* m1, size_t l1, const char* m2, size_t l2) { 
+    if (m1 == m2) return 0;
+    if (!m1) return -1;
+    if (!m2) return 1;
+    if (l1 != l2) {
+        const int subcmp = strncasecmp(m1, m2, l1);
+        if (subcmp) return subcmp;
+        return l2 - l1;
+    }
+    return strncasecmp(m1, m2, l1);
+}
+
 bool cstr_starts_with(const char* s, const char* t) {
     return s && t && strncmp(s, t, strlen(t)) == 0;
 }
@@ -505,6 +518,7 @@ str_append_flip(const char* mem, size_t size, size_t nmemb, Str out[_1_]) {
     return len;
 }
 
+int strview_strview_cmp (StrView* s, StrView* t) { return mem_cmp(s->items, s->len, t->items, t->len); }
 bool strview_strview_eq_case (StrView s, StrView t) { return mem_eq_case(s.items, s.len, t.items, t.len); }
 
 

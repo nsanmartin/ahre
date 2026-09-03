@@ -2,6 +2,7 @@
 #include <lexbor/dom/dom.h>
 
 #include "dom.h"
+#include "nongeneric.h"
 
 
 static Err str_append_wrapped(Str out[_1_], StrView pre, StrView s, StrView post);
@@ -256,6 +257,30 @@ Err dom_parse(Dom d, StrView html) {
  * DOM NODE
  *
  */
+
+
+static Err
+unckeck_all_radio_with_name__rec_(DomNode root, StrView name) {
+    for (DomNode it = dom_node_first_elem_child(root); !isnull(it); it = dom_node_next_elem(it)) {
+        if (dom_node_tag(it) == HTML_TAG_INPUT
+            && dom_node_attr_has_value(it, svl("type"), svl("radio"))
+            && dom_node_attr_has_value(it, svl("name"), name)
+        ) try( dom_node_remove_attr(it, svl("checked")));
+        else unckeck_all_radio_with_name__rec_(it, name);
+    }
+    return Ok;
+}
+
+
+Err
+mark_radio_button(DomNode radio) {
+    StrView name = dom_node_attr_value(radio, svl("name"));
+    DomNode form = dom_node_find_parent_form(radio);
+    try( unckeck_all_radio_with_name__rec_(form, name));
+    try( dom_node_set_attr(radio, svl("checked"), svl("")));
+    return Ok;
+}
+
 
 Dom dom_from_ptr(DomPtr ptr) { return (Dom){.ptr=ptr}; }
 
@@ -542,20 +567,6 @@ Err dom_node_remove_attr(DomNode n, StrView attr) {
     return LXB_STATUS_OK == status ? Ok : "error: could not set element's attribte";
 }
 
-//TODO0: delete
-//static inline void
-//_search_title_rec_(lxb_dom_node_t* node, lxb_dom_node_t* title[_1_]) {
-//    if (!node) return;
-//    else if (node->local_name == LXB_TAG_TITLE) *title = node; 
-//    else {
-//        for(lxb_dom_node_t* it = node->first_child; it ; it = it->next) {
-//            _search_title_rec_(it, title);
-//            if (*title) break;
-//        }
-//    }
-//    return;
-//}
-
 
 Err dom_get_title_text_line(Dom dom, Str* out) {
     DomNode title;
@@ -740,4 +751,50 @@ dom_get_title_elem(Dom dom, DomElem title[_1_]) {
     try(dom_get_title_node(dom, &node));
     *title = dom_elem_from_node(node);
     return Ok;
+}
+
+
+static Err
+check_radio_buttons_in_form__rec_(DomNode form, LipOf(StrView,ArlOf(DomNode)) radio_groups[1]) {
+    for (DomNode it = dom_node_first_elem_child(form); !isnull(it); it = dom_node_next_elem(it)) {
+        if (dom_node_tag(it) == HTML_TAG_INPUT
+            && dom_node_attr_has_value(it, svl("type"), svl("radio"))
+            && dom_node_has_attr(it, svl("checked"))) {
+
+            StrView name = dom_node_attr_value(it, svl("name"));
+            
+            ArlOf(DomNode)* grp = lipfn(StrView,ArlOf(DomNode),get_or_set)(radio_groups,&name,&(ArlOf(DomNode)){0});
+            if (!grp) fail_e("lip fainure");
+            if (!arlfn(DomNode,append)(grp,&it)) fail_e("arl failure");
+        } else try(check_radio_buttons_in_form__rec_(it, radio_groups));
+    }
+    return Ok;
+}
+
+Err
+check_radio_buttons_in_form(DomNode form) {
+    if (dom_node_tag(form) != HTML_TAG_FORM) fail_e("should not check radio buttons in a not form element");
+    LipOf(StrView,ArlOf(DomNode)) radio_groups = (LipOf(StrView,ArlOf(DomNode))){0};
+    if (lipfn(StrView,ArlOf(DomNode),init)(&radio_groups, (LipInitArgs){.sz=4})) return err_internal("lip init failure");
+
+    Err err = Ok;
+    tryjmp(err,Clean,check_radio_buttons_in_form__rec_(form, &radio_groups));
+
+    //TODO: we should move this into hotl lib by providing a iteration interface
+#define EntryT     LipMapEntryOf(StrView,ArlOf(DomNode))
+#define Fun(FName) lipmapfn(StrView,ArlOf(DomNode),FName)
+    EntryT* it  = buffn(EntryT,begin)(liptab(&radio_groups));
+    EntryT* end = buffn(EntryT,end)(liptab(&radio_groups));
+    for(; it != end; ++it) {
+        if (!Fun(is_zero)(&it->k) && len__(&it->v) > 1) {
+                for (DomNode* rad = arlfn(DomNode,begin)(&it->v); rad < arlfn(DomNode,back)(&it->v); ++rad) {
+                    tryjmp(err,Clean,dom_node_remove_attr(*rad, svl("checked")));
+                }
+        }
+    }
+#undef EntryT
+#undef Fun
+Clean:
+    lipfn(StrView,ArlOf(DomNode),clean)(&radio_groups);
+    return err;
 }

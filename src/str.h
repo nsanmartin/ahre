@@ -191,6 +191,7 @@ bool str_append_strview_2_(Str s[_1__], const StrView t, const StrView u);
     (str_append_strview_2_(S,sv(P),sv(Q))\
     ? err_fmt("error: str_append_z failure ("__FILE__":%d)", __LINE__) : Ok))
 
+int strview_strview_cmp (StrView* s, StrView* t);
 bool strview_strview_eq_case (StrView s, StrView t);
 #define str_eq_case(S, T) strview_strview_eq_case(sv(S), sv(T))
 

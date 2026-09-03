@@ -566,6 +566,11 @@ draw_tag_select(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
 static Err
 draw_tag_form(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+    /* If the html has more tht one checked radio button under the same name in the same form,
+     * only the last one will be checked.
+     */
+    try(check_radio_buttons_in_form(node));
+
     ArlOf(DomNode)* forms = htmldoc_forms(draw_ctx_htmldoc(ctx));
     if (!arlfn(DomNode,append)(forms, &node)) return "error: lip set";
     const size_t form_count = len__(forms);
@@ -659,6 +664,11 @@ static Err draw_tag_input(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_])
         if (*actual_value) try( draw_text_buf_append_lit__(text, "[*]"));
         else try( draw_text_buf_append_lit__(text, "[_]"));
 
+    } else if (str_eq_case(svl("radio"), type)) {
+        if (dom_node_has_attr(node, svl("checked"))) {
+            try( draw_text_buf_append_lit__(text, "(*)"));
+        }
+        else try( draw_text_buf_append_lit__(text, "(_)"));
     } else {
 
         try( draw_text_buf_append_lit__(text, "[input not supported yet]"));
