@@ -1,18 +1,27 @@
+v0.2.7 (4 Sep 2026)
+
+	* ui  : support radio buttons.
+	* ui  : add show request command to display how the request would be.
+	* refa: fix qjs disabled build.
+	* bug: add timeout to jse_eval.
+	* ui  : allow user to evaluate files in local dir.
+	* lib : upgrade qjs to v0.16.1.
+	* lib : update hotl v0.1.7 to use lipmap iterators.
+
 v0.2.6 (15 Aug 2026)
-	Changes:
+
 	* ui: support url input with (,{,[.
 	* ui: some readline (reditline) features: Ctrl-a, Ctrl-b, Ctrl-e, Ctrl-d, Ctrl-p.
 	* js: set a timeout to jse_eval.
 
 v0.2.5 (26 Jun 2026)
-	Changes:
+
 	* js: implement document.cookie.
 	* js: minimal javascript dom bindings with stubs.
 	* ui: paginate msg log.
 
 v0.2.4 (15 May 2026)
 
-	Changes:
 	* draw : "Fair" table rendering implementationg (rowspan missing).
 	* draw : Consider unicode spaces (not only ascii space) when drawing.
 	* refa : Separate url and request modules.
