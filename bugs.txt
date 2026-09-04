@@ -1,4 +1,0 @@
-TODO:
-
-DONE:
-[*] cmd_submit cleanup on failure. Test: draw local google's html and submit

@@ -33,7 +33,7 @@ $(AHRE_BUILD)/ahre: $(AHRE_OBJ) $(AHRE_BUILD)/isocline.o $(QUICKJS_LIB)
 		-lcurl -llexbor -lm
 
 
-$(AHRE_OBJDIR)/%.o: $(AHRE_SRCDIR)/%.c $(AHRE_HEADERS)
+$(AHRE_OBJDIR)/%.o: $(AHRE_SRCDIR)/%.c $(AHRE_HEADERS) | $(AHRE_BUILD)
 	$(CC) $(CFLAGS) \
 		-c -o $@ \
 		$< 
@@ -42,6 +42,8 @@ $(AHRE_BUILD)/isocline.o:
 	$(CC) -c -I$(REPO_DIR)/isocline/include -o $@ $(REPO_DIR)/isocline/src/isocline.c
 
 
+$(AHRE_BUILD):
+	mkdir -p $@
 
 $(QUICKJS_LIB):
 	$(MAKE) -C $(QUICKJS_REPO) CFGLAGS="-g" debug
