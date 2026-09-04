@@ -90,6 +90,18 @@ static Err _request_append_lexbor_name_value_attrs_if_both_(
 }
 
 
+static Err
+request_append_lexbor_checkbox_value_attr(Request r[1], DomNode node) {
+
+    StrView name = dom_node_attr_value(node, svl("name"));
+    if (!name.len || !name.items) return Ok;
+
+    StrView value = dom_node_attr_value(node, svl("value"));
+    if (!value.len || !value.items) value = svl("on");
+
+    return request_query_append_key_value(r, (char*)name.items, name.len, (char*)value.items, value.len);
+}
+
 
 static Err _make_submit_post_request_rec(
     DomNode node,
@@ -108,10 +120,13 @@ static Err _make_submit_post_request_rec(
 
         StrView type = dom_node_attr_value(node, svl("type"));
         if (str_eq_case(svl("submit"), type)) goto Continue_;
+        if (str_eq_case(svl("radio"), type) && !dom_node_has_attr(node, svl("checked")))
+            goto Continue_;
         if (str_eq_case(svl("checkbox"), type)) {
             bool* checked = lipfn(DomNodePtr,bool,get)(checkboxes, &node.ptr);
             if (!checked) fail_e("could not find input checkbox node in internal set");
-            if (!*checked) goto Continue_;
+            if (*checked) request_append_lexbor_checkbox_value_attr(r, node);
+            goto Continue_;
         }
         return _request_append_lexbor_name_value_attrs_if_both_(node, is_https, r);
     } else if (dom_node_has_tag_select(node)) {
@@ -473,11 +488,12 @@ Err request_show(Request r[1], CmdOut out[1]) {
         Str* v = arlfn(Str,begin)(values);
         for (;k < arlfn(Str,end)(keys) && v < arlfn(Str,end)(values); ++k, ++v) {
             try(msg__(out, "\n    \""));
-            if (len__(k)) try(msg__(out, k)); else try(msg_ln__(out, REQ_SHOW_NULL));
-            try(msg__(out, "'='"));
-            if (len__(v)) try(msg__(out, v)); else try(msg_ln__(out, REQ_SHOW_NULL));
-            try(msg_ln__(out, "\""));
+            if (len__(k)) try(msg__(out, k)); else try(msg__(out, REQ_SHOW_NULL));
+            try(msg__(out, "\"=\""));
+            if (len__(v)) try(msg__(out, v)); else try(msg__(out, REQ_SHOW_NULL));
+            try(msg__(out, "\""));
         }
+        try(msg__(out, "\n"));
     } else try(msg_ln__(out, REQ_SHOW_NULL));
 
     return Ok;

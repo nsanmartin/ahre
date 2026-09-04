@@ -478,10 +478,8 @@ cmd_input_show_request(CmdParams p[_1_], DomNode node) {
     ||  (dom_node_tag(node) == HTML_TAG_BUTTON && (dom_node_attr_has_value(node, svl("type"), svl("submit"))
                                                   || !dom_node_has_attr(node, svl("type"))))
     ) {
-
         TabNode* tab;
         try( tablist_current_tab(session_tablist(p->s), &tab));
-
         return _show_request_(tab, node, cmd_params_cmd_out(p));
     }
 
