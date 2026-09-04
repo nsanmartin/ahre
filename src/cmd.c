@@ -449,6 +449,45 @@ cmd_change_radio(Session session[_1_], DomNode n, const char* line, CmdOut cout 
     return session_doc_draw(session, cout);
 }
 
+static Err _show_request_(
+    TabNode t[_1_],
+    DomNode  input_node,
+    CmdOut* out
+) {
+    TabNode* tab_node;
+    HtmlDoc* d;
+    try( tab_node_current_node(t, &tab_node));
+    try( tab_node_current_doc(t, &d));
+
+    DomNode form = dom_node_find_parent_form(input_node);
+    if (isnull(form)) { return "expected form, not found"; }
+
+    Request r = (Request){0};
+    Err e     = Ok;
+    tryjmp(e,Clean, request_from_form_node(&r, form, true, htmldoc_url(d), htmldoc_checked_boxes(d)));
+    tryjmp(e,Clean, request_show(&r, out));
+
+Clean:
+    request_clean(&r);
+    return e;
+}
+
+Err
+cmd_input_show_request(CmdParams p[_1_], DomNode node) {
+    if ((dom_node_tag(node) == HTML_TAG_INPUT  && dom_node_attr_has_value(node, svl("type"), svl("submit"))) 
+    ||  (dom_node_tag(node) == HTML_TAG_BUTTON && (dom_node_attr_has_value(node, svl("type"), svl("submit"))
+                                                  || !dom_node_has_attr(node, svl("type"))))
+    ) {
+
+        TabNode* tab;
+        try( tablist_current_tab(session_tablist(p->s), &tab));
+
+        return _show_request_(tab, node, cmd_params_cmd_out(p));
+    }
+
+    return "cannot show request of node, should be an submit input or a submit (or non typed) button";
+}
+
 
 Err
 cmd_input_default_node(CmdParams p[_1_], DomNode node) {
@@ -475,7 +514,7 @@ cmd_input_default_node(CmdParams p[_1_], DomNode node) {
         return cmd_select_elem_show_options(&node, cmd_params_cmd_out(p));
 
 
-    return "error: invalid input node";
+    return "invalid input node for command";
 }
 
 

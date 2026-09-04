@@ -72,10 +72,6 @@ endif
 ###########################
 
 
-$(AHRE_BUILD):
-	mkdir -p $@
-
-
 $(AHRE_BUILD)/ahre: $(AHRE_DEPS)
 	$(CC) $(AHRE_CFLAGS) $(AHRE_INCLUDE) \
 		$(REPO_DIR)/ahre.c -o $@ \

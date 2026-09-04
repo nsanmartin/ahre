@@ -144,6 +144,7 @@ Err cmd_input_set_node(CmdParams p[_1_], DomNode node);
 Err cmd_input_save_node(CmdParams p[_1_], DomNode node);
 Err cmd_input_info_node(CmdParams p[_1_], DomNode n);
 Err cmd_input_default_node(CmdParams p[_1_], DomNode n);
+Err cmd_input_show_request(CmdParams p[_1_], DomNode n);
 
 Err cmd_input_save_node(CmdParams p[_1_], DomNode node);
 

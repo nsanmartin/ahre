@@ -443,3 +443,42 @@ request_is_local(Request r[_1_]) { return r->flags & REQUEST_LOCAL; }
 
 void
 request_set_local(Request r[_1_], bool value) { set_flag(&r->flags, REQUEST_LOCAL, value); }
+
+Err request_show(Request r[1], CmdOut out[1]) {
+#define REQ_SHOW_MET    "method: "
+#define REQ_SHOW_URLSTR "urlstr: "
+#define REQ_SHOW_FIELDS "fields: "
+#define REQ_SHOW_K_V    "ks/vs : "
+#define REQ_SHOW_NULL   "(null)"
+    switch (r->method) {
+        case http_get: try(msg_ln__(out, svl(REQ_SHOW_MET "GET"))); break;
+        case http_post: try(msg_ln__(out, svl(REQ_SHOW_MET "POST"))); break;
+        default: fail_e("invalid method in request");
+    }
+
+    try(msg__(out, REQ_SHOW_URLSTR));
+    if (len__(request_urlstr(r))) try(msg_ln__(out, request_urlstr(r)));
+    else try(msg_ln__(out, REQ_SHOW_NULL));
+   
+    try(msg__(out, REQ_SHOW_FIELDS));
+    if (len__(request_fields(r))) try(msg_ln__(out, request_fields(r)));
+    else try(msg_ln__(out, REQ_SHOW_NULL));
+
+    try(msg__(out, REQ_SHOW_K_V));
+    ArlOf(Str)* keys   = request_query_keys(r);
+    ArlOf(Str)* values = request_query_values(r);
+    if (len__(keys) != len__(values)) fail_e("request with different  keys/values lengths");
+    if (len__(keys)) {
+        Str* k = arlfn(Str,begin)(keys);
+        Str* v = arlfn(Str,begin)(values);
+        for (;k < arlfn(Str,end)(keys) && v < arlfn(Str,end)(values); ++k, ++v) {
+            try(msg__(out, "\n    \""));
+            if (len__(k)) try(msg__(out, k)); else try(msg_ln__(out, REQ_SHOW_NULL));
+            try(msg__(out, "'='"));
+            if (len__(v)) try(msg__(out, v)); else try(msg_ln__(out, REQ_SHOW_NULL));
+            try(msg_ln__(out, "\""));
+        }
+    } else try(msg_ln__(out, REQ_SHOW_NULL));
+
+    return Ok;
+}
