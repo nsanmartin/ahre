@@ -15,10 +15,13 @@ typedef struct {
     Str        fields; /* used for post fields and quey */
     unsigned   flags;
 #define REQUEST_LOCAL         0x1
+#define REQUEST_HTTPS         0x2
 } Request;
 
 bool request_is_local(Request r[_1_]);
 void request_set_local(Request r[_1_], bool value);
+bool request_is_https(Request r[_1_]);
+void request_set_https(Request r[_1_], bool value);
 static inline HttpMethod request_method(Request r[_1_]) { return r->method; }
 static inline Str* request_urlstr(Request r[_1_]) { return &r->urlstr; }
 static inline Url* request_url(Request r[_1_]) { return &r->url; }
@@ -44,7 +47,7 @@ Err request_query_append_key_value(Request r[_1_], const char*k, size_t klen, co
 
 /* ctors */
 Err request_from_cli_params(Request r[_1_], HttpMethod method, StrView urlstr, StrView fields);
-Err request_from_form_node (Request r[_1_], DomNode form, bool is_https, Url* urlview, LipOf(DomNodePtr,bool) checkbokes[1]);
+Err request_from_form_node (Request r[_1_], DomNode form, Url* urlview, LipOf(DomNodePtr,bool) checkbokes[1]);
 Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method);
 Err request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url);
 /* ctors **/

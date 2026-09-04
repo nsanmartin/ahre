@@ -464,7 +464,7 @@ static Err _show_request_(
 
     Request r = (Request){0};
     Err e     = Ok;
-    tryjmp(e,Clean, request_from_form_node(&r, form, true, htmldoc_url(d), htmldoc_checked_boxes(d)));
+    tryjmp(e,Clean, request_from_form_node(&r, form, htmldoc_url(d), htmldoc_checked_boxes(d)));
     tryjmp(e,Clean, request_show(&r, out));
 
 Clean:

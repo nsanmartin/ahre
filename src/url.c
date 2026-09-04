@@ -106,3 +106,5 @@ Err
 url_set_url_or_fragment(Url u[_1_], const char* cstr) {
     return curlu_set_url_or_fragment(url_cu(u), cstr);
 }
+
+Err url_is_https(Url u, bool is[1]) { return w_curl_url_is_https(u.ptr, is); }

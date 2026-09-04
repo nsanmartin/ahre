@@ -69,4 +69,5 @@ Err url_set_url_or_fragment(Url u[_1_], const char* s);
 Err url_cstr_malloc(Url u, char* out[_1_]);
 Err url_append_host_to_str(Url u, char* out[_1_]);
 Err url_append_path_to_str(Url u, char* out[_1_]);
+Err url_is_https(Url u, bool is[1]);
 #endif

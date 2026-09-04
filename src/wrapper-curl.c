@@ -237,6 +237,16 @@ w_curl_url_get_malloc(CURLU* cu, CURLUPart part, char* out[_1_]) {
     return Ok;
 }
 
+Err
+w_curl_url_is_https(CURLU* cu, bool is[1]) {
+    char* schema = NULL;
+    try(w_curl_url_get_malloc(cu, CURLUPART_SCHEME, &schema));
+    if (str_eq_case(sv(schema), svl("https"))) *is = true;
+    else *is = false;
+    curl_free(schema);
+    return Ok;
+}
+
 void
 w_curl_free(void* p) { if (p) curl_free(p); } 
 

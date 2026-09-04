@@ -16,38 +16,6 @@ static Err request_curl_init(Request r[_1_]) {
     }
 }
 
-static Err
-_make_submit_get_request_rec_(DomNode node, Request r[_1_], LipOf(DomNodePtr,bool) checkboxes[1]) {
-    if (isnull(node)) return Ok;
-    else if (dom_node_has_tag_input(node)) {
-         if (dom_node_attr_has_value(node, svl("type"), svl("submit"))) goto Continue_;
-         if (dom_node_attr_has_value(node, svl("type"), svl("checkbox"))) {
-            bool* checked = lipfn(DomNodePtr,bool,get)(checkboxes, &node.ptr);
-            if (!checked) fail_e("could not find input checkbox node in internal set");
-            if (!*checked) goto Continue_;
-         }
-
-        StrView value = dom_node_attr_value(node, svl("value"));
-        if (!value.len) return Ok;
-
-        StrView name = dom_node_attr_value(node, svl("name"));
-        if (!name.len) return Ok;
-
-        if (str_eq_case(name, svl("password")))
-            return "warn: passwords not allowed in get requests";
-
-        try(request_query_append_key_value(
-            r, (char*)name.items, name.len, (char*)value.items, value.len)
-        );
-    } 
-
-Continue_:
-    for(DomNode it = dom_node_first_child(node); ; it = dom_node_next(it)) {
-        try( _make_submit_get_request_rec_(it, r, checkboxes));
-        if (dom_node_eq(it, dom_node_last_child(node))) { break; }
-    }
-    return Ok;
-}
 
 
 static Err _request_append_select_(DomNode node, Request r[_1_]) {
@@ -69,20 +37,18 @@ static Err _request_append_select_(DomNode node, Request r[_1_]) {
     return Ok;
 }
 
-static Err _request_append_lexbor_name_value_attrs_if_both_(
-    DomNode node,
-    bool    is_https,
-    Request r[_1_]
-) {
-
+static Err
+_request_append_lexbor_name_value_attrs_if_both_(DomNode node, Request r[_1_]) {
     StrView value = dom_node_attr_value(node, svl("value"));
     if (!value.len || !value.items) return Ok;
 
     StrView name = dom_node_attr_value(node, svl("name"));
     if (!name.len || !name.items) return Ok;
 
-    if (str_eq_case(svl("password"), name) && !is_https)
-        return "warn: passwords allowed only under https";
+    if (str_eq_case(svl("password"), name)) {
+        if (request_method(r) != http_post) return "warn: only use post method to send a pasword";
+        if (!request_is_https(r)) return "warn: passwords allowed only under https";
+    }
 
     return request_query_append_key_value(
         r, (char*)name.items, name.len, (char*)value.items, value.len
@@ -103,55 +69,6 @@ request_append_lexbor_checkbox_value_attr(Request r[1], DomNode node) {
 }
 
 
-static Err _make_submit_post_request_rec(
-    DomNode node,
-    bool is_https,
-    Request r[_1_],
-    LipOf(DomNodePtr,bool) checkboxes[1]
-) {
-    if (isnull(node)) return Ok;
-    if (dom_node_has_tag_form(node)) {
-       /* ignoring form nested inside another form */
-       //TODO: receive a msg callback to notify user
-       return Ok;
-    }
-
-    if (dom_node_has_tag_input(node)) {
-
-        StrView type = dom_node_attr_value(node, svl("type"));
-        if (str_eq_case(svl("submit"), type)) goto Continue_;
-        if (str_eq_case(svl("radio"), type) && !dom_node_has_attr(node, svl("checked")))
-            goto Continue_;
-        if (str_eq_case(svl("checkbox"), type)) {
-            bool* checked = lipfn(DomNodePtr,bool,get)(checkboxes, &node.ptr);
-            if (!checked) fail_e("could not find input checkbox node in internal set");
-            if (*checked) request_append_lexbor_checkbox_value_attr(r, node);
-            goto Continue_;
-        }
-        return _request_append_lexbor_name_value_attrs_if_both_(node, is_https, r);
-    } else if (dom_node_has_tag_select(node)) {
-        return _request_append_select_(node, r);
-    }
-
-Continue_:
-    /* recursive case */
-    for(DomNode it = dom_node_first_child(node); !isnull(it) ; it = dom_node_next(it))
-        try( _make_submit_post_request_rec(it, is_https, r, checkboxes));
-    return Ok;
-}
-
-
-
-static Err
-_mk_submit_post_request_(DomNode form, bool is_https, Request r[_1_], LipOf(DomNodePtr,bool) checkboxes[1]) { 
-
-    for(DomNode it = dom_node_first_child(form); !isnull(it) ; it = dom_node_next(it)) {
-        try(_make_submit_post_request_rec(it, is_https, r, checkboxes));
-        if (dom_node_eq(it, dom_node_last_child(form))) break;
-    }
-
-    return Ok;
-}
 
 
 /* external linkage */
@@ -172,6 +89,7 @@ Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method) {
     *r = (Request){ .method=method };
 
     try(str_append(&r->urlstr, sv(url, url_len))); 
+    if (str_startswith(sv(r->urlstr), svl("https://"))) request_set_https(r, true);
     if (params_len) try(str_append(&r->fields, sv(params, params_len)));
     return request_curl_init(r);
 }
@@ -232,8 +150,45 @@ request_to_handle(
 }
 
 
-Err request_from_form_node (Request r[_1_], DomNode form, bool is_https, Url* urlview, LipOf(DomNodePtr,bool) checkboxes[1]) {
+static Err
+request_from_form_node__rec_(Request r[_1_], DomNode node, LipOf(DomNodePtr,bool) checkboxes[1]) {
+    if (isnull(node)) return Ok;
+    if (dom_node_has_tag_form(node)) { /* ignoring form nested inside another form */ //TODO: notify user?
+       return Ok;
+    }
+
+    if (dom_node_has_tag_input(node)) {
+
+        StrView type = dom_node_attr_value(node, svl("type"));
+        if (str_eq_case(svl("submit"), type)) goto Continue_;
+        if (str_eq_case(svl("radio"), type) && !dom_node_has_attr(node, svl("checked")))
+            goto Continue_;
+        if (str_eq_case(svl("checkbox"), type)) {
+            bool* checked = lipfn(DomNodePtr,bool,get)(checkboxes, &node.ptr);
+            if (!checked) fail_e("could not find input checkbox node in internal set");
+            if (*checked) request_append_lexbor_checkbox_value_attr(r, node);
+            goto Continue_;
+        }
+        return _request_append_lexbor_name_value_attrs_if_both_(node,r);
+    } else if (dom_node_has_tag_select(node)) {
+        return _request_append_select_(node, r);
+    }
+
+Continue_:
+    /* recursive case */
+    for(DomNode it = dom_node_first_child(node); !isnull(it) ; it = dom_node_next(it))
+        try( request_from_form_node__rec_(r, it, checkboxes));
+    return Ok;
+}
+
+Err request_from_form_node (Request r[_1_], DomNode form, Url* urlview, LipOf(DomNodePtr,bool) checkboxes[1]) {
     *r = (Request){.urlview=urlview};
+    if (urlview) {
+        bool is_https;
+        try(url_is_https(*r->urlview, &is_https));
+        request_set_https(r, is_https);
+    }
+
     StrView action = dom_node_attr_value(form, svl("action"));
     StrView method = dom_node_attr_value(form, svl("method"));
 
@@ -241,14 +196,16 @@ Err request_from_form_node (Request r[_1_], DomNode form, bool is_https, Url* ur
         try(str_append(request_urlstr(r), &action));
 
 
-    if (!method.len || str_eq_case(svl("get"), method)) {
+
+    if (str_eq_case(svl("dialog"), method)) return "dialog method not supported yet on forms";
+    else if (!method.len || str_eq_case(svl("get"), method))
         r->method = http_get;
-        try( _make_submit_get_request_rec_(form, r, checkboxes));
-    }
-    if (method.len && str_eq_case(svl("post"), method)) {
+    else if (str_eq_case(svl("post"), method))
         r->method = http_post;
-        try( _mk_submit_post_request_(form, is_https, r, checkboxes));
-    }
+    else return err_fmt("unsupported method '%s' in form", method.items);
+
+    for(DomNode it = dom_node_first_child(form); !isnull(it) ; it = dom_node_next(it))
+        try( request_from_form_node__rec_(r, it, checkboxes));
 
     return request_curl_init(r);
 }
@@ -409,6 +366,14 @@ request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url) {
         .urlview=url
     };
     if (urlstr.len) try(str_append(request_urlstr(r), urlstr));
+    if (str_startswith(sv(r->urlstr), svl("http://"))) request_set_https(r, false);
+    else if (str_startswith(sv(r->urlstr), svl("https://"))) request_set_https(r, true);
+    else if (r->urlview) {
+        bool is_https;
+        try(url_is_https(*r->urlview, &is_https));
+        request_set_https(r, is_https);
+    } else request_set_https(r, true); //curl's default is https
+
     return request_curl_init(r);
 }
 
@@ -417,6 +382,7 @@ request_from_cli_params(Request r[_1_], HttpMethod method, StrView urlstr, StrVi
     *r = (Request) { .method=method, };
     try(str_append(request_urlstr(r), urlstr));
     try(str_append(request_fields(r), fields));
+    if (str_startswith(sv(r->urlstr), svl("https://"))) request_set_https(r, true);
     return request_curl_init(r);
 }
 
@@ -455,9 +421,14 @@ set_post_fields(Request r[_1_], CurlPtr curl) {
 bool
 request_is_local(Request r[_1_]) { return r->flags & REQUEST_LOCAL; }
 
-
 void
 request_set_local(Request r[_1_], bool value) { set_flag(&r->flags, REQUEST_LOCAL, value); }
+
+bool
+request_is_https(Request r[_1_]) { return r->flags & REQUEST_HTTPS; }
+
+void
+request_set_https(Request r[_1_], bool value) { set_flag(&r->flags, REQUEST_HTTPS, value); }
 
 Err request_show(Request r[1], CmdOut out[1]) {
 #define REQ_SHOW_MET    "method: "
@@ -488,9 +459,14 @@ Err request_show(Request r[1], CmdOut out[1]) {
         Str* v = arlfn(Str,begin)(values);
         for (;k < arlfn(Str,end)(keys) && v < arlfn(Str,end)(values); ++k, ++v) {
             try(msg__(out, "\n    \""));
-            if (len__(k)) try(msg__(out, k)); else try(msg__(out, REQ_SHOW_NULL));
+            if (len__(k)) try(msg__(out, k));
+            else try(msg__(out, REQ_SHOW_NULL));
             try(msg__(out, "\"=\""));
-            if (len__(v)) try(msg__(out, v)); else try(msg__(out, REQ_SHOW_NULL));
+            if (str_eq_case(k, svl("password"))) try(msg__(out, len__(v) ? svl("********") : svl("________")));
+            else {
+                if (len__(v)) try(msg__(out, v));
+                else try(msg__(out, REQ_SHOW_NULL));
+            }
             try(msg__(out, "\""));
         }
         try(msg__(out, "\n"));
@@ -498,3 +474,4 @@ Err request_show(Request r[1], CmdOut out[1]) {
 
     return Ok;
 }
+
