@@ -49,7 +49,7 @@ AHRE_LDLIBS  = $(LDLIBS)
 ###########################
 else
 ###########################
-ifeq ($(shell pkg-config --exists qjs; echo $?),0) ## qjs exists
+ifeq ($(shell pkg-config --exists qjs && echo 1),1) ## qjs exists
 AHRE_CFLAGS += $(shell pkg-config -cflags qjs 2> /dev/null)
 AHRE_LDLIBS  = $(shell pkg-config -libs qjs 2> /dev/null) $(LDLIBS)
 else
