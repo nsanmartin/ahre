@@ -16,12 +16,12 @@ AHRE_CFLAGS = $(CFLAGS) -g -std=c2x -Wall -Wextra -Werror -pedantic -Wold-style-
 			#-Wconversion
 
 
-AHRE_CFLAGS += $(shell pkg-config -cflags libcurl)
-AHRE_CFLAGS += $(shell pkg-config -cflags lexbor)
+AHRE_CFLAGS += $(shell pkg-config --cflags libcurl)
+AHRE_CFLAGS += $(shell pkg-config --cflags lexbor)
 
 
-LDLIBS += $(shell pkg-config -libs libcurl)
-LDLIBS += $(shell pkg-config -libs lexbor)
+LDLIBS += $(shell pkg-config --libs libcurl)
+LDLIBS += $(shell pkg-config --libs lexbor)
 LDLIBS += -lm
 
 
@@ -50,8 +50,8 @@ AHRE_LDLIBS  = $(LDLIBS)
 else
 ###########################
 ifeq ($(shell pkg-config --exists qjs && echo 1),1) ## qjs exists
-AHRE_CFLAGS += $(shell pkg-config -cflags qjs 2> /dev/null)
-AHRE_LDLIBS  = $(shell pkg-config -libs qjs 2> /dev/null) $(LDLIBS)
+AHRE_CFLAGS += $(shell pkg-config --cflags qjs 2> /dev/null)
+AHRE_LDLIBS  = $(shell pkg-config --libs qjs 2> /dev/null) $(LDLIBS)
 else
 QUICKJS_DIR   = $(REPO_DIR)/quickjs
 QUICKJS_BUILD = $(QUICKJS_DIR)/build
