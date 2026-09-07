@@ -41,7 +41,7 @@ static Err _append_fopen(Str path[_1_], Url u, FILE* fp[_1_]) {
 
     if ((err = curl_url_to_filename_append(u, path))) { return "error: append failure"; }
 
-    *fp = fopen(items__(path), "wa");
+    *fp = fopen(items__(path), "a");
     return err;
 }
 
@@ -57,7 +57,7 @@ Err fopen_or_append_fopen(const char* fname, Url u, FILE* fp[_1_], Str actual_pa
     try( resolve_path(fname, &path_exists, actual_path));
     if (path_exists && path_is_dir(actual_path->items))
         tryjmp(err, Clean_Actual_Path,  _append_fopen(actual_path, u, fp));
-    else *fp = fopen(actual_path->items, "wa");
+    else *fp = fopen(actual_path->items, "a");
     if (!*fp) err = err_fmt("could not open file '%s': %s\n", actual_path->items, strerror(errno));
     else
         return Ok;
