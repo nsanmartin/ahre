@@ -263,8 +263,7 @@ static Err _bm_to_source_rec_childs_(DomNode node, Str out[_1_]) {
 static Err _bm_to_source_rec_childs_no_text_(DomNode node, Str out[_1_]) {
     DomNode it = dom_node_first_child(node);
     while (!isnull(it)) { 
-        if (dom_node_has_type_text(it)) continue; 
-        try( _bm_to_source_rec_(it, out));
+        if (!dom_node_has_type_text(it)) try( _bm_to_source_rec_(it, out));
 
         it = dom_node_next(it);
     }

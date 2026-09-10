@@ -556,8 +556,8 @@ _cmd_input_select_set_(Session session[_1_], DomNode n[_1_], const char* line, C
     ArlOf(DomNode)* matches = &(ArlOf(DomNode)){0};
     Err e = Ok;
 
-    DomNode first = dom_node_first_child(*n);
-    for(DomNode it = first; !isnull(it) ; it = dom_node_next(it)) {
+    DomNode it = dom_node_first_child(*n);
+    while (!isnull(it)) {
         if (dom_node_type(it) == DOM_NODE_TYPE_ELEMENT && dom_node_tag(it) == HTML_TAG_OPTION) {
             StrView value = dom_node_attr_value(it, svl("value"));
             size_t linelen = strlen(line);
@@ -570,6 +570,8 @@ _cmd_input_select_set_(Session session[_1_], DomNode n[_1_], const char* line, C
 
             tryjmp(e, Clean_Matches, dom_node_remove_attr(it, svl("selected")));
         }
+
+        it = dom_node_next(it);
     }
 
     if (len__(matches) == 0) e = "no matches";
@@ -602,10 +604,10 @@ Err cmd_input_set_node(CmdParams p[_1_], DomNode node) {
     const char* ln   = p->ln;
     StrView type = dom_node_attr_value(node, svl("type"));
 
-    if (html_input_type_is_text_like(type) || str_eq_case(type, svl("password")))
-        return _cmd_input_text_set_(session, &node, ln, cmd_params_cmd_out(p));
-    else if (dom_node_tag(node) == HTML_TAG_SELECT)
+    if (dom_node_tag(node) == HTML_TAG_SELECT)
         return _cmd_input_select_set_(session, &node, ln, cmd_params_cmd_out(p));
+    else if (html_input_type_is_text_like(type) || str_eq_case(type, svl("password")))
+        return _cmd_input_text_set_(session, &node, ln, cmd_params_cmd_out(p));
 
     return "input set not supported for element";
 }

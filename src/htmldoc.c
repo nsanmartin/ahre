@@ -122,20 +122,20 @@ typedef Err (*DrawEffectCb)(DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
 Err draw_rec(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
 static Err draw_rec_tag(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
 static Err draw_text(DomNode node,  DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
-static inline Err draw_list( DomNode it, DomNode last, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
-static inline Err draw_list_block( DomNode it, DomNode last, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
+static inline Err draw_list( DomNode it, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
+static inline Err draw_list_block( DomNode it, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
 static Err draw_tag_table (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]);
 
 
 static Err
 draw_iter_childs(DomNode n, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
-    return draw_list(dom_node_first_child(n), dom_node_last_child(n), ctx, text);
+    return draw_list(dom_node_first_child(n), ctx, text);
 }
 
 
 static Err
 draw_block_iter_childs(DomNode n, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
-    return draw_list_block(dom_node_first_child(n), dom_node_last_child(n), ctx, text);
+    return draw_list_block(dom_node_first_child(n), ctx, text);
 }
 
 
@@ -477,12 +477,10 @@ draw_rec(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
 
 static inline Err
-draw_list (DomNode it, DomNode last, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
-    (void)last;
+draw_list (DomNode it, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     while (!isnull(it)) {
         try( draw_rec(it, ctx, text));
         it = dom_node_next(it);
-        /* if (dom_node_eq(it, last)) break; //TODO: not needed */
     }
             
     return Ok;
@@ -541,7 +539,8 @@ static Err
 draw_tag_select(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     DomNode selected = dom_node_first_child(node);
     if (isnull(selected)) return Ok;
-    for(DomNode it = selected; !isnull(it) ; it = dom_node_next(it)) {
+    DomNode it = selected;
+    while (!isnull(it)) {
         if (dom_node_type(it) == DOM_NODE_TYPE_ELEMENT 
             && dom_node_tag(it) == HTML_TAG_OPTION
             && dom_node_has_attr(it, svl("selected"))
@@ -549,6 +548,8 @@ draw_tag_select(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
             selected = it;
             break;
         }
+
+        it = dom_node_next(it);
     }
 
     ArlOf(DomNode)* inputs = htmldoc_inputs(draw_ctx_htmldoc(ctx));
@@ -881,10 +882,10 @@ draw_text(DomNode node,  DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
 
 static inline Err
-draw_list_block(DomNode it, DomNode last, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+draw_list_block(DomNode it, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     DrawTextBuf sub = (DrawTextBuf){0};
 
-    Err err = draw_list(it, last, ctx, &sub);
+    Err err = draw_list(it, ctx, &sub);
     if (!err && sub.buf.len) {
         ok_then(err, draw_text_buf_append_lit__(text, "\n"));
         ok_then(err, draw_ctx_append_sub_text(text, &sub));
