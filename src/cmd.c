@@ -408,7 +408,9 @@ _cmd_form_print(CmdParams p[_1_], size_t ix) {
 static
 Err cmd_select_elem_show_options(DomNode lbn[_1_], CmdOut out [_1_]) {
     if (isnull(*lbn)) return "error: expecting lexbor node, not NULL";
-    for(DomNode it = dom_node_first_child(*lbn); !isnull(it) ; it = dom_node_next(it)) {
+
+    DomNode it = dom_node_first_child(*lbn);
+    while (!isnull(it)) {
         if (dom_node_tag(it) == HTML_TAG_OPTION) {
 
             if (dom_node_has_attr(it, svl("selected"))) msg__(out, svl(" *\t"));
@@ -420,7 +422,10 @@ Err cmd_select_elem_show_options(DomNode lbn[_1_], CmdOut out [_1_]) {
             else msg__(out, svl("\"\"\n")); 
 
         }
+
+        it = dom_node_next(it);
     }
+
     return Ok;
 }
 

@@ -23,11 +23,14 @@ static Err _request_append_select_(DomNode node, Request r[_1_]) {
     if (!key.len) return Ok;
 
     DomNode selected = (DomNode){0};
-    for(DomNode it = dom_node_first_child(node); !isnull(it) ; it = dom_node_next(it)) {
-        if (dom_node_has_tag_option(it) && dom_node_has_attr(it, svl("selected"))) {
+    DomNode it = dom_node_first_child(node);
+    while (!isnull(it)) {
+        if (dom_node_has_tag_option(it) && dom_node_has_attr(it, svl("selected")))
             selected = it;
-        }
+
+        it = dom_node_next(it);
     }
+
     if (!isnull(selected)) {
         StrView value = dom_node_attr_value(selected, svl("value"));
         if (value.len) {
@@ -176,8 +179,12 @@ request_from_form_node__rec_(Request r[_1_], DomNode node, LipOf(DomNodePtr,bool
 
 Continue_:
     /* recursive case */
-    for(DomNode it = dom_node_first_child(node); !isnull(it) ; it = dom_node_next(it))
+    DomNode it = dom_node_first_child(node);
+    while (!isnull(it)) {
         try( request_from_form_node__rec_(r, it, checkboxes));
+
+        it = dom_node_next(it);
+    }
     return Ok;
 }
 
@@ -204,8 +211,12 @@ Err request_from_form_node (Request r[_1_], DomNode form, Url* urlview, LipOf(Do
         r->method = http_post;
     else return err_fmt("unsupported method '%s' in form", method.items);
 
-    for(DomNode it = dom_node_first_child(form); !isnull(it) ; it = dom_node_next(it))
+    DomNode it = dom_node_first_child(form);
+    while (!isnull(it)) {
         try( request_from_form_node__rec_(r, it, checkboxes));
+
+        it = dom_node_next(it);
+    }
 
     return request_curl_init(r);
 }

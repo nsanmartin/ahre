@@ -438,10 +438,14 @@ Err
 dom_elem_get_text_content(DomElem elem, Str *out)
 {
     DomNode node = dom_node_from_elem(elem);
-    for(DomNode txt = dom_node_first_child(node); !isnull(txt) ; txt = dom_node_next(txt)) {
+    DomNode txt = dom_node_first_child(node);
+    while (!isnull(txt)) {
         StrView node_text = dom_node_text_view(txt);
         if (node_text.len) try( str_append(out, node_text));
+
+        txt = dom_node_next(txt);
     }
+
     return Ok;
 }
 
@@ -451,11 +455,13 @@ void dom_node_insert_child_node(DomNode node, DomNode child) {
 }
 
 HtmlTag dom_node_tag(DomNode n) {
+    if (!n.ptr) return HTML_TAG__INVALID_;
     size_t ix = n.ptr->local_name;
     if (sizeof(_lexbor_to_html_tag_) <= ix) return HTML_TAG__INVALID_;
     return _lexbor_to_html_tag_[ix];
 }
 DomNodeType dom_node_type(DomNode n) {
+    if (!n.ptr) return DOM_NODE_TYPE__INVALID_;
     size_t ix = n.ptr->type;
     if (sizeof(_lexbor_to_dom_node_type_) <= ix) return DOM_NODE_TYPE__INVALID_;
     return _lexbor_to_dom_node_type_[ix];
@@ -522,9 +528,11 @@ static Err _dom_node_to_str_impl_(DomNode node, Str buf[_1_], size_t level) {
         else try( str_append_ln(buf, svl("(null)")));
     }
 
-    for (DomNode it = dom_node_first_child(node); !isnull(it); it = dom_node_next(it)) {
+    DomNode it = dom_node_first_child(node);
+    while (!isnull(it)) {
         _dom_node_to_str_impl_(it, buf, level + 1);
-        if (dom_node_eq(it, dom_node_last_child(node))) break;
+
+        it = dom_node_next(it);
     }
 
     if (tag.items && tag.len) {

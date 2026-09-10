@@ -93,10 +93,8 @@ cmd_bookmarks(CmdParams p[_1_]) {
 
 Err
 bookmark_sections(DomNode body, ArlOf(Str)* out) {
-    for (DomNode it = dom_node_first_child(body)
-        ; !dom_node_eq(it,dom_node_last_child(body))
-        ; it = dom_node_next(it)
-    ) {
+    DomNode it = dom_node_first_child(body);
+    while (!isnull(it)) {
         if (dom_node_has_tag(it, HTML_TAG_H2)) {
             if (!dom_node_eq(dom_node_first_child(it), dom_node_last_child(it)))
                 return "invalid bookmark file";
@@ -107,6 +105,9 @@ bookmark_sections(DomNode body, ArlOf(Str)* out) {
             StrView data = dom_node_text_view(dom_node_first_child(it));
             if (data.len) try( str_append(buf, &data));
         }
+
+
+        it = dom_node_next(it);
     }
 
     return Ok;
@@ -144,10 +145,8 @@ Clean_Section:
 Err
 bookmark_section_get(DomNode body, const char* q, DomNode out[_1_], bool match_prefix) {
     DomNode res = (DomNode){0};
-    for (DomNode it = dom_node_first_child(body)
-        ; !dom_node_eq(it, dom_node_last_child(body))
-        ; it = dom_node_next(it)
-    ) {
+    DomNode it = dom_node_first_child(body);
+    while (!isnull(it)) {
         if (dom_node_has_tag(it, HTML_TAG_H2)) {
             if (!dom_node_eq(dom_node_first_child(it),dom_node_last_child(it)))
                 return "invalid bookmark file";
@@ -162,7 +161,11 @@ bookmark_section_get(DomNode body, const char* q, DomNode out[_1_], bool match_p
                 }
             }
         }
+
+
+        it = dom_node_next(it);
     }
+
     *out = res;
     return Ok;
 }
@@ -246,18 +249,24 @@ Err _bm_to_source_rec_(DomNode node, Str out[_1_]) {
 
 
 static Err _bm_to_source_rec_childs_(DomNode node, Str out[_1_]) {
-    for(DomNode it = dom_node_first_child(node); !isnull(it) ; it = dom_node_next(it)) {
+    DomNode it = dom_node_first_child(node);
+    while(!isnull(it)) {
         try( _bm_to_source_rec_(it, out));
-        if (dom_node_eq(it, dom_node_last_child(node))) break;
+
+        it = dom_node_next(it);
     }
+
     return Ok;
 }
 
 
-static Err _bm_to_source_rec_childs_no_text_(DomNode node, Str out[_1_]) { for(DomNode it = dom_node_first_child(node); !isnull(it) ; it = dom_node_next(it)) {
+static Err _bm_to_source_rec_childs_no_text_(DomNode node, Str out[_1_]) {
+    DomNode it = dom_node_first_child(node);
+    while (!isnull(it)) { 
         if (dom_node_has_type_text(it)) continue; 
         try( _bm_to_source_rec_(it, out));
-        if (dom_node_eq(it, dom_node_last_child(node))) break;
+
+        it = dom_node_next(it);
     }
     return Ok;
 }

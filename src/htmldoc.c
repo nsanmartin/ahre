@@ -478,10 +478,13 @@ draw_rec(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
 static inline Err
 draw_list (DomNode it, DomNode last, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
-    for(; !isnull(it) ; it = dom_node_next(it)) {
+    (void)last;
+    while (!isnull(it)) {
         try( draw_rec(it, ctx, text));
-        if (dom_node_eq(it, last)) break;
+        it = dom_node_next(it);
+        /* if (dom_node_eq(it, last)) break; //TODO: not needed */
     }
+            
     return Ok;
 }
 
@@ -554,10 +557,14 @@ draw_tag_select(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     try( _hypertext_id_open_(
         ctx, text, draw_ctx_color_red, input_text_open_str, &input_id, input_select_sep_str));
 
-    for(DomNode txt = dom_node_first_child(selected); !isnull(txt) ; txt = dom_node_next(txt)) {
+    DomNode txt = dom_node_first_child(selected);
+    while (!isnull(txt)) {
         StrView node_text = dom_node_text_view(txt);
         if (node_text.len) try( draw_text_buf_append(text, node_text));
+
+        txt = dom_node_next(txt);
     }
+
     try( _hypertext_id_close_(ctx, text, draw_ctx_reset_color, input_submit_close_str));
 
     return Ok;
@@ -1889,8 +1896,11 @@ static Err draw_tag_td(DomNode node, DrawCtx ctx[_1_], DrawRow r[_1_]) {
     Err err = Ok;
     DrawTextBuf cell = (DrawTextBuf){0};
 
-    for (DomNode txt = dom_node_first_child(node); !isnull(txt); txt = dom_node_next(txt)) {
+    DomNode txt = dom_node_first_child(node);
+    while (!isnull(txt)) {
         tryjmp(err, Clean, draw_rec(txt, ctx, &cell));
+
+        txt = dom_node_next(txt);
     }
     tryjmp(err, Clean, draw_text_buf_trim(&cell));
     tryjmp(err, Clean, draw_row_append(r, &cell));
