@@ -4,26 +4,26 @@
 #ifndef AHRE_REGEX_DISABLED
 
 
-Err regex_search_next(const char* pattern, const char* string, size_t* off) {
+/* Err regex_search_next(const char* pattern, const char* string, size_t* off) { */
 
-    regex_t regex;
-    if (regcomp(&regex, pattern, REG_NEWLINE))
-        return err_fmt("error compiling regex pattern: %s", pattern);
+/*     regex_t regex; */
+/*     if (regcomp(&regex, pattern, REG_NEWLINE)) */
+/*         return err_fmt("error compiling regex pattern: %s", pattern); */
 
-    regmatch_t  pmatch[1];
-    int status = regexec(&regex, string, 1, pmatch, 0);
-    if (status == REG_NOMATCH) {
-        return "pattern not found";
-    } else if (status) {
-        return err_fmt("error executing regex, status: %d\n", status);
-    }
+/*     regmatch_t  pmatch[1]; */
+/*     int status = regexec(&regex, string, 1, pmatch, 0); */
+/*     if (status == REG_NOMATCH) { */
+/*         return "pattern not found"; */
+/*     } else if (status) { */
+/*         return err_fmt("error executing regex, status: %d\n", status); */
+/*     } */
 
-    *off = pmatch[0].rm_so;
+/*     *off = pmatch[0].rm_so; */
 
-    regfree(&regex);
+/*     regfree(&regex); */
 
-    return Ok;
-}
+/*     return Ok; */
+/* } */
 
 Err regex_maybe_find_next(const char* pattern, const char* string, size_t* off[1]) {
 

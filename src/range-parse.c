@@ -64,7 +64,7 @@ _parse_range_addr_(const char* tk, RangeAddr out[_1_], const char* endptr[_1_], 
             return _parse_range_addr_delta_(*endptr+l, out, endptr);
         } else {
             size_t l = strlen(*endptr);
-            out->s = (StrView){.items=*endptr, .len=l+1};
+            out->s = (StrView){.items=*endptr, .len=l};
             *endptr = *endptr + l;
             return Ok;
         }

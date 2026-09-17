@@ -13,6 +13,7 @@
 
 typedef struct {
     Range last_range;
+    Str   last_pattern;
 } TextBufCache;
 
 
@@ -32,6 +33,7 @@ textbuf_buf(TextBuf t[_1_]) { return &t->buf; }
 static inline TextBufMods* textbuf_mods(TextBuf tb[_1_]) { return &tb->mods; }
 
 static inline Range* textbuf_last_range(TextBuf t[_1_]) { return &t->cache.last_range; }
+static inline Str* textbuf_last_pattern(TextBuf t[_1_]) { return &t->cache.last_pattern; }
 static inline ArlOf(size_t)* textbuf_eols(TextBuf tb[_1_]) { return &tb->eols; }
 
 /* ctor */
@@ -126,4 +128,5 @@ Err textbuf_range_from_parsed_range(
 );
 Err textbuf_to_file(TextBuf tb[_1_], const char* filename, const char* mode);
 Err textbuf_get_lines_matching_regex(TextBuf tb[_1_], StrView pattern, ArlOf(size_t) lines[_1_]);
+Err textbuf_repeat_search(TextBuf tb[_1_]);
 #endif

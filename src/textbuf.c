@@ -103,6 +103,7 @@ void textbuf_cleanup(TextBuf b[_1_]) {
     buffn(char, clean)(&b->buf);
     arlfn(size_t, clean)(&b->eols);
     arlfn(ModAt, clean)(textbuf_mods(b));
+    str_clean(textbuf_last_pattern(b));
     *b = (TextBuf){0};
 }
 
@@ -264,13 +265,13 @@ bool textbuf_get_line(TextBuf tb[_1_], size_t n, StrView out[_1_]) {
 static Err err_pattern_not_found = "pattern not found\n";
 
 static Err
-_regex_search_pattern_in_buf_(StrView pattern[_1_], const char* buf, size_t match_offset[_1_]) {
-    if (!len__(pattern)) return "expecting non empty pattern";
-    const char* lastptr = items__(pattern) + len__(pattern);
+_regex_search_pattern_in_buf_(StrView pattern, const char* buf, size_t match_offset[_1_]) {
+    if (!pattern.len) return "expecting non empty pattern";
+    const char* lastptr = pattern.items + pattern.len;
     char last           = *lastptr;
     size_t match        = 0;
     size_t* pmatch      = &match;
-    Err err             = regex_maybe_find_next(items__(pattern), buf, &pmatch);
+    Err err             = regex_maybe_find_next(pattern.items, buf, &pmatch);
     *(char*)lastptr     = last;
     if (err) return err;
     if (!pmatch) return err_pattern_not_found;
@@ -280,15 +281,39 @@ _regex_search_pattern_in_buf_(StrView pattern[_1_], const char* buf, size_t matc
 }
 
 
-static Err _textbuf_range_parse_to_range_(
-    TextBuf          tb[_1_],
-    RangeParse parse[_1_],
-    Range            range_out[_1_],
-    size_t           match_offset[_1_]
-) {
-    *range_out             = (Range){0};
+static Err
+textbuf_search_pattern(TextBuf tb[_1_], StrView pattern, size_t match_offset[_1_]) {
     size_t current_offset  = *textbuf_current_offset(tb);
     const char* buf = textbuf_items(tb);
+    str_reset(textbuf_last_pattern(tb));
+    try(str_append(textbuf_last_pattern(tb), pattern));
+    try( _regex_search_pattern_in_buf_(pattern, buf + current_offset, match_offset));
+    *match_offset += current_offset;
+    *textbuf_current_offset(tb) = *match_offset;
+    return Ok;
+}
+
+
+Err
+textbuf_repeat_search(TextBuf tb[_1_]) {
+    size_t current_offset = *textbuf_current_offset(tb);
+    const char* buf       = textbuf_items(tb);
+    size_t match_offset;
+    try( _regex_search_pattern_in_buf_(sv(textbuf_last_pattern(tb)), buf + current_offset, &match_offset));
+    match_offset += current_offset;
+    *textbuf_current_offset(tb) = match_offset;
+    return Ok;
+}
+
+
+static Err
+_textbuf_range_parse_to_range_(
+    TextBuf     tb[_1_],
+    RangeParse  parse[_1_],
+    Range       range_out[_1_],
+    size_t      match_offset[_1_]
+) {
+    *range_out             = (Range){0};
     switch (parse->beg.tag) {
         case range_addr_beg_tag: range_out->beg = 1 + parse->beg.delta;
             break;
@@ -305,9 +330,12 @@ static Err _textbuf_range_parse_to_range_(
         case range_addr_num_tag: range_out->beg = parse->beg.n + parse->beg.delta;
             break;
         case range_addr_search_tag:
-            try( _regex_search_pattern_in_buf_(&parse->beg.s, buf + current_offset, match_offset));
-            *match_offset += current_offset;
-            current_offset = *match_offset;
+            if (!parse->beg.s.len) {
+                try(textbuf_repeat_search(tb));
+                *match_offset = *textbuf_current_offset(tb) ;
+            } else {
+                try(textbuf_search_pattern(tb, parse->beg.s, match_offset));
+            }
             try( textbuf_get_line_of_offset(tb, *match_offset, &range_out->beg));
             break;
         case range_addr_prev_tag: 
@@ -328,9 +356,7 @@ static Err _textbuf_range_parse_to_range_(
         case range_addr_num_tag: range_out->end = parse->end.n + parse->end.delta;
             break;
         case range_addr_search_tag:
-            try( _regex_search_pattern_in_buf_(&parse->end.s, buf + current_offset, match_offset));
-            *match_offset += current_offset;
-            current_offset = *match_offset;
+            try(textbuf_search_pattern(tb, parse->end.s, match_offset));
             try( textbuf_get_line_of_offset(tb, *match_offset, &range_out->end));
             break;
         case range_addr_prev_tag: 
@@ -347,7 +373,7 @@ Err textbuf_get_lines_matching_regex(TextBuf tb[_1_], StrView pattern, ArlOf(siz
     size_t      match_offset    = 0;
 
     do {
-        Err err =  _regex_search_pattern_in_buf_(&pattern, buf + *textbuf_current_offset(tb), &match_offset);
+        Err err =  _regex_search_pattern_in_buf_(pattern, buf + *textbuf_current_offset(tb), &match_offset);
         if (err == err_pattern_not_found) return len__(lines) ? Ok : err_pattern_not_found;
         match_offset += *textbuf_current_offset(tb);
         *textbuf_current_offset(tb) = match_offset;
@@ -372,9 +398,9 @@ Err textbuf_range_from_parsed_range(
     RangeParse rres[_1_],
     Range            range[_1_]
 ) {
+    if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
     size_t match_offset = textbuf_len(textbuf); /* we use this value to indicate None value */
     try(_textbuf_range_parse_to_range_(textbuf, rres, range, &match_offset));
-    if (textbuf_is_empty(textbuf)) { return "empty buffer"; }
     try(_textbuf_range_validate_(textbuf, range));
     if (match_offset >= textbuf_len(textbuf))
         try( textbuf_get_offset_of_line(textbuf, range->end, textbuf_current_offset(textbuf)));
