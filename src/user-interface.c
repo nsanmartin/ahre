@@ -360,6 +360,12 @@ Clean:
 /* set session comands */
 
 
+#define CMD_SESSION_SET_BOOKMARKS \
+    "Set the default bookmarks file, so that commands that use the default\n"\
+    "bookmarks file use this as target (such as '.+SECTION', 'bookmarks show').\n"\
+    "To simply show a different bookmarks file than the default and navigate to\n"\
+    "its links you can just 'get FILENAME' to open it.\n"
+
 #define CMD_SESSION_INPUT \
     "Sets the 'input mode'.\nModes avalable are:\n" \
     "    fgets\n" \
@@ -369,7 +375,7 @@ Clean:
     "Enable or disable js engine for session.\n" \
     "1 enables it, 0 disables it.\n"
 static SessionCmd _cmd_session_set_[] = 
-    { {.name="bookmark",     .match=1, .fn=cmd_set_session_bookmark,   .help=NULL}
+    { {.name="bookmark",     .match=1, .fn=cmd_set_session_bookmark,   .help=CMD_SESSION_SET_BOOKMARKS}
     , {.name="forms",        .match=1, .fn=cmd_set_session_forms,      .help=NULL}
     , {.name="input",        .match=1, .fn=cmd_set_session_input,      .help=CMD_SESSION_INPUT}
     , {.name="js",           .match=1, .fn=cmd_set_session_js,         .help=CMD_SESSION_JS}
@@ -617,15 +623,26 @@ static SessionCmd _cmd_image_[] =
     , {0}
     };
 
-/* session commands */
+
+#define CMD_BOOKMARKS_LIST_SECTIONS_DOC \
+    "List the sections in curent file, asuming it is a bookmarks file.\n"\
+    "This command is not very useful and once we implement the 'g' option for\n"\
+    "search regex will be removed (and we'll use simply ':g/^#' while visiting a\n"\
+    "bookmarks file).\n"
+static SessionCmd _cmd_bookmarks_[] =
+    { {.name="\"",   .fn=cmd_bookmarks_list_sections, .help=CMD_BOOKMARKS_LIST_SECTIONS_DOC, .flags=CMD_CHAR}
+    , {.name="",     .fn=cmd_bookmarks_show,          .help=NULL, .flags=CMD_EMPTY}
+    , {.name="show", .fn=cmd_bookmarks_show,          .help=NULL, .match=1}
+    , {0}
+    };
 
 #define CMD_BOOKMARKS_DOC \
-    "This command assumes the current document is a bookmarks doc. A bookmarks \n"\
-    "doc is any one that has the structure of w3m bookmark.html (that is stored \n"\
-    " in $HOME/.w3m by w3m.\n"\
-    "In ahre we open the file at $HOME/.w3m/bookmark.html by \\go \\bookmark.\n\n"\
-    "the bookamrks command list the bookmars file sections.\n\n"\
-    "TODO: is this command useful at all?\n"
+    "Bookmarks\n"\
+    "A bookmarks doc is any one that has the structure of w3m bookmark.html\n"\
+    "(that is stored in $HOME/.w3m by w3m).\n"\
+    "ahre uses as default bookmarks file $XDG_CONFIG_HOME/bookmark.html (or \n"\
+    "$HOME/.config/ahre if not defined).\n\n"
+static Err cmd_bookmarks(CmdParams p[_1_]) { return run_cmd__(p, _cmd_bookmarks_); }
 
 
 #define CMD_ECHO_DOC "Prints in the message area the received parameters.\n"
@@ -700,7 +717,7 @@ static Err cmd_shortcut_z(CmdParams p[_1_]) {
 #define CMD_HELP_IX 0
 static SessionCmd _session_cmd_[] =
     { [CMD_HELP_IX]={.name="?",    .fn=cmd_help,        .help=CMD_HELP_DOC,      .flags=CMD_CHAR,      .subcmds=_session_cmd_               }
-    , [ 1]={.name="bookmarks",     .fn=cmd_bookmarks,   .help=CMD_BOOKMARKS_DOC,                                                   .match=1 }
+    , [ 1]={.name="bookmarks",     .fn=cmd_bookmarks,   .help=CMD_BOOKMARKS_DOC,                       .subcmds=_cmd_bookmarks_,   .match=1 }
     , [ 2]={.name="curl",          .fn=cmd_curl,        .help=CMD_CURL_DOC,                            .subcmds=_cmd_curl_,        .match=1 }
     , [ 3]={.name="echo",          .fn=cmd_echo,        .help=CMD_ECHO_DOC,                                                        .match=1 }
     , [ 4]={.name="get",           .fn=cmd_get,         .help=CMD_GET_DOC,                                                         .match=1 }

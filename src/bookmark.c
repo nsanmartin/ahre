@@ -57,7 +57,27 @@ Err bookmark_sections_body(HtmlDoc bookmark[_1_], DomNode out[_1_]) {
 
 
 Err
-cmd_bookmarks(CmdParams p[_1_]) {
+cmd_bookmarks_show(CmdParams p[_1_]) {
+    Request r = (Request){0};
+    Str     u = (Str){0};
+    Err     e = Ok;
+    p->ln     = cstr_trim_space((char*)p->ln);
+
+    if (!len__(session_bookmarks_fname(p->s))) return "no bookmarks file configured";
+    try(str_append(&u, svl("file://")));
+    try(resolve_bookmarks_file(items__(session_bookmarks_fname(p->s)), &u));
+    tryjmp(e,Fail, request_init(&r, http_get, sv(u), NULL));
+    tryjmp(e,Fail, session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p)));
+    str_clean(&u);
+    return Ok;
+Fail:
+    str_clean(&u);
+    request_clean(&r);
+    return e;
+}
+
+Err
+cmd_bookmarks_list_sections(CmdParams p[_1_]) {
     Session* session = p->s;
     const char* url = p->ln;
     HtmlDoc* htmldoc;
