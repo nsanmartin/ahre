@@ -14,7 +14,6 @@
 
 Err _get_image_by_ix(Session session[_1_], size_t ix, DomNode outnode[_1_]);
 
-static bool _is_url_alias_(const char* cmd) { return cmd[0] == '\\'; }
 
 Err
 dom_node_range_to_request_arl(
@@ -55,11 +54,7 @@ cmd_fetch_request_(CmdParams p[_1_], HttpMethod method) {
     Err     e = Ok;
     p->ln     = cstr_trim_space((char*)p->ln);
 
-    if (_is_url_alias_(p->ln)) {
-        try (get_url_alias(p->s, cstr_skip_space(p->ln + 1), &u));
-        tryjmp(e,Fail, request_init(&r, method, sv(u), NULL));
-    } else
-        tryjmp(e,Fail, request_from_userln(&r, p->ln, method));
+    tryjmp(e,Fail, request_from_userln(&r, p->ln, method));
 
     tryjmp(e,Fail, session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p)));
     str_clean(&u);
