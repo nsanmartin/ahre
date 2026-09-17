@@ -59,9 +59,9 @@ _parse_range_addr_(const char* tk, RangeAddr out[_1_], const char* endptr[_1_], 
         ++*endptr;
         const char* end = strchr(*endptr, '/');
         if (end) {
-            size_t l = 1 + (end - *endptr);
+            size_t l = end - *endptr;
             out->s = (StrView){.items=*endptr, .len=l};
-            return _parse_range_addr_delta_(*endptr+l, out, endptr);
+            return _parse_range_addr_delta_(*endptr+l+1, out, endptr);
         } else {
             size_t l = strlen(*endptr);
             out->s = (StrView){.items=*endptr, .len=l};
