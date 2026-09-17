@@ -1826,8 +1826,11 @@ ErrClean:
     return err;
 }
 
-static size_t splitted_celL_vertical_len(SplittedCell c[_1_]) { return len__(c); }
-static size_t cell_part_horizontal_len(CellPart c[_1_]) {
+static size_t
+splitted_celL_vertical_len(SplittedCell c[_1_]) { return len__(c); }
+
+static size_t
+cell_part_horizontal_len(CellPart c[_1_]) {
     StrView part = sv(c->buf);
     strview_trim_left_utf8_space(&part);
     strview_trim_right_utf8_space(&part);
@@ -1868,7 +1871,16 @@ splitted_table_col_horizonal_lengths(SplittedTable t[_1_], ColSpan colspan[_1_],
             && !arlfn(size_t,append)(cols_hlengths, &((size_t){0})))
                 return err_internal("arl append failure");
 
-            if (colspan_get_interpreted(colspan, (Coordinates){.row=nrow,.col=ncol}) > 1) { continue; }
+            if (colspan_get_interpreted(colspan, (Coordinates){.row=nrow,.col=ncol}) > 1) {
+                /* TODO: Here we are ignoring this cell in the column
+                 * horizontal length computation because we hope once spanned
+                 * it will have enough space. But obviously this may not be the
+                 * case. Since it is very rare (at list in my navigation and
+                 * using not too small windows) and also it is easier, I did it
+                 * like this, but should be fixed in the future.
+                 */
+                continue;
+            }
 
             size_t* maxlen = arlfn(size_t,at)(cols_hlengths, ncol);
 
@@ -1882,7 +1894,10 @@ splitted_table_col_horizonal_lengths(SplittedTable t[_1_], ColSpan colspan[_1_],
 }
 
 
-static unsigned parse_colspan(DomNode n) {
+/* Parses colspan attribute's value in node.A If any falure arises, sets it to
+   0.  */
+static unsigned
+parse_colspan(DomNode n) {
     StrView colspan = dom_node_attr_value(n, svl("colspan"));
     long    res     = 0;
     Str     buf     = (Str){0};
@@ -1893,7 +1908,9 @@ static unsigned parse_colspan(DomNode n) {
     return (res < 0 || res > UINT_MAX) ? 0 : res;
 }
 
-static Err draw_tag_td(DomNode node, DrawCtx ctx[_1_], DrawRow r[_1_]) {
+
+static Err
+draw_tag_td(DomNode node, DrawCtx ctx[_1_], DrawRow r[_1_]) {
     Err err = Ok;
     DrawTextBuf cell = (DrawTextBuf){0};
 
@@ -1913,10 +1930,10 @@ Clean:
 }
 
 /*
- * reads row table from dom.
- * rv:
- *   the cell(s), appended to tis row (it'd be more than only if colspan > 1)
- *   the colspan entry in the colspan map
+   Reads row table from dom.
+   rv:
+     the cell(s), appended to tis row (it'd be more than only if colspan > 1)
+     the colspan entry in the colspan map
  */
 static Err
 dom_read_table_row(DomNode n, DrawCtx ctx[_1_], DrawRow r[_1_], ColSpan colspan[_1_], size_t nrow) {
@@ -1983,6 +2000,7 @@ ErrClean:
 }
 
 
+/* Compute the horizontal length (chars) of the cell including its span.  */
 static Err
 get_cell_horizontal_len(size_t ncol, size_t span, ArlOf(size_t) cols_hlengths[_1_], size_t out[_1_]) {
     *out = 0;
