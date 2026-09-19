@@ -28,7 +28,116 @@ Fail:
 }
 
 
-Err tablist_info(TabList f[_1_], CmdOut* out) {
+static Err
+tab_node_enumerated_get_node(TabNode n[_1_], size_t ix[_1_], TabNodePtr out[_1_]) {
+    if (!*ix) {
+        *out = n;
+        return Ok;
+    }
+
+    --*ix;
+
+
+    TabNode* it        = arlfn(TabNode, begin)(n->childs);
+    const TabNode* end = arlfn(TabNode, end)(n->childs);
+    for (; it != end; ++it) {
+        try( tab_node_enumerated_get_node(it, ix, out));
+        if (!*ix && *out) break;
+    }
+
+    return Ok;
+}
+
+
+static Err
+tablist_enumerated_get_node(
+    TabList f[_1_], size_t ix[_1_], TabNodePtr out[_1_], size_t tablist_ix[_1_]
+) {
+
+    if (*out) fail_e("tablist_enumerated_get_node: out ptr must be null");
+    TabNode* it        = arlfn(TabNode, begin)(&f->tabs);
+    const TabNode* beg = it;
+    const TabNode* end = arlfn(TabNode, end)(&f->tabs);
+    
+    for (; it != end; ++it) {
+        *tablist_ix = it - beg;
+        try(tab_node_enumerated_get_node(it, ix, out));
+        if (!*ix && *out) break;
+    }
+
+    if (*ix || !*out) return "not tab with given index";
+    return Ok;
+}
+
+
+
+Err
+tablist_move_to_node(TabList tl[_1_], const char* line) {
+    line = cstr_skip_space(line);
+    if (!*line) fail_e("expecting non empty line");
+    size_t ix;
+    const char* endptr = NULL;
+    try( parse_size_t_err(line, &ix, &endptr, 36));
+    if (endptr && *endptr) return "invalid tab index";
+
+    TabNode* search = NULL;
+    size_t tablist_ix;
+    try(tablist_enumerated_get_node(tl, &ix, &search, &tablist_ix));
+    try( tab_node_set_as_current(search));
+    *_tablist_current_tab_ix_(tl) = tablist_ix;
+    return Ok;
+
+}
+
+
+static Err
+tablist_to_node_list(TabNode n[_1_], ArlOf(TabNodePtr) nodes[_1_], CmdOut* out) {
+    if (!arlfn(TabNodePtr,append)(nodes,&n)) fail_e("arl append");
+
+    TabNode* it        = arlfn(TabNode, begin)(n->childs);
+    const TabNode* end = arlfn(TabNode, end)(n->childs);
+    for (; it != end; ++it) 
+        try( tablist_to_node_list(it, nodes, out));
+
+    return Ok;
+}
+
+
+Err
+tablist_info_titles(TabList f[_1_], CmdOut* out) {
+    Str buf                  = (Str){0};
+    ArlOf(TabNodePtr)* nodes = &(ArlOf(TabNodePtr)){0};
+
+    Err err = Ok;
+
+    TabNode* it        = arlfn(TabNode, begin)(&f->tabs);
+    const TabNode* end = arlfn(TabNode, end)(&f->tabs);
+    
+
+    for (; it != end; ++it) 
+        tryjmp(err,Clean, tablist_to_node_list(it, nodes, out));
+
+    TabNode* current_node = NULL;
+    tryjmp(err,Clean, tablist_current_node(f, &current_node));
+    const TabNodePtr* nodes_offset = arlfn(TabNodePtr,begin)(nodes);
+    foreach__(TabNodePtr,nodes,n) {
+        if (*n == current_node) tryjmp(err,Clean, msg__(out, "[*] "));
+        else tryjmp(err,Clean, msg__(out, "[ ] "));
+        const size_t ix = n - nodes_offset;
+        tryjmp(err,Clean, cmd_out_msg_append_ui_as_base36(out, ix));
+        tryjmp(err,Clean, msg__(out, " "));
+        str_reset(&buf);
+        tryjmp(err,Clean, tab_node_to_bookmark_description(*n, &buf));
+        tryjmp(err,Clean, msg_ln__(out, buf));
+    }
+Clean:
+    arlfn(TabNodePtr, clean)(nodes);
+    str_clean(&buf);
+    return Ok;
+}
+
+
+Err tablist_info_tree(TabList f[_1_], CmdOut* out) {
     ArlOf(size_t)* stack = &(ArlOf(size_t)){0};
 
     TabNode* current_node;
@@ -39,6 +148,7 @@ Err tablist_info(TabList f[_1_], CmdOut* out) {
     ok_then(err, msg__(out, svl(" tab")));
     if(f->tabs.len) ok_then(err, msg__(out, svl("s")));
     ok_then(err, msg__(out, svl(")\n")));
+
 
     if (!err) {
         TabNode* it = arlfn(TabNode, begin)(&f->tabs);

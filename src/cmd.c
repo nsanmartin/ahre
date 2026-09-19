@@ -168,10 +168,19 @@ cmd_doc_console(CmdParams p[_1_]) {
 
 
 Err
-cmd_tabs_info(CmdParams p[_1_]) {
-    cmd_assert_no_params(p->ln);
+cmd_tabs_info_tree(CmdParams p[_1_]) {
+    p->ln = cstr_skip_space(p->ln);
     TabList* f = session_tablist(p->s);
-    return tablist_info(f, cmd_params_cmd_out(p));
+    if (!*p->ln) return tablist_info_tree(f, cmd_params_cmd_out(p));
+    return tablist_move_to_path(f, p->ln);
+}
+
+Err
+cmd_tabs_info(CmdParams p[_1_]) {
+    p->ln = cstr_skip_space(p->ln);
+    TabList* f = session_tablist(p->s);
+    if (!*p->ln) return tablist_info_titles(f, cmd_params_cmd_out(p));
+    return tablist_move_to_node(f, p->ln);
 }
 
 
@@ -183,11 +192,6 @@ cmd_tabs_back(CmdParams p[_1_]) {
 }
 
 
-Err
-cmd_tabs_goto(CmdParams p[_1_]) {
-    TabList* f = session_tablist(p->s);
-    return tablist_move_to_node(f, p->ln);
-}
 /* HtmlDoc commands */
 /*
  * These commands require a valid document, the caller should check this condition before

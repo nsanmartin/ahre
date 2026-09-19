@@ -85,9 +85,9 @@ Err cmd_doc_print_cookies(CmdParams p[_1_]);
  */
 
 Err cmd_tabs(CmdParams p[_1_]);
+Err cmd_tabs_info_tree(CmdParams p[_1_]);
 Err cmd_tabs_info(CmdParams p[_1_]);
 Err cmd_tabs_back(CmdParams p[_1_]);
-Err cmd_tabs_goto(CmdParams p[_1_]);
 
 /* 
  * HtmlDoc commands

@@ -106,6 +106,24 @@ TabNode* arl_of_tab_node_append(ArlOf(TabNode)* list, TabNode tn[_1_]) {
     return res;
 }
 
+Err tab_node_to_bookmark_description(TabNode n[_1_], Str description[_1_]) {
+    DomNode title;
+    HtmlDoc* d = &n->doc;
+    try(htmldoc_title(d, &title));
+    if (!isnull(title))
+        try(strview_join_lines_to_str(
+            dom_node_text_view(dom_node_first_child(title)), description));
+    else {
+        char* buf;
+        try(url_cstr_malloc(*htmldoc_url(d), &buf));
+        Err e = str_append(description, sv(buf));
+        w_curl_free(buf);
+        try(e);
+    }
+    return Ok;
+}
+
+
 Err session_tab_node_print(
     TabNode n[_1_],
     size_t ix,
@@ -114,7 +132,6 @@ Err session_tab_node_print(
     CmdOut* out
 ) {
     if (!arlfn(size_t, append)(stack, &ix)) return "error: arl append failure";
-    HtmlDoc* d = &n->doc;
 
     for(size_t* it = arlfn(size_t, begin)(stack); it != arlfn(size_t, end)(stack); ++it) {
         if (it == arlfn(size_t, begin)(stack)) {
@@ -136,28 +153,8 @@ Err session_tab_node_print(
             }
     }
     try( msg__(out, svl(" ")));
-    DomNode title;
-    try(htmldoc_title(d, &title));
-    if (!isnull(title)) {
-            Err e = strview_join_lines_to_str(
-                dom_node_text_view(dom_node_first_child(title)),
-                msg_str(cmd_out_msg(out))
-            );
-            ok_then(e, msg__(out, svl("\n")));
-    } else {
-        char* buf;
-        Err e = url_cstr_malloc(*htmldoc_url(d), &buf);
-        if (e) {
-            try( msg__(out, svl("error: ")));
-            try( msg__(out, (char*)e));
-            try( msg__(out, svl("\n")));
-        } else {
-            e = msg__(out, buf);
-            ok_then(e, msg__(out, svl("\n")));
-            w_curl_free(buf);
-            if (e) return e;
-        }
-    }
+    try(tab_node_to_bookmark_description(n, msg_str(cmd_out_msg(out))));
+    try( msg__(out, svl("\n")));
 
     TabNode* it = arlfn(TabNode, begin)(n->childs);
     const TabNode* beg = it;

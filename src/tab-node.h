@@ -24,6 +24,10 @@ void tab_node_cleanup(TabNode n[_1_]);
 #define Hotl_Arl_T_Clean tab_node_cleanup
 #include <arl.h>
 
+typedef TabNode* TabNodePtr;
+#define Hotl_Arl_T TabNodePtr
+#include <arl.h>
+
 TabNode* arl_of_tab_node_append(ArlOf(TabNode)* list, TabNode tn[_1_]);
 
 /* Node */
@@ -107,7 +111,8 @@ tab_node_get_child_index_of(TabNode n[_1_], TabNode child[_1_], size_t out[_1_])
     return Ok;
 }
 
-static inline Err tab_node_set_as_current(TabNode n[_1_]) {
+static inline Err
+tab_node_set_as_current(TabNode n[_1_]) {
     n->current_ix = tab_node_child_count(n);
     TabNode* it = n->parent;
     while(it) {
@@ -153,4 +158,5 @@ Err tab_node_tree_append_ahref_from_node(
     CmdOut*   out
 );
 
+Err tab_node_to_bookmark_description(TabNode n[_1_], Str description[_1_]);
 #endif

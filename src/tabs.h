@@ -3,10 +3,6 @@
 
 #include "tab-node.h"
 
-///#define T TabNode
-///// #define TClean tab_node_cleanup
-///#include <arl.h>
-
 void arl_of_tab_node_clean(ArlOf(TabNode)* t);
 
 typedef struct {
@@ -39,8 +35,9 @@ tablist_current_tab(TabList f[_1_], TabNode* out[_1_]) {
     return Ok;
 }
 
-static inline Err
-tablist_current_node(TabList f[_1_], TabNode* out[_1_]) {
+
+static inline
+Err tablist_current_node(TabList f[_1_], TabNode* out[_1_]) {
     TabNode* root;
     try( tablist_current_tab(f, &root));
     if (!root) { 
@@ -77,7 +74,8 @@ static inline void tablist_cleanup(TabList f[_1_]) {
     arlfn(TabNode, clean)(&f->tabs);
 }
 
-Err tablist_info(TabList f[_1_], CmdOut* out);
+Err tablist_info_tree(TabList f[_1_], CmdOut* out);
+Err tablist_info_titles(TabList f[_1_], CmdOut* out);
 
 static inline Err tablist_back(TabList tl[_1_]) {
     TabNode* cn;
@@ -88,7 +86,11 @@ static inline Err tablist_back(TabList tl[_1_]) {
     return Ok;
 }
 
-static inline Err tablist_move_to_node(TabList tl[_1_], const char* line) {
+Err tablist_move_to_node(TabList tl[_1_], const char* line);
+
+
+static inline
+Err tablist_move_to_path(TabList tl[_1_], const char* line) {
     size_t ix;
     try( parse_size_t_or_throw(&line, &ix, 10));
     TabNode* tn = arlfn(TabNode,at)(_tablist_tabs_(tl), ix);
@@ -105,7 +107,7 @@ static inline Err tablist_move_to_node(TabList tl[_1_], const char* line) {
     try( tab_node_find_node(tn, line + 1, &search));
     try( tab_node_set_as_current(search));
     *_tablist_current_tab_ix_(tl) = ix;
-    return Ok;
 
+    return Ok;
 }
 #endif
