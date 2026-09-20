@@ -77,7 +77,8 @@ static inline void tablist_cleanup(TabList f[_1_]) {
 Err tablist_info_tree(TabList f[_1_], CmdOut* out);
 Err tablist_info_titles(TabList f[_1_], CmdOut* out);
 
-static inline Err tablist_back(TabList tl[_1_]) {
+static inline
+Err tablist_back(TabList tl[_1_]) {
     TabNode* cn;
     try( tablist_current_node(tl, &cn));
     if (!cn) return "can't go back with no current node";
