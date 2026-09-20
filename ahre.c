@@ -54,7 +54,7 @@ static Err _loop_(Session s[_1_], UserLine userln[_1_], CmdOut cout[_1_]) {
     Err err      = Ok;
 
     while (!session_quit(s)) {
-        tryjmp(err, Error, session_show_output(s, cout));
+        tryjmp(err, Show_Error, session_show_output(s, cout));
         tryjmp(err, Error, session_read_user_input(s, userln));
         if (!user_line_empty(userln))
             tryjmp(err, Error, session_consume_line(s, userln, cout));
@@ -62,6 +62,10 @@ Error:
         if (err) if (session_show_error(s, err)) return "error trying to show previous error"; 
     }
     return Ok;
+Show_Error:
+    /* A Show_Error is unrecoverable because user cannot change any state between calls */
+    if (err) if (session_show_error(s, err)) return "error trying to show previous error"; 
+    return err;
 }
 
 static Err run_cmds(Session s[_1_], UserLine userln[_1_]) {

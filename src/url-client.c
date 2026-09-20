@@ -52,14 +52,16 @@ static const char* _parse_opt(CmdParams p[_1_], CURLoption opt[_1_]) {
 
 Err cmd_curl_set(CmdParams p[_1_]) {
     CURLoption opt;
-    const char* rest = _parse_opt(p, &opt);
+    const char* rest = cstr_skip_space(_parse_opt(p, &opt));
     if (!rest) return "invalid curl opt";
 
     long value = -1;
 
     switch(opt) {
         case CURLOPT_VERBOSE:
+            if (*rest == '?') return "set verbose (1 | 0)";
             rest = parse_l(rest, &value);
+            if (!rest) return "could not parse long value";
             if (*cstr_skip_space(rest)) return err_fmt("invalid opt: %s", rest);
             session_set_verbose(p->s, value);
             break;

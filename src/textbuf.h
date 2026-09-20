@@ -51,7 +51,12 @@ static inline char* textbuf_items(TextBuf textbuf[_1_]) { return textbuf->buf.it
 
 Err textbuf_get_line_of_offset(TextBuf tb[_1_], size_t off, size_t* out);
 
-/*todo return err*/
+static inline Err
+textbuf_get_current_line_number(TextBuf tb[_1_], size_t linenum[_1_]) {
+    return textbuf_get_line_of_offset(tb, *textbuf_current_offset(tb), linenum);
+}
+
+//TODO0: use textbuf_get_current_line_number
 static inline size_t textbuf_current_line(TextBuf tb[_1_]) {
     size_t line;
     Err err = textbuf_get_line_of_offset(tb, *textbuf_current_offset(tb), &line);

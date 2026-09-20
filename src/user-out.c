@@ -47,13 +47,40 @@ static void _update_if_smaller_(size_t value[_1_], size_t new_value) {
     if (*value > new_value) *value = new_value;
 }
 
+static Err
+show_session_get_show_range(Session* s, TextBuf tb[_1_], Range out[_1_]) {
+    const size_t win_rows = *session_nrows(s);
+    const size_t buf_rows = textbuf_line_count(tb);
+    if (buf_rows <= win_rows) {
+        *out = (Range){ .beg=1, .end=buf_rows};
+        return Ok;
+    }
+
+    size_t line;
+    try( textbuf_get_current_line_number(tb,&line));
+    if (!line) return "error: expecting current line number, not found";
+
+    const size_t remaining = buf_rows - line;
+    if (remaining >= win_rows)
+        *out = (Range){ .beg=line, .end=line + win_rows };
+    else {
+        const size_t linenum = buf_rows - win_rows;
+        try( textbuf_get_offset_of_line(tb, linenum, textbuf_current_offset(tb)));
+        *out = (Range){ .beg=linenum, .end=buf_rows};
+    }
+
+    return Ok;
+}
+
 #define EMPTY_SESSION_MSG_ "Session is empty\n\nType '\\?' (slash-question mark) for help.\n"
 #define EMPTY_BUFFER_MSG_ "Buffer is empty\n"
+#define BUFFER_NOT_PARSED_MSG_ "content was not parsed, is it html?\ncheck source and run .parse\n"
 /*
  * The "default" session is the onw shown when there is no "screen" as a
  * result of the user cmd.
  */
-static Err ui_vi_show_session_default(Session* s) {
+static Err
+ui_vi_show_session_default(Session* s) {
     CmdOut* default_out = &(CmdOut){0};
     Err err             = Ok;
 
@@ -65,20 +92,16 @@ static Err ui_vi_show_session_default(Session* s) {
         TextBuf* tb;
         try( session_current_doc(s, &d));
         try( session_current_buf(s, &tb));
+
         if (textbuf_is_empty(tb)) {
             if (!htmldoc_content_is_html(d)) 
-                try( msg_ln__(default_out, svl("content was not parsed, is it html?\ncheck source and run .parse")));
+                try( msg_ln__(default_out, svl(BUFFER_NOT_PARSED_MSG_)));
             else try( msg__(default_out, svl(EMPTY_BUFFER_MSG_)));
             err = session_flush_cmd_out_msg(s, default_out);
         } else {
 
-
-            size_t line = textbuf_current_line(tb);
-            if (!line) return "error: expecting current line number, not found";
-
-            size_t end = line + *session_nrows(s);
-            end = (end > textbuf_line_count(tb)) ? textbuf_line_count(tb) : end;
-            Range r = (Range){ .beg=line, .end=end };
+            Range r;
+            try(show_session_get_show_range(s, tb, &r));
 
             err = _vi_print_range_std_mod_(tb, &r, s, default_out);
             ok_then(err, session_flush_cmd_out_screen(s, default_out));
