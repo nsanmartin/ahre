@@ -116,10 +116,8 @@ tablist_info_titles(TabList f[_1_], CmdOut* out) {
     
     TabNode* current_node = NULL;
     tryjmp(err,Clean, tablist_current_node(f, &current_node));
-    size_t prev_offset = 0;
 
     for (; it != end; ++it)  {
-        prev_offset += len__(nodes);
         arlfn(TabNodePtr,reset)(nodes);
         const size_t tab_ix = it - begin;
         tryjmp(err,Clean, msg__(out, "    .\n"));
