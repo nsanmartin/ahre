@@ -111,15 +111,15 @@ tablist_info_titles(TabList f[_1_], CmdOut* out) {
     Err err = Ok;
 
     TabNode* it          = arlfn(TabNode, begin)(&f->tabs);
-    const TabNode* begin = it;
     const TabNode* end   = arlfn(TabNode, end)(&f->tabs);
     
     TabNode* current_node = NULL;
     tryjmp(err,Clean, tablist_current_node(f, &current_node));
+    size_t prev_offset = 0;
 
     for (; it != end; ++it)  {
+        prev_offset += len__(nodes);
         arlfn(TabNodePtr,reset)(nodes);
-        const size_t tab_ix = it - begin;
         tryjmp(err,Clean, msg__(out, "    .\n"));
         tryjmp(err,Clean, tablist_to_node_list(it, nodes, out));
 
@@ -128,7 +128,7 @@ tablist_info_titles(TabList f[_1_], CmdOut* out) {
             if (*n == current_node) tryjmp(err,Clean, msg__(out, "[*] "));
             else if (tab_node_is_current_in_tab(*n)) tryjmp(err,Clean, msg__(out, "[ ] "));
             else tryjmp(err,Clean, msg__(out, "    "));
-            const size_t ix = tab_ix + n - nodes_offset;
+            const size_t ix = prev_offset + n - nodes_offset;
             tryjmp(err,Clean, cmd_out_msg_append_ui_as_base36(out, ix));
             tryjmp(err,Clean, msg__(out, " "));
             str_reset(&buf);
