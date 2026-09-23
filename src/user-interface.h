@@ -7,7 +7,7 @@
 #include "user-out.h"
 
 typedef struct Session Session;
-typedef Err (*ProcessLineFn)(Session*, const char*, CmdOut cout[_1_]);
+typedef Err (*ProcessLineFn)(Session*, UserLine ul[_1_], CmdOut cout[_1_]);
 
 typedef struct {
     UserInput     uin;
@@ -16,8 +16,9 @@ typedef struct {
     UserOutput    uout;
 } UserInterface ;
 
-Err process_line_line_mode(Session* s, const char* line, CmdOut cout[_1_]);
-Err process_line_vi_mode(Session* s, const char* line, CmdOut cout[_1_]);
+
+Err process_line_line_mode(Session* s, UserLine line[_1_], CmdOut cout[_1_]);
+Err process_line_vi_mode(Session* s, UserLine line[_1_], CmdOut cout[_1_]);
 
 /* ctr / factories */
 static inline UserInterface ui_fgets(void) {

@@ -746,18 +746,19 @@ static Err cmd_help(CmdParams p[_1_]) {
 /************************/
 
 
-Err process_line(Session session[_1_], const char* line, CmdOut cout[_1_]) {
+Err process_line(Session session[_1_], UserLine line[_1_], CmdOut cout[_1_]) {
     if (!line) { session_quit_set(session); return "no input received, exiting"; }
-    line = cstr_skip_space(line);
-    if (*line == '\\') line = cstr_skip_space(line + 1);
-    if (!*line) { return Ok; }
+    user_line_skip_space(line);
+    if (user_line_match(line, '\\')) user_line_skip_space(line);
+    if (!user_line_char(line)) { return Ok; }
 
-    CmdParams p = (CmdParams){.s=session,.ln=line,.out=cout};
+    //TODO0: pass the UserLine
+    CmdParams p = (CmdParams){.s=session,.ln=line->remaining,.out=cout};
     Err err = run_cmd__(&p, _session_cmd_);
     return err;
 }
 
-Err process_line_line_mode(Session* s, const char* line, CmdOut cout[_1_]) {
+Err process_line_line_mode(Session* s, UserLine line[_1_], CmdOut cout[_1_]) {
     if (!s) return "error: no session :./";
     try (process_line(s, line, cout));
     static size_t logged_fetch_history = 0;
@@ -775,7 +776,7 @@ Err process_line_line_mode(Session* s, const char* line, CmdOut cout[_1_]) {
     return Ok;
 }
 
-Err process_line_vi_mode(Session* s, const char* line, CmdOut cout[_1_]) {
+Err process_line_vi_mode(Session* s, UserLine line[_1_], CmdOut cout[_1_]) {
     if (!s) return "error: no session :./";
     return process_line(s, line, cout);
 }

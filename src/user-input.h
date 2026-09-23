@@ -19,7 +19,10 @@ typedef struct {
     const char* remaining;
 } UserLine ;
 
+void user_line_skip_space(UserLine ul[_1_]);
+bool user_line_match(UserLine ul[_1_], char c);
 static inline const char** user_line_remaining(UserLine ul[_1_]) { return &ul->remaining; }
+static inline char user_line_char(UserLine ul[_1_]) { return *ul->remaining; }
 static inline Err user_line_init_take_ownership(UserLine ul[_1_], const char* line) {
     *ul = (UserLine){.full=line, .remaining=line};
     return Ok;

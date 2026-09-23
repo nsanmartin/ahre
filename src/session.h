@@ -23,7 +23,7 @@ typedef struct Session {
 } Session;
 
 
-Err process_line(Session session[_1_], const char* line, CmdOut cout[_1_]);
+Err process_line(Session session[_1_], UserLine line[_1_], CmdOut cout[_1_]);
 
 /* getters */
 Err session_current_buf(Session session[_1_], TextBuf* out[_1_]);
@@ -167,7 +167,7 @@ static inline Err session_consume_line(Session s[_1_], UserLine userln[_1_], Cmd
         rest[0] = '\0';
     } 
 
-    Err err = session_ui(s)->process_line(s, cmd, cout);
+    Err err = session_ui(s)->process_line(s, userln, cout);
     if (!rest) user_line_cleanup(userln);
     return err;
 }

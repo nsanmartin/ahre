@@ -226,3 +226,17 @@ Err wait_for_char(char c) {
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &prev_termios) == -1) return err_internal("tcsetattr failure");
     return Ok;
 }
+
+
+void
+user_line_skip_space(UserLine ul[_1_]) {
+    ul->remaining = cstr_skip_space(ul->remaining);
+}
+
+bool
+user_line_match(UserLine ul[_1_], char c) {
+    if (user_line_char(ul) != c) return false;
+    ++ul->remaining;
+    return true;
+}
+
