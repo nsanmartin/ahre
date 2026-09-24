@@ -87,7 +87,7 @@ Err cmd_set_session_ncols(CmdParams p[_1_]) {
     size_t ncols;
     try( cmd_params_parse_size_t_or_throw(p, &ncols, 10));
     cmd_params_skip_space(p);
-    if (!cmd_params_eol(p)) return "invalid argument";
+    if (!cmd_params_cmd_end(p)) return "invalid argument";
     *session_ncols(p->s) = ncols;
     return Ok;
 }

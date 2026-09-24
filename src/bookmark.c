@@ -86,7 +86,7 @@ cmd_bookmarks_list_sections(CmdParams p[_1_]) {
     try(bookmark_sections_body(htmldoc, &body));
     Err err = Ok;
 
-    if (cmd_params_eol(p)) {
+    if (cmd_params_cmd_end(p)) {
         err = bookmark_sections(body, &list);
         if (!err) {
             Str* it = arlfn(Str, begin)(&list);

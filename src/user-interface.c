@@ -66,9 +66,12 @@ static inline bool _any_match_(SessionCmd* cmd) { return cmd->flags & CMD_ANY; }
 
 
 static inline bool _name_match_(SessionCmd* cmd, CmdParams p[_1_]) {
-    StrView word;
-    if (!cmd_params_pop_word(p, &word)) return false;
-    return cmd_match_substring(word, cmd->name, cmd->match, p);
+    StrView word = cmd_params_word_view(p);
+    if (word.len && cmd_match_substring(word, cmd->name, cmd->match, p))  {
+        cmd_params_skip(p, word.len);
+        return true;
+    }
+    return false;
 }
 
 static bool _is_help_cmd_end_(CmdParams p[_1_]) {
@@ -140,6 +143,7 @@ static Err run_cmd_for_htmldoc_single_input_node(CmdParams p[_1_], nodeCmdCallba
 
 static Err run_cmd__(CmdParams p[_1_], SessionCmd cmdlist[]) {
     cmd_params_skip_space(p);
+    /* for (SessionCmd* cmd = cmdlist; cmd->name && !cmd_params_cmd_end(p); ++cmd) { */
     for (SessionCmd* cmd = cmdlist; cmd->name ; ++cmd) {
         if (_any_match_(cmd)) return cmd->fn(p);
         if (_char_cmd_match_(cmd, p)) {
@@ -151,7 +155,10 @@ static Err run_cmd__(CmdParams p[_1_], SessionCmd cmdlist[]) {
             else return cmd->fn(p);
         } else if (_empty_match_(cmd, p)) return cmd->fn(p);
     }
-    return err_fmt("invalid command: %s", p->ln);
+    UserLine* ul = cmd_params_user_line(p);
+    Err err = err_fmt("invalid command: %s", user_line_full(ul));
+    user_line_exhaust(ul);
+    return err;
 }
 
 
@@ -756,12 +763,13 @@ static Err cmd_help(CmdParams p[_1_]) {
 Err process_line(Session session[_1_], UserLine line[_1_], CmdOut cout[_1_]) {
     if (!line) { session_quit_set(session); return "no input received, exiting"; }
     user_line_skip_space(line);
-    if (user_line_match_char(line, '\\')) user_line_skip_space(line);
-    if (!user_line_char(line)) { return Ok; }
+    user_line_match_char(line, '\\');
+    if (user_line_cmd_end(line)) { return Ok; }
 
     //TODO0: pass the UserLine
     CmdParams p = (CmdParams){.s=session,.ln=*line,.out=cout};
     Err err = run_cmd__(&p, _session_cmd_);
+    *line = p.ln;
     return err;
 }
 

@@ -21,6 +21,8 @@ typedef struct {
     size_t      len;
 } UserLine ;
 
+static inline const char* user_line_full(UserLine ul[_1_]) { return ul->full; }
+static inline void user_line_exhaust(UserLine ul[_1_]) { ul->ix = ul->len; }
 static inline bool user_line_exhausted(UserLine ul[_1_]) { return ul->ix >= ul->len; }
 void user_line_skip(UserLine ul[_1_], size_t n);
 void user_line_skip_space(UserLine ul[_1_]);
@@ -32,6 +34,7 @@ bool user_line_pop_last_char(UserLine ln[_1_], char out[_1_]);
 bool user_line_pop_last_word(UserLine ln[_1_], StrView out[_1_]);
 bool user_line_pop_pattern(UserLine ul[_1_], StrView pattern[_1_]);
 bool user_line_pop_rest(UserLine ul[_1_], StrView rest[_1_]);
+StrView user_line_word_view(UserLine ul[_1_]);
 
 Err user_line_parse_range(UserLine ln[_1_], int base, RangeParse out[_1_]);
 static inline void user_line_skip_all(UserLine ul[_1_]) { ul->ix = ul->len; }
@@ -52,8 +55,7 @@ static inline StrView user_line_remainig_view(UserLine ln[_1_]) {
 
 static inline char user_line_char(UserLine ul[_1_]) { return ul->full[ul->ix]; }
 static inline Err user_line_init_take_ownership(UserLine ul[_1_], const char* line) {
-    if (!line) fail_e("expecting non NULL ptr");
-    *ul = (UserLine){.full=line, .ix=0, .len=strlen(line)};
+    *ul = (UserLine){.full=line, .ix=0, .len=line?strlen(line):0};
     return Ok;
 }
 

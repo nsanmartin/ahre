@@ -277,6 +277,11 @@ bool user_line_pop_word(UserLine ln[_1_], StrView out[_1_]) {
    return true;
 }
 
+StrView user_line_word_view(UserLine ul[_1_]) {
+   if (user_line_cmd_end(ul)) return (StrView){0}; 
+   StrView remview = user_line_remainig_view(ul);
+   return strview_split_utf8_word(&remview);
+}
 
 /* check whether al remainig data befor EOF or ';' is only space and splits 
  * whatever is following that */

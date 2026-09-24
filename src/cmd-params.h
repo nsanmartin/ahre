@@ -27,13 +27,14 @@ static inline bool cmd_params_match_char(CmdParams p[_1_], char c) {
 
 
 static inline void cmd_params_skip_space(CmdParams p[_1_]) { user_line_skip_space(cmd_params_user_line(p)); }
+static inline void cmd_params_skip(CmdParams p[_1_], size_t n) {
+    user_line_skip(cmd_params_user_line(p), n);
+}
 static inline bool cmd_params_cmd_end_skipping_space(CmdParams p[_1_]) {
     return user_line_cmd_end_skipping_space(cmd_params_user_line(p));
 }
 
 static inline bool cmd_params_cmd_end(CmdParams p[_1_]) { return user_line_cmd_end(cmd_params_user_line(p)); }
-//TODO0: deprecate 
-static inline bool cmd_params_eol(CmdParams p[_1_]) { return user_line_cmd_end(cmd_params_user_line(p)); }
 static inline bool cmd_params_pop_char(CmdParams p[_1_], char out[_1_]) {
     return user_line_pop_char(cmd_params_user_line(p), out);
 }
@@ -67,6 +68,9 @@ static inline bool cmd_params_cut_cmd(CmdParams p[_1_]) {
     return user_line_cut_cmd(cmd_params_user_line(p));
 }
 
+static inline StrView cmd_params_word_view(CmdParams p[_1_]) {
+    return user_line_word_view(cmd_params_user_line(p));
+}
 
 static inline bool cmd_params_match_last_char(CmdParams p[_1_], char c) {
     return user_line_match_last_char(cmd_params_user_line(p), c);
