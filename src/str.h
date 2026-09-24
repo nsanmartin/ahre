@@ -120,6 +120,7 @@ StrView     strview_split_word(StrView s[_1__]);
 StrView     strview_rsplit(StrView s[_1__], char c);
 StrView     strview_split(StrView s[_1__], char c);
 StrView     strview_split_utf8_word(StrView s[_1__]);
+StrView     strview_split_alpha(StrView s[_1__]);
 bool        strview_is_empty(const StrView s[_1__]);
 bool        strview_skip_space_inplace(StrView s[_1__]);
 bool        strview_trim_space_inplace(StrView s[_1__]);

@@ -272,7 +272,7 @@ bool user_line_pop_char(UserLine ln[_1_], char out[_1_]) {
 bool user_line_pop_word(UserLine ln[_1_], StrView out[_1_]) {
    if (user_line_cmd_end(ln)) return false; 
    StrView remview = user_line_remainig_view(ln);
-   *out = strview_split_utf8_word(&remview);
+   *out = strview_split_alpha(&remview);
    user_line_skip(ln, out->len);
    return true;
 }
@@ -280,7 +280,7 @@ bool user_line_pop_word(UserLine ln[_1_], StrView out[_1_]) {
 StrView user_line_word_view(UserLine ul[_1_]) {
    if (user_line_cmd_end(ul)) return (StrView){0}; 
    StrView remview = user_line_remainig_view(ul);
-   return strview_split_utf8_word(&remview);
+   return strview_split_alpha(&remview);
 }
 
 /* check whether al remainig data befor EOF or ';' is only space and splits 

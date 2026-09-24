@@ -329,6 +329,12 @@ StrView strview_split_word(StrView s[_1_]) {
     return word;
 }
 
+StrView strview_split_alpha(StrView s[_1_]) {
+    StrView word = (StrView){.items=items__(s)};
+    while(s->len && is_visible(*(items__(s))) && isalpha(*(items__(s)))) { ++word.len; ++s->items; --s->len; }
+    return word;
+}
+
 
 StrView strview_split_utf8_word(StrView s[_1_]) {
     StrView word = sv(s);

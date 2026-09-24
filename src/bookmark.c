@@ -136,7 +136,8 @@ bookmark_sections(DomNode body, ArlOf(Str)* out) {
 
 Err
 bookmark_section_insert(Dom dom, DomNode body, UserLine ln[_1_], DomElem bm_entry) {
-    StrView q = sv(user_line_remaining(ln));
+    StrView q;
+    if (!user_line_pop_last_word(ln, &q)) return "expecting a section name";
     DomElem section;
     try(dom_elem_init(&section, dom, svl("h2")));
     DomText text;
@@ -152,7 +153,6 @@ bookmark_section_insert(Dom dom, DomNode body, UserLine ln[_1_], DomElem bm_entr
     dom_node_insert_child(ul, bm_entry);
     dom_node_insert_child(body, ul);
 
-    user_line_skip(ln, q.len);
     return Ok;
 
 Clean_Text:
@@ -166,25 +166,20 @@ Clean_Section:
 
 Err
 bookmark_section_get(DomNode body, UserLine ln[_1_], DomNode out[_1_], bool match_prefix) {
-    StrView q   = sv(user_line_remaining(ln));
+    StrView q;
+    if (!user_line_pop_last_word(ln, &q)) return "expecting a section name";
     DomNode res = (DomNode){0};
     DomNode it  = dom_node_first_child(body);
-    Err err     = Ok;
     while (!isnull(it)) {
         if (dom_node_has_tag(it, HTML_TAG_H2)) {
-            if (!dom_node_eq(dom_node_first_child(it),dom_node_last_child(it))) {
-                err = "invalid bookmark file";
-                goto Consume_Line;
-            }
+            if (!dom_node_eq(dom_node_first_child(it),dom_node_last_child(it))) 
+                return "invalid bookmark file";
 
             StrView data = dom_node_text_view(dom_node_first_child(it));
             if (data.len) {
                 size_t len = match_prefix ? q.len : data.len;
                 if (q.len <= len && strncmp(q.items, data.items, len) == 0) {
-                    if (!isnull(res)) {
-                        err = "unequivocal reference to bookmark section";
-                        goto Consume_Line;
-                    }
+                    if (!isnull(res)) return "unequivocal reference to bookmark section";
                     res = it;
                 }
             }
@@ -195,10 +190,8 @@ bookmark_section_get(DomNode body, UserLine ln[_1_], DomNode out[_1_], bool matc
     }
 
     *out = res;
-Consume_Line:
 
-    user_line_skip(ln, q.len);
-    return err;
+    return Ok;
 }
 
 
