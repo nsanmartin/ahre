@@ -52,9 +52,8 @@ cmd_fetch_request_(CmdParams p[_1_], HttpMethod method) {
     Request r = (Request){0};
     Str     u = (Str){0};
     Err     e = Ok;
-    p->ln     = cstr_trim_space((char*)p->ln);
 
-    tryjmp(e,Fail, request_from_userln(&r, p->ln, method));
+    tryjmp(e,Fail, request_from_userln(&r, cmd_params_user_line(p), method));
 
     tryjmp(e,Fail, session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p)));
     str_clean(&u);
@@ -86,56 +85,73 @@ Err cmd_set_session_winsz(CmdParams p[_1_]) {
 
 Err cmd_set_session_ncols(CmdParams p[_1_]) {
     size_t ncols;
-    try( parse_size_t_or_throw(&p->ln, &ncols, 10));
-    if (*cstr_skip_space(p->ln)) return "invalid argument";
+    try( cmd_params_parse_size_t_or_throw(p, &ncols, 10));
+    cmd_params_skip_space(p);
+    if (!cmd_params_eol(p)) return "invalid argument";
     *session_ncols(p->s) = ncols;
     return Ok;
 }
 
 Err cmd_set_session_monochrome(CmdParams p[_1_]) {
-    p->ln = cstr_skip_space(p->ln);
-    if (*p->ln == '0') session_monochrome_set(p->s, false);
-    else if (*p->ln == '1') session_monochrome_set(p->s, true);
+    cmd_params_skip_space(p);
+    char opt;
+    if (!cmd_params_pop_last_char(p, &opt)) return "expecting value to set (0 or 1)";
+
+    if (opt == '0') session_monochrome_set(p->s, false);
+    else if (opt == '1') session_monochrome_set(p->s, true);
     else return "monochrome option should be '0' or '1'";
     msg_ln__(p, svl("session colors updated"));
     return Ok;
 }
 
 Err cmd_set_session_js(CmdParams p[_1_]) {
-    p->ln = cstr_skip_space(p->ln);
-    if (*p->ln == '0') session_js_set(p->s, false);
-    else if (*p->ln == '1') session_js_set(p->s, true);
+    cmd_params_skip_space(p);
+    char opt;
+    if (!cmd_params_pop_last_char(p, &opt)) return "expecting js option (0 or 1)";
+    if (opt == '0') session_js_set(p->s, false);
+    else if (opt == '1') session_js_set(p->s, true);
     else return "js option should be '0' or '1'";
     msg_ln__(p, svl("js updated"));
     return Ok;
 }
 
 Err cmd_set_session_forms(CmdParams p[_1_]) {
-    p->ln = cstr_skip_space(p->ln);
-    char c = p->ln[0]; 
-    if (c != '0' && c != '1') return "set forms option should be '0' or '1'";
-    session_conf_show_forms_set(session_conf(p->s), c == '1');
+    cmd_params_skip_space(p);
+    char opt;
+    if (!cmd_params_pop_last_char(p, &opt)) return "expecting forms option (0 or 1)";
+    if (opt != '0' && opt != '1') return "set forms option should be '0' or '1'";
+    session_conf_show_forms_set(session_conf(p->s), opt == '1');
     return Ok;
 }
 
 
 Err cmd_set_session_bookmark(CmdParams p[_1_]) {
-    p->ln = cstr_skip_space(p->ln);
+    cmd_params_skip_space(p);
     Str bookmark_fname = (Str){0};
-    try(resolve_bookmarks_file(p->ln, &bookmark_fname));
+    StrView path;
+    if(!cmd_params_pop_last_path(p, &path)) return "expecting path";
+    try(resolve_bookmarks_file(path.items, &bookmark_fname));//TODO0;: do we need to cut the word here? we only cut the command
     str_clean(session_bookmarks_fname(p->s));
     *session_bookmarks_fname(p->s) = bookmark_fname;
     return Ok;
 }
 
 Err cmd_set_session_input(CmdParams p[_1_]) {
-    p->ln = cstr_skip_space(p->ln);
+    cmd_params_skip_space(p);
     UserInterface ui;
-    const char* rest;
-    if ((rest = cmd_params_match(p, "fgets", 1)) && !*rest) ui = ui_fgets();
-    else if ((rest = cmd_params_match(p, "isocline", 1)) && !*rest) ui = ui_isocline();
-    else if ((rest = cmd_params_match(p, "visual", 1)) && !*rest) ui = ui_vi_mode();
+    StrView opt;
+    if (!cmd_params_pop_last_word(p, &opt)) return "expecting option";//TODO0: cut the word?
+
+    if (cmd_match_substring(opt, "fgets", 1, p))         ui = ui_fgets();
+    else if (cmd_match_substring(opt, "isocline", 1, p)) ui = ui_isocline();
+    else if (cmd_match_substring(opt, "visual", 1, p))   ui = ui_vi_mode();
     else return "input option should be 'getline', 'isocline' or 'visual'";
+
+    /* const char* rest; */
+    /* if ((rest = cmd_params_match(p, "fgets", 1)) && !*rest) ui = ui_fgets(); */
+    /* else if ((rest = cmd_params_match(p, "isocline", 1)) && !*rest) ui = ui_isocline(); */
+    /* else if ((rest = cmd_params_match(p, "visual", 1)) && !*rest) ui = ui_vi_mode(); */
+    /* else return "input option should be 'getline', 'isocline' or 'visual'"; */
     ui_switch(session_ui(p->s), &ui);
     return Ok;
 }
@@ -160,7 +176,10 @@ cmd_doc_js(CmdParams p[_1_]) { return session_doc_js(p->s, cmd_params_cmd_out(p)
 
 Err
 cmd_doc_console(CmdParams p[_1_]) {
-    return session_doc_console(p->s, p->ln, cmd_params_cmd_out(p));
+    UserLine* ul = cmd_params_user_line(p); 
+    const char* js = user_line_remaining(ul);
+    user_line_skip_all(ul); //TODO0: how should we skip this command?
+    return session_doc_console(p->s, js, cmd_params_cmd_out(p));
 }
 
 
@@ -169,24 +188,26 @@ cmd_doc_console(CmdParams p[_1_]) {
 
 Err
 cmd_tabs_info_tree(CmdParams p[_1_]) {
-    p->ln = cstr_skip_space(p->ln);
     TabList* f = session_tablist(p->s);
-    if (!*p->ln) return tablist_info_tree(f, cmd_params_cmd_out(p));
-    return tablist_move_to_path(f, p->ln);
+    if (cmd_params_cut_cmd(p)) return tablist_info_tree(f, cmd_params_cmd_out(p));
+    StrView path;
+    if (!cmd_params_pop_last_word(p, &path)) return "expecting a path for the node";
+    return tablist_move_to_path(f, path.items);
 }
 
 Err
 cmd_tabs_info(CmdParams p[_1_]) {
-    p->ln = cstr_skip_space(p->ln);
     TabList* f = session_tablist(p->s);
-    if (!*p->ln) return tablist_info_titles(f, cmd_params_cmd_out(p));
-    return tablist_move_to_node(f, p->ln);
+    if (cmd_params_cut_cmd(p)) return tablist_info_titles(f, cmd_params_cmd_out(p));
+    StrView node;
+    if (!cmd_params_pop_last_path(p, &node)) return "expecting a path for the node";
+    return tablist_move_to_node(f, node.items);
 }
 
 
 Err
 cmd_tabs_back(CmdParams p[_1_]) {
-    cmd_assert_no_params(p->ln);
+    cmd_assert_no_params(p);
     TabList* f = session_tablist(p->s);
     return tablist_back(f);
 }
@@ -198,7 +219,7 @@ cmd_tabs_back(CmdParams p[_1_]) {
  */
 
 Err cmd_doc_info(CmdParams p[_1_]) {
-    cmd_assert_no_params(p->ln);
+    cmd_assert_no_params(p);
     HtmlDoc* d;
     try( session_current_doc(p->s, &d));
     return htmldoc_print_info(d, cmd_params_cmd_out(p));
@@ -206,7 +227,7 @@ Err cmd_doc_info(CmdParams p[_1_]) {
 
 
 Err cmd_doc_bookmark_add(CmdParams p[_1_]) {
-    return bookmark_add_to_section(p->s, p->ln, session_url_client(p->s), cmd_params_cmd_out(p));
+    return bookmark_add_to_section(p->s, cmd_params_user_line(p), session_url_client(p->s), cmd_params_cmd_out(p));
 }
 
 Err cmd_doc_print_cookies(CmdParams p[_1_]) {
@@ -259,25 +280,24 @@ Err cmd_parse(Session session[_1_], CmdOut* out) {
 }
 
 
-Err shortcut_z(Session session[_1_], const char* rest, CmdOut cmd_out[_1_]) {
+Err shortcut_z(CmdParams p[_1_]) { //, Session session[_1_], const char* rest, CmdOut cmd_out[_1_]) {
     TextBuf* tb;
-    try( session_current_buf(session, &tb));
+    try( session_current_buf(p->s, &tb));
     if(textbuf_current_line(tb) > textbuf_line_count(tb)) return "No more lines in buffer";
-    if (*rest) {
-        rest = cstr_skip_space(rest);
+    if (!cmd_params_cmd_end(p)) {
         size_t incr;
-        if (!parse_ull(rest, &incr)) return "invalid line number";
-        *session_nrows(session) = incr;
+        try(user_line_parse_size_t_or_throw(cmd_params_user_line(p), &incr, 10));
+        *session_nrows(p->s) = incr; //TODO0: does this makes sense?
     } 
-    if (!*session_nrows(session)) return "invalid n rows";
+    if (!*session_nrows(p->s)) return "invalid n rows";
 
     size_t range_beg = textbuf_current_line(tb);
-    Range r = (Range){ .beg=range_beg, .end=range_beg + *session_nrows(session) - 3 };
+    Range r = (Range){ .beg=range_beg, .end=range_beg + *session_nrows(p->s) - 3 };
     if (r.end < r.beg) r.end = r.beg;
     if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
 
 
-    try( session_write_screen_range_mod(session, tb, &r, cmd_out));
+    try( session_write_screen_range_mod(p->s, tb, &r, cmd_params_cmd_out(p)));
     if (textbuf_current_line(tb) == r.end)
         puts(MsgLastLine);
     try( textbuf_get_offset_of_line(tb, r.end,textbuf_current_offset(tb)));
@@ -299,26 +319,28 @@ Err cmd_textbuf_print(CmdParams p[_1_]) {
 Err cmd_textbuf_print_n(CmdParams p[_1_]) {
     Range rng;
     try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
-    return  _textbuf_print_n_(p->tb, &rng, p->ln, cmd_params_cmd_out(p));
+    if (!cmd_params_cut_cmd(p)) return "invalid command after print";
+    return  _textbuf_print_n_(p->tb, &rng, cmd_params_cmd_out(p));
 }
 
 
 Err cmd_textbuf_write(CmdParams p[_1_]) {
 //TODO: allow >/>> modes
-    const char* filename = cstr_trim_space((char*)p->ln);
+    cmd_params_skip_space(p);
+    StrView filename;
+    if (!cmd_params_pop_last_path(p, &filename)) return "expecting a filename";
     if (range_parse_is_none(&p->rp)) {
-        try( textbuf_to_file(p->tb, filename, "w"));
+        try( textbuf_to_file(p->tb, filename.items, "w"));
         return msg__(cmd_params_cmd_out(p), svl("file written."));
     }
     Range rng;
     try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
-    return _cmd_textbuf_write_impl(p->tb, &rng, filename, cmd_params_cmd_out(p));
+    return _cmd_textbuf_write_impl(p->tb, &rng, filename.items, cmd_params_cmd_out(p));
 }
 
 
 //TODO: apply mods to text
-Err _textbuf_print_n_(TextBuf textbuf[_1_], Range range[_1_], const char* ln, CmdOut* out) {
-    (void)ln;
+Err _textbuf_print_n_(TextBuf textbuf[_1_], Range range[_1_], CmdOut* out) {
     try(validate_range_for_buffer(textbuf, range));
     StrView line;
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
@@ -352,23 +374,23 @@ Err _cmd_textbuf_write_impl(TextBuf textbuf[_1_], Range r[_1_], const char* rest
 }
 
 
-static StrView parse_pattern(const char* tk) {
-    StrView res = {0};
-    if (!tk) { return res; }
-    char delim = '/';
-    tk = cstr_skip_space(tk);
-    if (*tk != delim) { return res; }
-    ++tk;
-    const char* end = strchr(tk, delim);
+/* static StrView parse_pattern(const char* tk) { */
+/*     StrView res = {0}; */
+/*     if (!tk) { return res; } */
+/*     char delim = '/'; */
+/*     tk = cstr_skip_space(tk); */
+/*     if (*tk != delim) { return res; } */
+/*     ++tk; */
+/*     const char* end = strchr(tk, delim); */
 
-    if (!end) res = (StrView){.items = tk, .len = strlen(tk)};
-    else {
-        res = (StrView){.items = tk, .len = cast__(size_t)(end-tk)};
-        *(char*)end = '\0';
-    }
+/*     if (!end) res = (StrView){.items = tk, .len = strlen(tk)}; */
+/*     else { */
+/*         res = (StrView){.items = tk, .len = cast__(size_t)(end-tk)}; */
+/*         *(char*)end = '\0'; */
+/*     } */
 
-    return res;
-}
+/*     return res; */
+/* } */
 
 
 Err cmd_textbuf_global(CmdParams p[_1_]) {
@@ -376,8 +398,10 @@ Err cmd_textbuf_global(CmdParams p[_1_]) {
     Err err = Ok;
 
     if (!p->tb) return err_internal("expectind textbuf set at this point");
-    StrView pattern = parse_pattern(p->ln);
-    if (!pattern.items || !pattern.len) { return "Could not read pattern"; }
+    /* StrView pattern = parse_pattern(p->ln); */
+    /* if (!pattern.items || !pattern.len) { return "Could not read pattern"; } */
+    StrView pattern;
+    if (!cmd_params_pop_pattern(p, &pattern)) return "Could not read pattern"; 
 
     tryjmp(err,Clean, textbuf_get_lines_matching_regex(p->tb, pattern, &lines));
 
@@ -429,10 +453,9 @@ Err cmd_select_elem_show_options(DomNode lbn[_1_], CmdOut out [_1_]) {
 }
 
 static Err
-cmd_toggle_checkbox(Session session[_1_], DomNode n, const char* line, CmdOut cout [_1_]) {
+cmd_toggle_checkbox(Session session[_1_], DomNode n, UserLine line[_1_], CmdOut cout [_1_]) {
 
-    line = cstr_skip_space(line);
-    if (*line) return "unexpected checkbox input. To toggle just type {N";
+    if (!user_line_cut_cmd(line)) return "unexpected checkbox input. To toggle just type {N";
 
     HtmlDoc* d;
     try( session_current_doc(session, &d));
@@ -446,9 +469,8 @@ cmd_toggle_checkbox(Session session[_1_], DomNode n, const char* line, CmdOut co
 
 
 static Err
-cmd_change_radio(Session session[_1_], DomNode n, const char* line, CmdOut cout [_1_]) {
-    line = cstr_skip_space(line);
-    if (*line) return "unexpected radio button input. To select just type {N";
+cmd_change_radio(Session session[_1_], DomNode n, UserLine line[_1_], CmdOut cout [_1_]) {
+    if (!user_line_cut_cmd(line)) return "unexpected radio button input. To select just type {N";
     try( mark_radio_button(n));
     return session_doc_draw(session, cout);
 }
@@ -503,10 +525,10 @@ cmd_input_default_node(CmdParams p[_1_], DomNode node) {
             return tab_node_tree_append_submit_input_node(tab, node, url_client, p->s, cmd_params_cmd_out(p));
 
         else if (dom_node_attr_has_value(node, svl("type"), svl("checkbox"))) 
-            return cmd_toggle_checkbox(p->s, node, p->ln, cmd_params_cmd_out(p));
+            return cmd_toggle_checkbox(p->s, node, cmd_params_user_line(p), cmd_params_cmd_out(p));
 
         else if (dom_node_attr_has_value(node, svl("type"), svl("radio"))) 
-            return cmd_change_radio(p->s, node, p->ln, cmd_params_cmd_out(p));
+            return cmd_change_radio(p->s, node, cmd_params_user_line(p), cmd_params_cmd_out(p));
     } else if (dom_node_tag(node) == HTML_TAG_BUTTON
                && (dom_node_attr_has_value(node, svl("type"), svl("submit")) || !dom_node_has_attr(node, svl("type")))) {
 
@@ -600,7 +622,9 @@ cmd_input_info_node(CmdParams p[_1_], DomNode n) {
 
 Err cmd_input_set_node(CmdParams p[_1_], DomNode node) {
     Session* session = p->s;
-    const char* ln   = p->ln;
+    UserLine* ul     = cmd_params_user_line(p);
+    const char* ln   = user_line_remaining(ul);
+    user_line_skip_all(ul); //TODO0: check this
     StrView type = dom_node_attr_value(node, svl("type"));
 
     if (dom_node_tag(node) == HTML_TAG_SELECT)

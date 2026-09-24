@@ -4,7 +4,6 @@
 #include "user-input.h"
 #include "utils.h"
 #include "generic.h"
-#include "range-parse.h"
 
 
 typedef enum {
@@ -243,12 +242,6 @@ user_line_match_char(UserLine ul[_1_], char c) {
     return true;
 }
 
-
-bool
-user_line_match_last_char(UserLine ul[_1_], char c) {
-    return user_line_match_char(ul, c) && user_line_cut_cmd(ul);
-}
-
 void user_line_skip(UserLine ul[_1_], size_t n) {
     size_t movement = min_size_t(n, ul->len - ul->ix);
     ul->ix += movement;
@@ -257,35 +250,31 @@ void user_line_skip(UserLine ul[_1_], size_t n) {
 Err
 user_line_parse_size_t_or_throw(UserLine ln[_1_], size_t* num, int base) {
     const char* cstr = user_line_remaining(ln);
-    try( parse_size_t_or_throw(&cstr, num, base));
+    try( parse_size_t_or_throw(&cstr, &ncols, base));
     user_line_skip(ln, cstr - user_line_remaining(ln));
     return Ok;
 }
 
 bool user_line_pop_char(UserLine ln[_1_], char out[_1_]) {
-   if (user_line_cmd_end(ln)) return false; 
+   if (user_line_eol(ln)) return false; 
    *out = user_line_char(ln);
    user_line_skip(ln, 1);
    return true;
 }
 
 bool user_line_pop_word(UserLine ln[_1_], StrView out[_1_]) {
-   if (user_line_cmd_end(ln)) return false; 
-   StrView remview = user_line_remainig_view(ln);
-   *out = strview_split_utf8_word(&remview);
-   user_line_skip(ln, out->len);
+   if (user_line_eol(ln)) return false; 
+   *out = strview_split_utf8_word(user_line_remainig_view(ln));
+   user_line_skip(out->len);
    return true;
 }
 
 
-/* check whether al remainig data befor EOF or ';' is only space and splits 
- * whatever is following that */
 bool user_line_cut_cmd(UserLine ul[_1_]) {
     user_line_skip_space(ul);
-    if (user_line_match_char(ul, '\0')) return true;
-    if (user_line_match_char(ul, ';')) {
-        char* p = (char*) ul->full + ul->ix;
-        *p = '\0';
+    if (user_line_char(ul, '\0')) return true;
+    if (user_line_char(ul, ';')) {
+        ul->full[ul->ix] = '\0';
         ++ul->ix;
         return true;
     }
@@ -302,7 +291,7 @@ bool user_line_pop_last_word(UserLine ln[_1_], StrView out[_1_]) {
 
 bool user_line_pop_pattern(UserLine ul[_1_], StrView pattern[_1_]) {
     user_line_skip_space(ul);
-    if (user_line_cmd_end(ul)) return false;
+    if (user_line_eol(ul)) return false;
     const char delim = '/';
     if (!user_line_match_char(ul, delim)) return false;
     const char* beg = user_line_remaining(ul);
@@ -336,32 +325,7 @@ bool user_line_pop_pattern(UserLine ul[_1_], StrView pattern[_1_]) {
 }
 
 
-bool user_line_pop_rest(UserLine ul[_1_], StrView rest[_1_]) {
-    if (user_line_cmd_end(ul)) return false;
-    * rest = user_line_remainig_view(ul); 
-
-    /* const char* remaining = user_line_remaining(userln); */
-    char* othercmds            = (char*)strchr(rest->items, ';');
-    if (othercmds) {
-        /* user_line_remaining(ul) = othercmds + 1; */
-        user_line_skip(ul, 1 + othercmds - rest->items);
-        othercmds[0] = '\0';
-        rest->len = othercmds - rest->items;
-    } else user_line_skip_all(ul);
-    return true;
+bool user_line_pop_until_semicolon(UserLine ul[_1_]) {
+    if (user_line_eol(ul)) return false;
 }
 
-bool user_line_cmd_end_skipping_space(UserLine ul[_1_]) {
-    user_line_skip_space(ul);
-    return user_line_cmd_end(ul);
-}
-
-Err
-user_line_parse_range(UserLine ln[_1_], int base, RangeParse out[_1_]) {
-    StrView remaining = user_line_remainig_view(ln);
-    const char* endptr = NULL;
-    try( parse_range(remaining.items, out, &endptr,  base));
-    user_line_skip(ln, endptr - remaining.items);
-    user_line_skip_space(ln);
-    return Ok;
-}

@@ -40,30 +40,38 @@ Err url_client_init(
 }
 
 
-static const char* _parse_opt(CmdParams p[_1_], CURLoption opt[_1_]) {
+static bool _parse_opt(CmdParams p[_1_], CURLoption opt[_1_]) {
+    StrView word;
+    if (!cmd_params_pop_word(p, &word)) return false;
+    if (cmd_match_substring(word, "noprogress", 1, p)) { *opt=CURLOPT_NOPROGRESS; return true; }
+    if (cmd_match_substring(word, "useragent", 1, p)) { *opt=CURLOPT_USERAGENT; return true; }
+    if (cmd_match_substring(word, "verbose", 1, p)) { *opt=CURLOPT_VERBOSE; return true; }
+    return false;
 
-    const char* rest;
-    if ((rest = cmd_params_match(p, "noprogress", 1))) { *opt=CURLOPT_NOPROGRESS; return rest; }
-    if ((rest = cmd_params_match(p, "useragent", 1))) { *opt=CURLOPT_USERAGENT; return rest; }
-    if ((rest = cmd_params_match(p, "verbose", 1))) { *opt=CURLOPT_VERBOSE; return rest; }
-    return NULL;
+    /* const char* rest; */
+    /* if ((rest = cmd_params_match(p, "noprogress", 1))) { *opt=CURLOPT_NOPROGRESS; return rest; } */
+    /* if ((rest = cmd_params_match(p, "useragent", 1))) { *opt=CURLOPT_USERAGENT; return rest; } */
+    /* if ((rest = cmd_params_match(p, "verbose", 1))) { *opt=CURLOPT_VERBOSE; return rest; } */
+    /* return NULL; */
 }
 
 
 Err cmd_curl_set(CmdParams p[_1_]) {
     CURLoption opt;
-    const char* rest = cstr_skip_space(_parse_opt(p, &opt));
-    if (!rest) return "invalid curl opt";
+    cmd_params_skip_space(p);
+    if (!_parse_opt(p, &opt)) return "invalid curl conf option";
+    StrView rest;
+    if (!cmd_params_pop_rest(p, &rest)) return "expecting option";
 
     long value = -1;
 
     switch(opt) {
         case CURLOPT_VERBOSE:
-            if (*rest == '?') return "set verbose (1 | 0)";
-            rest = parse_l(rest, &value);
-            if (!rest) return "could not parse long value";
-            if (*cstr_skip_space(rest)) return err_fmt("invalid opt: %s", rest);
-            session_set_verbose(p->s, value);
+            if (*rest.items == '?') return "set verbose (1 | 0)";
+            const char* rest2 = parse_l(rest.items, &value);
+            if (!rest2) return "could not parse long value";
+            if (*cstr_skip_space(rest2)) return err_fmt("invalid opt: %s", rest.items);
+            session_set_verbose(p->s, value);//TODO0;test thisc
             break;
 
         /* TODO: user agent and other string should be owned by the UrlClient */

@@ -77,23 +77,33 @@ request_append_lexbor_checkbox_value_attr(Request r[1], DomNode node) {
 /* external linkage */
 
 
-Err request_from_userln(Request r[_1_], const char* userln, HttpMethod method) {
-    const char* url    = cstr_trim_space((char*)userln);
-    char* params = (char*)cstr_next_space(url);
-    if (params <= url) return "url has no length";
-    size_t url_len     = params - url;
-    size_t params_len  = 0;
-    if (isspace(params[0])) {
-        params[0] = '\0';
-        ++params;
-        params_len = strlen(params);
+Err request_from_userln(Request r[_1_], UserLine userln[_1_], HttpMethod method) {
+    /* const char* url    = cstr_trim_space((char*)userln); */
+    user_line_skip_space(userln);
+    if (user_line_cmd_end(userln)) return "url has no length";
+    /* char* params = (char*)cstr_next_space(url); */
+    /* if (params <= url) return "url has no length"; */
+    StrView params = user_line_remainig_view(userln);
+    StrView url    = strview_split_word(&params);
+    if (isspace(params.items[0])) {
+        char* end = (char*)params.items;
+        *end = '\0';
+        params.len     -= 1;
+        ++params.items;
     }
+    /* size_t url_len     = params - url; */
+    /* size_t params_len  = 0; */
+    /* if (isspace(params[0])) { */
+    /*     params[0] = '\0'; */
+    /*     ++params; */
+    /*     params_len = strlen(params); */
+    /* } */
 
     *r = (Request){ .method=method };
 
-    try(str_append(&r->urlstr, sv(url, url_len))); 
+    try(str_append(&r->urlstr, url)); 
     if (str_startswith(sv(r->urlstr), svl("https://"))) request_set_https(r, true);
-    if (params_len) try(str_append(&r->fields, sv(params, params_len)));
+    if (params.len) try(str_append(&r->fields, params));
     return request_curl_init(r);
 }
 

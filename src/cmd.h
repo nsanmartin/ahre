@@ -7,7 +7,7 @@
 #include "cmd-params.h"
 #include "bookmark.h"
 
-#define cmd_assert_no_params(Ln) do{ if(*Ln) return "expecting no params"; }while(0)
+#define cmd_assert_no_params(CP) do{ if(!cmd_params_cut_cmd(CP)) return "expecting no params"; }while(0)
 
 
 typedef Err (*SessionCmdFn)(CmdParams p[_1_]);
@@ -46,7 +46,7 @@ Err cmd_set_session_js(CmdParams p[_1_]);
 Err cmd_set_session_monochrome(CmdParams p[_1_]);
 Err cmd_set_session_ncols(CmdParams p[_1_]);
 Err cmd_set_session_winsz(CmdParams p[_1_]);
-Err shortcut_z(Session session[_1_], const char* rest, CmdOut cmd_out[_1_]);
+Err shortcut_z(CmdParams p[_1_]);
 
 /*
  * Curl commands
@@ -118,7 +118,7 @@ typedef Err (*TextBufCmdFn)
 
 
 Err _cmd_textbuf_write_impl(TextBuf textbuf[_1_], Range r[_1_], const char* rest, CmdOut* out);
-Err _textbuf_print_n_(TextBuf textbuf[_1_], Range range[_1_], const char* ln, CmdOut* out);
+Err _textbuf_print_n_(TextBuf textbuf[_1_], Range range[_1_], CmdOut* out);
 Err cmd_textbuf_global(CmdParams p[_1_]);
 Err cmd_textbuf_print(CmdParams p[_1_]);
 Err cmd_textbuf_print_n(CmdParams p[_1_]);

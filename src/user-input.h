@@ -13,18 +13,47 @@
 
 #include "error.h"
 #include "isocline.h"
+#include "ranges.h"
 
 typedef struct {
     const char* full;
-    const char* remaining;
+    size_t      ix;
+    size_t      len;
 } UserLine ;
 
+static inline bool user_line_exhausted(UserLine ul[_1_]) { return ul->ix >= ul->len; }
+void user_line_skip(UserLine ul[_1_], size_t n);
 void user_line_skip_space(UserLine ul[_1_]);
-bool user_line_match(UserLine ul[_1_], char c);
-static inline const char** user_line_remaining(UserLine ul[_1_]) { return &ul->remaining; }
-static inline char user_line_char(UserLine ul[_1_]) { return *ul->remaining; }
+bool user_line_match_char(UserLine ul[_1_], char c);
+bool user_line_match_last_char(UserLine ul[_1_], char c);
+bool user_line_pop_char(UserLine ln[_1_], char out[_1_]);
+bool user_line_pop_word(UserLine ln[_1_], StrView out[_1_]);
+bool user_line_pop_last_char(UserLine ln[_1_], char out[_1_]);
+bool user_line_pop_last_word(UserLine ln[_1_], StrView out[_1_]);
+bool user_line_pop_pattern(UserLine ul[_1_], StrView pattern[_1_]);
+bool user_line_pop_rest(UserLine ul[_1_], StrView rest[_1_]);
+
+Err user_line_parse_range(UserLine ln[_1_], int base, RangeParse out[_1_]);
+static inline void user_line_skip_all(UserLine ul[_1_]) { ul->ix = ul->len; }
+Err user_line_parse_size_t_or_throw(UserLine ln[_1_], size_t* num, int base);
+static inline bool user_line_cmd_end(UserLine ul[_1_]) {
+    return ul->ix >= ul->len || ul->full[ul->ix] == ';' || ul->full[ul->ix] == '\0'; 
+}
+bool user_line_cmd_end_skipping_space(UserLine ul[_1_]);
+bool user_line_cut_cmd(UserLine ul[_1_]);
+
+static inline const char* user_line_remaining(UserLine ul[_1_]) { return &ul->full[ul->ix]; }
+static inline size_t user_line_remaining_len(UserLine ul[_1_]) {
+    return ul->len - ul->ix;
+}
+static inline StrView user_line_remainig_view(UserLine ln[_1_]) {
+    return (StrView){.items=user_line_remaining(ln),.len=user_line_remaining_len(ln)};
+}
+
+static inline char user_line_char(UserLine ul[_1_]) { return ul->full[ul->ix]; }
 static inline Err user_line_init_take_ownership(UserLine ul[_1_], const char* line) {
-    *ul = (UserLine){.full=line, .remaining=line};
+    if (!line) fail_e("expecting non NULL ptr");
+    *ul = (UserLine){.full=line, .ix=0, .len=strlen(line)};
     return Ok;
 }
 

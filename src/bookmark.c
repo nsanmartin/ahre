@@ -61,7 +61,7 @@ cmd_bookmarks_show(CmdParams p[_1_]) {
     Request r = (Request){0};
     Str     u = (Str){0};
     Err     e = Ok;
-    p->ln     = cstr_trim_space((char*)p->ln);
+    cmd_params_skip_space(p);
 
     if (!len__(session_bookmarks_fname(p->s))) return "no bookmarks file configured";
     try(str_append(&u, svl("file://")));
@@ -79,7 +79,6 @@ Fail:
 Err
 cmd_bookmarks_list_sections(CmdParams p[_1_]) {
     Session* session = p->s;
-    const char* url = p->ln;
     HtmlDoc* htmldoc;
     try( session_current_doc(session, &htmldoc));
     ArlOf(Str) list = (ArlOf(Str)){0};
@@ -87,7 +86,7 @@ cmd_bookmarks_list_sections(CmdParams p[_1_]) {
     try(bookmark_sections_body(htmldoc, &body));
     Err err = Ok;
 
-    if (!*url) {
+    if (cmd_params_eol(p)) {
         err = bookmark_sections(body, &list);
         if (!err) {
             Str* it = arlfn(Str, begin)(&list);
@@ -97,8 +96,9 @@ cmd_bookmarks_list_sections(CmdParams p[_1_]) {
         }
         arlfn(Str,clean)(&list);
     } else {
+        UserLine* ln = cmd_params_user_line(p);
         DomNode section;
-        try( bookmark_section_get(body, url, &section, /*match_prefix*/false));
+        try( bookmark_section_get(body, ln, &section, /*match_prefix*/false));
 
         if (!isnull(section)) {
             StrView data = dom_node_text_view(dom_node_first_child(section));
@@ -135,11 +135,12 @@ bookmark_sections(DomNode body, ArlOf(Str)* out) {
 
 
 Err
-bookmark_section_insert(Dom dom, DomNode body, const char* q, DomElem bm_entry) {
+bookmark_section_insert(Dom dom, DomNode body, UserLine ln[_1_], DomElem bm_entry) {
+    StrView q = sv(user_line_remaining(ln));
     DomElem section;
     try(dom_elem_init(&section, dom, svl("h2")));
     DomText text;
-    Err err =  dom_text_init(&text, dom, sv(q));
+    Err err =  dom_text_init(&text, dom, q);
     if (err) goto Clean_Section;
 
     dom_node_insert_child(section, text);
@@ -151,6 +152,7 @@ bookmark_section_insert(Dom dom, DomNode body, const char* q, DomElem bm_entry) 
     dom_node_insert_child(ul, bm_entry);
     dom_node_insert_child(body, ul);
 
+    user_line_skip(ln, q.len);
     return Ok;
 
 Clean_Text:
@@ -163,20 +165,26 @@ Clean_Section:
 
 
 Err
-bookmark_section_get(DomNode body, const char* q, DomNode out[_1_], bool match_prefix) {
+bookmark_section_get(DomNode body, UserLine ln[_1_], DomNode out[_1_], bool match_prefix) {
+    StrView q   = sv(user_line_remaining(ln));
     DomNode res = (DomNode){0};
-    DomNode it = dom_node_first_child(body);
+    DomNode it  = dom_node_first_child(body);
+    Err err     = Ok;
     while (!isnull(it)) {
         if (dom_node_has_tag(it, HTML_TAG_H2)) {
-            if (!dom_node_eq(dom_node_first_child(it),dom_node_last_child(it)))
-                return "invalid bookmark file";
+            if (!dom_node_eq(dom_node_first_child(it),dom_node_last_child(it))) {
+                err = "invalid bookmark file";
+                goto Consume_Line;
+            }
 
             StrView data = dom_node_text_view(dom_node_first_child(it));
             if (data.len) {
-                size_t qlen = strlen(q);
-                size_t len = match_prefix ? qlen : data.len;
-                if (qlen <= len && strncmp(q, data.items, len) == 0) {
-                    if (!isnull(res)) return "unequivocal reference to bookmark section";
+                size_t len = match_prefix ? q.len : data.len;
+                if (q.len <= len && strncmp(q.items, data.items, len) == 0) {
+                    if (!isnull(res)) {
+                        err = "unequivocal reference to bookmark section";
+                        goto Consume_Line;
+                    }
                     res = it;
                 }
             }
@@ -187,15 +195,18 @@ bookmark_section_get(DomNode body, const char* q, DomNode out[_1_], bool match_p
     }
 
     *out = res;
-    return Ok;
+Consume_Line:
+
+    user_line_skip(ln, q.len);
+    return err;
 }
 
 
 Err
-bookmark_section_ul_get(DomNode body, const char* q, DomNode out[_1_], bool match_prefix) {
+bookmark_section_ul_get(DomNode body, UserLine ln[_1_], DomNode out[_1_], bool match_prefix) {
     *out = (DomNode){0};
     DomNode section;
-    try( bookmark_section_get(body, q, &section, match_prefix));
+    try( bookmark_section_get(body, ln, &section, match_prefix));
     if (!isnull(section)) {
         if (isnull(dom_node_next(section))) return "error: expecting section's next (TEXT)";
         DomNode ul = dom_node_next(dom_node_next(section));
@@ -396,19 +407,25 @@ Clean:
 
 
 Err
-bookmark_add_to_section(Session s[_1_], const char* line, UrlClient url_client[_1_], CmdOut cmd_out[_1_]) {
+bookmark_add_to_section(
+    Session   s[_1_],
+    UserLine  line[_1_],
+    UrlClient url_client[_1_],
+    CmdOut    cmd_out[_1_]
+) {
     HtmlDoc* d;
     try( session_current_doc(s, &d));
 
-    line = cstr_skip_space(line);
+    user_line_skip_space(line);
     bool create_section_if_not_found = true;
     bool match_prefix                = false;
-    if (*line == '/') {
+    if (user_line_match_char(line, '/')) { // *line == '/') {
         create_section_if_not_found = false;
         match_prefix                = true;
-        line                        = cstr_skip_space(++line);
+        user_line_skip_space(line);
+        /* line                        = cstr_skip_space(++line); */
     }
-    if (!*line) return "not a valid bookmark section";
+    if (user_line_cmd_end(line)) return "not a valid bookmark section";
     Err err = Ok; 
     
     HtmlDoc bm;

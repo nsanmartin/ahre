@@ -50,37 +50,30 @@ get_range_and_nodes(CmdParams p[_1_], Range r[_1_], ArlOf(DomNode)* collection[_
 }
 
 static inline bool _char_cmd_match_(SessionCmd* cmd, CmdParams p[_1_]) {
-    if (cmd->flags & CMD_CHAR && p->ln && cmd->name[0] == p->ln[0]) {
-        p->ln = cstr_skip_space(++p->ln);
-        return true;
-    }
-    return false;
+    return cmd->flags & CMD_CHAR && cmd_params_match_char(p, cmd->name[0]);
 }
 
 
 static inline bool _empty_match_(SessionCmd* cmd, CmdParams p[_1_]) {
-    return cmd->flags & CMD_EMPTY && !*cstr_skip_space(p->ln);
+    return cmd->flags & CMD_EMPTY && cmd_params_cmd_end_skipping_space(p);
 }
 
 static inline bool _no_params_match_(SessionCmd* cmd, CmdParams p[_1_]) {
-    return cmd->flags & CMD_NO_PARAMS && *cstr_skip_space(p->ln);
+    return cmd->flags & CMD_NO_PARAMS && !cmd_params_cmd_end_skipping_space(p);
 }
 
 static inline bool _any_match_(SessionCmd* cmd) { return cmd->flags & CMD_ANY; }
 
 
 static inline bool _name_match_(SessionCmd* cmd, CmdParams p[_1_]) {
-    const char* rest;
-    if ((rest = cmd_params_match(p, cmd->name, cmd->match))) {
-        p->ln = rest;
-        return true;
-    }
-    return false;
+    StrView word;
+    if (!cmd_params_pop_word(p, &word)) return false;
+    return cmd_match_substring(word, cmd->name, cmd->match, p);
 }
 
 static bool _is_help_cmd_end_(CmdParams p[_1_]) {
-    const char* ln = cstr_skip_space(p->ln);
-    return *ln == '?' && !*cstr_skip_space(ln+1);
+    cmd_params_skip_space(p);
+    return cmd_params_match_last_char(p, '?');
 }
 
 
@@ -146,7 +139,7 @@ static Err run_cmd_for_htmldoc_single_input_node(CmdParams p[_1_], nodeCmdCallba
 
 
 static Err run_cmd__(CmdParams p[_1_], SessionCmd cmdlist[]) {
-    p->ln = cstr_skip_space(p->ln);
+    cmd_params_skip_space(p);
     for (SessionCmd* cmd = cmdlist; cmd->name ; ++cmd) {
         if (_any_match_(cmd)) return cmd->fn(p);
         if (_char_cmd_match_(cmd, p)) {
@@ -163,10 +156,11 @@ static Err run_cmd__(CmdParams p[_1_], SessionCmd cmdlist[]) {
 
 
 static Err run_cmd_on_range__(CmdParams p[_1_], SessionCmd cmdlist[], int base) {
-    p->ln = cstr_skip_space(p->ln);
-    const char* endptr;
-    try(parse_range(p->ln, &p->rp, &endptr, base));
-    p->ln = cstr_skip_space(endptr);
+    cmd_params_skip_space(p);
+    /* const char* endptr; */
+    /* try(parse_range(p->ln, &p->rp, &endptr, base)); */
+    /* p->ln = cstr_skip_space(endptr); */
+    try(cmd_params_parse_range(p, base));
     return run_cmd__(p, cmdlist);
 }
 
@@ -199,7 +193,7 @@ static Err cmd_anchor_asterisk_range(CmdParams p[_1_]) {
 
 
 static Err
-request_arl_to_file(CmdParams p[_1_], ArlOf(Request) rs[_1_]) {
+request_arl_to_file(CmdParams p[_1_], StrView path, ArlOf(Request) rs[_1_]) {
     ArlOf(FilePtr)        fps       = (ArlOf(FilePtr)){0};
     ArlOf(CurlPtr)        handles   = (ArlOf(CurlPtr)){0};
     ArlOf(CurlMultiSgPtr) failed    = (ArlOf(CurlMultiSgPtr)){0};
@@ -217,7 +211,7 @@ request_arl_to_file(CmdParams p[_1_], ArlOf(Request) rs[_1_]) {
         try(arl_append_zero(FilePtr,&fps,fpp));
         try(arl_append_zero(CurlPtr,&handles,cpp));
         try(arl_append_zero(Str,&fnames,pathp));
-        Err msg = request_to_handle(req, uc, p->ln, fpp, pathp, cpp);
+        Err msg = request_to_handle(req, uc, path.items, fpp, pathp, cpp);
         if (msg) {
             msg_ln__(p,msg);
             if (pathp) { str_clean(pathp); *pathp = (Str){0}; }
@@ -274,16 +268,18 @@ Clean:
 
 static Err
 cmd_anchor_save_range(CmdParams p[_1_]) {
+    StrView path;
+    if (!cmd_params_pop_last_path(p, &path)) return "expectinng a path at the end of the command";
     ArlOf(DomNode)* anchors;
     Range r;
     try(get_range_and_nodes(p, &r, &anchors, htmldoc_anchors));
-    if (range_len(&r) > 1 && !path_is_dir(p->ln)) 
-        return err_fmt("anchor ranges only can be saved to existing directoriesm not: %s\n", p->ln);
+    if (range_len(&r) > 1 && !path_is_dir(path.items)) 
+        return err_fmt("anchor ranges only can be saved to existing directoriesm not: %s\n", path.items);
 
     ArlOf(Request) rs = (ArlOf(Request)){0};
     Err            e  = Ok;
     tryjmp(e,Clean, dom_node_range_to_request_arl(&r, anchors, p, http_get, svl("href"), &rs));
-    tryjmp(e,Clean, request_arl_to_file(p, &rs));
+    tryjmp(e,Clean, request_arl_to_file(p, path, &rs));
 Clean:
     arlfn(Request,clean)(&rs);
     return e;
@@ -339,6 +335,8 @@ Err cmd_input_save_node(CmdParams p[_1_], DomNode node) {
     if (!dom_node_attr_has_value(node, svl("type"), svl("submit")))
         return "warn: save command only applicable to submit inputs\n";
 
+    StrView path;
+    if (!cmd_params_pop_last_path(p, &path)) return "expecting a path where to write";
     HtmlDoc*       htmldoc;
     try( session_current_doc(p->s, &htmldoc));
     LipOf(DomNodePtr,bool)* checkboxes = htmldoc_checked_boxes(htmldoc);
@@ -350,7 +348,7 @@ Err cmd_input_save_node(CmdParams p[_1_], DomNode node) {
     Request* r;
     try(arl_append_zero(Request,&rs,r));
     tryjmp(e,Clean, request_from_form_node(r, form, htmldoc_url(htmldoc), checkboxes));
-    tryjmp(e,Clean, request_arl_to_file(p, &rs));
+    tryjmp(e,Clean, request_arl_to_file(p, path, &rs));
 
 Clean:
     arlfn(Request,clean)(&rs);
@@ -423,10 +421,13 @@ static Err cmd_doc_scripts_local(CmdParams p[_1_]) {
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
     CmdOut* out = cmd_params_cmd_out(p);
-    if (path_is_dir(p->ln)) {
+    StrView path;
+    if (!cmd_params_pop_last_path(p, &path)) return "expectinng a path";
+
+    if (path_is_dir(path.items)) {
         ArlOf(Str) fnames = (ArlOf(Str)){0};
         Err err = Ok;
-        tryjmp(err, Clean_Fnames, append_fnames_from_dir(p->ln, &fnames));
+        tryjmp(err, Clean_Fnames, append_fnames_from_dir(path.items, &fnames));
         foreach__(Str, &fnames, filename) {
             Err js_eval_err = htmldoc_eval_js_file(h, p->s, filename->items, out);
             if (is_js_eval_err(js_eval_err)) {
@@ -439,7 +440,7 @@ Clean_Fnames:
         arlfn(Str,clean)(&fnames);
         return err;
     }
-    return htmldoc_eval_js_file(h, p->s, p->ln, out);
+    return htmldoc_eval_js_file(h, p->s, path.items, out);
 }
 
 static Err
@@ -462,17 +463,18 @@ cmd_doc_scripts_save(CmdParams p[_1_]) {
     Err e = Ok;
     HtmlDoc* h;
     try(session_current_doc(p->s, &h));
-    const char* filename = p->ln;
     Range r;
     try(htmldoc_scripts_range_from_parsed_range(h, &p->rp, &r));
-    if (!path_is_dir(filename))
-        return cmd_doc_scripts_save_single_file(h, filename, &r, cmd_params_cmd_out(p));
+    StrView path;
+    if (!cmd_params_pop_last_path(p, &path)) return "expecting a path where to write the scripts";
+    if (!path_is_dir(path.items))
+        return cmd_doc_scripts_save_single_file(h, path.items, &r, cmd_params_cmd_out(p));
 
     Str script_filename = (Str){0};
     for (size_t it = r.beg; it < r.end; ++it) {
         FILE* fp = NULL;
         Writer w;
-        tryjmp(e,Clean, str_append(&script_filename, sv(p->ln)));
+        tryjmp(e,Clean, str_append(&script_filename, path));
         tryjmp(e,Clean, str_append(&script_filename, svl("/script-")));
         tryjmp(e,Clean, str_append_ui_as_base10(&script_filename, it));
         tryjmp(e,Clean, str_append(&script_filename, svl(".js")));
@@ -603,16 +605,18 @@ cmd_image_info(CmdParams p[_1_]) {
 }
 
 static Err cmd_image_save_range(CmdParams p[_1_]) {
+    StrView path;
+    if (!cmd_params_pop_last_path(p, &path)) return "expecting a path where to write";
     ArlOf(DomNode)* images;
     Range r;
     try(get_range_and_nodes(p, &r, &images, htmldoc_imgs));
-    if (range_len(&r) > 1 && !path_is_dir(p->ln)) 
-        return err_fmt("image ranges only can be saved to existing directories, not: %s\n", p->ln);
+    if (range_len(&r) > 1 && !path_is_dir(path.items)) 
+        return err_fmt("image ranges only can be saved to existing directories, not: %s\n", path.items);
 
     ArlOf(Request) rs = (ArlOf(Request)){0};
     Err            e  = Ok;
     tryjmp(e,Clean, dom_node_range_to_request_arl(&r, images, p, http_get, svl("src"), &rs));
-    tryjmp(e,Clean, request_arl_to_file(p, &rs));
+    tryjmp(e,Clean, request_arl_to_file(p, path, &rs));
 Clean:
     arlfn(Request,clean)(&rs);
     return Ok;
@@ -648,9 +652,11 @@ static Err cmd_bookmarks(CmdParams p[_1_]) { return run_cmd__(p, _cmd_bookmarks_
 
 #define CMD_ECHO_DOC "Prints in the message area the received parameters.\n"
 static Err cmd_echo (CmdParams p[_1_]) { 
-    if (p->s && p->ln && *p->ln)
-        msg_ln__(cmd_params_cmd_out(p), p->ln);
-    return Ok;
+    if (!p->s) fail_e("NO SESSION!");
+    StrView msg;
+    if (!cmd_params_pop_rest(p, &msg)) fail_e("expecting a mesage ot echo");
+
+    return msg_ln__(cmd_params_cmd_out(p), msg.items);
 }
 
 #define CMD_ANCHOR_DOC \
@@ -694,10 +700,11 @@ static Err cmd_input(CmdParams p[_1_]) { return run_cmd_on_range__(p, _cmd_input
 
 
 static Err cmd_form_print(CmdParams p[_1_]) {
-    p->ln = cstr_skip_space(p->ln);
-    const char* endptr;
-    try(parse_range(p->ln, &p->rp, &endptr, 36));
-    p->ln = cstr_skip_space(endptr);
+    /* p->ln = cstr_skip_space(p->ln); */
+    /* const char* endptr; */
+    /* try(parse_range(p->ln, &p->rp, &endptr, 36)); */
+    /* p->ln = cstr_skip_space(endptr); */
+    try(cmd_params_parse_range(p, 36));
     return run_cmd_for_indep_dom_node_range(p, htmldoc_forms, cmd_print_node);
 }
 
@@ -709,9 +716,9 @@ Err cmd_image(CmdParams p[_1_]) { return run_cmd_on_range__(p, _cmd_image_, 36);
 
 
 #define CMD_SHORTCUT_Z "zN print the following N lines"
-Err shortcut_z(Session session[_1_], const char* rest, CmdOut cmd_out[_1_]);
+Err shortcut_z(CmdParams p[_1_]);
 static Err cmd_shortcut_z(CmdParams p[_1_]) {
-    return shortcut_z(p->s, p->ln, cmd_params_cmd_out(p));
+    return shortcut_z(p);
 }
 
 
@@ -749,11 +756,11 @@ static Err cmd_help(CmdParams p[_1_]) {
 Err process_line(Session session[_1_], UserLine line[_1_], CmdOut cout[_1_]) {
     if (!line) { session_quit_set(session); return "no input received, exiting"; }
     user_line_skip_space(line);
-    if (user_line_match(line, '\\')) user_line_skip_space(line);
+    if (user_line_match_char(line, '\\')) user_line_skip_space(line);
     if (!user_line_char(line)) { return Ok; }
 
     //TODO0: pass the UserLine
-    CmdParams p = (CmdParams){.s=session,.ln=line->remaining,.out=cout};
+    CmdParams p = (CmdParams){.s=session,.ln=*line,.out=cout};
     Err err = run_cmd__(&p, _session_cmd_);
     return err;
 }
