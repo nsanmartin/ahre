@@ -130,7 +130,7 @@ Err cmd_set_session_bookmark(CmdParams p[_1_]) {
     Str bookmark_fname = (Str){0};
     StrView path;
     if(!cmd_params_pop_last_path(p, &path)) return "expecting path";
-    try(resolve_bookmarks_file(path.items, &bookmark_fname));//TODO0;: do we need to cut the word here? we only cut the command
+    try(resolve_bookmarks_file(path.items, &bookmark_fname));
     str_clean(session_bookmarks_fname(p->s));
     *session_bookmarks_fname(p->s) = bookmark_fname;
     return Ok;
@@ -140,18 +140,13 @@ Err cmd_set_session_input(CmdParams p[_1_]) {
     cmd_params_skip_space(p);
     UserInterface ui;
     StrView opt;
-    if (!cmd_params_pop_last_word(p, &opt)) return "expecting option";//TODO0: cut the word?
+    if (!cmd_params_pop_last_alpha(p, &opt)) return "expecting option";
 
     if (cmd_match_substring(opt, "fgets", 1, p))         ui = ui_fgets();
     else if (cmd_match_substring(opt, "isocline", 1, p)) ui = ui_isocline();
     else if (cmd_match_substring(opt, "visual", 1, p))   ui = ui_vi_mode();
     else return "input option should be 'getline', 'isocline' or 'visual'";
 
-    /* const char* rest; */
-    /* if ((rest = cmd_params_match(p, "fgets", 1)) && !*rest) ui = ui_fgets(); */
-    /* else if ((rest = cmd_params_match(p, "isocline", 1)) && !*rest) ui = ui_isocline(); */
-    /* else if ((rest = cmd_params_match(p, "visual", 1)) && !*rest) ui = ui_vi_mode(); */
-    /* else return "input option should be 'getline', 'isocline' or 'visual'"; */
     ui_switch(session_ui(p->s), &ui);
     return Ok;
 }
@@ -191,7 +186,7 @@ cmd_tabs_info_tree(CmdParams p[_1_]) {
     TabList* f = session_tablist(p->s);
     if (cmd_params_cut_cmd(p)) return tablist_info_tree(f, cmd_params_cmd_out(p));
     StrView path;
-    if (!cmd_params_pop_last_word(p, &path)) return "expecting a path for the node";
+    if (!cmd_params_pop_last_nonspace(p, &path)) return "expecting a path for the node";
     return tablist_move_to_path(f, path.items);
 }
 
@@ -200,7 +195,7 @@ cmd_tabs_info(CmdParams p[_1_]) {
     TabList* f = session_tablist(p->s);
     if (cmd_params_cut_cmd(p)) return tablist_info_titles(f, cmd_params_cmd_out(p));
     StrView node;
-    if (!cmd_params_pop_last_path(p, &node)) return "expecting a path for the node";
+    if (!cmd_params_pop_last_alnum(p, &node)) return "expecting an index for the node";
     return tablist_move_to_node(f, node.items);
 }
 

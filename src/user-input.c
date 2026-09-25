@@ -269,12 +269,33 @@ bool user_line_pop_char(UserLine ln[_1_], char out[_1_]) {
    return true;
 }
 
-bool user_line_pop_word(UserLine ln[_1_], StrView out[_1_]) {
+typedef StrView (*StrViewSplitter)(StrView s[_1_]);
+
+static bool
+user_line_pop_strview(UserLine ln[_1_], StrViewSplitter split, StrView out[_1_]) {
    if (user_line_cmd_end(ln)) return false; 
    StrView remview = user_line_remainig_view(ln);
-   *out = strview_split_alpha(&remview);
+   *out = split(&remview);
    user_line_skip(ln, out->len);
    return true;
+}
+
+bool
+user_line_pop_nonspace(UserLine ln[_1_], StrView out[_1_]) {
+    return user_line_pop_strview(ln, strview_split_word, out);
+}
+
+bool
+user_line_pop_alpha(UserLine ln[_1_], StrView out[_1_]) {
+    return user_line_pop_strview(ln, strview_split_alpha, out); 
+}
+
+bool user_line_pop_digits(UserLine ln[_1_], StrView out[_1_]) {
+    return user_line_pop_strview(ln, strview_split_digits, out); 
+}
+
+bool user_line_pop_alnum(UserLine ln[_1_], StrView out[_1_]) {
+    return user_line_pop_strview(ln, strview_split_alnum, out); 
 }
 
 StrView user_line_word_view(UserLine ul[_1_]) {
@@ -283,26 +304,25 @@ StrView user_line_word_view(UserLine ul[_1_]) {
    return strview_split_alpha(&remview);
 }
 
-/* check whether al remainig data befor EOF or ';' is only space and splits 
- * whatever is following that */
-bool user_line_cut_cmd(UserLine ul[_1_]) {
-    user_line_skip_space(ul);
-    if (user_line_match_char(ul, '\0')) return true;
-    if (user_line_match_char(ul, ';')) {
-        char* p = (char*) ul->full + ul->ix;
-        *p = '\0';
-        ++ul->ix;
-        return true;
-    }
-    return false;
-}
 
 bool user_line_pop_last_char(UserLine ln[_1_], char out[_1_]) {
     return  user_line_pop_char(ln, out) && user_line_cut_cmd(ln);
 }
 
-bool user_line_pop_last_word(UserLine ln[_1_], StrView out[_1_]) {
-    return  user_line_pop_word(ln, out) && user_line_cut_cmd(ln);
+bool user_line_pop_last_nonspace(UserLine ln[_1_], StrView out[_1_]) {
+    return  user_line_pop_nonspace(ln, out) && user_line_cut_cmd(ln);
+}
+
+bool user_line_pop_last_alpha(UserLine ln[_1_], StrView out[_1_]) {
+    return  user_line_pop_alpha(ln, out) && user_line_cut_cmd(ln);
+}
+
+bool user_line_pop_last_digits(UserLine ln[_1_], StrView out[_1_]) {
+    return  user_line_pop_digits(ln, out) && user_line_cut_cmd(ln);
+}
+
+bool user_line_pop_last_alnum(UserLine ln[_1_], StrView out[_1_]) {
+    return  user_line_pop_alnum(ln, out) && user_line_cut_cmd(ln);
 }
 
 bool user_line_pop_pattern(UserLine ul[_1_], StrView pattern[_1_]) {
@@ -355,6 +375,21 @@ bool user_line_pop_rest(UserLine ul[_1_], StrView rest[_1_]) {
     } else user_line_skip_all(ul);
     return true;
 }
+
+/* check whether al remainig data befor EOF or ';' is only space and splits 
+ * whatever is following that */
+bool user_line_cut_cmd(UserLine ul[_1_]) {
+    user_line_skip_space(ul);
+    if (user_line_match_char(ul, '\0')) return true;
+    if (user_line_match_char(ul, ';')) {
+        char* p = (char*) ul->full + ul->ix;
+        *p = '\0';
+        ++ul->ix;
+        return true;
+    }
+    return false;
+}
+
 
 bool user_line_cmd_end_skipping_space(UserLine ul[_1_]) {
     user_line_skip_space(ul);

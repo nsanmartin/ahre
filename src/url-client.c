@@ -42,17 +42,11 @@ Err url_client_init(
 
 static bool _parse_opt(CmdParams p[_1_], CURLoption opt[_1_]) {
     StrView word;
-    if (!cmd_params_pop_word(p, &word)) return false;
+    if (!cmd_params_pop_alpha(p, &word)) return false;
     if (cmd_match_substring(word, "noprogress", 1, p)) { *opt=CURLOPT_NOPROGRESS; return true; }
     if (cmd_match_substring(word, "useragent", 1, p)) { *opt=CURLOPT_USERAGENT; return true; }
     if (cmd_match_substring(word, "verbose", 1, p)) { *opt=CURLOPT_VERBOSE; return true; }
     return false;
-
-    /* const char* rest; */
-    /* if ((rest = cmd_params_match(p, "noprogress", 1))) { *opt=CURLOPT_NOPROGRESS; return rest; } */
-    /* if ((rest = cmd_params_match(p, "useragent", 1))) { *opt=CURLOPT_USERAGENT; return rest; } */
-    /* if ((rest = cmd_params_match(p, "verbose", 1))) { *opt=CURLOPT_VERBOSE; return rest; } */
-    /* return NULL; */
 }
 
 

@@ -42,14 +42,26 @@ static inline bool cmd_params_pop_last_char(CmdParams p[_1_], char out[_1_]) {
     return user_line_pop_last_char(cmd_params_user_line(p), out);
 }
 
-#define cmd_params_pop_last_path cmd_params_pop_last_word
+#define cmd_params_pop_last_path cmd_params_pop_last_nonspace
 
-static inline bool cmd_params_pop_word(CmdParams p[_1_], StrView out[_1_]) {
-    return user_line_pop_word(cmd_params_user_line(p), out);
+static inline bool cmd_params_pop_nonspace(CmdParams p[_1_], StrView out[_1_]) {
+    return user_line_pop_nonspace(cmd_params_user_line(p), out);
 }
 
-static inline bool cmd_params_pop_last_word(CmdParams p[_1_], StrView out[_1_]) {
-    return user_line_pop_last_word(cmd_params_user_line(p), out);
+static inline bool cmd_params_pop_alpha(CmdParams p[_1_], StrView out[_1_]) {
+    return user_line_pop_alpha(cmd_params_user_line(p), out);
+}
+
+static inline bool cmd_params_pop_last_nonspace(CmdParams p[_1_], StrView out[_1_]) {
+    return user_line_pop_last_nonspace(cmd_params_user_line(p), out);
+}
+
+static inline bool cmd_params_pop_last_alnum(CmdParams p[_1_], StrView out[_1_]) {
+    return user_line_pop_last_alnum(cmd_params_user_line(p), out);
+}
+
+static inline bool cmd_params_pop_last_alpha(CmdParams p[_1_], StrView out[_1_]) {
+    return user_line_pop_last_alpha(cmd_params_user_line(p), out);
 }
 
 static inline bool cmd_params_pop_pattern(CmdParams p[_1_], StrView pattern[_1_]) {

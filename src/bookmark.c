@@ -137,7 +137,7 @@ bookmark_sections(DomNode body, ArlOf(Str)* out) {
 Err
 bookmark_section_insert(Dom dom, DomNode body, UserLine ln[_1_], DomElem bm_entry) {
     StrView q;
-    if (!user_line_pop_last_word(ln, &q)) return "expecting a section name";
+    if (!user_line_pop_last_nonspace(ln, &q)) return "expecting a section name";
     DomElem section;
     try(dom_elem_init(&section, dom, svl("h2")));
     DomText text;
@@ -167,7 +167,7 @@ Clean_Section:
 Err
 bookmark_section_get(DomNode body, UserLine ln[_1_], DomNode out[_1_], bool match_prefix) {
     StrView q;
-    if (!user_line_pop_last_word(ln, &q)) return "expecting a section name";
+    if (!user_line_pop_last_nonspace(ln, &q)) return "expecting a section name";
     DomNode res = (DomNode){0};
     DomNode it  = dom_node_first_child(body);
     while (!isnull(it)) {
