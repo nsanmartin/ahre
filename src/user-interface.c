@@ -764,9 +764,11 @@ Err process_line(Session session[_1_], UserLine line[_1_], CmdOut cout[_1_]) {
     if (!line) { session_quit_set(session); return "no input received, exiting"; }
     user_line_skip_space(line);
     user_line_match_char(line, '\\');
-    if (user_line_cmd_end(line)) { return Ok; }
+    if (user_line_cmd_end(line)) {
+        user_line_skip(line, 1);
+        return Ok;
+    }
 
-    //TODO0: pass the UserLine
     CmdParams p = (CmdParams){.s=session,.ln=*line,.out=cout};
     Err err = run_cmd__(&p, _session_cmd_);
     *line = p.ln;

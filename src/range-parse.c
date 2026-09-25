@@ -57,10 +57,11 @@ _parse_range_addr_(const char* tk, RangeAddr out[_1_], const char* endptr[_1_], 
     if (**endptr == '/') {
         *out = (RangeAddr) { .tag = range_addr_search_tag };
         ++*endptr;
-        const char* end = strchr(*endptr, '/');
+        char* end = strchr(*endptr, '/');
         if (end) {
+            *end     = '\0';
             size_t l = end - *endptr;
-            out->s = (StrView){.items=*endptr, .len=l};
+            out->s   = (StrView){.items=*endptr, .len=l};
             return _parse_range_addr_delta_(*endptr+l+1, out, endptr);
         } else {
             size_t l = strlen(*endptr);

@@ -162,7 +162,7 @@ static inline Err session_read_user_input(Session s[_1_], UserLine ul[_1_]) {
 static inline Err session_consume_line(Session s[_1_], UserLine userln[_1_], CmdOut cout[_1_]) {
 
     Err err = session_ui(s)->process_line(s, userln, cout);
-    if (user_line_exhausted(userln)) user_line_cleanup(userln);
+    if (user_line_is_exhausted(userln)) user_line_cleanup(userln);
     return err;
 }
 
