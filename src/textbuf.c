@@ -376,11 +376,11 @@ Err textbuf_get_lines_matching_regex(TextBuf tb[_1_], StrView pattern, ArlOf(siz
         Err err =  _regex_search_pattern_in_buf_(pattern, buf + *textbuf_current_offset(tb), &match_offset);
         if (err == err_pattern_not_found) return len__(lines) ? Ok : err_pattern_not_found;
         match_offset += *textbuf_current_offset(tb);
-        *textbuf_current_offset(tb) = match_offset;
 
         size_t* l =  arlfn(size_t,append)(lines,&(size_t){0});
         if (!l) return err_internal("arl append failure");
         try( textbuf_get_line_of_offset(tb, match_offset, l));
+        try( textbuf_get_offset_of_line(tb, 1 + *l, textbuf_current_offset(tb)));
     } while(1);
 }
 
