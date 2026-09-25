@@ -18,9 +18,9 @@
 
 Err bookmark_sections_body(HtmlDoc bookmark[_1_], DomNode out[_1_]);
 Err bookmark_sections(DomNode body, ArlOf(Str)* out);
-Err bookmark_section_insert(Dom dom, DomNode body, UserLine ln[_1_], DomElem bm_entry);
-Err bookmark_section_get(DomNode body, UserLine ln[_1_], DomNode out[_1_], bool match_prefix);
-Err bookmark_section_ul_get(DomNode body, UserLine ln[_1_], DomNode out[_1_], bool match_prefix);
+Err bookmark_section_insert(Dom dom, DomNode body, StrView name, DomElem bm_entry);
+Err bookmark_section_get(DomNode body, StrView section_name, DomNode out[_1_], bool match_prefix);
+Err bookmark_section_ul_get(DomNode body, StrView name, DomNode out[_1_], bool match_prefix);
 Err bookmark_mk_anchor (Dom dom, char* href, Str text[_1_], DomElem out[_1_]);
 Err bookmark_mk_entry(Dom document, char* href, Str text[_1_], DomElem out[_1_]);
 Err bookmarks_save_to_disc(HtmlDoc bm[_1_], StrView bm_path);

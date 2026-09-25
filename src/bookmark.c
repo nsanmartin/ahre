@@ -96,9 +96,10 @@ cmd_bookmarks_list_sections(CmdParams p[_1_]) {
         }
         arlfn(Str,clean)(&list);
     } else {
-        UserLine* ln = cmd_params_user_line(p);
+        StrView section_name;
+        if (!user_line_pop_last_nonspace(cmd_params_user_line(p), &section_name)) return "expecting a section name";
         DomNode section;
-        try( bookmark_section_get(body, ln, &section, /*match_prefix*/false));
+        try( bookmark_section_get(body, section_name, &section, /*match_prefix*/false));
 
         if (!isnull(section)) {
             StrView data = dom_node_text_view(dom_node_first_child(section));
@@ -135,13 +136,11 @@ bookmark_sections(DomNode body, ArlOf(Str)* out) {
 
 
 Err
-bookmark_section_insert(Dom dom, DomNode body, UserLine ln[_1_], DomElem bm_entry) {
-    StrView q;
-    if (!user_line_pop_last_nonspace(ln, &q)) return "expecting a section name";
+bookmark_section_insert(Dom dom, DomNode body, StrView section_name, DomElem bm_entry) {
     DomElem section;
     try(dom_elem_init(&section, dom, svl("h2")));
     DomText text;
-    Err err =  dom_text_init(&text, dom, q);
+    Err err =  dom_text_init(&text, dom, section_name);
     if (err) goto Clean_Section;
 
     dom_node_insert_child(section, text);
@@ -165,9 +164,7 @@ Clean_Section:
 
 
 Err
-bookmark_section_get(DomNode body, UserLine ln[_1_], DomNode out[_1_], bool match_prefix) {
-    StrView q;
-    if (!user_line_pop_last_nonspace(ln, &q)) return "expecting a section name";
+bookmark_section_get(DomNode body, StrView section_name, DomNode out[_1_], bool match_prefix) {
     DomNode res = (DomNode){0};
     DomNode it  = dom_node_first_child(body);
     while (!isnull(it)) {
@@ -177,8 +174,8 @@ bookmark_section_get(DomNode body, UserLine ln[_1_], DomNode out[_1_], bool matc
 
             StrView data = dom_node_text_view(dom_node_first_child(it));
             if (data.len) {
-                size_t len = match_prefix ? q.len : data.len;
-                if (q.len <= len && strncmp(q.items, data.items, len) == 0) {
+                size_t len = match_prefix ? section_name.len : data.len;
+                if (section_name.len <= len && strncmp(section_name.items, data.items, len) == 0) {
                     if (!isnull(res)) return "unequivocal reference to bookmark section";
                     res = it;
                 }
@@ -196,10 +193,10 @@ bookmark_section_get(DomNode body, UserLine ln[_1_], DomNode out[_1_], bool matc
 
 
 Err
-bookmark_section_ul_get(DomNode body, UserLine ln[_1_], DomNode out[_1_], bool match_prefix) {
+bookmark_section_ul_get(DomNode body, StrView section_name, DomNode out[_1_], bool match_prefix) {
     *out = (DomNode){0};
     DomNode section;
-    try( bookmark_section_get(body, ln, &section, match_prefix));
+    try( bookmark_section_get(body, section_name, &section, match_prefix));
     if (!isnull(section)) {
         if (isnull(dom_node_next(section))) return "error: expecting section's next (TEXT)";
         DomNode ul = dom_node_next(dom_node_next(section));
@@ -412,13 +409,13 @@ bookmark_add_to_section(
     user_line_skip_space(line);
     bool create_section_if_not_found = true;
     bool match_prefix                = false;
-    if (user_line_match_char(line, '/')) { // *line == '/') {
+    if (user_line_match_char(line, '/')) {
         create_section_if_not_found = false;
         match_prefix                = true;
         user_line_skip_space(line);
-        /* line                        = cstr_skip_space(++line); */
     }
-    if (user_line_cmd_end(line)) return "not a valid bookmark section";
+    StrView section;
+    if (!user_line_pop_last_nonspace(line, &section)) return "expecting a section name";
     Err err = Ok; 
     
     HtmlDoc bm;
@@ -440,12 +437,12 @@ bookmark_add_to_section(
     if ((err = bookmark_mk_entry(bm.dom, url, title, &bm_entry))) goto Clean_Title;
 
     DomNode section_ul;
-    if ((err = bookmark_section_ul_get(body, line, &section_ul, match_prefix))) goto Clean_Title;
+    if ((err = bookmark_section_ul_get(body, section, &section_ul, match_prefix))) goto Clean_Title;
     //TODO: wrap this
     if (!isnull(section_ul)) {
         dom_node_insert_child(section_ul, bm_entry);
     } else if(create_section_if_not_found) {
-        err = bookmark_section_insert(bm.dom, body, line, bm_entry);
+        err = bookmark_section_insert(bm.dom, body, section, bm_entry);
     } else err = "section not found in bookmarks file";
 
     ok_then(err, bookmarks_save_to_disc(&bm, sv(&bm_path)));
