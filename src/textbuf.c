@@ -267,12 +267,17 @@ static Err err_pattern_not_found = "pattern not found\n";
 static Err
 _regex_search_pattern_in_buf_(StrView pattern, const char* buf, size_t match_offset[_1_]) {
     if (!pattern.len) return "expecting non empty pattern";
+    /* we copy to ensure the pattern end with '\0' */
+    Str pattern_copy = (Str){0};
+    try(str_append(&pattern_copy, pattern));
+
     const char* lastptr = pattern.items + pattern.len;
     char last           = *lastptr;
     size_t match        = 0;
     size_t* pmatch      = &match;
-    Err err             = regex_maybe_find_next(pattern.items, buf, &pmatch);
+    Err err             = regex_maybe_find_next(pattern_copy.items, buf, &pmatch);
     *(char*)lastptr     = last;
+    str_clean(&pattern_copy);
     if (err) return err;
     if (!pmatch) return err_pattern_not_found;
         ;
