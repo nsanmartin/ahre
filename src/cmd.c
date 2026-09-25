@@ -369,23 +369,6 @@ Err _cmd_textbuf_write_impl(TextBuf textbuf[_1_], Range r[_1_], const char* rest
 }
 
 
-/* static StrView parse_pattern(const char* tk) { */
-/*     StrView res = {0}; */
-/*     if (!tk) { return res; } */
-/*     char delim = '/'; */
-/*     tk = cstr_skip_space(tk); */
-/*     if (*tk != delim) { return res; } */
-/*     ++tk; */
-/*     const char* end = strchr(tk, delim); */
-
-/*     if (!end) res = (StrView){.items = tk, .len = strlen(tk)}; */
-/*     else { */
-/*         res = (StrView){.items = tk, .len = cast__(size_t)(end-tk)}; */
-/*         *(char*)end = '\0'; */
-/*     } */
-
-/*     return res; */
-/* } */
 
 
 Err cmd_textbuf_global(CmdParams p[_1_]) {
@@ -393,8 +376,6 @@ Err cmd_textbuf_global(CmdParams p[_1_]) {
     Err err = Ok;
 
     if (!p->tb) return err_internal("expectind textbuf set at this point");
-    /* StrView pattern = parse_pattern(p->ln); */
-    /* if (!pattern.items || !pattern.len) { return "Could not read pattern"; } */
     StrView pattern;
     if (!cmd_params_pop_pattern(p, &pattern)) return "Could not read pattern"; 
 
@@ -619,7 +600,7 @@ Err cmd_input_set_node(CmdParams p[_1_], DomNode node) {
     Session* session = p->s;
     UserLine* ul     = cmd_params_user_line(p);
     const char* ln   = user_line_remaining(ul);
-    user_line_skip_all(ul); //TODO0: check this
+    user_line_skip_all(ul);
     StrView type = dom_node_attr_value(node, svl("type"));
 
     if (dom_node_tag(node) == HTML_TAG_SELECT)

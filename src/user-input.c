@@ -343,21 +343,6 @@ bool user_line_pop_pattern(UserLine ul[_1_], StrView pattern[_1_]) {
     }
 
     return true;
-
-    /* if (!tk) { return res; } */
-    /* tk = cstr_skip_space(tk); */
-    /* if (*tk != delim) { return res; } */
-    /* ++tk; */
-    /* const char* end = strchr(tk, delim); */
-
-    /* if (!end) res = (StrView){.items = tk, .len = strlen(tk)}; */
-    /* else { */
-    /*     res = (StrView){.items = tk, .len = cast__(size_t)(end-tk)}; */
-    /*     *(char*)end = '\0'; */
-    /* } */
-
-    /* return res; */
-
 }
 
 
@@ -402,6 +387,17 @@ user_line_parse_range(UserLine ln[_1_], int base, RangeParse out[_1_]) {
     const char* endptr = NULL;
     try( parse_range(remaining.items, out, &endptr,  base));
     user_line_skip(ln, endptr - remaining.items);
+    user_line_skip_space(ln);
+    return Ok;
+}
+
+Err
+user_line_chop_and_skip_space(UserLine ln[_1_]) {
+    if (user_line_is_exhausted(ln)) return Ok;
+    if (!isspace(ln->full[ln->ix])) fail_e("expecting space to chop user line");
+    char* chop = (char*)ln->full + ln->ix;
+    *chop = '\0';
+    ++ln->ix;
     user_line_skip_space(ln);
     return Ok;
 }

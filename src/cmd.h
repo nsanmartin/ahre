@@ -163,18 +163,9 @@ Err cmd_input_default_ix(CmdParams p[_1_], size_t ix);
 Err cmd_image(CmdParams p[_1_]);
 Err cmd_image_print(CmdParams p[_1_], DomNode node);
 
-
 /*
-   Misc commands
- */
 
-// Err _cmd_misc(Session session[_1_], const char* line, CmdOut cout[_1_]);
-
-// static inline Err _cmd_misc_tag(const char* rest, Session session[_1_]) {
-//     HtmlDoc* htmldoc;
-//     try( session_current_doc(session, &htmldoc));
-//     return lexbor_cp_tag(rest, htmldoc->lxbdoc, textbuf_buf(htmldoc_textbuf(htmldoc)));
-// }
+*/
 
 Err cmd_parse(Session session[_1_], CmdOut* out);
 Err cmd_fetch(Session session[_1_], CmdOut* out);

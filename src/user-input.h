@@ -41,6 +41,7 @@ bool user_line_pop_last_alnum(UserLine ln[_1_], StrView out[_1_]);
 bool user_line_pop_pattern(UserLine ul[_1_], StrView pattern[_1_]);
 bool user_line_pop_rest(UserLine ul[_1_], StrView rest[_1_]);
 StrView user_line_word_view(UserLine ul[_1_]);
+Err user_line_chop_and_skip_space(UserLine ln[_1_]);
 
 Err user_line_parse_range(UserLine ln[_1_], int base, RangeParse out[_1_]);
 static inline void user_line_skip_all(UserLine ul[_1_]) { ul->ix = ul->len; }
