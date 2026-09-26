@@ -65,7 +65,7 @@ Err cmd_curl_set(CmdParams p[_1_]) {
             const char* rest2 = parse_l(rest.items, &value);
             if (!rest2) return "could not parse long value";
             if (*cstr_skip_space(rest2)) return err_fmt("invalid opt: %s", rest.items);
-            session_set_verbose(p->s, value);//TODO0;test thisc
+            session_set_verbose(p->s, value);
             break;
 
         /* TODO: user agent and other string should be owned by the UrlClient */

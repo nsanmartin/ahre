@@ -24,6 +24,7 @@ typedef struct {
 static inline const char* user_line_full(UserLine ul[_1_]) { return ul->full; }
 static inline void user_line_exhaust(UserLine ul[_1_]) { ul->ix = ul->len; }
 static inline bool user_line_is_exhausted(UserLine ul[_1_]) { return ul->ix >= ul->len; }
+void user_line_unskip(UserLine ul[_1_], size_t n);
 void user_line_skip(UserLine ul[_1_], size_t n);
 void user_line_skip_space(UserLine ul[_1_]);
 bool user_line_match_char(UserLine ul[_1_], char c);

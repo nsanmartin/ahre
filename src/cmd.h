@@ -28,15 +28,13 @@ typedef struct SessionCmd {
 
 #define CMD_GET_DOC \
     "Open the given url as a new tab.\n"\
-    "If the url is an existing file in the host ahre will try to open it,\n"\
-    "if it is an 'alias' (such as \\bookmark) it will open it.\n"\
+    "If the url is an existing file in the host ahre will try to open it.\n"\
     "Otherwise, it will curl it.\n"
 Err cmd_get(CmdParams p[_1_]);
 
 #define CMD_POST_DOC \
     "Open the given url as a new tab, using POST method\n"\
-    "If the url is an existing file in the host ahre will try to open it,\n"\
-    "if it is an 'alias' (such as \\bookmark) it will open it.\n"\
+    "If the url is an existing file in the host ahre will try to open it.\n"\
     "Otherwise, it will curl it.\n"
 
 Err cmd_post(CmdParams p[_1_]);

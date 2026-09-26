@@ -60,8 +60,8 @@ static Err _loop_(Session s[_1_], UserLine userln[_1_], CmdOut cout[_1_]) {
             tryjmp(err, Error, session_consume_line(s, userln, cout));
 Error:
         if (err) {
-            user_line_exhaust(userln);
             if (session_show_error(s, err)) return "error trying to show previous error"; 
+            user_line_exhaust(userln);
         }
     }
     return Ok;

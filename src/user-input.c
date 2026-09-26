@@ -254,6 +254,11 @@ void user_line_skip(UserLine ul[_1_], size_t n) {
     ul->ix += movement;
 }
 
+void user_line_unskip(UserLine ul[_1_], size_t n) {
+    if (n > ul->ix) ul->ix = 0;
+    ul->ix -= n;
+}
+
 Err
 user_line_parse_size_t_or_throw(UserLine ln[_1_], size_t* num, int base) {
     const char* cstr = user_line_remaining(ln);
@@ -306,23 +311,34 @@ StrView user_line_word_view(UserLine ul[_1_]) {
 
 
 bool user_line_pop_last_char(UserLine ln[_1_], char out[_1_]) {
-    return  user_line_pop_char(ln, out) && user_line_cut_cmd(ln);
+    if (user_line_pop_char(ln, out)) {
+        if (user_line_cut_cmd(ln)) return true;
+        user_line_unskip(ln, 1);
+    }
+    return false;
+}
+
+static bool user_line_pop_last_strview(UserLine ln[_1_], StrViewSplitter split, StrView out[_1_]) {
+    if (user_line_pop_strview(ln, split, out)) {
+        if (user_line_cut_cmd(ln)) return true;
+        user_line_unskip(ln, 1 + len__(out));
+    }
+    return false;
 }
 
 bool user_line_pop_last_nonspace(UserLine ln[_1_], StrView out[_1_]) {
-    return  user_line_pop_nonspace(ln, out) && user_line_cut_cmd(ln);
+    return user_line_pop_last_strview(ln, strview_split_word, out);
 }
-
 bool user_line_pop_last_alpha(UserLine ln[_1_], StrView out[_1_]) {
-    return  user_line_pop_alpha(ln, out) && user_line_cut_cmd(ln);
+    return user_line_pop_last_strview(ln, strview_split_alpha, out);
 }
 
 bool user_line_pop_last_digits(UserLine ln[_1_], StrView out[_1_]) {
-    return  user_line_pop_digits(ln, out) && user_line_cut_cmd(ln);
+    return user_line_pop_last_strview(ln, strview_split_digits, out);
 }
 
 bool user_line_pop_last_alnum(UserLine ln[_1_], StrView out[_1_]) {
-    return  user_line_pop_alnum(ln, out) && user_line_cut_cmd(ln);
+    return user_line_pop_last_strview(ln, strview_split_alnum, out);
 }
 
 bool user_line_pop_pattern(UserLine ul[_1_], StrView pattern[_1_]) {

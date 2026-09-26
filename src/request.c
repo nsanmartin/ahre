@@ -80,9 +80,20 @@ request_append_lexbor_checkbox_value_attr(Request r[1], DomNode node) {
 Err request_from_userln(Request r[_1_], UserLine userln[_1_], HttpMethod method) {
     user_line_skip_space(userln);
     StrView url;
-    if (!user_line_pop_nonspace(userln, &url)) return "expecting a url";
-    try(user_line_chop_and_skip_space(userln));
-    StrView params = user_line_remainig_view(userln);
+    StrView params = (StrView){0};
+    if (method == http_get) {
+        if (!user_line_pop_last_nonspace(userln, &url))
+            return err_fmt("expecting a url to get, not '%s'\n", user_line_remaining(userln));
+        try(user_line_chop_and_skip_space(userln));
+    } else if (method == http_post) {
+        if (!user_line_pop_nonspace(userln, &url)) return "expecting a url to post";
+        try(user_line_chop_and_skip_space(userln));
+        if (!user_line_pop_last_nonspace(userln, &params)) {
+            user_line_unskip(userln, url.len);
+            return "expecting params for post request";
+        }
+
+    } else fail_e("http method not supported");
 
     *r = (Request){ .method=method };
 
