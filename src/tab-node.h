@@ -137,6 +137,7 @@ tab_node_find_node(TabNode tn[_1_], const char* line, TabNode* out[_1_]) {
     tn = arlfn(TabNode,at)(tab_node_childs(tn), ix);
     if (!tn) return "invalid tab child";
     line = cstr_skip_space(line);
+    //TODO1: do not require dot at the end
     if (!*line || *line != '.') return "invalid tab path (full path must en with dot)";
     return tab_node_find_node(tn, line + 1, out);
 }

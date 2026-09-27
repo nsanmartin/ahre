@@ -399,8 +399,7 @@ static Err cmd_session_set(CmdParams p[_1_]) { return run_cmd__(p, _cmd_session_
 
 
 static SessionCmd _cmd_tabs_[] =
-    { {.name="tree", .fn=cmd_tabs_info_tree, .help=NULL, .match=1}
-    , {.name="-",    .fn=cmd_tabs_back,      .help=NULL, .flags=CMD_CHAR}
+    { {.name="-",    .fn=cmd_tabs_back,      .help=NULL, .flags=CMD_CHAR}
     , {.name="",     .fn=cmd_tabs_info,      .help=NULL, .flags=CMD_ANY}
     , {0}
 };

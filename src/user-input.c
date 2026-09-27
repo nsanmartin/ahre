@@ -321,7 +321,8 @@ bool user_line_pop_last_char(UserLine ln[_1_], char out[_1_]) {
 static bool user_line_pop_last_strview(UserLine ln[_1_], StrViewSplitter split, StrView out[_1_]) {
     if (user_line_pop_strview(ln, split, out)) {
         if (user_line_cut_cmd(ln)) return true;
-        user_line_unskip(ln, 1 + len__(out));
+        const size_t out_len = len__(out);
+        user_line_unskip(ln, (out_len ? 1 : 0) + out_len);
     }
     return false;
 }

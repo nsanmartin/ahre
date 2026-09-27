@@ -136,21 +136,19 @@ Err session_tab_node_print(
     for(size_t* it = arlfn(size_t, begin)(stack); it != arlfn(size_t, end)(stack); ++it) {
         if (it == arlfn(size_t, begin)(stack)) {
             if (n == current_node) {
-                try( msg__(out, svl("[+] ")));
+                try( msg__(out, svl("[+].")));
                 try( cmd_out_msg_append_ui_as_base10(out, *it));
-                try( msg__(out, svl(".")));
             } else if (tab_node_is_current_in_tab(n)) {
-                try( msg__(out, svl("[ ] ")));
+                try( msg__(out, svl("[ ].")));
                 try( cmd_out_msg_append_ui_as_base10(out, *it));
-                try( msg__(out, svl(".")));
             } else {
-                try( msg__(out, svl("    ")));
+                try( msg__(out, svl("   .")));
                 try( cmd_out_msg_append_ui_as_base10(out, *it));
-                try( msg__(out, svl(".")));
-            } } else { 
-                try( cmd_out_msg_append_ui_as_base10(out, *it));
-                try( msg__(out, svl(".")));
             }
+        } else { 
+            try( msg__(out, svl(".")));
+            try( cmd_out_msg_append_ui_as_base10(out, *it));
+        }
     }
     try( msg__(out, svl(" ")));
     try(tab_node_to_bookmark_description(n, msg_str(cmd_out_msg(out))));
