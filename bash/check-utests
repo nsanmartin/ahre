@@ -1,20 +1,8 @@
-#! /bin/bash
-_run_tests_ () {
-    for f in build/test_*; do
-        ./${f}
-    done
+_check_compiler_() {
+    local CComp=$1 CFlags=$2
+    make clean &&
+        CC="$CComp" CFLAGS="$CFlags" make ahre && make clean &&
+        CC="$CComp" CFLAGS="$CFlags" make run_tests &&
+        for f in build/test_*; do "./$f" || return 1; done
 }
-
-_check_compiler_ () {
-    CComp=$1
-    CFlags=$2
-    make clean && \
-        CC=${CComp} CFLAGS=${CFlags} make ahre && make clean && \
-        CC=${CComp} CFLAGS=${CFlags} make run_tests && \
-        _run_tests_
-}
-
-#_check_compiler_ tcc -DAHRE_REGEX_DISABLED && \ TODO: fix tcc build
-    _check_compiler_ clang && \
-    _check_compiler_ gcc && \
-    make clean
+_check_compiler_ clang && _check_compiler_ gcc && make clean
