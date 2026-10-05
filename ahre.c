@@ -74,7 +74,7 @@ Show_Error:
 static Err run_cmds(Session s[_1_], UserLine userln[_1_]) {
     Err err      = Ok;
     Str errors   = (Str){0};
-    CmdOut* cout = &(CmdOut){0};
+    CmdOut* cout = &cmd_out_default();
     while (!user_line_empty(userln) && !session_quit(s)) {
         if (!user_line_empty(userln)) err = session_consume_line(s, userln, cout);
         if (err) tryjmp(err, Clean_Errors, str_append_ln(&errors, err));
@@ -91,10 +91,10 @@ Err main_ahre(int argc, char **argv) {
     w_curl_global_init();
 
     Err       err     = Ok;
-    CmdOut*   cout    = &(CmdOut){0};
     UserLine  userln  = (UserLine){0};
     CliParams cparams = (CliParams){0};
     Session   session = (Session){0};
+    CmdOut*   cout    = &cmd_out_default();
 
     tryjmp(err, Clean, session_conf_from_options(argc, argv, &cparams));
     if (*cparams_help(&cparams)) { print_help(argv[0]); goto Clean; }

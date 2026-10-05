@@ -26,10 +26,15 @@ static inline Str* msg_str(Msg m[_1_]) { return &m->s; }
 // we could add other cases in the future (other command
 // input, sockets, etc).
 
+/* The CmdOut together with the user interface determing the output flow.
+ * vi and line mode manage differently std and msg so if a user redirects
+ * the msg to std will mean different things
+ * */
 typedef enum {
     CMD_OUT_STD  = 1,
     CMD_OUT_MSG  = 2,
-    CMD_OUT_FILE = 3
+    CMD_OUT_FILE = 3,
+    CMD_OUT_PROC = 4
 } CmdOutSinkTag;
 
 
@@ -37,6 +42,7 @@ typedef struct {
     CmdOutSinkTag tag;
     union {
         Str filename;
+        Str proc_cmd;
     };
 } CmdOutSink;
 
@@ -51,13 +57,10 @@ typedef struct CmdOut {
 } CmdOut;
 
 
+#define cmd_out_default() \
+    (CmdOut){.std_sink=(CmdOutSink){.tag=CMD_OUT_STD}, .msg_sink=(CmdOutSink){.tag=CMD_OUT_MSG}}
 static inline CmdOutSinkTag cmd_out_std_sink_tag(CmdOut co[_1_]) { return co->std_sink.tag; }
-static inline void cmd_out_init(CmdOut co[_1_]) {
-    *co = (CmdOut){
-        .std_sink=(CmdOutSink){.tag=CMD_OUT_STD},
-        .msg_sink=(CmdOutSink){.tag=CMD_OUT_MSG}
-    };
-}
+static inline CmdOutSinkTag cmd_out_msg_sink_tag(CmdOut co[_1_]) { return co->msg_sink.tag; }
 
 static inline CmdOut* cmd_out_id(CmdOut o[_1_]) { return o; }
 static inline Str* cmd_out_screen(CmdOut o[_1_]) { return &o->std; }

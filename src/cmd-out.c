@@ -53,18 +53,18 @@ cmd_out_sink_close_file(CmdOutSink sink[_1_], FilePtr fp[_1_]) {
     return err;
 }
 
-Err
-cmd_out_std_flush(CmdOut co[_1_]) {
-    Str* screen = cmd_out_screen(co);
-    if (!len__(screen)) return Ok;
+/* Err */
+/* cmd_out_std_flush(CmdOut co[_1_]) { */
+/*     Str* screen = cmd_out_screen(co); */
+/*     if (!len__(screen)) return Ok; */
 
-    FilePtr fp;
-    try(cmd_out_sink_to_file(&co->std_sink, &fp));
-    try( mem_fwrite(items__(screen), len__(screen), fp.ptr));
-    if (fflush(fp.ptr)) return err_fmt("error: fflush failure: %s", strerror(errno));
-    str_reset(screen);
-    cmd_out_sink_close_file(&co->std_sink, &fp);
-    return Ok;
-}
+/*     FilePtr fp; */
+/*     try(cmd_out_sink_to_file(&co->std_sink, &fp)); */
+/*     try( mem_fwrite(items__(screen), len__(screen), fp.ptr)); */
+/*     if (fflush(fp.ptr)) return err_fmt("error: fflush failure: %s", strerror(errno)); */
+/*     str_reset(screen); */
+/*     cmd_out_sink_close_file(&co->std_sink, &fp); */
+/*     return Ok; */
+/* } */
 
 

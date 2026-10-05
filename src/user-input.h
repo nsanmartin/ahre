@@ -14,7 +14,6 @@
 #include "error.h"
 #include "isocline.h"
 #include "ranges.h"
-#include "sys.h"
 
 typedef struct {
     const char* full;
@@ -142,7 +141,7 @@ static inline UserInput uinput_vi_mode(void) {
     return (UserInput){.init=err_skip, .read=ui_vi_mode_read_input};
 }
 
-Err ui_vi_flush_msg_read_input(Session* s, StrView msg, FilePtr fp[_1_]);
+Err ui_vi_flush_msg_read_input(Session* s, StrView msg);
 Err wait_for_char(char c);
 #endif
 
