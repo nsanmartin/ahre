@@ -245,8 +245,8 @@ user_line_match_char(UserLine ul[_1_], char c) {
 
 
 bool
-user_line_match_last_char(UserLine ul[_1_], char c) {
-    return user_line_match_char(ul, c) && user_line_cut_cmd(ul);
+user_line_match_last_char(UserLine ul[_1_], char c, CmdOut cout[_1_]) {
+    return user_line_match_char(ul, c) && user_line_cut_cmd(ul, cout);
 }
 
 void user_line_skip(UserLine ul[_1_], size_t n) {
@@ -310,36 +310,36 @@ StrView user_line_word_view(UserLine ul[_1_]) {
 }
 
 
-bool user_line_pop_last_char(UserLine ln[_1_], char out[_1_]) {
+bool user_line_pop_last_char(UserLine ln[_1_], char out[_1_], CmdOut cout[_1_]) {
     if (user_line_pop_char(ln, out)) {
-        if (user_line_cut_cmd(ln)) return true;
+        if (user_line_cut_cmd(ln, cout)) return true;
         user_line_unskip(ln, 1);
     }
     return false;
 }
 
-static bool user_line_pop_last_strview(UserLine ln[_1_], StrViewSplitter split, StrView out[_1_]) {
+static bool user_line_pop_last_strview(UserLine ln[_1_], StrViewSplitter split, StrView out[_1_], CmdOut cout[_1_]) {
     if (user_line_pop_strview(ln, split, out)) {
-        if (user_line_cut_cmd(ln)) return true;
+        if (user_line_cut_cmd(ln, cout)) return true;
         const size_t out_len = len__(out);
         user_line_unskip(ln, (out_len ? 1 : 0) + out_len);
     }
     return false;
 }
 
-bool user_line_pop_last_nonspace(UserLine ln[_1_], StrView out[_1_]) {
-    return user_line_pop_last_strview(ln, strview_split_word, out);
+bool user_line_pop_last_nonspace(UserLine ln[_1_], StrView out[_1_], CmdOut cout[_1_]) {
+    return user_line_pop_last_strview(ln, strview_split_word, out, cout);
 }
-bool user_line_pop_last_alpha(UserLine ln[_1_], StrView out[_1_]) {
-    return user_line_pop_last_strview(ln, strview_split_alpha, out);
-}
-
-bool user_line_pop_last_digits(UserLine ln[_1_], StrView out[_1_]) {
-    return user_line_pop_last_strview(ln, strview_split_digits, out);
+bool user_line_pop_last_alpha(UserLine ln[_1_], StrView out[_1_], CmdOut cout[_1_]) {
+    return user_line_pop_last_strview(ln, strview_split_alpha, out, cout);
 }
 
-bool user_line_pop_last_alnum(UserLine ln[_1_], StrView out[_1_]) {
-    return user_line_pop_last_strview(ln, strview_split_alnum, out);
+bool user_line_pop_last_digits(UserLine ln[_1_], StrView out[_1_], CmdOut cout[_1_]) {
+    return user_line_pop_last_strview(ln, strview_split_digits, out,  cout);
+}
+
+bool user_line_pop_last_alnum(UserLine ln[_1_], StrView out[_1_], CmdOut cout[_1_]) {
+    return user_line_pop_last_strview(ln, strview_split_alnum, out, cout);
 }
 
 bool user_line_pop_pattern(UserLine ul[_1_], StrView pattern[_1_]) {
@@ -378,16 +378,80 @@ bool user_line_pop_rest(UserLine ul[_1_], StrView rest[_1_]) {
     return true;
 }
 
-/* check whether al remainig data befor EOF or ';' is only space and splits 
- * whatever is following that */
-bool user_line_cut_cmd(UserLine ul[_1_]) {
+
+static bool user_line_cut_cmd_no_redirect(UserLine ul[_1_]) {
     user_line_skip_space(ul);
     if (user_line_match_char(ul, '\0')) return true;
-    if (user_line_match_char(ul, ';')) {
+    else if (user_line_match_char(ul, ';')) {
         char* p = (char*) ul->full + ul->ix;
         *p = '\0';
         ++ul->ix;
         return true;
+    }
+    return false;
+}
+
+/* check whether al remainig data befor EOF or ';' is only space and splits 
+ * whatever is following that */
+//TODO0: use str_eq, not str_eq_case
+//TODO0: return Err not bool?
+static bool
+parse_output_redirect(UserLine ul[_1_], CmdOut cout[_1_]) {
+    StrView sink;
+    StrView src            = (StrView){0};
+    StrView src_param      = (StrView){0};
+    CmdOutSinkTag sink_tag = 0;
+
+    if (!user_line_pop_alpha(ul, &sink)) return false; //"expecting sink";
+    user_line_skip_space(ul);
+    if (!str_eq_case(sink, svl("std")) && !str_eq_case(sink, svl("msg"))) {
+        if (str_eq_case(sink, svl("file"))) {
+            if(!user_line_pop_nonspace(ul, &src_param)) return false; //"expecting file name";
+            if (! user_line_cut_cmd_no_redirect(ul)) return false;
+            //TODO0: redirect (need Err type!).
+            return true;
+        } else if (str_eq_case(sink, svl("proc"))) {
+            if(!user_line_pop_rest(ul, &src_param)) return false; //"expecting system command";
+            if (! user_line_cut_cmd_no_redirect(ul)) return false;
+            //TODO0: redirect (need Err type!).
+            return true;
+        }
+        else return false; //expecting msg | std | file <fname> | proc <cmd...>
+    } else {
+        if (str_eq_case(sink, svl("std"))) sink_tag = CMD_OUT_STD;
+        else sink_tag = CMD_OUT_MSG;
+
+        if (user_line_cut_cmd_no_redirect(ul)) {
+            if (str_eq_case(sink, svl("std"))) {
+                msg_ln__(cout, svl("redirecting std to std..."));
+                cout->std_sink = (CmdOutSink){.tag=sink_tag};
+            } else { cout->std_sink = (CmdOutSink){.tag=sink_tag}; }
+            return true;
+        }
+
+        if (user_line_match_char(ul, '<')) {
+            user_line_skip_space(ul);
+            if (!user_line_pop_alpha(ul, &src)) return false; //expecting a source
+            if (!str_eq_case(src, svl("std")) && !str_eq_case(src, svl("msg"))) return false;
+            if (str_eq_case(src, svl("std"))) {
+                cout->std_sink = (CmdOutSink){.tag=sink_tag};
+            } else { cout->msg_sink = (CmdOutSink){.tag=sink_tag}; }
+
+            return user_line_cut_cmd_no_redirect(ul);
+        }
+    }
+    return false;
+}
+
+bool user_line_cut_cmd(UserLine ul[_1_], CmdOut cout[_1_]) {
+    user_line_skip_space(ul);
+    if (user_line_cut_cmd_no_redirect(ul)) return true;
+    else if (user_line_match_char(ul, '>')) {
+        char* p = (char*) ul->full + ul->ix;
+        *p = '\0';
+        ++ul->ix;
+        user_line_skip_space(ul);
+        return parse_output_redirect(ul, cout);
     }
     return false;
 }

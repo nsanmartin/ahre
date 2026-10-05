@@ -53,7 +53,7 @@ cmd_fetch_request_(CmdParams p[_1_], HttpMethod method) {
     Str     u = (Str){0};
     Err     e = Ok;
 
-    tryjmp(e,Fail, request_from_userln(&r, cmd_params_user_line(p), method));
+    tryjmp(e,Fail, request_from_userln(&r, cmd_params_user_line(p), method, cmd_params_cmd_out(p)));
 
     tryjmp(e,Fail, session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p)));
     str_clean(&u);
@@ -427,7 +427,7 @@ Err cmd_select_elem_show_options(DomNode lbn[_1_], CmdOut out [_1_]) {
 static Err
 cmd_toggle_checkbox(Session session[_1_], DomNode n, UserLine line[_1_], CmdOut cout [_1_]) {
 
-    if (!user_line_cut_cmd(line)) return "unexpected checkbox input. To toggle just type {N";
+    if (!user_line_cut_cmd(line, cout)) return "unexpected checkbox input. To toggle just type {N";
 
     HtmlDoc* d;
     try( session_current_doc(session, &d));
@@ -442,7 +442,7 @@ cmd_toggle_checkbox(Session session[_1_], DomNode n, UserLine line[_1_], CmdOut 
 
 static Err
 cmd_change_radio(Session session[_1_], DomNode n, UserLine line[_1_], CmdOut cout [_1_]) {
-    if (!user_line_cut_cmd(line)) return "unexpected radio button input. To select just type {N";
+    if (!user_line_cut_cmd(line, cout)) return "unexpected radio button input. To select just type {N";
     try( mark_radio_button(n));
     return session_doc_draw(session, cout);
 }

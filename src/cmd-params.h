@@ -38,7 +38,7 @@ static inline bool cmd_params_pop_char(CmdParams p[_1_], char out[_1_]) {
     return user_line_pop_char(cmd_params_user_line(p), out);
 }
 static inline bool cmd_params_pop_last_char(CmdParams p[_1_], char out[_1_]) {
-    return user_line_pop_last_char(cmd_params_user_line(p), out);
+    return user_line_pop_last_char(cmd_params_user_line(p), out, cmd_params_cmd_out(p));
 }
 
 #define cmd_params_pop_last_path cmd_params_pop_last_nonspace
@@ -52,15 +52,15 @@ static inline bool cmd_params_pop_alpha(CmdParams p[_1_], StrView out[_1_]) {
 }
 
 static inline bool cmd_params_pop_last_nonspace(CmdParams p[_1_], StrView out[_1_]) {
-    return user_line_pop_last_nonspace(cmd_params_user_line(p), out);
+    return user_line_pop_last_nonspace(cmd_params_user_line(p), out, cmd_params_cmd_out(p));
 }
 
 static inline bool cmd_params_pop_last_alnum(CmdParams p[_1_], StrView out[_1_]) {
-    return user_line_pop_last_alnum(cmd_params_user_line(p), out);
+    return user_line_pop_last_alnum(cmd_params_user_line(p), out, cmd_params_cmd_out(p));
 }
 
 static inline bool cmd_params_pop_last_alpha(CmdParams p[_1_], StrView out[_1_]) {
-    return user_line_pop_last_alpha(cmd_params_user_line(p), out);
+    return user_line_pop_last_alpha(cmd_params_user_line(p), out, cmd_params_cmd_out(p));
 }
 
 static inline bool cmd_params_pop_pattern(CmdParams p[_1_], StrView pattern[_1_]) {
@@ -76,7 +76,7 @@ static inline Err cmd_params_parse_size_t_or_throw(CmdParams p[_1_], size_t ncol
 }
 
 static inline bool cmd_params_cut_cmd(CmdParams p[_1_]) {
-    return user_line_cut_cmd(cmd_params_user_line(p));
+    return user_line_cut_cmd(cmd_params_user_line(p), cmd_params_cmd_out(p));
 }
 
 static inline StrView cmd_params_word_view(CmdParams p[_1_]) {
@@ -84,7 +84,8 @@ static inline StrView cmd_params_word_view(CmdParams p[_1_]) {
 }
 
 static inline bool cmd_params_match_last_char(CmdParams p[_1_], char c) {
-    return user_line_match_last_char(cmd_params_user_line(p), c);
+    return user_line_match_last_char(cmd_params_user_line(p), c, cmd_params_cmd_out(p));
+
 }
 
 bool cmd_match(StrView input, const char* cmd_name, size_t unmatch, CmdParams p[_1_]);

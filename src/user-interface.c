@@ -176,6 +176,7 @@ static Err run_cmd_on_range__(CmdParams p[_1_], SessionCmd cmdlist[], int base) 
 
 #define CMD_ANCHOR_PRINT_DOC "Print anchor range info"
 static Err cmd_anchor_print_range(CmdParams p[_1_]) {
+    if (!cmd_params_cut_cmd(p)) return "expecting end of cmd";
     return run_cmd_for_indep_dom_node_range(p, htmldoc_anchors, cmd_print_node);
 }
 

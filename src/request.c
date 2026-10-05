@@ -77,18 +77,18 @@ request_append_lexbor_checkbox_value_attr(Request r[1], DomNode node) {
 /* external linkage */
 
 
-Err request_from_userln(Request r[_1_], UserLine userln[_1_], HttpMethod method) {
+Err request_from_userln(Request r[_1_], UserLine userln[_1_], HttpMethod method, CmdOut cout[_1_]) {
     user_line_skip_space(userln);
     StrView url;
     StrView params = (StrView){0};
     if (method == http_get) {
-        if (!user_line_pop_last_nonspace(userln, &url))
+        if (!user_line_pop_last_nonspace(userln, &url, cout))
             return err_fmt("expecting a url to get, not '%s'\n", user_line_remaining(userln));
         try(user_line_chop_and_skip_space(userln));
     } else if (method == http_post) {
         if (!user_line_pop_nonspace(userln, &url)) return "expecting a url to post";
         try(user_line_chop_and_skip_space(userln));
-        if (!user_line_pop_last_nonspace(userln, &params)) {
+        if (!user_line_pop_last_nonspace(userln, &params, cout)) {
             user_line_unskip(userln, url.len);
             return "expecting params for post request";
         }
