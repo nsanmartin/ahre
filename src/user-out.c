@@ -72,7 +72,7 @@ ui_line_flush_msg_to_proc(CmdOut cout[_1_]) {
 Err
 ui_line_flush_std(Session* s, CmdOut cout[_1_]) {
     if (!s) return "error: no session";
-    switch (cmd_out_std_sink_tag(cout)) {
+    switch (cmd_out_std_sing_get_reset(cout)) {
         case CMD_OUT_STD:  return flush_to_file(cmd_out_screen(cout), (FilePtr){.ptr=stdout});
         case CMD_OUT_MSG:  return flush_to_file(cmd_out_screen(cout), (FilePtr){.ptr=stderr});
         case CMD_OUT_FILE: return ui_line_flush_std_to_file(cout);
@@ -86,7 +86,7 @@ Err
 ui_line_flush_msg(Session* s, CmdOut cout[_1_]) {
     if (!s) return "error: no session";
 
-    switch (cmd_out_msg_sink_tag(cout)) {
+    switch (cmd_out_msg_sing_get_reset(cout)) {
         case CMD_OUT_STD:  return flush_to_file(cmd_out_screen(cout), (FilePtr){.ptr=stdout});
         case CMD_OUT_MSG:  return flush_to_file(cmd_out_screen(cout), (FilePtr){.ptr=stderr});
         case CMD_OUT_FILE: return ui_line_flush_msg_to_file(cout);
@@ -190,10 +190,12 @@ Err ui_vi_show_session(Session* s, CmdOut cout[_1_]) {
 
     //TODO: instead stdout pass CmdOut
     try( lit_write__(EscCodeClsScr, stdout));
+    bool screen_touched = (msg_len(cmd_out_msg(cout)) && cmd_out_msg_sink_tag(cout) == CMD_OUT_STD)
+                        || len__(cmd_out_screen(cout));
     try( session_flush_cmd_out_msg(s, cout));
 
     if (len__(cmd_out_screen(cout))) return session_flush_cmd_out_screen(s, cout);
-    return ui_vi_show_session_default(s, cout);
+    return screen_touched ? Ok : ui_vi_show_session_default(s, cout);
 }
 
 
@@ -205,19 +207,19 @@ ui_vi_flush_std_to_msg(CmdOut cout[_1_]) {
 static Err
 ui_vi_flush_std_to_file(CmdOut cout[_1_]) {
     (void)cout;
-    return "not implemented";
+    return "flush to file not implemented";
 }
 
 static Err
 ui_vi_flush_std_to_proc(CmdOut cout[_1_]) {
     (void)cout;
-    return "not implemented";
+    return "flush to proc not implemented";
 }
 
 Err ui_vi_flush_std(Session* s, CmdOut cout[_1_]) {
     if (!s) return "error: no session";
 
-    switch (cmd_out_std_sink_tag(cout)) {
+    switch (cmd_out_std_sing_get_reset(cout)) {
         case CMD_OUT_STD:  return flush_to_file(cmd_out_screen(cout), (FilePtr){.ptr=stdout});
         case CMD_OUT_MSG:  return ui_vi_flush_std_to_msg(cout);
         case CMD_OUT_FILE: return ui_vi_flush_std_to_file(cout);
@@ -263,9 +265,9 @@ ui_vi_flush_msg_to_proc(CmdOut cout[_1_]) {
 Err ui_vi_flush_msg(Session* s, CmdOut cout[_1_]) {
     if (!s) return "error: no session";
 
-    switch (cmd_out_msg_sink_tag(cout)) {
-        case CMD_OUT_MSG: return ui_vi_flush_msg_default(s, cout);
-        case CMD_OUT_STD: return ui_vi_flush_msg_to_std(cout);
+    switch (cmd_out_msg_sing_get_reset(cout)) {
+        case CMD_OUT_MSG:  return ui_vi_flush_msg_default(s, cout);
+        case CMD_OUT_STD:  return ui_vi_flush_msg_to_std(cout);
         case CMD_OUT_FILE: return ui_vi_flush_msg_to_file(cout);
         case CMD_OUT_PROC: return ui_vi_flush_msg_to_proc(cout);
         default: fail_e("invalid output redirection");

@@ -1,5 +1,7 @@
 _vahre_() {
     local ERRFILE=${1:-0}; [ $# -gt 0 ] && shift
+    echo stderr sent to err/"$ERRFILE"
+    echo "$@" >&2
     make && valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./build/ahre "$@" 2> err/"$ERRFILE"
 }
 vahre() { _vahre_ "$@"; }

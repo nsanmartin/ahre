@@ -408,38 +408,39 @@ parse_output_redirect(UserLine ul[_1_], CmdOut cout[_1_]) {
         if (str_eq_case(sink, svl("file"))) {
             if(!user_line_pop_nonspace(ul, &src_param)) return false; //"expecting file name";
             if (! user_line_cut_cmd_no_redirect(ul)) return false;
+            sink_tag = CMD_OUT_FILE;
             //TODO0: redirect (need Err type!).
-            return true;
         } else if (str_eq_case(sink, svl("proc"))) {
             if(!user_line_pop_rest(ul, &src_param)) return false; //"expecting system command";
             if (! user_line_cut_cmd_no_redirect(ul)) return false;
             //TODO0: redirect (need Err type!).
-            return true;
+            sink_tag = CMD_OUT_PROC;
         }
         else return false; //expecting msg | std | file <fname> | proc <cmd...>
     } else {
         if (str_eq_case(sink, svl("std"))) sink_tag = CMD_OUT_STD;
         else sink_tag = CMD_OUT_MSG;
-
-        if (user_line_cut_cmd_no_redirect(ul)) {
-            if (str_eq_case(sink, svl("std"))) {
-                msg_ln__(cout, svl("redirecting std to std..."));
-                cout->std_sink = (CmdOutSink){.tag=sink_tag};
-            } else { cout->std_sink = (CmdOutSink){.tag=sink_tag}; }
-            return true;
-        }
-
-        if (user_line_match_char(ul, '<')) {
-            user_line_skip_space(ul);
-            if (!user_line_pop_alpha(ul, &src)) return false; //expecting a source
-            if (!str_eq_case(src, svl("std")) && !str_eq_case(src, svl("msg"))) return false;
-            if (str_eq_case(src, svl("std"))) {
-                cout->std_sink = (CmdOutSink){.tag=sink_tag};
-            } else { cout->msg_sink = (CmdOutSink){.tag=sink_tag}; }
-
-            return user_line_cut_cmd_no_redirect(ul);
-        }
     }
+
+    if (user_line_cut_cmd_no_redirect(ul)) {
+        if (str_eq_case(sink, svl("std"))) {
+            msg_ln__(cout, svl("redirecting std to std..."));
+            cout->std_sink = (CmdOutSink){.tag=sink_tag};
+        } else { cout->std_sink = (CmdOutSink){.tag=sink_tag}; }
+        return true;
+    }
+
+    if (user_line_match_char(ul, '<')) {
+        user_line_skip_space(ul);
+        if (!user_line_pop_alpha(ul, &src)) return false; //expecting a source
+        if (!str_eq_case(src, svl("std")) && !str_eq_case(src, svl("msg"))) return false;
+        if (str_eq_case(src, svl("std"))) {
+            cout->std_sink = (CmdOutSink){.tag=sink_tag};
+        } else { cout->msg_sink = (CmdOutSink){.tag=sink_tag}; }
+
+        return user_line_cut_cmd_no_redirect(ul);
+    }
+
     return false;
 }
 
