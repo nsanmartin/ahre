@@ -2,6 +2,7 @@
 #include "session.h"
 
 #include "generic.h"
+
 /*
  * Line mode
  */
@@ -20,6 +21,32 @@ Err ui_line_show_err(Session* s, char* err, size_t len) {
         ) return "error: fwrite failure while attempting to show an error :/";
     }
     fflush(stderr);
+    return Ok;
+}
+
+
+Err
+ui_line_flush_std(Session* s, CmdOut cout[_1_]) {
+    if (!s) return "error: no session";
+    Str* screen = cmd_out_screen(cout);
+    if (!len__(screen)) return Ok;
+
+    try( mem_fwrite(items__(screen), len__(screen), stdout));
+    if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
+    str_clean(screen);
+    return Ok;
+}
+
+
+Err
+ui_line_flush_msg(Session* s, CmdOut cout[_1_]) {
+    if (!s) return "error: no session";
+    Msg* msg = cmd_out_msg(cout);
+    if (!msg_len(msg)) return Ok;
+
+    try( mem_fwrite(msg_items(msg), msg_len(msg), stderr));
+    if (fflush(stderr)) return err_fmt("error: fflush failure: %s", strerror(errno));
+    msg_reset(msg);
     return Ok;
 }
 
@@ -80,13 +107,12 @@ show_session_get_show_range(Session* s, TextBuf tb[_1_], Range out[_1_]) {
  * result of the user cmd.
  */
 static Err
-ui_vi_show_session_default(Session* s) {
-    CmdOut* default_out = &(CmdOut){0};
+ui_vi_show_session_default(Session* s, CmdOut cout[_1_]) {
     Err err             = Ok;
 
     if (session_is_empty(s)) {
-        try( screen__(default_out, svl(EMPTY_SESSION_MSG_)));
-        err = session_flush_cmd_out_screen(s, default_out);
+        try( screen__(cout, svl(EMPTY_SESSION_MSG_)));
+        err = session_flush_cmd_out_screen(s, cout);
     } else {
         HtmlDoc* d;
         TextBuf* tb;
@@ -95,19 +121,19 @@ ui_vi_show_session_default(Session* s) {
 
         if (textbuf_is_empty(tb)) {
             if (!htmldoc_content_is_html(d)) 
-                try( msg_ln__(default_out, svl(BUFFER_NOT_PARSED_MSG_)));
-            else try( msg__(default_out, svl(EMPTY_BUFFER_MSG_)));
-            err = session_flush_cmd_out_msg(s, default_out);
+                try( msg_ln__(cout, svl(BUFFER_NOT_PARSED_MSG_)));
+            else try( msg__(cout, svl(EMPTY_BUFFER_MSG_)));
+            err = session_flush_cmd_out_msg(s, cout);
         } else {
 
             Range r;
             try(show_session_get_show_range(s, tb, &r));
 
-            err = _vi_print_range_std_mod_(tb, &r, s, default_out);
-            ok_then(err, session_flush_cmd_out_screen(s, default_out));
+            err = _vi_print_range_std_mod_(tb, &r, s, cout);
+            ok_then(err, session_flush_cmd_out_screen(s, cout));
         }
     }
-    cmd_out_clean(default_out);
+    /* cmd_out_clean(cout); */
     return err;
 
 }
@@ -127,19 +153,13 @@ Err ui_vi_show_session(Session* s, CmdOut cout[_1_]) {
     try( session_flush_cmd_out_msg(s, cout));
 
     if (len__(cmd_out_screen(cout))) return session_flush_cmd_out_screen(s, cout);
-    return ui_vi_show_session_default(s);
+    return ui_vi_show_session_default(s, cout);
 }
 
 
 Err ui_vi_flush_std(Session* s, CmdOut cout[_1_]) {
     if (!s) return "error: no session";
-    Str* screen = cmd_out_screen(cout);
-    if (len__(screen)) {
-        try( mem_fwrite(items__(screen), len__(screen), stdout));
-        if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
-        str_reset(screen);
-    }
-    return Ok;
+    return cmd_out_std_flush(cout);
 }
 
 
@@ -148,9 +168,14 @@ Err ui_vi_flush_msg(Session* s, CmdOut cout[_1_]) {
     Msg* msg = cmd_out_msg(cout);
     if (!msg_len(msg)) return Ok;
 
-    try(ui_vi_flush_msg_read_input(s, sv(msg->s)));
+    FilePtr fp;
+    try(cmd_out_sink_to_file(&cout->msg_sink, &fp));
+
+    try( ui_vi_flush_msg_read_input(s, sv(msg->s), &fp));
     msg_reset(msg);
-    return lit_write__(EscCodeClsScr, stdout);
+    try( lit_write__(EscCodeClsScr, fp.ptr));
+    cmd_out_sink_close_file(&cout->std_sink, &fp);
+    return Ok;
 }
 
 Err ui_vi_show_err(Session* s, char* err, size_t len) {

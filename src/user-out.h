@@ -36,23 +36,10 @@ static inline Err ui_write_callback_stdout(const char* mem, size_t len, Session*
 }
 
 
-static inline Err ui_line_flush_msg(Session* s, CmdOut cout[_1_]) {
-    (void)s;
-    Msg* msg = cmd_out_msg(cout);
-    try( mem_fwrite(msg_items(msg), msg_len(msg), stderr));
-    if (fflush(stderr)) return err_fmt("error: fflush failure: %s", strerror(errno));
-    msg_clean(msg);
-    return Ok;
-}
+Err ui_line_flush_std(Session* s, CmdOut cout[_1_]);
 
-static inline Err ui_line_flush_screen(Session* s, CmdOut cout[_1_]) {
-    (void)s;
-    Str* screen = cmd_out_screen(cout);
-    try( mem_fwrite(items__(screen), len__(screen), stdout));
-    if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
-    str_clean(screen);
-    return Ok;
-}
+
+Err ui_line_flush_msg(Session* s, CmdOut cout[_1_]);
 
 Err ui_line_show_session(Session* s, CmdOut cout[_1_]);
 Err ui_line_show_err(Session* s, char* err, size_t len);
@@ -82,7 +69,7 @@ void _vi_cleanup_(UserOutput* uo);
 static inline UserOutput uout_line_mode(void) {
     return (UserOutput) {
         .flush_msg    = ui_line_flush_msg,
-        .flush_std    = ui_line_flush_screen,
+        .flush_std    = ui_line_flush_std,
         .show_session = ui_line_show_session,
         .show_err     = ui_line_show_err,
     };

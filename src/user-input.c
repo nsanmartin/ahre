@@ -156,7 +156,7 @@ _continue_msg_(size_t pages_len, size_t pagenum, size_t msg_len) {
 }
 
 Err
-ui_vi_flush_msg_read_input(Session* s, StrView msg) {
+ui_vi_flush_msg_read_input(Session* s, StrView msg, FilePtr outfp[_1_]) {
     if (!msg.len) return Ok;
     Err e = Ok;
 
@@ -175,12 +175,12 @@ ui_vi_flush_msg_read_input(Session* s, StrView msg) {
         } else {e=err_internal("invalid msg page"); goto Clean;}
 
         if (update) {
-            tryjmp(e,Clean, lit_write__(EscCodeClsScr, stdout));
-            tryjmp(e,Clean, lit_write__(MSG_PREFIX_, stdout));
-            tryjmp(e,Clean, mem_fwrite(pp->items, pp->len, stdout));
+            tryjmp(e,Clean, lit_write__(EscCodeClsScr, outfp->ptr));
+            tryjmp(e,Clean, lit_write__(MSG_PREFIX_, outfp->ptr));
+            tryjmp(e,Clean, mem_fwrite(pp->items, pp->len, outfp->ptr));
             StrView continue_msg = _continue_msg_(ps.len, pagenum, msg.len);
-            tryjmp(e,Clean, mem_fwrite(continue_msg.items, continue_msg.len,  stdout));
-            if (fflush(stdout)) {e=err_fmt("error: fflush failure: %s", strerror(errno)); goto Clean;}
+            tryjmp(e,Clean, mem_fwrite(continue_msg.items, continue_msg.len,  outfp->ptr));
+            if (fflush(outfp->ptr)) {e=err_fmt("error: fflush failure: %s", strerror(errno)); goto Clean;}
         }
 
         struct termios prev_termios;

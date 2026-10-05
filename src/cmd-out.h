@@ -4,6 +4,7 @@
 #include "str.h"
 #include "nongeneric.h"
 #include "utils.h"
+#include "sys.h"
 
 
 typedef struct { Str s; } Msg;
@@ -25,10 +26,38 @@ static inline Str* msg_str(Msg m[_1_]) { return &m->s; }
 // we could add other cases in the future (other command
 // input, sockets, etc).
 
+typedef enum {
+    CMD_OUT_STD  = 1,
+    CMD_OUT_MSG  = 2,
+    CMD_OUT_FILE = 3
+} CmdOutSinkTag;
+
+
+typedef struct {
+    CmdOutSinkTag tag;
+    union {
+        Str filename;
+    };
+} CmdOutSink;
+
+Err cmd_out_sink_to_file(CmdOutSink sink[_1_], FilePtr fp[_1_]);
+Err cmd_out_sink_close_file(CmdOutSink sink[_1_], FilePtr fp[_1_]);
+
 typedef struct CmdOut {
-    Str std;
-    Msg msg;
+    Str        std;
+    CmdOutSink std_sink;
+    Msg        msg;
+    CmdOutSink msg_sink;
 } CmdOut;
+
+
+static inline CmdOutSinkTag cmd_out_std_sink_tag(CmdOut co[_1_]) { return co->std_sink.tag; }
+static inline void cmd_out_init(CmdOut co[_1_]) {
+    *co = (CmdOut){
+        .std_sink=(CmdOutSink){.tag=CMD_OUT_STD},
+        .msg_sink=(CmdOutSink){.tag=CMD_OUT_MSG}
+    };
+}
 
 static inline CmdOut* cmd_out_id(CmdOut o[_1_]) { return o; }
 static inline Str* cmd_out_screen(CmdOut o[_1_]) { return &o->std; }
@@ -56,4 +85,6 @@ static inline void cmd_out_clean(CmdOut o[_1_]) {
 #define cmd_out_screen_append_ui_as_base36(M,U) str_append_ui_as_base36(cmd_out_screen(M), U)
 
 Err msg_fmt(CmdOut cout[_1_], const char* fmt, ...);
+Err cmd_out_std_flush(CmdOut co[_1_]);
+Err cmd_out_msg_flush(CmdOut co[_1_]);
 #endif
