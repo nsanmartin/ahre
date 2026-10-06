@@ -76,7 +76,11 @@ static inline bool _name_match_(SessionCmd* cmd, CmdParams p[_1_]) {
 
 static bool _is_help_cmd_end_(CmdParams p[_1_]) {
     cmd_params_skip_space(p);
-    return cmd_params_match_last_char(p, '?');
+    if (user_line_match_char(cmd_params_user_line(p), '?')) {
+        if (user_line_cmd_end(cmd_params_user_line(p))) return true;
+        user_line_unskip(cmd_params_user_line(p), 1);
+    }
+    return false;
 }
 
 
@@ -147,10 +151,16 @@ static Err run_cmd__(CmdParams p[_1_], SessionCmd cmdlist[]) {
     for (SessionCmd* cmd = cmdlist; cmd->name ; ++cmd) {
         if (_any_match_(cmd)) return cmd->fn(p);
         if (_char_cmd_match_(cmd, p)) {
-            if (_is_help_cmd_end_(p)) return run_cmd_help(cmd, cmd_params_cmd_out(p));
+            if (_is_help_cmd_end_(p)) {
+                try(cmd_params_cut_cmd(p));
+                return run_cmd_help(cmd, cmd_params_cmd_out(p));
+            }
             return cmd->fn(p);
         } else if (_name_match_(cmd, p)) {
-            if (_is_help_cmd_end_(p)) return run_cmd_help(cmd, cmd_params_cmd_out(p));
+            if (_is_help_cmd_end_(p)) {
+                try(cmd_params_cut_cmd(p));
+                return run_cmd_help(cmd, cmd_params_cmd_out(p));
+            }
             if (_no_params_match_(cmd, p)) return  "unexpected cmd param";
             else return cmd->fn(p);
         } else if (_empty_match_(cmd, p)) return cmd->fn(p);
@@ -176,7 +186,7 @@ static Err run_cmd_on_range__(CmdParams p[_1_], SessionCmd cmdlist[], int base) 
 
 #define CMD_ANCHOR_PRINT_DOC "Print anchor range info"
 static Err cmd_anchor_print_range(CmdParams p[_1_]) {
-    if (!cmd_params_cut_cmd(p)) return "expecting end of cmd";
+    try(cmd_params_cut_cmd(p)); //"expecting end of cmd";
     return run_cmd_for_indep_dom_node_range(p, htmldoc_anchors, cmd_print_node);
 }
 
@@ -277,7 +287,7 @@ Clean:
 static Err
 cmd_anchor_save_range(CmdParams p[_1_]) {
     StrView path;
-    if (!cmd_params_pop_last_path(p, &path)) return "expectinng a path at the end of the command";
+    try (cmd_params_pop_last_path(p, &path));
     ArlOf(DomNode)* anchors;
     Range r;
     try(get_range_and_nodes(p, &r, &anchors, htmldoc_anchors));
@@ -344,7 +354,7 @@ Err cmd_input_save_node(CmdParams p[_1_], DomNode node) {
         return "warn: save command only applicable to submit inputs\n";
 
     StrView path;
-    if (!cmd_params_pop_last_path(p, &path)) return "expecting a path where to write";
+    try (cmd_params_pop_last_path(p, &path));
     HtmlDoc*       htmldoc;
     try( session_current_doc(p->s, &htmldoc));
     LipOf(DomNodePtr,bool)* checkboxes = htmldoc_checked_boxes(htmldoc);
@@ -429,7 +439,7 @@ static Err cmd_doc_scripts_local(CmdParams p[_1_]) {
     try(session_current_doc(p->s, &h));
     CmdOut* out = cmd_params_cmd_out(p);
     StrView path;
-    if (!cmd_params_pop_last_path(p, &path)) return "expectinng a path";
+    try (cmd_params_pop_last_path(p, &path));
 
     if (path_is_dir(path.items)) {
         ArlOf(Str) fnames = (ArlOf(Str)){0};
@@ -473,7 +483,7 @@ cmd_doc_scripts_save(CmdParams p[_1_]) {
     Range r;
     try(htmldoc_scripts_range_from_parsed_range(h, &p->rp, &r));
     StrView path;
-    if (!cmd_params_pop_last_path(p, &path)) return "expecting a path where to write the scripts";
+    try (cmd_params_pop_last_path(p, &path)); // "expecting a path where to write the scripts";
     if (!path_is_dir(path.items))
         return cmd_doc_scripts_save_single_file(h, path.items, &r, cmd_params_cmd_out(p));
 
@@ -613,7 +623,7 @@ cmd_image_info(CmdParams p[_1_]) {
 
 static Err cmd_image_save_range(CmdParams p[_1_]) {
     StrView path;
-    if (!cmd_params_pop_last_path(p, &path)) return "expecting a path where to write";
+    try (cmd_params_pop_last_path(p, &path)); // "expecting a path where to write";
     ArlOf(DomNode)* images;
     Range r;
     try(get_range_and_nodes(p, &r, &images, htmldoc_imgs));

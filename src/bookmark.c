@@ -97,7 +97,7 @@ cmd_bookmarks_list_sections(CmdParams p[_1_]) {
         arlfn(Str,clean)(&list);
     } else {
         StrView section_name;
-        if (!user_line_pop_last_nonspace(cmd_params_user_line(p), &section_name, cmd_params_cmd_out(p))) return "expecting a section name";
+        try (user_line_pop_last_nonspace(cmd_params_user_line(p), &section_name, cmd_params_cmd_out(p)));
         DomNode section;
         try( bookmark_section_get(body, section_name, &section, /*match_prefix*/false));
 
@@ -415,7 +415,7 @@ bookmark_add_to_section(
         user_line_skip_space(line);
     }
     StrView section;
-    if (!user_line_pop_last_nonspace(line, &section, cmd_out)) return "expecting a section name";
+    try (user_line_pop_last_nonspace(line, &section, cmd_out));
     Err err = Ok; 
     
     HtmlDoc bm;

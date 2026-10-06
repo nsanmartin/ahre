@@ -23,6 +23,27 @@ Err msg_fmt(CmdOut cout[_1_], const char* fmt, ...) {
 }
 
 Err
+cmd_out_sink_set(CmdOutSink sink[_1_], CmdOutSinkTag tag, StrView* s) {
+    *sink = (CmdOutSink){.tag=tag};
+    switch (tag) {
+        case CMD_OUT_STD:
+        case CMD_OUT_MSG:
+            return Ok;
+        case CMD_OUT_FILE:
+            if (!s) fail_e("null ptr failure");
+            try(str_append(&sink->filename, s));
+            return Ok;
+        case CMD_OUT_PROC:
+            if (!s) fail_e("null ptr failure");
+            try(str_append(&sink->proc_cmd, s));
+            return Ok;
+        default:
+            fail_e("invalid sink tag!");
+    }
+}
+
+
+Err
 cmd_out_sink_to_file(CmdOutSink sink[_1_], FilePtr fp[_1_]) {
     switch (sink->tag) {
         case CMD_OUT_STD:

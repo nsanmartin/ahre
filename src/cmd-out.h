@@ -48,6 +48,7 @@ typedef struct {
 
 Err cmd_out_sink_to_file(CmdOutSink sink[_1_], FilePtr fp[_1_]);
 Err cmd_out_sink_close_file(CmdOutSink sink[_1_], FilePtr fp[_1_]);
+Err cmd_out_sink_set(CmdOutSink sink[_1_], CmdOutSinkTag tag, StrView* s);
 
 typedef struct CmdOut {
     Str        std;

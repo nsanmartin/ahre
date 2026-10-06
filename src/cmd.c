@@ -95,7 +95,7 @@ Err cmd_set_session_ncols(CmdParams p[_1_]) {
 Err cmd_set_session_monochrome(CmdParams p[_1_]) {
     cmd_params_skip_space(p);
     char opt;
-    if (!cmd_params_pop_last_char(p, &opt)) return "expecting value to set (0 or 1)";
+    try (cmd_params_pop_last_char(p, &opt));
 
     if (opt == '0') session_monochrome_set(p->s, false);
     else if (opt == '1') session_monochrome_set(p->s, true);
@@ -107,7 +107,7 @@ Err cmd_set_session_monochrome(CmdParams p[_1_]) {
 Err cmd_set_session_js(CmdParams p[_1_]) {
     cmd_params_skip_space(p);
     char opt;
-    if (!cmd_params_pop_last_char(p, &opt)) return "expecting js option (0 or 1)";
+    try (cmd_params_pop_last_char(p, &opt));
     if (opt == '0') session_js_set(p->s, false);
     else if (opt == '1') session_js_set(p->s, true);
     else return "js option should be '0' or '1'";
@@ -118,7 +118,7 @@ Err cmd_set_session_js(CmdParams p[_1_]) {
 Err cmd_set_session_forms(CmdParams p[_1_]) {
     cmd_params_skip_space(p);
     char opt;
-    if (!cmd_params_pop_last_char(p, &opt)) return "expecting forms option (0 or 1)";
+    try (cmd_params_pop_last_char(p, &opt));
     if (opt != '0' && opt != '1') return "set forms option should be '0' or '1'";
     session_conf_show_forms_set(session_conf(p->s), opt == '1');
     return Ok;
@@ -129,7 +129,7 @@ Err cmd_set_session_bookmark(CmdParams p[_1_]) {
     cmd_params_skip_space(p);
     Str bookmark_fname = (Str){0};
     StrView path;
-    if(!cmd_params_pop_last_path(p, &path)) return "expecting path";
+    try (cmd_params_pop_last_path(p, &path));
     try(resolve_bookmarks_file(path.items, &bookmark_fname));
     str_clean(session_bookmarks_fname(p->s));
     *session_bookmarks_fname(p->s) = bookmark_fname;
@@ -140,7 +140,7 @@ Err cmd_set_session_input(CmdParams p[_1_]) {
     cmd_params_skip_space(p);
     UserInterface ui;
     StrView opt;
-    if (!cmd_params_pop_last_alpha(p, &opt)) return "expecting option";
+    try (cmd_params_pop_last_alpha(p, &opt));
 
     if (cmd_match_substring(opt, "fgets", 1, p))         ui = ui_fgets();
     else if (cmd_match_substring(opt, "isocline", 1, p)) ui = ui_isocline();
@@ -184,21 +184,26 @@ cmd_doc_console(CmdParams p[_1_]) {
 Err
 cmd_tabs_info(CmdParams p[_1_]) {
     TabList* f = session_tablist(p->s);
-    if (cmd_params_cut_cmd(p)) return tablist_info_titles(f, cmd_params_cmd_out(p));
     StrView node;
-    if (cmd_params_pop_last_alnum(p, &node))
+    if (cmd_params_pop_alnum(p, &node)) {
+        try(cmd_params_cut_cmd(p));
         return tablist_move_to_node(f, node.items);
-    if (cmd_params_pop_last_nonspace(p, &node) && node.items[0] == '.') {
-        if (node.len == 1) return tablist_info_tree(f, cmd_params_cmd_out(p));
-        return tablist_move_to_path(f, node.items + 1);
     }
-    return "expecting either a node index (base 36)  or path (.N.N...)";
+    if (cmd_params_match_char(p, '.')) {
+        if (cmd_params_pop_nonspace(p, &node)) {
+            try(cmd_params_cut_cmd(p));
+            return tablist_move_to_path(f, node.items);
+        }
+        return tablist_info_tree(f, cmd_params_cmd_out(p));
+    }
+    try(cmd_params_cut_cmd(p)); /* return "expecting either a node index (base 36)  or path (.N.N...)"; */
+    return tablist_info_titles(f, cmd_params_cmd_out(p));
 }
 
 
 Err
 cmd_tabs_back(CmdParams p[_1_]) {
-    cmd_assert_no_params(p);
+    try(cmd_params_cut_cmd(p));
     TabList* f = session_tablist(p->s);
     return tablist_back(f);
 }
@@ -210,7 +215,7 @@ cmd_tabs_back(CmdParams p[_1_]) {
  */
 
 Err cmd_doc_info(CmdParams p[_1_]) {
-    cmd_assert_no_params(p);
+    try(cmd_params_cut_cmd(p));
     HtmlDoc* d;
     try( session_current_doc(p->s, &d));
     return htmldoc_print_info(d, cmd_params_cmd_out(p));
@@ -310,7 +315,7 @@ Err cmd_textbuf_print(CmdParams p[_1_]) {
 Err cmd_textbuf_print_n(CmdParams p[_1_]) {
     Range rng;
     try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
-    if (!cmd_params_cut_cmd(p)) return "invalid command after print";
+    try (cmd_params_cut_cmd(p));
     return  _textbuf_print_n_(p->tb, &rng, cmd_params_cmd_out(p));
 }
 
@@ -319,7 +324,7 @@ Err cmd_textbuf_write(CmdParams p[_1_]) {
 //TODO: allow >/>> modes
     cmd_params_skip_space(p);
     StrView filename;
-    if (!cmd_params_pop_last_path(p, &filename)) return "expecting a filename";
+    try (cmd_params_pop_last_path(p, &filename));
     if (range_parse_is_none(&p->rp)) {
         try( textbuf_to_file(p->tb, filename.items, "w"));
         return msg__(cmd_params_cmd_out(p), svl("file written."));
@@ -427,7 +432,7 @@ Err cmd_select_elem_show_options(DomNode lbn[_1_], CmdOut out [_1_]) {
 static Err
 cmd_toggle_checkbox(Session session[_1_], DomNode n, UserLine line[_1_], CmdOut cout [_1_]) {
 
-    if (!user_line_cut_cmd(line, cout)) return "unexpected checkbox input. To toggle just type {N";
+    try (user_line_cut_cmd(line, cout));
 
     HtmlDoc* d;
     try( session_current_doc(session, &d));
@@ -442,7 +447,7 @@ cmd_toggle_checkbox(Session session[_1_], DomNode n, UserLine line[_1_], CmdOut 
 
 static Err
 cmd_change_radio(Session session[_1_], DomNode n, UserLine line[_1_], CmdOut cout [_1_]) {
-    if (!user_line_cut_cmd(line, cout)) return "unexpected radio button input. To select just type {N";
+    try (user_line_cut_cmd(line, cout));
     try( mark_radio_button(n));
     return session_doc_draw(session, cout);
 }

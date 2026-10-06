@@ -22,6 +22,7 @@ typedef struct {
     size_t      len;
 } UserLine ;
 
+Err fail_user_line_no_parse(void);
 static inline const char* user_line_full(UserLine ul[_1_]) { return ul->full; }
 static inline void user_line_exhaust(UserLine ul[_1_]) { ul->ix = ul->len; }
 static inline bool user_line_is_exhausted(UserLine ul[_1_]) { return ul->ix >= ul->len; }
@@ -29,17 +30,17 @@ void user_line_unskip(UserLine ul[_1_], size_t n);
 void user_line_skip(UserLine ul[_1_], size_t n);
 void user_line_skip_space(UserLine ul[_1_]);
 bool user_line_match_char(UserLine ul[_1_], char c);
-bool user_line_match_last_char(UserLine ul[_1_], char c, CmdOut cout[_1_]);
+Err user_line_match_last_char(UserLine ul[_1_], char c, CmdOut cout[_1_]);
 bool user_line_pop_char(UserLine ln[_1_], char out[_1_]);
 bool user_line_pop_nonspace(UserLine ln[_1_], StrView out[_1_]);
 bool user_line_pop_alpha(UserLine ln[_1_], StrView out[_1_]);
 bool user_line_pop_digits(UserLine ln[_1_], StrView out[_1_]);
 bool user_line_pop_alnum(UserLine ln[_1_], StrView out[_1_]);
-bool user_line_pop_last_char(UserLine ln[_1_], char out[_1_], CmdOut cout[_1_]);
-bool user_line_pop_last_nonspace(UserLine ln[_1_], StrView out[_1_], CmdOut cout[_1_]);
-bool user_line_pop_last_alpha(UserLine ln[_1_], StrView out[_1_], CmdOut cout[_1_]);
-bool user_line_pop_last_digits(UserLine ln[_1_], StrView out[_1_], CmdOut cout[_1_]);
-bool user_line_pop_last_alnum(UserLine ln[_1_], StrView out[_1_], CmdOut cout[_1_]);
+Err user_line_pop_last_char(UserLine ln[_1_], char out[_1_], CmdOut cout[_1_]);
+Err user_line_pop_last_nonspace(UserLine ln[_1_], StrView out[_1_], CmdOut cout[_1_]);
+Err user_line_pop_last_alpha(UserLine ln[_1_], StrView out[_1_], CmdOut cout[_1_]);
+Err user_line_pop_last_digits(UserLine ln[_1_], StrView out[_1_], CmdOut cout[_1_]);
+Err user_line_pop_last_alnum(UserLine ln[_1_], StrView out[_1_], CmdOut cout[_1_]);
 bool user_line_pop_pattern(UserLine ul[_1_], StrView pattern[_1_]);
 bool user_line_pop_rest(UserLine ul[_1_], StrView rest[_1_]);
 StrView user_line_word_view(UserLine ul[_1_]);
@@ -49,10 +50,13 @@ Err user_line_parse_range(UserLine ln[_1_], int base, RangeParse out[_1_]);
 static inline void user_line_skip_all(UserLine ul[_1_]) { ul->ix = ul->len; }
 Err user_line_parse_size_t_or_throw(UserLine ln[_1_], size_t* num, int base);
 static inline bool user_line_cmd_end(UserLine ul[_1_]) {
-    return ul->ix >= ul->len || ul->full[ul->ix] == ';' || ul->full[ul->ix] == '\0'; 
+    return ul->ix >= ul->len
+        || ul->full[ul->ix] == ';'
+        || ul->full[ul->ix] == '>'
+        || ul->full[ul->ix] == '\0'; 
 }
 bool user_line_cmd_end_skipping_space(UserLine ul[_1_]);
-bool user_line_cut_cmd(UserLine ul[_1_], CmdOut cout[_1_]);
+Err user_line_cut_cmd(UserLine ul[_1_], CmdOut cout[_1_]);
 
 static inline const char* user_line_remaining(UserLine ul[_1_]) { return &ul->full[ul->ix]; }
 static inline size_t user_line_remaining_len(UserLine ul[_1_]) {

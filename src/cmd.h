@@ -7,8 +7,6 @@
 #include "cmd-params.h"
 #include "bookmark.h"
 
-#define cmd_assert_no_params(CP) do{ if(!cmd_params_cut_cmd(CP)) return "expecting no params"; }while(0)
-
 
 typedef Err (*SessionCmdFn)(CmdParams p[_1_]);
 typedef struct SessionCmd SessionCmd;
