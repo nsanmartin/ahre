@@ -732,10 +732,8 @@ dom_get_title_node(Dom dom, DomNode title[_1_]) {
     }
 
     size_t title_count = lxb_dom_collection_length(collection);
-    if (title_count > 1) {
-        e = err_fmt("unexpected %d titles in head", title_count);
-        goto Clean;
-    } else if (title_count == 1) {
+    if (title_count) {
+        //TODO2: if more than 1 title we shuuld message that
         lxb_dom_element_t* element = lxb_dom_collection_element(collection, 0);
         if (!element) {
             e = err_internal("lexbor collection failed to retrieve element");
