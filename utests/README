@@ -1,0 +1,15 @@
+Create a unit tests
+===================
+
+1. create the file test_MODULE_NAME. It must have a main fn. Each testcase
+   should be an int function, 1 for error 0 if not. 
+
+2. create the make target. In the Makefile add test_MODULE_MANE: ...
+   To find which modules add to the target try building and then for each "undefined reference to"
+   grep:
+   grep -rn ^FN_NAME
+   If ^FN_NAME gives not results find the function and insert a newline so that the fn name is
+   at the begninnig of the line like:
+   Err
+   the_function(void) ...
+
