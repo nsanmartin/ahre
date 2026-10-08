@@ -2,7 +2,8 @@
 #include "fetch-history.h"
 #include "generic.h"
 
-Err fetch_history_entry_update_curl(
+Err
+fetch_history_entry_update_curl(
     FetchHistoryEntry e[_1_],
     CURL*             curl,
     CmdOut            cmd_out[_1_]

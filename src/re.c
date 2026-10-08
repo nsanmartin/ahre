@@ -25,7 +25,8 @@
 /*     return Ok; */
 /* } */
 
-Err regex_maybe_find_next(const char* pattern, const char* string, size_t* off[1]) {
+Err
+regex_maybe_find_next(const char* pattern, const char* string, size_t* off[1]) {
 
     regex_t regex;
     if (regcomp(&regex, pattern, REG_NEWLINE))

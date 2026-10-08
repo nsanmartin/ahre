@@ -142,9 +142,9 @@ Err cmd_set_session_input(CmdParams p[_1_]) {
     StrView opt;
     try (cmd_params_pop_last_alpha(p, &opt));
 
-    if (cmd_match_substring(opt, "fgets", 1, p))         ui = ui_fgets();
-    else if (cmd_match_substring(opt, "isocline", 1, p)) ui = ui_isocline();
-    else if (cmd_match_substring(opt, "visual", 1, p))   ui = ui_vi_mode();
+    if (cmd_match_prefix(opt, "fgets", 1, p))         ui = ui_fgets();
+    else if (cmd_match_prefix(opt, "isocline", 1, p)) ui = ui_isocline();
+    else if (cmd_match_prefix(opt, "visual", 1, p))   ui = ui_vi_mode();
     else return "input option should be 'getline', 'isocline' or 'visual'";
 
     ui_switch(session_ui(p->s), &ui);

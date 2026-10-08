@@ -9,7 +9,8 @@
 /* internal linkage */
 
 
-static Err _lexbor_parse_chunk_begin_(HtmlDoc htmldoc[_1_]) {
+static Err
+_lexbor_parse_chunk_begin_(HtmlDoc htmldoc[_1_]) {
     lxb_html_document_t* lxbdoc = htmldoc_dom(htmldoc).ptr;
     if (LXB_STATUS_OK != lxb_html_document_parse_chunk_begin(lxbdoc)) 
         return "error: lex failed to init html document";
@@ -18,7 +19,8 @@ static Err _lexbor_parse_chunk_begin_(HtmlDoc htmldoc[_1_]) {
 }
 
 
-static Err _lexbor_parse_chunk_end_(HtmlDoc htmldoc[_1_]) {
+static Err
+_lexbor_parse_chunk_end_(HtmlDoc htmldoc[_1_]) {
     lxb_html_document_t* lxbdoc = htmldoc_dom(htmldoc).ptr;
     lexbor_status_t lxb_status = lxb_html_document_parse_chunk_end(lxbdoc);
     if (LXB_STATUS_OK != lxb_status) 
@@ -29,7 +31,8 @@ static Err _lexbor_parse_chunk_end_(HtmlDoc htmldoc[_1_]) {
 }
 
 
-static Err url_client_set_write_fn_and_data_for_htmldoc(CurlPtr curl, HtmlDoc htmldoc[_1_]) {
+static Err
+url_client_set_write_fn_and_data_for_htmldoc(CurlPtr curl, HtmlDoc htmldoc[_1_]) {
     if (
        curl_easy_setopt(curl, CURLOPT_HEADERDATA, (HtmlDoc*)htmldoc)
     || curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, curl_header_callback)
@@ -41,7 +44,8 @@ static Err url_client_set_write_fn_and_data_for_htmldoc(CurlPtr curl, HtmlDoc ht
 }
 
 
-Err w_curl_set_url(CurlPtr curl, Url url[_1_]) {
+Err
+w_curl_set_url(CurlPtr curl, Url url[_1_]) {
     char* url_str = NULL;
     try( url_cstr_malloc(*url, &url_str));
     CURLcode code = curl_easy_setopt(curl, CURLOPT_URL, url_str);

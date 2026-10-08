@@ -5,7 +5,8 @@
 #include "sys.h"
 
 
-Err msg_fmt(CmdOut cout[_1_], const char* fmt, ...) {
+Err
+msg_fmt(CmdOut cout[_1_], const char* fmt, ...) {
 #define TRUNC_MSG "TRMsg:"
 
     char msg_buf[MAX_MSG_LEN+1] = {0};

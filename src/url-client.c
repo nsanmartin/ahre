@@ -43,9 +43,9 @@ Err url_client_init(
 static bool _parse_opt(CmdParams p[_1_], CURLoption opt[_1_]) {
     StrView word;
     if (!cmd_params_pop_alpha(p, &word)) return false;
-    if (cmd_match_substring(word, "noprogress", 1, p)) { *opt=CURLOPT_NOPROGRESS; return true; }
-    if (cmd_match_substring(word, "useragent", 1, p)) { *opt=CURLOPT_USERAGENT; return true; }
-    if (cmd_match_substring(word, "verbose", 1, p)) { *opt=CURLOPT_VERBOSE; return true; }
+    if (cmd_match_prefix(word, "noprogress", 1, p)) { *opt=CURLOPT_NOPROGRESS; return true; }
+    if (cmd_match_prefix(word, "useragent", 1, p)) { *opt=CURLOPT_USERAGENT; return true; }
+    if (cmd_match_prefix(word, "verbose", 1, p)) { *opt=CURLOPT_VERBOSE; return true; }
     return false;
 }
 
@@ -110,7 +110,8 @@ void url_client_set_verbose(UrlClient uc[_1_], bool value) {
 }
 
 
-Err url_client_perform_with_cancel(UrlClient uc[_1_], CurlPtr easy, Request req[_1_]) {
+Err
+url_client_perform_with_cancel(UrlClient uc[_1_], CurlPtr easy, Request req[_1_]) {
     Err e = Ok;
     Str url = (Str){0};
     tryjmp(e,Clean, curl_url_to_filename_append(*request_url(req), &url));

@@ -18,7 +18,7 @@ typedef struct {
 
 static inline UserLine* cmd_params_user_line(CmdParams p[_1_]) { return &p->ln; }
 static inline CmdOut* cmd_params_cmd_out(CmdParams p[_1_]) { return p->out; }
-bool cmd_match_substring(StrView input, const char* cmd_name, size_t unmatch, CmdParams p[_1_]);
+bool cmd_match_prefix(StrView input, const char* cmd_name, size_t unmatch, CmdParams p[_1_]);
 
 static inline bool cmd_params_match_char(CmdParams p[_1_], char c) {
     return user_line_match_char(cmd_params_user_line(p), c);

@@ -79,7 +79,8 @@ Clean:
 }
 
 
-void tab_node_cleanup(TabNode n[_1_]) {
+void
+tab_node_cleanup(TabNode n[_1_]) {
     htmldoc_cleanup(&n->doc);
     if (n->childs) arlfn(TabNode, clean)(n->childs);
     std_free(n->childs);

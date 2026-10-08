@@ -67,7 +67,7 @@ static inline bool _any_match_(SessionCmd* cmd) { return cmd->flags & CMD_ANY; }
 
 static inline bool _name_match_(SessionCmd* cmd, CmdParams p[_1_]) {
     StrView word = cmd_params_word_view(p);
-    if (word.len && cmd_match_substring(word, cmd->name, cmd->match, p))  {
+    if (word.len && cmd_match_prefix(word, cmd->name, cmd->match, p))  {
         cmd_params_skip(p, word.len);
         return true;
     }

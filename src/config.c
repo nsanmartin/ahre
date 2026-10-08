@@ -4,14 +4,16 @@
 #include "sys.h"
 
 
-static bool _create_dir_(Str dirname[_1_]) {
+static bool
+_create_dir_(Str dirname[_1_]) {
     if (!len__(dirname)) return false;
     int rv = mkdir(items__(dirname), 0700);
     if (rv == 0) return true;
     return errno == EEXIST;
 }
 
-Err create_or_get_confdir(Str confdir[_1_]) {
+Err
+create_or_get_confdir(Str confdir[_1_]) {
     str_reset(confdir);
     char buf[PATH_MAX];
     char* xdg_config = NULL;
@@ -45,7 +47,8 @@ Err create_or_get_confdir(Str confdir[_1_]) {
     return "could not create confdir, neither XDG_CONFIG_HOME not HOME env vars found";
 }
 
-Err resolve_bookmarks_file(const char* path, Str out[_1_]) {
+Err
+resolve_bookmarks_file(const char* path, Str out[_1_]) {
     size_t prefix = len__(out);
     bool   file_exists;
     try(resolve_path(path, &file_exists, out));

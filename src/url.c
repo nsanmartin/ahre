@@ -10,7 +10,8 @@
 #include "session.h"
 
 
-Err curl_url_to_filename_append(Url u, Str out[_1_]) {
+Err
+curl_url_to_filename_append(Url u, Str out[_1_]) {
     char* url = NULL;
     char* schema = NULL;
     try( w_curl_url_get_malloc(u.ptr, CURLUPART_URL, &url));

@@ -262,7 +262,7 @@ void user_line_skip(UserLine ul[_1_], size_t n) {
 
 void user_line_unskip(UserLine ul[_1_], size_t n) {
     if (n > ul->ix) ul->ix = 0;
-    ul->ix -= n;
+    else ul->ix -= n;
 }
 
 Err
