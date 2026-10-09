@@ -243,7 +243,7 @@ user_line_skip_space(UserLine ul[_1_]) {
 bool
 user_line_match_char(UserLine ul[_1_], char c) {
     if (user_line_char(ul) != c) return false;
-    if (ul->ix < ul->len) ++ul->ix;
+    if (!user_line_is_exhausted(ul)) ++ul->ix;
     return true;
 }
 
@@ -256,7 +256,7 @@ user_line_match_last_char(UserLine ul[_1_], char c, CmdOut cout[_1_]) {
 }
 
 void user_line_skip(UserLine ul[_1_], size_t n) {
-    size_t movement = min_size_t(n, ul->len - ul->ix);
+    size_t movement = min_size_t(n, len__(user_line_line(ul)) - ul->ix);
     ul->ix += movement;
 }
 
@@ -285,7 +285,7 @@ typedef StrView (*StrViewSplitter)(StrView s[_1_]);
 static bool
 user_line_pop_strview(UserLine ln[_1_], StrViewSplitter split, StrView out[_1_]) {
    if (user_line_cmd_end(ln)) return false; 
-   StrView remview = user_line_remainig_view(ln);
+   StrView remview = user_line_remaining_view(ln);
    *out = split(&remview);
    user_line_skip(ln, out->len);
    return out->len;
@@ -311,7 +311,7 @@ bool user_line_pop_alnum(UserLine ln[_1_], StrView out[_1_]) {
 
 StrView user_line_word_view(UserLine ul[_1_]) {
    if (user_line_cmd_end(ul)) return (StrView){0}; 
-   StrView remview = user_line_remainig_view(ul);
+   StrView remview = user_line_remaining_view(ul);
    return strview_split_alpha(&remview);
 }
 
@@ -375,7 +375,7 @@ bool user_line_pop_pattern(UserLine ul[_1_], StrView pattern[_1_]) {
 
 bool user_line_pop_rest(UserLine ul[_1_], StrView rest[_1_]) {
     if (user_line_cmd_end(ul)) return false;
-    * rest = user_line_remainig_view(ul); 
+    * rest = user_line_remaining_view(ul); 
 
     /* const char* remaining = user_line_remaining(userln); */
     char* othercmds            = (char*)strchr(rest->items, ';');
@@ -393,7 +393,7 @@ static bool user_line_cut_cmd_no_redirect(UserLine ul[_1_]) {
     user_line_skip_space(ul);
     if (user_line_match_char(ul, '\0')) return true;
     else if (user_line_match_char(ul, ';')) {
-        char* p = (char*) ul->full + ul->ix;
+        char* p = (char*) user_line_remaining(ul);
         *p = '\0';
         ++ul->ix;
         return true;
@@ -461,7 +461,7 @@ Err user_line_cut_cmd(UserLine ul[_1_], CmdOut cout[_1_]) {
     user_line_skip_space(ul);
     if (user_line_cut_cmd_no_redirect(ul)) return Ok;
     else if (user_line_match_char(ul, '>')) {
-        char* p = (char*) ul->full + ul->ix;
+        char* p = (char*) user_line_remaining(ul);
         *p = '\0';
         ++ul->ix;
         user_line_skip_space(ul);
@@ -478,7 +478,7 @@ bool user_line_cmd_end_skipping_space(UserLine ul[_1_]) {
 
 Err
 user_line_parse_range(UserLine ln[_1_], int base, RangeParse out[_1_]) {
-    StrView remaining = user_line_remainig_view(ln);
+    StrView remaining = user_line_remaining_view(ln);
     const char* endptr = NULL;
     try( parse_range(remaining.items, out, &endptr,  base));
     user_line_skip(ln, endptr - remaining.items);
@@ -489,8 +489,8 @@ user_line_parse_range(UserLine ln[_1_], int base, RangeParse out[_1_]) {
 Err
 user_line_chop_and_skip_space(UserLine ln[_1_]) {
     if (user_line_is_exhausted(ln)) return Ok;
-    if (!isspace(ln->full[ln->ix])) fail_e("expecting space to chop user line");
-    char* chop = (char*)ln->full + ln->ix;
+    if (!isspace(user_line_char(ln))) fail_e("expecting space to chop user line");
+    char* chop = (char*)user_line_remaining(ln);
     *chop = '\0';
     ++ln->ix;
     user_line_skip_space(ln);

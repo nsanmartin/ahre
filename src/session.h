@@ -152,7 +152,7 @@ int edcmd_print(Session session[_1_]);
 
 
 static inline Err session_read_user_input(Session s[_1_], UserLine ul[_1_]) {
-    if (!user_line_empty(ul)) return Ok;
+    if (!user_line_is_exhausted(ul)) return Ok;
     char* line = NULL;
     try(session_uinput(s)->read(s, NULL, &line));
     return user_line_init_take_ownership(ul, line);

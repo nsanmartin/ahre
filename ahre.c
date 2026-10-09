@@ -56,7 +56,7 @@ static Err _loop_(Session s[_1_], UserLine userln[_1_], CmdOut cout[_1_]) {
     while (!session_quit(s)) {
         tryjmp(err, Show_Error, session_show_output(s, cout));
         tryjmp(err, Error, session_read_user_input(s, userln));
-        if (!user_line_empty(userln))
+        if (!user_line_is_empty(userln))
             tryjmp(err, Error, session_consume_line(s, userln, cout));
 Error:
         if (err) {
@@ -75,8 +75,8 @@ static Err run_cmds(Session s[_1_], UserLine userln[_1_]) {
     Err err      = Ok;
     Str errors   = (Str){0};
     CmdOut* cout = &cmd_out_default();
-    while (!user_line_empty(userln) && !session_quit(s)) {
-        if (!user_line_empty(userln)) err = session_consume_line(s, userln, cout);
+    while (!user_line_is_empty(userln) && !session_quit(s)) {
+        if (!user_line_is_empty(userln)) err = session_consume_line(s, userln, cout);
         if (err) tryjmp(err, Clean_Errors, str_append_ln(&errors, err));
     }
     if (errors.len) cmd_out_msg_append(cout, errors);
