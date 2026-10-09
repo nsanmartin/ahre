@@ -308,6 +308,7 @@ Err shortcut_z(CmdParams p[_1_]) { //, Session session[_1_], const char* rest, C
 Err cmd_textbuf_print(CmdParams p[_1_]) {
     Range rng;
     try (textbuf_range_from_parsed_range(p->tb, &p->rp, &rng));
+    try (cmd_params_cut_cmd(p));
     return session_write_screen_range_mod(p->s, p->tb, &rng, cmd_params_cmd_out(p));
 }
 
