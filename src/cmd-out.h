@@ -84,6 +84,8 @@ static inline CmdOutSinkTag cmd_out_msg_sing_get_reset(CmdOut co[_1_]) {
 static inline CmdOut* cmd_out_id(CmdOut o[_1_]) { return o; }
 static inline Str* cmd_out_std(CmdOut o[_1_]) { return &o->std; }
 static inline Msg* cmd_out_msg(CmdOut o[_1_]) { return &o->msg; }
+static inline bool cmd_out_has_std(CmdOut o[_1_]) { return o->std.len != 0; }
+static inline bool cmd_out_has_msg(CmdOut o[_1_]) { return o->msg.s.len != 0; }
 static inline bool cmd_out_is_empty(CmdOut o[_1_]) {
     return !len__(cmd_out_std(o)) && !len__(msg_str(cmd_out_msg(o)));
 }
@@ -93,6 +95,7 @@ static inline void cmd_out_clean(CmdOut o[_1_]) {
     str_clean(msg_str(cmd_out_msg(o)));
 }
 
+bool cmd_out_will_touch_screen(CmdOut o[_1_]);
 /* Msg fns */
 #define cmd_out_msg_append(M, S)             msg_append(cmd_out_msg(M), S)
 #define cmd_out_msg_append_ln(M, S)          msg_append_ln (cmd_out_msg(M), S)

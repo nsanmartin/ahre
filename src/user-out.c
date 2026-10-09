@@ -193,16 +193,27 @@ Err ui_vi_show_session(Session* s, CmdOut cout[_1_]) {
     if (nrows <= 3) return "too few rows in window to show session";
 
     try( lit_write__(EscCodeClsScr, stdout));
-    try( ui_vi_flush_msg(s, cout));
+    bool screen_touched = cmd_out_will_touch_screen(cout);
 
-    if (len__(cmd_out_std(cout))) return ui_vi_flush_std(s, cout);
-    else return ui_vi_show_session_default(s, cout);
+    if (cmd_out_has_msg(cout))
+        try( ui_vi_flush_msg(s, cout));
+
+    if (cmd_out_has_std(cout))
+        try( ui_vi_flush_std(s, cout));
+
+    if (!screen_touched)
+        try( ui_vi_show_session_default(s, cout));
+
+    return Ok;
 }
 
 
 static Err
-ui_vi_flush_std_to_msg(CmdOut cout[_1_]) {
-    return flush_to_file(cmd_out_std(cout), (FilePtr){.ptr=stdout});
+ui_vi_flush_std_to_msg(Session s[_1_], CmdOut cout[_1_]) {
+    Str* std = cmd_out_std(cout);
+    try( ui_vi_flush_msg_read_input(s, sv(std)));
+    str_reset(std);
+    return lit_write__(EscCodeClsScr, stdout);
 }
 
 static Err
@@ -222,7 +233,7 @@ Err ui_vi_flush_std(Session* s, CmdOut cout[_1_]) {
 
     switch (cmd_out_std_sing_get_reset(cout)) {
         case CMD_OUT_SCREEN:  return flush_to_file(cmd_out_std(cout), (FilePtr){.ptr=stdout});
-        case CMD_OUT_WARN:  return ui_vi_flush_std_to_msg(cout);
+        case CMD_OUT_WARN:  return ui_vi_flush_std_to_msg(s, cout);
         case CMD_OUT_FILE: return ui_vi_flush_std_to_file(cout);
         case CMD_OUT_PROC: return ui_vi_flush_std_to_proc(cout);
         default: fail_e("invalid output redirection");

@@ -75,18 +75,11 @@ cmd_out_sink_close_file(CmdOutSink sink[_1_], FilePtr fp[_1_]) {
     return err;
 }
 
-/* Err */
-/* cmd_out_std_flush(CmdOut co[_1_]) { */
-/*     Str* screen = cmd_out_std(co); */
-/*     if (!len__(screen)) return Ok; */
 
-/*     FilePtr fp; */
-/*     try(cmd_out_sink_to_file(&co->std_sink, &fp)); */
-/*     try( mem_fwrite(items__(screen), len__(screen), fp.ptr)); */
-/*     if (fflush(fp.ptr)) return err_fmt("error: fflush failure: %s", strerror(errno)); */
-/*     str_reset(screen); */
-/*     cmd_out_sink_close_file(&co->std_sink, &fp); */
-/*     return Ok; */
-/* } */
-
-
+bool
+cmd_out_will_touch_screen(CmdOut o[_1_]) {
+    return
+       (o->std_sink.tag == CMD_OUT_SCREEN && cmd_out_has_std(o))
+    || (o->msg_sink.tag == CMD_OUT_SCREEN && cmd_out_has_msg(o))
+        ;
+}
