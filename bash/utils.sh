@@ -6,5 +6,5 @@ _vahre_() {
 }
 vahre() { _vahre_ "$@"; }
 vddg0()   { local IFS="+"; _vahre_ 0  -d q="$*" lite.duckduckgo.com/lite; }
-gahre()    { gdb -ex 'run' --args ./build/ahre "$@"; }
+gahre()    { gdb -ex 'run' -ex 'set print pretty on' --args ./build/ahre "$@"; }
 gahrebug() { gdb -ex 'run' --args ./build/debug/ahre "$@"; }

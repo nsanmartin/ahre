@@ -27,8 +27,8 @@ Err
 cmd_out_sink_set(CmdOutSink sink[_1_], CmdOutSinkTag tag, StrView* s) {
     *sink = (CmdOutSink){.tag=tag};
     switch (tag) {
-        case CMD_OUT_STD:
-        case CMD_OUT_MSG:
+        case CMD_OUT_SCREEN:
+        case CMD_OUT_WARN:
             return Ok;
         case CMD_OUT_FILE:
             if (!s) fail_e("null ptr failure");
@@ -47,8 +47,8 @@ cmd_out_sink_set(CmdOutSink sink[_1_], CmdOutSinkTag tag, StrView* s) {
 Err
 cmd_out_sink_to_file(CmdOutSink sink[_1_], FilePtr fp[_1_]) {
     switch (sink->tag) {
-        case CMD_OUT_STD:
-        case CMD_OUT_MSG:
+        case CMD_OUT_SCREEN:
+        case CMD_OUT_WARN:
             fp->ptr = stdout;
             return Ok;
         case CMD_OUT_FILE:
@@ -62,8 +62,8 @@ Err
 cmd_out_sink_close_file(CmdOutSink sink[_1_], FilePtr fp[_1_]) {
     Err err = Ok;
     switch (sink->tag) {
-        case CMD_OUT_STD:
-        case CMD_OUT_MSG:
+        case CMD_OUT_SCREEN:
+        case CMD_OUT_WARN:
             break;
         case CMD_OUT_FILE:
             try(file_close(fp->ptr));
@@ -71,13 +71,13 @@ cmd_out_sink_close_file(CmdOutSink sink[_1_], FilePtr fp[_1_]) {
         default:
             err = "error: invalid CmdOutSinkTag";
     }
-    *sink = (CmdOutSink){.tag=CMD_OUT_STD};
+    *sink = (CmdOutSink){.tag=CMD_OUT_SCREEN};
     return err;
 }
 
 /* Err */
 /* cmd_out_std_flush(CmdOut co[_1_]) { */
-/*     Str* screen = cmd_out_screen(co); */
+/*     Str* screen = cmd_out_std(co); */
 /*     if (!len__(screen)) return Ok; */
 
 /*     FilePtr fp; */

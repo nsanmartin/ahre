@@ -793,11 +793,11 @@ Err process_line_line_mode(Session* s, UserLine line[_1_], CmdOut cout[_1_]) {
     FetchHistoryEntry* last_entry = NULL;
     while ((last_entry = arlfn(FetchHistoryEntry,at)(session_fetch_history(s), logged_fetch_history))) {
         ++logged_fetch_history;
-        try(cmd_out_screen_append_ui_as_base10(cout, last_entry->size_download_t));
+        try(cmd_out_std_append_ui_as_base10(cout, last_entry->size_download_t));
         if (last_entry->effective_url.len) {
-            try(cmd_out_screen_append(cout, sv("\t")));
-            try(cmd_out_screen_append_ln(cout, sv(last_entry->effective_url)));
-        } else try(cmd_out_screen_append(cout, sv("\n")));
+            try(cmd_out_std_append(cout, sv("\t")));
+            try(cmd_out_std_append_ln(cout, sv(last_entry->effective_url)));
+        } else try(cmd_out_std_append(cout, sv("\n")));
 
     }
     return Ok;

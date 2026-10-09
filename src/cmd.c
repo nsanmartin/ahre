@@ -342,7 +342,7 @@ Err _textbuf_print_n_(TextBuf textbuf[_1_], Range range[_1_], CmdOut* out) {
     StrView line;
     for (size_t linum = range->beg; linum <= range->end; ++linum) {
         if (!textbuf_get_line(textbuf, linum, &line)) return "error: invalid linum";
-        try( cmd_out_screen_append_ui_as_base10(out, linum));
+        try( cmd_out_std_append_ui_as_base10(out, linum));
         try( screen__(out, svl("\t")));
         if (line.len) try( screen__(out, line));
         else try( screen__(out, svl("\n")));
@@ -533,8 +533,8 @@ static Err
 _cmd_input_text_set_(Session session[_1_], DomNode n[_1_], const char* line, CmdOut cout[_1_]) {
     Err err = Ok;
     if (!*line) {
-        try( screen__(cout, svl("> ")));
-        try( session_flush_cmd_out(session, cout));
+        /* try( screen__(cout, svl("> "))); */
+        /* try( session_flush_cmd_out(session, cout)); */
         ArlOf(char) masked = (ArlOf(char)){0};
         err = readpass_term(&masked, true);
         ok_then(err, dom_node_set_attr(*n, svl("value"), sv(&masked)));

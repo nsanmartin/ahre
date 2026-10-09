@@ -417,9 +417,9 @@ parse_output_redirect(UserLine ul[_1_], CmdOut cout[_1_]) {
     user_line_skip_space(ul);
 
     if (str_startswith(svl("std"), sink)) {
-        sink_tag = CMD_OUT_STD;
+        sink_tag = CMD_OUT_SCREEN;
     } else if (str_startswith(svl("msg"), sink)) {
-        sink_tag = CMD_OUT_MSG;
+        sink_tag = CMD_OUT_WARN;
     } else if (str_startswith(svl("file"), sink)) {
         if(!user_line_pop_nonspace(ul, &src_param)) return "expecting file name";
         if (!user_line_cut_cmd_no_redirect(ul)) return "expecting end of redirect cmd";

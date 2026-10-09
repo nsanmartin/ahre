@@ -28,13 +28,20 @@ static inline Str* msg_str(Msg m[_1_]) { return &m->s; }
 
 /* The CmdOut together with the user interface determing the output flow.
  * vi and line mode manage differently std and msg so if a user redirects
- * the msg to std will mean different things
+ * the msg to std will mean different things.
+ *
+ * If no redirection is requested we will send:
+ *
+ * STD -> SCREEN
+ * MSG -> WARN
+ *
+ * and each mode will determing what the SCEEN and WARN mean
  * */
 typedef enum {
-    CMD_OUT_STD  = 1,
-    CMD_OUT_MSG  = 2,
-    CMD_OUT_FILE = 3,
-    CMD_OUT_PROC = 4
+    CMD_OUT_SCREEN = 1,
+    CMD_OUT_WARN   = 2,
+    CMD_OUT_FILE   = 3,
+    CMD_OUT_PROC   = 4
 } CmdOutSinkTag;
 
 
@@ -59,30 +66,30 @@ typedef struct CmdOut {
 
 
 #define cmd_out_default() \
-    (CmdOut){.std_sink=(CmdOutSink){.tag=CMD_OUT_STD}, .msg_sink=(CmdOutSink){.tag=CMD_OUT_MSG}}
+    (CmdOut){.std_sink=(CmdOutSink){.tag=CMD_OUT_SCREEN}, .msg_sink=(CmdOutSink){.tag=CMD_OUT_WARN}}
 static inline CmdOutSinkTag cmd_out_std_sink_tag(CmdOut co[_1_]) { return co->std_sink.tag; }
 static inline CmdOutSinkTag cmd_out_msg_sink_tag(CmdOut co[_1_]) { return co->msg_sink.tag; }
 static inline CmdOutSinkTag cmd_out_std_sing_get_reset(CmdOut co[_1_]) {
     CmdOutSinkTag res = co->std_sink.tag; 
-    co->std_sink.tag  = CMD_OUT_STD;
+    co->std_sink.tag  = CMD_OUT_SCREEN;
     return res;
 }
 static inline CmdOutSinkTag cmd_out_msg_sing_get_reset(CmdOut co[_1_]) {
     CmdOutSinkTag res = co->msg_sink.tag; 
-    co->msg_sink.tag  = CMD_OUT_MSG;
+    co->msg_sink.tag  = CMD_OUT_WARN;
     return res;
 }
 
 
 static inline CmdOut* cmd_out_id(CmdOut o[_1_]) { return o; }
-static inline Str* cmd_out_screen(CmdOut o[_1_]) { return &o->std; }
+static inline Str* cmd_out_std(CmdOut o[_1_]) { return &o->std; }
 static inline Msg* cmd_out_msg(CmdOut o[_1_]) { return &o->msg; }
 static inline bool cmd_out_is_empty(CmdOut o[_1_]) {
-    return !len__(cmd_out_screen(o)) && !len__(msg_str(cmd_out_msg(o)));
+    return !len__(cmd_out_std(o)) && !len__(msg_str(cmd_out_msg(o)));
 }
 
 static inline void cmd_out_clean(CmdOut o[_1_]) {
-    str_clean(cmd_out_screen(o));
+    str_clean(cmd_out_std(o));
     str_clean(msg_str(cmd_out_msg(o)));
 }
 
@@ -94,10 +101,10 @@ static inline void cmd_out_clean(CmdOut o[_1_]) {
 
 
 /* std fns */
-#define cmd_out_screen_append(M, S)             str_append(cmd_out_screen(M), S)
-#define cmd_out_screen_append_ln(M, S)          str_append_ln(cmd_out_screen(M), S)
-#define cmd_out_screen_append_ui_as_base10(M,U) str_append_ui_as_base10(cmd_out_screen(M), U)
-#define cmd_out_screen_append_ui_as_base36(M,U) str_append_ui_as_base36(cmd_out_screen(M), U)
+#define cmd_out_std_append(M, S)             str_append(cmd_out_std(M), S)
+#define cmd_out_std_append_ln(M, S)          str_append_ln(cmd_out_std(M), S)
+#define cmd_out_std_append_ui_as_base10(M,U) str_append_ui_as_base10(cmd_out_std(M), U)
+#define cmd_out_std_append_ui_as_base36(M,U) str_append_ui_as_base36(cmd_out_std(M), U)
 
 Err msg_fmt(CmdOut cout[_1_], const char* fmt, ...);
 Err cmd_out_std_flush(CmdOut co[_1_]);

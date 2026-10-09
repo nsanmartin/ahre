@@ -2,6 +2,9 @@
 #include "reditline.h"
 
 Err readpass_term(ArlOf(char) passw[_1_], bool write) {
+    try( mem_fwrite(" >", 2, stdout));
+    if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
+
     Err err = Ok;
     struct termios prev_termios;
     try( switch_tty_to_raw_mode(&prev_termios));
