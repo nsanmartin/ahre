@@ -17,31 +17,32 @@
 #include "cmd-out.h"
 
 typedef struct {
-    Str    line;
+    char*  line;
+    size_t len;
     size_t ix;
 } UserLine ;
 
 Err fail_user_line_no_parse(void);
-static inline const char* user_line_full(UserLine ul[_1_]) { return ul->line.items; }
-static inline void user_line_exhaust(UserLine ul[_1_]) { ul->ix = ul->line.len; }
-static inline bool user_line_is_exhausted(UserLine ul[_1_]) { return ul->ix >= ul->line.len; }
-static inline bool user_line_is_empty(UserLine ul[_1_]) { return ul->line.len == 0; }
-static inline char user_line_current(UserLine ul[_1_]) { return ul->line.items[ul->ix]; }
-static inline const char* user_line_remaining(UserLine ul[_1_]) {  return ul->line.items + ul->ix; }
-static inline size_t user_line_remaining_len(UserLine ul[_1_]) { return ul->line.len - ul->ix; }
-static inline Str* user_line_line(UserLine ul[_1_]) { return &ul->line; }
+static inline const char* user_line_full(UserLine ul[_1_]) { return ul->line; }
+static inline size_t user_line_len(UserLine ul[_1_]) { return ul->len; }
+static inline void user_line_exhaust(UserLine ul[_1_]) { ul->ix = ul->len; }
+static inline bool user_line_is_exhausted(UserLine ul[_1_]) { return ul->ix >= ul->len; }
+static inline bool user_line_is_empty(UserLine ul[_1_]) { return ul->len == 0; }
+static inline char user_line_current(UserLine ul[_1_]) { return ul->line[ul->ix]; }//TODO Err
+static inline const char* user_line_remaining(UserLine ul[_1_]) {  return ul->line + ul->ix; }
+static inline size_t user_line_remaining_len(UserLine ul[_1_]) { return ul->len - ul->ix; }
+static inline char* user_line_line(UserLine ul[_1_]) { return ul->line; }
 static inline StrView user_line_remaining_view(UserLine ul[_1_]) {
     return (StrView){.items=user_line_remaining(ul),.len=user_line_remaining_len(ul)};
 }
 
-static inline char user_line_char(UserLine ul[_1_]) { return ul->line.items[ul->ix]; }
 static inline Err user_line_init_take_ownership(UserLine ul[_1_], const char* line) {
-    *ul = (UserLine){.line=(Str){.items=(char*)line,.len=line?strlen(line):0}, .ix=0, };
+    *ul = (UserLine){.line=(char*)line,.len=line?strlen(line):0, .ix=0 };
     return Ok;
 }
 
 static inline void user_line_cleanup(UserLine ul[_1_]) {
-    str_clean(user_line_line(ul));
+    std_free(user_line_line(ul));
     *ul = (UserLine){0};
 }
 
@@ -64,15 +65,16 @@ bool user_line_pop_pattern(UserLine ul[_1_], StrView pattern[_1_]);
 bool user_line_pop_rest(UserLine ul[_1_], StrView rest[_1_]);
 StrView user_line_word_view(UserLine ul[_1_]);
 Err user_line_chop_and_skip_space(UserLine ln[_1_]);
+bool user_line_check_char(UserLine ul[_1_], char c);
 
 Err user_line_parse_range(UserLine ln[_1_], int base, RangeParse out[_1_]);
-static inline void user_line_skip_all(UserLine ul[_1_]) { ul->ix = ul->line.len; }
+static inline void user_line_skip_all(UserLine ul[_1_]) { ul->ix = ul->len; }
 Err user_line_parse_size_t_or_throw(UserLine ln[_1_], size_t* num, int base);
 static inline bool user_line_cmd_end(UserLine ul[_1_]) {
-    return ul->ix >= ul->line.len
-        || user_line_char(ul) == ';'
-        || user_line_char(ul) == '>'
-        || user_line_char(ul) == '\0'; 
+    return user_line_is_exhausted(ul)
+        || user_line_check_char(ul, ';')
+        || user_line_check_char(ul, '>')
+        || user_line_check_char(ul, '\0'); 
 }
 bool user_line_cmd_end_skipping_space(UserLine ul[_1_]);
 Err user_line_cut_cmd(UserLine ul[_1_], CmdOut cout[_1_]);

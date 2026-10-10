@@ -44,6 +44,14 @@ static bool _is_cmd_char_(char c) {
 }
 
 
+static Err
+user_line_char(UserLine ul[_1_], char out[_1_]) {
+    if (user_line_is_exhausted(ul)) return "user_line is exhausted, cannot get char";
+    *out = ul->line[ul->ix];
+    return Ok;
+}
+
+
 static Err _ui_keystroke_ctrl_f_(Session s[_1_]) {
     TextBuf* tb;
     try( session_current_buf(s, &tb));
@@ -235,28 +243,38 @@ Err wait_for_char(char c) {
 
 void
 user_line_skip_space(UserLine ul[_1_]) {
+    if (user_line_is_exhausted(ul)) return;
     const char* beg = user_line_remaining(ul);
     const char* end = cstr_skip_space(beg);
     user_line_skip(ul, end-beg);
 }
 
 bool
+user_line_check_char(UserLine ul[_1_], char c) {
+    return !user_line_is_exhausted(ul) && ul->line[ul->ix] == c;
+}
+
+bool
 user_line_match_char(UserLine ul[_1_], char c) {
-    if (user_line_char(ul) != c) return false;
-    if (!user_line_is_exhausted(ul)) ++ul->ix;
+    if (user_line_is_exhausted(ul) || ul->line[ul->ix] != c) return false;
+    ++ul->ix;
     return true;
 }
 
 
 Err
 user_line_match_last_char(UserLine ul[_1_], char c, CmdOut cout[_1_]) {
-    if (user_line_match_char(ul, c))
-        return user_line_cut_cmd(ul, cout);
+    const size_t ix = ul->ix;
+    if (user_line_match_char(ul, c)) {
+        Err err = user_line_cut_cmd(ul, cout);
+        if (!err) return Ok;
+        ul->ix = ix;
+    }
     return fail_user_line_no_parse();
 }
 
 void user_line_skip(UserLine ul[_1_], size_t n) {
-    size_t movement = min_size_t(n, len__(user_line_line(ul)) - ul->ix);
+    size_t movement = min_size_t(n, user_line_len(ul) - ul->ix);
     ul->ix += movement;
 }
 
@@ -275,7 +293,8 @@ user_line_parse_size_t_or_throw(UserLine ln[_1_], size_t* num, int base) {
 
 bool user_line_pop_char(UserLine ln[_1_], char out[_1_]) {
    if (user_line_cmd_end(ln)) return false; 
-   *out = user_line_char(ln);
+   Err err = user_line_char(ln, out);
+   if (err) return false; /* only error here would be line exhausted */
    user_line_skip(ln, 1);
    return true;
 }
@@ -391,7 +410,7 @@ bool user_line_pop_rest(UserLine ul[_1_], StrView rest[_1_]) {
 
 static bool user_line_cut_cmd_no_redirect(UserLine ul[_1_]) {
     user_line_skip_space(ul);
-    if (user_line_match_char(ul, '\0')) return true;
+    if (user_line_is_exhausted(ul)) return true;
     else if (user_line_match_char(ul, ';')) {
         char* p = (char*) user_line_remaining(ul);
         *p = '\0';
@@ -489,7 +508,9 @@ user_line_parse_range(UserLine ln[_1_], int base, RangeParse out[_1_]) {
 Err
 user_line_chop_and_skip_space(UserLine ln[_1_]) {
     if (user_line_is_exhausted(ln)) return Ok;
-    if (!isspace(user_line_char(ln))) fail_e("expecting space to chop user line");
+    char ch;
+    try( user_line_char(ln, &ch));
+    if (!isspace(ch)) fail_e("expecting space to chop user line");
     char* chop = (char*)user_line_remaining(ln);
     *chop = '\0';
     ++ln->ix;

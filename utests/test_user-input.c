@@ -1,16 +1,18 @@
 #include <utests.h>
 
+#include "../src/utils.h"
 #include "../src/user-input.h"
 
-
+#define mk_ul_from_lit(Lit) (UserLine){.line=Lit,.len=lit_len__(Lit),.ix=0}
+#define mk_ul_from_buf(Buf, Len) (UserLine){.line=Buf,.len=Len,.ix=0}
 
 static int
 test_user_line_unskip() {
-    UserLine ul = (UserLine){.full="",.len=0,.ix=0};
+    UserLine ul = mk_ul_from_lit("");
     user_line_unskip(&ul, 0);
     utest_assert(ul.ix == 0, fail);
 
-    ul = (UserLine){.full="01234",.len=5,.ix=0};
+    ul = mk_ul_from_lit("01234");
     user_line_unskip(&ul, 0);
     utest_assert(ul.ix == 0, fail);
 
@@ -32,13 +34,13 @@ fail:
 
 static int
 test_user_line_skip() {
-    UserLine ul = (UserLine){.full="",.len=0,.ix=0};
+    UserLine ul = mk_ul_from_lit("");
     user_line_skip(&ul, 0);
     utest_assert(ul.ix == 0, fail);
     user_line_skip(&ul, 3);
     utest_assert(ul.ix == 0, fail);
 
-    ul = (UserLine){.full="01234",.len=5,.ix=0};
+    ul = mk_ul_from_lit("01234");
     user_line_skip(&ul, 0);
     utest_assert(ul.ix == 0, fail);
     user_line_skip(&ul, 3);
@@ -46,7 +48,7 @@ test_user_line_skip() {
     user_line_skip(&ul, 3);
     utest_assert(ul.ix == 5, fail);
 
-    ul = (UserLine){.full="01234",.len=5,.ix=0};
+    ul.ix = 0;
     user_line_skip(&ul, 999);
     utest_assert(ul.ix == 5, fail);
 
@@ -58,13 +60,13 @@ fail:
 
 static int
 test_user_line_skip_space() {
-    UserLine ul = (UserLine){.full="",.len=0,.ix=0};
+    UserLine ul = mk_ul_from_lit("");
     user_line_skip_space(&ul);
     utest_assert(ul.ix == 0, fail);
     user_line_skip_space(&ul);
     utest_assert(ul.ix == 0, fail);
 
-    ul = (UserLine){.full="   123",.len=6,.ix=0};
+    ul = mk_ul_from_lit("   123");
     user_line_skip_space(&ul);
     utest_assert(ul.ix == 3, fail);
     user_line_skip_space(&ul);
@@ -74,7 +76,7 @@ test_user_line_skip_space() {
     user_line_skip_space(&ul);
     utest_assert(ul.ix == 6, fail);
 
-    ul = (UserLine){.full="x  123",.len=6,.ix=0};
+    ul = mk_ul_from_lit("x  123");
     user_line_skip_space(&ul);
     utest_assert(ul.ix == 0, fail);
     user_line_skip(&ul, 3);
@@ -91,7 +93,7 @@ fail:
 
 static int
 test_user_line_match_char() {
-    UserLine ul = (UserLine){.full="01234",.len=5,.ix=0};
+    UserLine ul = mk_ul_from_lit("01234");
 
     utest_assert(user_line_match_char(&ul, '0'), fail);
     utest_assert(user_line_match_char(&ul, '1'), fail);
@@ -100,7 +102,7 @@ test_user_line_match_char() {
     utest_assert(user_line_match_char(&ul, '4'), fail);
     utest_assert(!user_line_match_char(&ul, '5'), fail);
 
-    ul = (UserLine){.full="01234",.len=5,.ix=0};
+    ul.ix = 0;
     utest_assert(!user_line_match_char(&ul, '1'), fail);
     utest_assert(!user_line_match_char(&ul, '2'), fail);
     utest_assert(!user_line_match_char(&ul, '3'), fail);
@@ -108,10 +110,76 @@ test_user_line_match_char() {
     utest_assert(!user_line_match_char(&ul, '5'), fail);
     utest_assert(user_line_match_char(&ul, '0'), fail);
 
-    ul = (UserLine){.full="01234",.len=5,.ix=0};
+    ul.ix = 0;
     utest_assert(user_line_match_char(&ul, '0'), fail);
     utest_assert(!user_line_match_char(&ul, '0'), fail);
     utest_assert(!user_line_match_char(&ul, '0'), fail);
+
+    return 0;
+fail:
+    return 1;
+}
+
+
+static int
+test_user_line_match_last_char() {
+    CmdOut*   cout = &(CmdOut){0};
+    UserLine ul    = mk_ul_from_lit("");
+    Err err        = user_line_match_last_char(&ul, 'x', cout);
+    utest_assert(err == fail_user_line_no_parse(), fail); 
+
+    ul = mk_ul_from_lit("01234");
+    err = user_line_match_last_char(&ul, 'x', cout);
+    utest_assert(err == fail_user_line_no_parse(), fail); 
+
+    err = user_line_match_last_char(&ul, '0', cout);
+    utest_assert(err == fail_user_line_no_parse(), fail); 
+
+    user_line_skip(&ul, 1);
+    err = user_line_match_last_char(&ul, '1', cout);
+    utest_assert(err == fail_user_line_no_parse(), fail); 
+
+    user_line_skip(&ul, 3);
+    err = user_line_match_last_char(&ul, '4', cout);
+    utest_assert(err == Ok, fail); 
+
+    err = user_line_match_last_char(&ul, '4', cout);
+    utest_assert(err == fail_user_line_no_parse(), fail); 
+
+    return 0;
+fail:
+    return 1;
+}
+
+
+static int
+test_user_line_chop_and_skip_space(void) {
+    UserLine ul = mk_ul_from_lit(NULL);
+    Err err     = user_line_chop_and_skip_space(&ul);
+    utest_assert(err == NULL, fail); 
+
+    ul  = mk_ul_from_lit("01234");
+    err = user_line_chop_and_skip_space(&ul);
+    utest_assert(err != NULL, fail); 
+
+    char buf0[] = { " 1234" } ;
+    ul          = mk_ul_from_buf(buf0, 5);
+    err         = user_line_chop_and_skip_space(&ul);
+    utest_assert(err == NULL, fail); 
+    utest_assert(buf0[0] == '\0', fail); 
+    err         = user_line_chop_and_skip_space(&ul);
+    utest_assert(err != NULL, fail); 
+
+    char buf1[] = { "0   4" } ;
+    ul  = mk_ul_from_buf(buf1, 5);
+    err = user_line_chop_and_skip_space(&ul);
+    utest_assert(err != NULL, fail); 
+
+    user_line_skip(&ul, 1);
+    err = user_line_chop_and_skip_space(&ul);
+    utest_assert(err == NULL, fail); 
+    utest_assert(user_line_match_char(&ul, '4'), fail);
+    utest_assert(buf1[1] == '\0', fail); 
 
     return 0;
 fail:
@@ -126,6 +194,88 @@ int main(void) {
         + test_user_line_unskip()
         + test_user_line_skip()
         + test_user_line_skip_space()
+        + test_user_line_match_last_char()
+        + test_user_line_chop_and_skip_space()
         ;
     print_test_result(errors);
 }
+
+
+/* static int */
+/* test_user_line_cleanup(void) { */
+/* static int */
+/* test_user_line_cmd_end(void) { */
+/* static int */
+/* test_user_line_cmd_end_skipping_space(void) { */
+/* static int */
+/* test_user_line_current(void) { */
+/* static int */
+/* test_user_line_cut_cmd(void) { */
+/* static int */
+/* test_user_line_exhaust(void) { */
+/* static int */
+/* test_user_line_full(void) { */
+/* static int */
+/* test_user_line_init_take_ownership(void) { */
+/* static int */
+/* test_user_line_is_empty(void) { */
+/* static int */
+/* test_user_line_is_exhausted(void) { */
+/* static int */
+/* test_user_line_line(void) { */
+/* static int */
+/* test_user_line_match_char(void) { */
+/* static int */
+/* test_user_line_parse_range(void) { */
+/* static int */
+/* test_user_line_parse_size_t_or_throw(void) { */
+/* static int */
+/* test_user_line_pop_alnum(void) { */
+/* static int */
+/* test_user_line_pop_alpha(void) { */
+/* static int */
+/* test_user_line_pop_char(void) { */
+/* static int */
+/* test_user_line_pop_digits(void) { */
+/* static int */
+/* test_user_line_pop_last_alnum(void) { */
+/* static int */
+/* test_user_line_pop_last_alpha(void) { */
+/* static int */
+/* test_user_line_pop_last_char(void) { */
+/* static int */
+/* test_user_line_pop_last_digits(void) { */
+/* static int */
+/* test_user_line_pop_last_nonspace(void) { */
+/* static int */
+/* test_user_line_pop_nonspace(void) { */
+/* static int */
+/* test_user_line_pop_pattern(void) { */
+/* static int */
+/* test_user_line_pop_rest(void) { */
+/* static int */
+/* test_user_line_remaining(void) { */
+/* static int */
+/* test_user_line_remaining_len(void) { */
+/* static int */
+/* test_user_line_remaining_view(void) { */
+/* static int */
+/* test_user_line_skip(void) { */
+/* static int */
+/* test_user_line_skip_all(void) { */
+/* static int */
+/* test_user_line_skip_space(void) { */
+/* static int */
+/* test_user_line_unskip(void) { */
+/* static int */
+/* test_wait_for_char(void) { */
+
+
+
+/* static int */
+/* test_user_line_char(void) { */
+/*     return 0; */
+/* fail: */
+/*     return 1; */
+/* } */
+
