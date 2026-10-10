@@ -187,6 +187,53 @@ fail:
 }
 
 
+static int
+test_user_line_cmd_end(void) {
+    UserLine ul = mk_ul_from_lit(NULL);
+    utest_assert(user_line_cmd_end(&ul), fail); 
+
+    ul  = mk_ul_from_lit("01234");
+    utest_assert(!user_line_cmd_end(&ul), fail); 
+
+    ul  = mk_ul_from_lit("0;234");
+    utest_assert(!user_line_cmd_end(&ul), fail); 
+    ul.ix = 1;
+    utest_assert(user_line_cmd_end(&ul), fail); 
+
+    ul  = mk_ul_from_lit("0>234");
+    utest_assert(!user_line_cmd_end(&ul), fail); 
+    ul.ix = 1;
+    utest_assert(user_line_cmd_end(&ul), fail); 
+
+    ul  = mk_ul_from_lit("0\0""234");
+    utest_assert(!user_line_cmd_end(&ul), fail); 
+    ul.ix = 1;
+    utest_assert(user_line_cmd_end(&ul), fail); 
+
+    ul  = mk_ul_from_lit("    ");
+    utest_assert(!user_line_cmd_end(&ul), fail); 
+    return 0;
+fail:
+    return 1;
+}
+
+
+
+static int
+test_user_line_cmd_end_skipping_space(void) {
+    UserLine ul = mk_ul_from_lit(NULL);
+    utest_assert(user_line_cmd_end_skipping_space(&ul), fail); 
+
+    ul  = mk_ul_from_lit("    ");
+    utest_assert(user_line_cmd_end_skipping_space(&ul), fail); 
+
+    return 0;
+fail:
+    return 1;
+}
+
+
+
 int main(void) {
     print_running_test(__FILE__);
     int errors
@@ -196,15 +243,13 @@ int main(void) {
         + test_user_line_skip_space()
         + test_user_line_match_last_char()
         + test_user_line_chop_and_skip_space()
+        + test_user_line_cmd_end()
+        + test_user_line_cmd_end_skipping_space()
         ;
     print_test_result(errors);
 }
 
 
-/* static int */
-/* test_user_line_cleanup(void) { */
-/* static int */
-/* test_user_line_cmd_end(void) { */
 /* static int */
 /* test_user_line_cmd_end_skipping_space(void) { */
 /* static int */
