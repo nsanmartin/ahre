@@ -2,6 +2,7 @@
 
 #include "../src/utils.h"
 #include "../src/user-input.h"
+#include "../src/user-input.c"
 
 #define mk_ul_from_lit(Lit) (UserLine){.line=Lit,.len=lit_len__(Lit),.ix=0}
 #define mk_ul_from_buf(Buf, Len) (UserLine){.line=Buf,.len=Len,.ix=0}
@@ -369,6 +370,118 @@ fail:
 }
 
 
+static int
+test_user_line_char(void) {
+    Err err     = Ok;
+    UserLine ul = mk_ul_from_lit("");
+    char ch;
+
+    err = user_line_char(&ul, &ch);
+    utest_assert(err != Ok, fail); 
+
+    ul  = mk_ul_from_lit("0123");
+    err = user_line_char(&ul, &ch);
+    utest_assert(err == Ok, fail); 
+    utest_assert(ul.ix == 0, fail); 
+    utest_assert(ch == '0', fail); 
+
+    ++ul.ix;
+    err = user_line_char(&ul, &ch);
+    utest_assert(err == Ok, fail); 
+    utest_assert(ul.ix == 1, fail); 
+    utest_assert(ch == '1', fail); 
+
+    ++ul.ix;
+    err = user_line_char(&ul, &ch);
+    utest_assert(err == Ok, fail); 
+    utest_assert(ul.ix == 2, fail); 
+    utest_assert(ch == '2', fail); 
+
+    ++ul.ix;
+    err = user_line_char(&ul, &ch);
+    utest_assert(err == Ok, fail); 
+    utest_assert(ul.ix == 3, fail); 
+    utest_assert(ch == '3', fail); 
+
+    ++ul.ix;
+    err = user_line_char(&ul, &ch);
+    utest_assert(err != Ok, fail); 
+
+    return 0;
+fail:
+    return 1;
+}
+
+
+static int
+test_user_line_pop_strview(void) {
+    UserLine ul   = mk_ul_from_lit("");
+    StrView view;
+    bool res;
+
+    res = user_line_pop_strview(&ul, strview_split_alpha, &view);
+    utest_assert(res == false, fail); 
+    utest_assert(ul.ix == 0, fail); 
+
+    ul  = mk_ul_from_lit("0123");
+    res = user_line_pop_strview(&ul, strview_split_alpha, &view);
+    utest_assert(res == false, fail); 
+    utest_assert(ul.ix == 0, fail); 
+
+    ul  = mk_ul_from_lit("abcd");
+    res = user_line_pop_strview(&ul, strview_split_alpha, &view);
+    utest_assert(res == true, fail); 
+    utest_assert(ul.ix == 4, fail); 
+
+    ul  = mk_ul_from_lit("1bcd");
+    res = user_line_pop_strview(&ul, strview_split_alpha, &view);
+    utest_assert(res == false, fail); 
+    utest_assert(ul.ix == 0, fail); 
+
+    ul  = mk_ul_from_lit("abcd2");
+    res = user_line_pop_strview(&ul, strview_split_alpha, &view);
+    utest_assert(res == true, fail); 
+    utest_assert(ul.ix == 4, fail); 
+
+    return 0;
+fail:
+    return 1;
+}
+
+
+static int
+test_user_line_pop_last_strview(void) {
+    CmdOut*  cout = &(CmdOut){0};
+    UserLine ul   = mk_ul_from_lit("");
+    Err err       = Ok;
+    StrView view;
+
+    err = user_line_pop_last_strview(&ul, strview_split_alpha, &view, cout);
+    utest_assert(err != Ok, fail); 
+
+    ul  = mk_ul_from_lit("0123");
+    err = user_line_pop_last_strview(&ul, strview_split_alpha, &view, cout);
+    utest_assert(err != Ok, fail); 
+
+    ul  = mk_ul_from_lit("abcd");
+    err = user_line_pop_last_strview(&ul, strview_split_alpha, &view, cout);
+    utest_assert(err == Ok, fail); 
+    utest_assert(ul.ix == 4, fail); 
+
+    ul  = mk_ul_from_lit("1bcd");
+    err = user_line_pop_last_strview(&ul, strview_split_alpha, &view, cout);
+    utest_assert(err != Ok, fail); 
+
+    ul  = mk_ul_from_lit("abcd2");
+    err = user_line_pop_last_strview(&ul, strview_split_alpha, &view, cout);
+    utest_assert(err == fail_user_line_no_parse(), fail); 
+    utest_assert(ul.ix == 0, fail); 
+
+    return 0;
+fail:
+    return 1;
+}
+
 
 
 
@@ -386,60 +499,10 @@ int main(void) {
         + test_user_line_cut_cmd()
         + test_user_line_parse_range()
         + test_user_line_parse_size_t_or_throw()
+        + test_user_line_char()
+        + test_user_line_pop_strview()
+        + test_user_line_pop_last_strview()
         ;
     print_test_result(errors);
 }
-
-
-/* static int */
-/* test_user_line_parse_size_t_or_throw(void) { */
-/* static int */
-/* test_user_line_pop_alnum(void) { */
-/* static int */
-/* test_user_line_pop_alpha(void) { */
-/* static int */
-/* test_user_line_pop_char(void) { */
-/* static int */
-/* test_user_line_pop_digits(void) { */
-/* static int */
-/* test_user_line_pop_last_alnum(void) { */
-/* static int */
-/* test_user_line_pop_last_alpha(void) { */
-/* static int */
-/* test_user_line_pop_last_char(void) { */
-/* static int */
-/* test_user_line_pop_last_digits(void) { */
-/* static int */
-/* test_user_line_pop_last_nonspace(void) { */
-/* static int */
-/* test_user_line_pop_nonspace(void) { */
-/* static int */
-/* test_user_line_pop_pattern(void) { */
-/* static int */
-/* test_user_line_pop_rest(void) { */
-/* static int */
-/* test_user_line_remaining(void) { */
-/* static int */
-/* test_user_line_remaining_len(void) { */
-/* static int */
-/* test_user_line_remaining_view(void) { */
-/* static int */
-/* test_user_line_skip(void) { */
-/* static int */
-/* test_user_line_skip_all(void) { */
-/* static int */
-/* test_user_line_skip_space(void) { */
-/* static int */
-/* test_user_line_unskip(void) { */
-/* static int */
-/* test_wait_for_char(void) { */
-
-
-
-/* static int */
-/* test_user_line_char(void) { */
-/*     return 0; */
-/* fail: */
-/*     return 1; */
-/* } */
 
