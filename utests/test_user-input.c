@@ -93,7 +93,14 @@ fail:
 
 static int
 test_user_line_match_char() {
-    UserLine ul = mk_ul_from_lit("01234");
+    UserLine ul    = mk_ul_from_lit(NULL);
+    utest_assert(user_line_match_char(&ul, 'a') == false, fail); 
+
+    ul = mk_ul_from_lit("");
+    utest_assert(user_line_match_char(&ul, 'a') == false, fail); 
+
+
+    ul = mk_ul_from_lit("01234");
 
     utest_assert(user_line_match_char(&ul, '0'), fail);
     utest_assert(user_line_match_char(&ul, '1'), fail);
@@ -233,6 +240,137 @@ fail:
 }
 
 
+static int
+test_user_line_cut_cmd(void) {
+    CmdOut*   cout = &(CmdOut){0};
+    UserLine ul    = mk_ul_from_lit("");
+    utest_assert(user_line_cut_cmd(&ul, cout) == Ok, fail); 
+
+    ul = mk_ul_from_lit("0123");
+    ul.ix = 2;
+    utest_assert(user_line_cut_cmd(&ul, cout) == fail_user_line_no_parse(), fail); 
+
+    ul = mk_ul_from_lit("  23");
+    ul.ix = 2;
+    utest_assert(user_line_cut_cmd(&ul, cout) == fail_user_line_no_parse(), fail); 
+
+    ul = mk_ul_from_lit("  23");
+    ul.ix = 2;
+    utest_assert(user_line_cut_cmd(&ul, cout) == fail_user_line_no_parse(), fail); 
+
+    ul = mk_ul_from_lit("     1233");
+    utest_assert(user_line_cut_cmd(&ul, cout) == fail_user_line_no_parse(), fail); 
+
+    char buf0[] = { "  ;456" } ;
+    ul = mk_ul_from_buf(buf0, 6);
+    utest_assert(user_line_cut_cmd(&ul, cout) == Ok, fail); 
+    utest_assert(buf0[3] == '\0', fail); 
+
+    char buf1[] = { "  > msg" } ;
+    ul = mk_ul_from_buf(buf1, 7);
+    utest_assert(user_line_cut_cmd(&ul, cout) == Ok, fail); 
+    utest_assert(buf1[3] == '\0', fail); 
+
+    char buf2[] = { "  > not a sink" } ;
+    ul = mk_ul_from_buf(buf2, 14);
+    utest_assert(user_line_cut_cmd(&ul, cout) != Ok, fail); 
+
+    char buf3[] = { "  > std < msg " } ;
+    ul = mk_ul_from_buf(buf3, 14);
+    utest_assert(user_line_cut_cmd(&ul, cout) == Ok, fail); 
+    utest_assert(buf3[3] == '\0', fail); 
+
+    char buff4[] = { "  > std < not src " } ;
+    ul = mk_ul_from_buf(buff4, 14);
+    utest_assert(user_line_cut_cmd(&ul, cout) != Ok, fail); 
+
+    return 0;
+fail:
+    return 1;
+}
+
+
+static int
+test_user_line_parse_range(void) {
+    RangeParse rp = (RangeParse){0};
+    UserLine ul   = mk_ul_from_lit("");
+    Err err       = Ok;
+    
+    err = user_line_parse_range(&ul, 10, &rp);
+    utest_assert(err == Ok, fail); 
+
+    ul = mk_ul_from_lit("not a range");
+    err = user_line_parse_range(&ul, 10, &rp);
+    utest_assert(err == Ok, fail); 
+    utest_assert(ul.ix == 0, fail); 
+
+    ul = mk_ul_from_lit("1");
+    err = user_line_parse_range(&ul, 10, &rp);
+    utest_assert(err == Ok, fail); 
+    utest_assert(ul.ix == 1, fail); 
+
+    ul = mk_ul_from_lit("19");
+    err = user_line_parse_range(&ul, 10, &rp);
+    utest_assert(err == Ok, fail); 
+    utest_assert(ul.ix == 2, fail); 
+
+    ul = mk_ul_from_lit("1a");
+    err = user_line_parse_range(&ul, 10, &rp);
+    utest_assert(err == Ok, fail); 
+    utest_assert(ul.ix == 1, fail); 
+
+    ul = mk_ul_from_lit("1,1");
+    err = user_line_parse_range(&ul, 10, &rp);
+    utest_assert(err == Ok, fail); 
+    utest_assert(ul.ix == 3, fail); 
+    return 0;
+fail:
+    return 1;
+}
+
+
+
+static int
+test_user_line_parse_size_t_or_throw(void) {
+    Err err       = Ok;
+    UserLine ul   = mk_ul_from_lit("");
+    size_t num;
+
+    err = user_line_parse_size_t_or_throw(&ul, &num, 10);
+    utest_assert(err != Ok, fail); 
+
+    ul = mk_ul_from_lit("a");
+    err = user_line_parse_size_t_or_throw(&ul, &num, 10);
+    utest_assert(err != Ok, fail); 
+
+    ul = mk_ul_from_lit("1");
+    err = user_line_parse_size_t_or_throw(&ul, &num, 10);
+    utest_assert(err == Ok, fail); 
+    utest_assert(ul.ix == 1, fail); 
+
+    ul = mk_ul_from_lit("1a");
+    err = user_line_parse_size_t_or_throw(&ul, &num, 10);
+    utest_assert(err == Ok, fail); 
+    utest_assert(ul.ix == 1, fail); 
+
+
+    ul = mk_ul_from_lit("9999 ");
+    err = user_line_parse_size_t_or_throw(&ul, &num, 10);
+    utest_assert(err == Ok, fail); 
+    utest_assert(ul.ix == 4, fail); 
+
+    ul = mk_ul_from_lit("99999999999999999999999 ");
+    err = user_line_parse_size_t_or_throw(&ul, &num, 10);
+    utest_assert(err != Ok, fail); 
+
+    return 0;
+fail:
+    return 1;
+}
+
+
+
+
 
 int main(void) {
     print_running_test(__FILE__);
@@ -245,33 +383,14 @@ int main(void) {
         + test_user_line_chop_and_skip_space()
         + test_user_line_cmd_end()
         + test_user_line_cmd_end_skipping_space()
+        + test_user_line_cut_cmd()
+        + test_user_line_parse_range()
+        + test_user_line_parse_size_t_or_throw()
         ;
     print_test_result(errors);
 }
 
 
-/* static int */
-/* test_user_line_cmd_end_skipping_space(void) { */
-/* static int */
-/* test_user_line_current(void) { */
-/* static int */
-/* test_user_line_cut_cmd(void) { */
-/* static int */
-/* test_user_line_exhaust(void) { */
-/* static int */
-/* test_user_line_full(void) { */
-/* static int */
-/* test_user_line_init_take_ownership(void) { */
-/* static int */
-/* test_user_line_is_empty(void) { */
-/* static int */
-/* test_user_line_is_exhausted(void) { */
-/* static int */
-/* test_user_line_line(void) { */
-/* static int */
-/* test_user_line_match_char(void) { */
-/* static int */
-/* test_user_line_parse_range(void) { */
 /* static int */
 /* test_user_line_parse_size_t_or_throw(void) { */
 /* static int */

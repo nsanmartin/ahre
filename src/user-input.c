@@ -464,13 +464,11 @@ parse_output_redirect(UserLine ul[_1_], CmdOut cout[_1_]) {
         if (!user_line_pop_alpha(ul, &src)) return "expecting a source";
         if (! user_line_cut_cmd_no_redirect(ul)) return "expecting end of redirect cmd";
 
-        if (str_startswith(svl("std"), sink)) {
-            try(cmd_out_sink_set(&cout->std_sink, sink_tag, &src_param));
-        } else if (str_startswith(svl("msg"), sink)) {
-            try(cmd_out_sink_set(&cout->msg_sink, sink_tag, &src_param));
+        if (str_startswith(svl("std"), src)) {
+            return cmd_out_sink_set(&cout->std_sink, sink_tag, &src_param);
+        } else if (str_startswith(svl("msg"), src)) {
+            return cmd_out_sink_set(&cout->msg_sink, sink_tag, &src_param);
         }
-
-        return Ok;
     }
 
     return fail_user_line_no_parse();
@@ -505,6 +503,7 @@ user_line_parse_range(UserLine ln[_1_], int base, RangeParse out[_1_]) {
     return Ok;
 }
 
+//TODO0: deprecate and use cut_cmd?
 Err
 user_line_chop_and_skip_space(UserLine ln[_1_]) {
     if (user_line_is_exhausted(ln)) return Ok;
