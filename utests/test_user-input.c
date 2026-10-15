@@ -265,12 +265,12 @@ test_user_line_cut_cmd(void) {
     char buf0[] = { "  ;456" } ;
     ul = mk_ul_from_buf(buf0, 6);
     utest_assert(user_line_cut_cmd(&ul, cout) == Ok, fail); 
-    utest_assert(buf0[3] == '\0', fail); 
+    utest_assert(buf0[2] == '\0', fail); 
 
     char buf1[] = { "  > msg" } ;
     ul = mk_ul_from_buf(buf1, 7);
     utest_assert(user_line_cut_cmd(&ul, cout) == Ok, fail); 
-    utest_assert(buf1[3] == '\0', fail); 
+    utest_assert(buf1[2] == '\0', fail); 
 
     char buf2[] = { "  > not a sink" } ;
     ul = mk_ul_from_buf(buf2, 14);
@@ -279,7 +279,7 @@ test_user_line_cut_cmd(void) {
     char buf3[] = { "  > std < msg " } ;
     ul = mk_ul_from_buf(buf3, 14);
     utest_assert(user_line_cut_cmd(&ul, cout) == Ok, fail); 
-    utest_assert(buf3[3] == '\0', fail); 
+    utest_assert(buf3[2] == '\0', fail); 
 
     char buff4[] = { "  > std < not src " } ;
     ul = mk_ul_from_buf(buff4, 14);
