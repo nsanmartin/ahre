@@ -56,6 +56,8 @@ typedef struct {
 Err cmd_out_sink_to_file(CmdOutSink sink[_1_], FilePtr fp[_1_]);
 Err cmd_out_sink_close_file(CmdOutSink sink[_1_], FilePtr fp[_1_]);
 Err cmd_out_sink_set(CmdOutSink sink[_1_], CmdOutSinkTag tag, StrView* s);
+Err cmd_out_sink_reset(CmdOutSink sink[_1_], CmdOutSinkTag tag);
+Err cmd_out_sink_cleanup(CmdOutSink sink[_1_], CmdOutSinkTag tag);
 
 typedef struct CmdOut {
     Str        std;
@@ -90,9 +92,12 @@ static inline bool cmd_out_is_empty(CmdOut o[_1_]) {
     return !len__(cmd_out_std(o)) && !len__(msg_str(cmd_out_msg(o)));
 }
 
-static inline void cmd_out_clean(CmdOut o[_1_]) {
+static inline Err cmd_out_clean(CmdOut o[_1_]) {
     str_clean(cmd_out_std(o));
     str_clean(msg_str(cmd_out_msg(o)));
+    try(cmd_out_sink_cleanup(&o->std_sink, CMD_OUT_SCREEN));
+    try(cmd_out_sink_cleanup(&o->msg_sink, CMD_OUT_WARN));
+    return Ok;
 }
 
 bool cmd_out_will_touch_screen(CmdOut o[_1_]);

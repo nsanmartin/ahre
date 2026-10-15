@@ -23,9 +23,31 @@ msg_fmt(CmdOut cout[_1_], const char* fmt, ...) {
     return msg__(cout, sv(msg_buf));
 }
 
+
+Err
+cmd_out_sink_cleanup(CmdOutSink sink[_1_], CmdOutSinkTag tag) {
+    switch (sink->tag) {
+        case CMD_OUT_SCREEN:
+        case CMD_OUT_WARN:
+            break;
+        case CMD_OUT_FILE:
+            str_clean(&sink->filename);
+            break;
+        case CMD_OUT_PROC:
+            str_clean(&sink->proc_cmd);
+            break;
+        default:
+            fail_e("invalid sink tag!");
+    }
+
+    *sink = (CmdOutSink){.tag=tag};
+    return Ok;
+}
+
+
 Err
 cmd_out_sink_set(CmdOutSink sink[_1_], CmdOutSinkTag tag, StrView* s) {
-    *sink = (CmdOutSink){.tag=tag};
+    try(cmd_out_sink_cleanup(sink, tag));
     switch (tag) {
         case CMD_OUT_SCREEN:
         case CMD_OUT_WARN:

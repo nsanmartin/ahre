@@ -131,7 +131,7 @@ fail:
 
 static int
 test_user_line_match_last_char() {
-    CmdOut*   cout = &(CmdOut){0};
+    CmdOut*   cout = &cmd_out_default();
     UserLine ul    = mk_ul_from_lit("");
     Err err        = user_line_match_last_char(&ul, 'x', cout);
     utest_assert(err == fail_user_line_no_parse(), fail); 
@@ -243,7 +243,7 @@ fail:
 
 static int
 test_user_line_cut_cmd(void) {
-    CmdOut*   cout = &(CmdOut){0};
+    CmdOut*   cout = &cmd_out_default();
     UserLine ul    = mk_ul_from_lit("");
     utest_assert(user_line_cut_cmd(&ul, cout) == Ok, fail); 
 
@@ -451,7 +451,7 @@ fail:
 
 static int
 test_user_line_pop_last_strview(void) {
-    CmdOut*  cout = &(CmdOut){0};
+    CmdOut*  cout = &cmd_out_default();
     UserLine ul   = mk_ul_from_lit("");
     Err err       = Ok;
     StrView view;
