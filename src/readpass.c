@@ -2,6 +2,8 @@
 #include "reditline.h"
 
 Err readpass_term(ArlOf(char) passw[_1_], bool write) {
+    /* even if std is redirected, we want the pass word to behave
+     * interactively */
     try( mem_fwrite("> ", 2, stdout));
     if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
 
