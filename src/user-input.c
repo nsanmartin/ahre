@@ -261,6 +261,14 @@ user_line_match_char(UserLine ul[_1_], char c) {
     return true;
 }
 
+static bool
+user_line_match_chop_char(UserLine ul[_1_], char c) {
+    if (user_line_is_exhausted(ul) || ul->line[ul->ix] != c) return false;
+    ul->line[ul->ix] = '\0';
+    ++ul->ix;
+    return true;
+}
+
 
 Err
 user_line_match_last_char(UserLine ul[_1_], char c, CmdOut cout[_1_]) {
@@ -411,10 +419,7 @@ bool user_line_pop_rest(UserLine ul[_1_], StrView rest[_1_]) {
 static bool user_line_cut_cmd_no_redirect(UserLine ul[_1_]) {
     user_line_skip_space(ul);
     if (user_line_is_exhausted(ul)) return true;
-    else if (user_line_match_char(ul, ';')) {
-        char* p = (char*) user_line_remaining(ul);
-        *p = '\0';
-        ++ul->ix;
+    else if (user_line_match_chop_char(ul, ';')) {
         return true;
     }
     return false;
@@ -475,10 +480,7 @@ parse_output_redirect(UserLine ul[_1_], CmdOut cout[_1_]) {
 Err user_line_cut_cmd(UserLine ul[_1_], CmdOut cout[_1_]) {
     user_line_skip_space(ul);
     if (user_line_cut_cmd_no_redirect(ul)) return Ok;
-    else if (user_line_match_char(ul, '>')) {
-        char* p = (char*) user_line_remaining(ul);
-        *p = '\0';
-        ++ul->ix;
+    else if (user_line_match_chop_char(ul, '>')) {
         user_line_skip_space(ul);
         return parse_output_redirect(ul, cout);
     }
