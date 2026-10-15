@@ -2,7 +2,7 @@
 #include "reditline.h"
 
 Err readpass_term(ArlOf(char) passw[_1_], bool write) {
-    try( mem_fwrite(" >", 2, stdout));
+    try( mem_fwrite("> ", 2, stdout));
     if (fflush(stdout)) return err_fmt("error: fflush failure: %s", strerror(errno));
 
     Err err = Ok;
