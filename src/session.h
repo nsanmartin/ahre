@@ -185,9 +185,6 @@ session_write_screen_range_mod(Session s[_1_], TextBuf textbuf[_1_], Range range
 Err session_write_input_history(Session s[_1_]);
 
 
-// Err session_flush_cmd_out_msg(Session s[_1_], CmdOut cout[_1_]);
-Err session_flush_cmd_out_std(Session s[_1_], CmdOut cout[_1_]);
-Err session_flush_cmd_out(Session s[_1_], CmdOut cout[_1_]);
 Err session_htmldoc_redraw(HtmlDoc htmldoc[_1_], Session s[_1_], CmdOut cmd_out[_1_]);
 Err session_doc_draw(Session session[_1_], CmdOut cmd_out[_1_]);
 Err session_doc_js(Session session[_1_], CmdOut* out);

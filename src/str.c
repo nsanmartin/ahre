@@ -85,6 +85,11 @@ bool cstr_starts_with(const char* s, const char* t) {
 }
 
 
+static bool
+mem_eq(const char* m1, size_t l1, const char* m2, size_t l2) { 
+    return m1 && m2 && l1 == l2 && !strncmp(m1, m2, l1);
+}
+
 bool mem_eq_case(const char* m1, size_t l1, const char* m2, size_t l2) { 
     return m1 && m2 && l1 == l2 && !strncasecmp(m1, m2, l1);
 }
@@ -537,6 +542,7 @@ str_append_flip(const char* mem, size_t size, size_t nmemb, Str out[_1_]) {
 }
 
 int strview_strview_cmp (StrView* s, StrView* t) { return mem_cmp(s->items, s->len, t->items, t->len); }
+bool strview_strview_eq (StrView s, StrView t) { return mem_eq(s.items, s.len, t.items, t.len); }
 bool strview_strview_eq_case (StrView s, StrView t) { return mem_eq_case(s.items, s.len, t.items, t.len); }
 
 

@@ -20,8 +20,6 @@ typedef struct { WriteUserOutputCallback write; Session* ctx; } SessionWriteFn;
 
 
 struct UserOutput {
-    // FlushUserOutputCallback       flush_msg;
-    // FlushUserOutputCallback       flush_std;
     ShowSessionUserOutputCallback show_session;
     ShowErrUserOutputCallback     show_err;
 };
@@ -68,8 +66,6 @@ void _vi_cleanup_(UserOutput* uo);
 /* ctor / factory */
 static inline UserOutput uout_line_mode(void) {
     return (UserOutput) {
-        // .flush_msg    = ui_line_flush_msg,
-        // .flush_std    = ui_line_flush_std,
         .show_session = ui_line_show_session,
         .show_err     = ui_line_show_err,
     };
@@ -77,8 +73,6 @@ static inline UserOutput uout_line_mode(void) {
 
 static inline UserOutput uout_vi_mode(void) {
     return (UserOutput) {
-        // .flush_msg    = ui_vi_flush_msg,
-        // .flush_std    = ui_vi_flush_std,
         .show_session = ui_vi_show_session,
         .show_err     = ui_vi_show_err
     };

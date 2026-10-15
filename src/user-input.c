@@ -423,8 +423,6 @@ static bool user_line_cut_cmd_no_redirect(UserLine ul[_1_]) {
 
 /* check whether al remainig data befor EOF or ';' is only space and splits 
  * whatever is following that */
-//TODO0: use str_eq, not str_eq_case
-//TODO0: return Err not bool?
 static Err
 parse_output_redirect(UserLine ul[_1_], CmdOut cout[_1_]) {
     StrView sink;
@@ -503,7 +501,6 @@ user_line_parse_range(UserLine ln[_1_], int base, RangeParse out[_1_]) {
     return Ok;
 }
 
-//TODO0: deprecate and use cut_cmd?
 Err
 user_line_chop_and_skip_space(UserLine ln[_1_]) {
     if (user_line_is_exhausted(ln)) return Ok;

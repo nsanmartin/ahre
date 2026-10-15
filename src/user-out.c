@@ -93,7 +93,6 @@ ui_line_flush_msg(Session* s, CmdOut cout[_1_]) {
 Err ui_line_show_session(Session* s, CmdOut cout[_1_]) {
     (void)cout;
     if (!s) return "error: unexpected null session, this should really not happen";
-    /* return session_flush_cmd_out(s, cout); */
     try (ui_line_flush_msg(s, cout));
     try (ui_line_flush_std(s, cout));
     return Ok;
@@ -166,7 +165,6 @@ ui_vi_show_session_default(Session* s, CmdOut cout[_1_]) {
             if (!htmldoc_content_is_html(d)) 
                 try( msg_ln__(cout, svl(BUFFER_NOT_PARSED_MSG_)));
             else try( msg__(cout, svl(EMPTY_BUFFER_MSG_)));
-            /* err = session_flush_cmd_out_msg(s, cout); */
             err = ui_vi_flush_msg(s, cout);
         } else {
 
@@ -177,7 +175,6 @@ ui_vi_show_session_default(Session* s, CmdOut cout[_1_]) {
             ok_then(err, ui_vi_flush_std(s, cout));
         }
     }
-    /* cmd_out_clean(cout); */
     return err;
 
 }

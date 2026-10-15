@@ -197,21 +197,6 @@ void session_set_verbose(Session s[_1_], bool value) {
 }
 
 
-/* Err session_flush_cmd_out_msg(Session s[_1_], CmdOut cout[_1_]) { */
-/*     try(session_uout(s)->flush_msg(s, cout)); */
-/*     return Ok; */
-/* } */
-
-/* Err session_flush_cmd_out_std(Session s[_1_], CmdOut cout[_1_]) { */
-/*     try(session_uout(s)->flush_std(s, cout)); */
-/*     return Ok; */
-/* } */
-
-/* Err session_flush_cmd_out(Session s[_1_], CmdOut cout[_1_]) { */
-/*     try( session_flush_cmd_out_msg(s, cout)); */
-/*     try( session_flush_cmd_out_std(s, cout)); */
-/*     return Ok; */
-/* } */
 
 Err session_htmldoc_redraw(HtmlDoc htmldoc[_1_], Session s[_1_], CmdOut cmd_out[_1_]) {
     htmldoc_reset_draw(htmldoc);

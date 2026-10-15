@@ -28,7 +28,6 @@ static inline size_t user_line_len(UserLine ul[_1_]) { return ul->len; }
 static inline void user_line_exhaust(UserLine ul[_1_]) { ul->ix = ul->len; }
 static inline bool user_line_is_exhausted(UserLine ul[_1_]) { return ul->ix >= ul->len; }
 static inline bool user_line_is_empty(UserLine ul[_1_]) { return ul->len == 0; }
-// static inline char user_line_current(UserLine ul[_1_]) { return ul->line[ul->ix]; }//TODO Err
 static inline const char* user_line_remaining(UserLine ul[_1_]) {  return ul->line + ul->ix; }
 static inline size_t user_line_remaining_len(UserLine ul[_1_]) { return ul->len - ul->ix; }
 static inline char* user_line_line(UserLine ul[_1_]) { return ul->line; }
