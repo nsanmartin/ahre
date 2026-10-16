@@ -13,7 +13,10 @@ static Err _read_bm_opt_(CliParams cparams[_1_], const char* optparam) {
 
 static Err _read_cmd_opt_(CliParams cparams[_1_], const char* optparam) {
     if (!optparam || !*optparam) return "cmd string must be provided to -c option";
-    cparams->cmd = optparam;
+    if (cparams->cmd.len)
+        try(str_append(&cparams->cmd, svl(";")));
+
+    try(str_append(&cparams->cmd, sv(optparam)));
     return Ok;
 }
 

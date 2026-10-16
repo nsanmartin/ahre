@@ -56,7 +56,7 @@ static Err _loop_(Session s[_1_], UserLine userln[_1_], CmdOut cout[_1_]) {
     while (!session_quit(s)) {
         tryjmp(err, Show_Error, session_show_output(s, cout));
         tryjmp(err, Error, session_read_user_input(s, userln));
-        if (!user_line_is_empty(userln))
+        if (!user_line_is_exhausted(userln))
             tryjmp(err, Error, session_consume_line(s, userln, cout));
 Error:
         if (err) {
@@ -68,21 +68,6 @@ Error:
 Show_Error:
     /* A Show_Error is unrecoverable because user cannot change any state between calls */
     if (err) if (session_show_error(s, err)) return "error trying to show previous error"; 
-    return err;
-}
-
-static Err run_cmds(Session s[_1_], UserLine userln[_1_]) {
-    Err err      = Ok;
-    Str errors   = (Str){0};
-    CmdOut* cout = &cmd_out_default();
-    while (!user_line_is_empty(userln) && !session_quit(s)) {
-        if (!user_line_is_empty(userln)) err = session_consume_line(s, userln, cout);
-        if (err) tryjmp(err, Clean_Errors, str_append_ln(&errors, err));
-    }
-    if (errors.len) cmd_out_msg_append(cout, errors);
-Clean_Errors:
-    str_clean(&errors);
-    cmd_out_clean(cout);
     return err;
 }
 
@@ -100,20 +85,18 @@ Err main_ahre(int argc, char **argv) {
     if (*cparams_help(&cparams)) { print_help(argv[0]); goto Clean; }
     if (*cparams_version(&cparams)) { puts("ahre version " AHRE_VERSION); goto Clean; }
     tryjmp(err, Clean, session_init(&session, cparams_sconf(&cparams)));
-    if (cparams.cmd) {
-        cparams.cmd = std_strdup(cparams.cmd);
-        if (!cparams.cmd) {
-            err = "error: strdup failure";
-            goto Clean;
-        }
-        tryjmp(err, Clean, user_line_init_take_ownership(&userln, cparams.cmd));
-        tryjmp(err, Clean, run_cmds(&session, &userln));
-        user_line_cleanup(&userln);
-    }
     tryjmp(err, Clean, fetch_params(&session, cparams_requests(&cparams), cout));
+    if (cparams.cmd.len) {
+        //TODO1: passing only items means that we are recomputing the length unnecessarily
+        tryjmp(err, Clean, user_line_init_take_ownership(&userln, cparams.cmd.items));
+        cparams.cmd = (Str){0};
+        if (!user_line_is_exhausted(&userln))
+            tryjmp(err, Clean, session_consume_line(&session, &userln, cout));
+    }
 
     err = _loop_(&session, &userln, cout);
 Clean:
+    user_line_cleanup(&userln);
     warn_cmd_out_to_stderr(cout);
     cmd_out_clean(cout);
     session_close(&session);
