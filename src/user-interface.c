@@ -147,7 +147,6 @@ static Err run_cmd_for_htmldoc_single_input_node(CmdParams p[_1_], nodeCmdCallba
 
 static Err run_cmd__(CmdParams p[_1_], SessionCmd cmdlist[]) {
     cmd_params_skip_space(p);
-    /* for (SessionCmd* cmd = cmdlist; cmd->name && !cmd_params_cmd_end(p); ++cmd) { */
     for (SessionCmd* cmd = cmdlist; cmd->name ; ++cmd) {
         if (_any_match_(cmd)) return cmd->fn(p);
         if (_char_cmd_match_(cmd, p)) {
@@ -174,9 +173,6 @@ static Err run_cmd__(CmdParams p[_1_], SessionCmd cmdlist[]) {
 
 static Err run_cmd_on_range__(CmdParams p[_1_], SessionCmd cmdlist[], int base) {
     cmd_params_skip_space(p);
-    /* const char* endptr; */
-    /* try(parse_range(p->ln, &p->rp, &endptr, base)); */
-    /* p->ln = cstr_skip_space(endptr); */
     try(cmd_params_parse_range(p, base));
     return run_cmd__(p, cmdlist);
 }
@@ -763,6 +759,7 @@ static SessionCmd _session_cmd_[] =
     };
 
 static Err cmd_help(CmdParams p[_1_]) {
+    try(cmd_params_cut_cmd(p));
     return run_cmd_help(&_session_cmd_[CMD_HELP_IX], cmd_params_cmd_out(p));
 }
 

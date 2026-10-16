@@ -262,9 +262,10 @@ user_line_match_char(UserLine ul[_1_], char c) {
 }
 
 static bool
-user_line_match_chop_char(UserLine ul[_1_], char c) {
+user_line_match_chop_char(UserLine ul[_1_], char c, size_t endix[_1_]) {
     if (user_line_is_exhausted(ul) || ul->line[ul->ix] != c) return false;
     ul->line[ul->ix] = '\0';
+    *endix           = ul->ix;
     ++ul->ix;
     return true;
 }
@@ -315,7 +316,7 @@ user_line_pop_strview(UserLine ln[_1_], StrViewSplitter split, StrView out[_1_])
    StrView remview = user_line_remaining_view(ln);
    *out = split(&remview);
    user_line_skip(ln, out->len);
-   return out->len;
+   return out->len != 0;
 }
 
 bool
@@ -353,13 +354,15 @@ Err user_line_pop_last_char(UserLine ln[_1_], char out[_1_], CmdOut cout[_1_]) {
     return fail_user_line_no_parse();
 }
 
-static Err user_line_pop_last_strview(UserLine ln[_1_], StrViewSplitter split, StrView out[_1_], CmdOut cout[_1_]) {
+static Err
+user_line_pop_last_strview(UserLine ln[_1_], StrViewSplitter split, StrView out[_1_], CmdOut cout[_1_]) {
+
+    size_t ix = ln->ix;
     if (user_line_pop_strview(ln, split, out)) {
         Err err = user_line_cut_cmd(ln, cout);
         if (err && err != fail_user_line_no_parse()) return err;
         else if (!err) return Ok;
-        const size_t out_len = len__(out);
-        user_line_unskip(ln, (out_len ? 1 : 0) + out_len);
+        ln->ix = ix;
     }
     return fail_user_line_no_parse();
 }
@@ -419,7 +422,8 @@ bool user_line_pop_rest(UserLine ul[_1_], StrView rest[_1_]) {
 static bool user_line_cut_cmd_no_redirect(UserLine ul[_1_]) {
     user_line_skip_space(ul);
     if (user_line_is_exhausted(ul)) return true;
-    else if (user_line_match_chop_char(ul, ';')) {
+    size_t endix;
+    if (user_line_match_chop_char(ul, ';', &endix)) {
         return true;
     }
     return false;
@@ -480,9 +484,12 @@ parse_output_redirect(UserLine ul[_1_], CmdOut cout[_1_]) {
 Err user_line_cut_cmd(UserLine ul[_1_], CmdOut cout[_1_]) {
     user_line_skip_space(ul);
     if (user_line_cut_cmd_no_redirect(ul)) return Ok;
-    else if (user_line_match_chop_char(ul, '>')) {
+    size_t endix;
+    if (user_line_match_chop_char(ul, '>', &endix)) {
         user_line_skip_space(ul);
-        return parse_output_redirect(ul, cout);
+        Err err = parse_output_redirect(ul, cout);
+        if (err) ul->line[endix] = '>';
+        return err;
     }
     return fail_user_line_no_parse();
 }
