@@ -71,16 +71,6 @@ typedef struct CmdOut {
     (CmdOut){.std_sink=(CmdOutSink){.tag=CMD_OUT_SCREEN}, .msg_sink=(CmdOutSink){.tag=CMD_OUT_WARN}}
 static inline CmdOutSinkTag cmd_out_std_sink_tag(CmdOut co[_1_]) { return co->std_sink.tag; }
 static inline CmdOutSinkTag cmd_out_msg_sink_tag(CmdOut co[_1_]) { return co->msg_sink.tag; }
-static inline CmdOutSinkTag cmd_out_std_sing_get_reset(CmdOut co[_1_]) {
-    CmdOutSinkTag res = co->std_sink.tag; 
-    co->std_sink.tag  = CMD_OUT_SCREEN;
-    return res;
-}
-static inline CmdOutSinkTag cmd_out_msg_sing_get_reset(CmdOut co[_1_]) {
-    CmdOutSinkTag res = co->msg_sink.tag; 
-    co->msg_sink.tag  = CMD_OUT_WARN;
-    return res;
-}
 
 
 static inline CmdOut* cmd_out_id(CmdOut o[_1_]) { return o; }

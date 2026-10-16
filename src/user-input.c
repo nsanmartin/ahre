@@ -278,6 +278,7 @@ user_line_match_last_char(UserLine ul[_1_], char c, CmdOut cout[_1_]) {
         Err err = user_line_cut_cmd(ul, cout);
         if (!err) return Ok;
         ul->ix = ix;
+        return err;
     }
     return fail_user_line_no_parse();
 }
@@ -360,9 +361,9 @@ user_line_pop_last_strview(UserLine ln[_1_], StrViewSplitter split, StrView out[
     size_t ix = ln->ix;
     if (user_line_pop_strview(ln, split, out)) {
         Err err = user_line_cut_cmd(ln, cout);
-        if (err && err != fail_user_line_no_parse()) return err;
-        else if (!err) return Ok;
+        if (!err) return Ok;
         ln->ix = ix;
+        return err;
     }
     return fail_user_line_no_parse();
 }
@@ -482,13 +483,17 @@ parse_output_redirect(UserLine ul[_1_], CmdOut cout[_1_]) {
 }
 
 Err user_line_cut_cmd(UserLine ul[_1_], CmdOut cout[_1_]) {
+    size_t ix = ul->ix;
     user_line_skip_space(ul);
     if (user_line_cut_cmd_no_redirect(ul)) return Ok;
     size_t endix;
     if (user_line_match_chop_char(ul, '>', &endix)) {
         user_line_skip_space(ul);
         Err err = parse_output_redirect(ul, cout);
-        if (err) ul->line[endix] = '>';
+        if (err) {
+            ul->line[endix] = '>';
+            ul->ix          = ix;
+        }
         return err;
     }
     return fail_user_line_no_parse();

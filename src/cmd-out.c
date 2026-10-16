@@ -91,9 +91,8 @@ cmd_out_sink_close_file(CmdOutSink sink[_1_], FilePtr fp[_1_]) {
             try(file_close(fp->ptr));
             break;
         default:
-            err = "error: invalid CmdOutSinkTag";
+            fail_e("invalid CmdOutSinkTag");
     }
-    *sink = (CmdOutSink){.tag=CMD_OUT_SCREEN};
     return err;
 }
 
