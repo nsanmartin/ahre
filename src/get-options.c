@@ -13,6 +13,7 @@ static Err _read_bm_opt_(CliParams cparams[_1_], const char* optparam) {
 
 static Err _read_cmd_opt_(CliParams cparams[_1_], const char* optparam) {
     if (!optparam || !*optparam) return "cmd string must be provided to -c option";
+    //TODO2: using a list (arl) of Str one for eachcommand may be better, but not worth yet.
     if (cparams->cmd.len)
         try(str_append(&cparams->cmd, svl(";")));
 
