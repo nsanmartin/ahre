@@ -245,10 +245,10 @@ draw_ctx_append_sub_text(DrawTextBuf text[_1_], DrawTextBuf sub[_1_]) {
 
 
 static bool
-draw_text_buf_last_isalnum(DrawTextBuf text[_1_]) {
+draw_text_buf_last_isgraph(DrawTextBuf text[_1_]) {
     Str* buf = draw_text_buf_buf(text);
     return len__(buf) 
-        && isalnum(items__(buf)[len__(buf) - 1]);
+        && isgraph(items__(buf)[len__(buf) - 1]);
 }
 
 
@@ -787,7 +787,7 @@ draw_tag_code(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
 static Err
 draw_tag_b(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
-    if (!isnull(dom_node_prev(node)) && draw_text_buf_last_isalnum(text))
+    if (!isnull(dom_node_prev(node)) && draw_text_buf_last_isgraph(text))
         try( draw_text_buf_append_lit__(text, " "));
     try(_hypertext_open_(ctx, text, draw_ctx_push_bold, space_str));
     try( draw_iter_childs(node, ctx, text));
@@ -798,7 +798,7 @@ draw_tag_b(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
 static Err
 draw_tag_separating_with_space(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
-    if (!isnull(dom_node_prev(node)) && draw_text_buf_last_isalnum(text))
+    if (!isnull(dom_node_prev(node)) && draw_text_buf_last_isgraph(text))
         try( draw_text_buf_append_lit__(text, " "));
     try( draw_iter_childs(node, ctx, text));
     return Ok;
@@ -807,11 +807,11 @@ draw_tag_separating_with_space(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[
 
 static Err
 draw_tag_em(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
-    if (!isnull(dom_node_prev(node)) && draw_text_buf_last_isalnum(text))
+    if (!isnull(dom_node_prev(node)) && draw_text_buf_last_isgraph(text))
         try( draw_text_buf_append_lit__(text, " "));
-    try(_hypertext_open_(ctx, text, draw_ctx_push_underline, space_str));
+    try(_hypertext_open_(ctx, text, draw_ctx_push_underline, NULL));
     try( draw_iter_childs(node, ctx, text));
-    try( _hypertext_close_(ctx, text, draw_ctx_reset_color, space_str));
+    try( _hypertext_close_(ctx, text, draw_ctx_reset_color, NULL));
     return Ok;
 }
 
