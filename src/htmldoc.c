@@ -797,6 +797,12 @@ draw_tag_b(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
 
 
 static Err
+draw_tag_span(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
+    try( draw_iter_childs(node, ctx, text));
+    return Ok;
+}
+
+static Err
 draw_tag_separating_with_space(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     if (!isnull(dom_node_prev(node)) && draw_text_buf_last_isgraph(text))
         try( draw_text_buf_append_lit__(text, " "));
@@ -842,20 +848,20 @@ draw_tag_title(DomNode node, DrawCtx ctx[_1_]) {
 }
 
 
-static Err
-draw_strview_skipping_space(StrView s, DomNode prev, DrawTextBuf text[_1_]) {
-    /* if it starts with a punctuation mark we undo the space added in draw space */
-    if (!isnull(prev) && !ispunct(s.items[0])) try( draw_text_buf_append_lit__(text, " "));
-    while(s.len) {
-        StrView word = strview_split_utf8_word(&s);
-        if (!word.len) break;
-        try( draw_text_buf_append(text, word));
-        strview_trim_space_left(&s);
-        if (!s.len) break;
-        try( draw_text_buf_append_lit__(text, " "));
-    }
-    return Ok;
-}
+ static Err
+ draw_strview_skipping_space(StrView s, DrawTextBuf text[_1_]) {
+     if (s.len && !ispunct(s.items[0]) && draw_text_buf_last_isgraph(text))
+         try( draw_text_buf_append_lit__(text, " "));
+     while(s.len) {
+         StrView word = strview_split_utf8_word(&s);
+         if (!word.len) break;
+         try( draw_text_buf_append(text, word));
+         strview_trim_space_left(&s);
+         if (!s.len) break;
+         try( draw_text_buf_append_lit__(text, " "));
+     }
+     return Ok;
+ }
 
 
 static Err
@@ -872,7 +878,7 @@ draw_text(DomNode node,  DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
         try( draw_text_buf_append(text, data));
     } else if (strview_skip_space_inplace(&data)) {
         /* If it's not the first then separate with previous with space */
-        try( draw_strview_skipping_space(data, dom_node_prev(node), text));
+        try( draw_strview_skipping_space(data, text));
     } 
 
     if (!isnull(dom_node_first_child(node)) || !isnull(dom_node_last_child(node)))
@@ -1375,9 +1381,9 @@ draw_rec_tag(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
         //TODO: implement all these tags, meanwhile we just add
         // spaces when needed to separate from previous word
         case HTML_TAG_TD: case HTML_TAG_TH: //TODO delete once table is implemented
+        case HTML_TAG_SPAN: { return draw_tag_span(node, ctx, text); }
         case HTML_TAG_TIME:
         case HTML_TAG_SAMP:
-        case HTML_TAG_SPAN:
         case HTML_TAG_STRONG:
         case HTML_TAG_VAR: { return draw_tag_separating_with_space(node, ctx, text); }
         default: {
