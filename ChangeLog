@@ -1,17 +1,28 @@
+v0.2.8 (17 Oct 2026)
+
+	* draw : insert space before text based on already rendered data.
+	* draw : fix em tag.
+	* cli  : run -c passed commands after fetching files.
+	* test : add test_user-input and test_cmd-params
+	* ui   : add output redirection (currently only for SCREEN and WARN, no
+	proc and files yet).
+	* ui   : default | command to flattened tree 
+
 v0.2.7 (4 Sep 2026)
 
-	* ui  : support radio buttons.
-	* ui  : add show request command to display how the request would be.
-	* refa: fix qjs disabled build.
-	* bug: add timeout to jse_eval.
-	* ui  : allow user to evaluate files in local dir.
-	* lib : upgrade qjs to v0.16.1.
-	* lib : update hotl v0.1.7 to use lipmap iterators.
+	* ui   : support radio buttons.
+	* ui   : add show request command to display how the request would be.
+	* refa : fix qjs disabled build.
+	* bug  : add timeout to jse_eval.
+	* ui   : allow user to evaluate files in local dir.
+	* lib  : upgrade qjs to v0.16.1.
+	* lib  : update hotl v0.1.7 to use lipmap iterators.
 
 v0.2.6 (15 Aug 2026)
 
 	* ui: support url input with (,{,[.
-	* ui: some readline (reditline) features: Ctrl-a, Ctrl-b, Ctrl-e, Ctrl-d, Ctrl-p.
+	* ui: some readline (reditline) features: Ctrl-a, Ctrl-b, Ctrl-e, Ctrl-d,
+	Ctrl-p.
 	* js: set a timeout to jse_eval.
 
 v0.2.5 (26 Jun 2026)
