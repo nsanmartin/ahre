@@ -3,7 +3,7 @@
 const char* _options_ = 
 "options:\n"
 "\t-b | --bookmark <fname>  use <fname> as bookmark file\n"
-"\t-c | --cmd <str>         run <str> cmd prior to openning urls\n"
+"\t-c | --cmd <str>         run <str> cmd after openning urls\n"
 "\t-d | --data <data> <url> visit <url> with post method with <data>. If an error occur program\n"
 "\t                         will exit.\n"
 "\t-h | --help              print help and exit\n"
