@@ -53,13 +53,13 @@ Err file_open(const char* file_path, const char* mode, FILE* fpp[_1_]) {
     *fpp = fopen(path.items, mode);
     str_clean(&path);
     if (!*fpp)
-        return err_fmt("error opening file '%s': %s", file_path, strerror(errno));
+        return err_fmt("could not open file '%s': %s", file_path, strerror(errno));
     return Ok;
 }
 
 Err _file_write_(const char* mem, size_t len, FILE* fp, const char* caller) {
     if (len && fwrite(mem, 1, len, fp) != len)
-        return err_fmt("(%s) error writing to file: %s", caller, strerror(errno));
+        return err_fmt("(%s) could not write to file: %s", caller, strerror(errno));
     return Ok;
 } 
 
@@ -67,9 +67,9 @@ Err _file_write_sep_(
     const char* mem, size_t len, const char* sep, size_t seplen, FILE* fp, const char* caller
 ) {
     if (len && fwrite(mem, 1, len, fp) != len)
-        return err_fmt("(%s) error writing to file: %s", caller, strerror(errno));
+        return err_fmt("(%s) could not write to file: %s", caller, strerror(errno));
     if (seplen && fwrite(sep, 1, seplen, fp) != seplen)
-        return err_fmt("(%s) error writing to file: %s", caller, strerror(errno));
+        return err_fmt("(%s) could not write to file: %s", caller, strerror(errno));
     return Ok;
 } 
 
