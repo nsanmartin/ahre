@@ -397,7 +397,7 @@ bool user_line_pop_pattern(UserLine ul[_1_], StrView pattern[_1_]) {
         size_t len = cast__(size_t)(end-beg);
         *pattern = (StrView){.items = beg, .len = len};
         *(char*)end = '\0';
-        user_line_skip(ul, len);
+        user_line_skip(ul, len + 1);
     }
 
     return true;
@@ -449,11 +449,13 @@ parse_output_redirect(UserLine ul[_1_], CmdOut cout[_1_]) {
         sink_tag = CMD_OUT_WARN;
     } else if (str_startswith(svl("file"), sink)) {
         if(!user_line_pop_nonspace(ul, &src_param)) return "expecting file name";
-        if (!user_line_cut_cmd_no_redirect(ul)) return "expecting end of redirect cmd";
+        if (!user_line_cut_cmd_no_redirect(ul) && !user_line_check_char(ul,'<'))
+            return "expecting end of redirect cmd";
         sink_tag = CMD_OUT_FILE;
     } else if (str_startswith(svl("shell"), sink)) {
         if(!user_line_pop_rest(ul, &src_param)) return "expecting system command";
-        if (! user_line_cut_cmd_no_redirect(ul)) return "expecting end of redirect cmd";
+        if (!user_line_cut_cmd_no_redirect(ul) && !user_line_check_char(ul,'<'))
+            return "expecting end of redirect cmd";
         sink_tag = CMD_OUT_SHELL;
     } else {
         return "expecting msg | std | file <fname> | shell <cmd...>";

@@ -377,9 +377,10 @@ Err cmd_textbuf_global(CmdParams p[_1_]) {
     ArlOf(size_t) lines = (ArlOf(size_t)){0};
     Err err = Ok;
 
-    if (!p->tb) return err_internal("expectind textbuf set at this point");
+    if (!p->tb) return err_internal("expecting textbuf set at this point");
     StrView pattern;
     if (!cmd_params_pop_pattern(p, &pattern)) return "Could not read pattern"; 
+    try(cmd_params_cut_cmd(p));
 
     tryjmp(err,Clean, textbuf_get_lines_matching_regex(p->tb, pattern, &lines));
 

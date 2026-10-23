@@ -3,6 +3,11 @@
 
 #include "generic.h"
 
+
+static Err ui_vi_flush_msg(Session* s, CmdOut cout[_1_]);
+static Err ui_vi_flush_std(Session* s, CmdOut cout[_1_]);
+
+
 static Err
 flush_to_file_msg(Msg msg[_1_], FilePtr fp) {
     if (!msg_len(msg)) return Ok;
@@ -54,22 +59,21 @@ Err ui_line_show_err(Session* s, char* err, size_t len) {
 
 static Err
 ui_line_flush_std_to_file(CmdOut cout[_1_]) {
-    (void)cout;
-    try( flush_to_file_strview(svl( "not implemented"), (FilePtr){.ptr=stdout}));
-    return Ok;
+    return cmd_out_sink_to_file_flush(&cout->std_sink, cmd_out_std(cout));
 }
+
 static Err
 ui_line_flush_std_to_shell(CmdOut cout[_1_]) {
     (void)cout;
     try( flush_to_file_strview(svl( "not implemented"), (FilePtr){.ptr=stdout}));
     return Ok;
 }
+
 static Err
 ui_line_flush_msg_to_file(CmdOut cout[_1_]) {
-    (void)cout;
-    try( flush_to_file_strview(svl( "not implemented"), (FilePtr){.ptr=stdout}));
-    return Ok;
+    return cmd_out_sink_to_file_flush(&cout->msg_sink, msg_str(cmd_out_msg(cout)));
 }
+
 static Err
 ui_line_flush_msg_to_shell(CmdOut cout[_1_]) {
     (void)cout;
@@ -180,7 +184,7 @@ ui_vi_show_session_default(Session* s, CmdOut cout[_1_]) {
 
     if (session_is_empty(s)) {
         try( screen__(cout, svl(EMPTY_SESSION_MSG_)));
-        return ui_vi_flush_std(s, cout);
+        return Ok;
     } else {
         HtmlDoc* d;
         TextBuf* tb;
@@ -191,14 +195,12 @@ ui_vi_show_session_default(Session* s, CmdOut cout[_1_]) {
             if (!htmldoc_content_is_html(d)) 
                 try( msg_ln__(cout, svl(BUFFER_NOT_PARSED_MSG_)));
             else try( msg__(cout, svl(EMPTY_BUFFER_MSG_)));
-            err = ui_vi_flush_msg(s, cout);
         } else {
 
             Range r;
             try(show_session_get_show_range(s, tb, &r));
 
             err = _vi_print_range_std_mod_(tb, &r, s, cout);
-            ok_then(err, ui_vi_flush_std(s, cout));
         }
     }
     return err;
@@ -218,11 +220,35 @@ Err ui_vi_show_session(Session* s, CmdOut cout[_1_]) {
     try( lit_write__(EscCodeClsScr, stdout));
     bool screen_touched = cmd_out_will_touch_screen(cout);
 
-    try( ui_vi_flush_msg(s, cout));
-    try( ui_vi_flush_std(s, cout));
 
-    if (!screen_touched)
+
+    if (cout->msg_sink.tag == CMD_OUT_FILE && cout->std_sink.tag == CMD_OUT_FILE
+        && str_eq(cout->msg_sink.filename, cout->std_sink.filename)) {
+
+        Err err    = Ok;
+        FilePtr fp = (FilePtr){0};
+        try(file_open(cout->std_sink.filename.items, "w", &fp.ptr));
+
+        tryjmp(err,Clean,flush_to_file(cmd_out_msg(cout), fp));
+        tryjmp(err,Clean,flush_to_file(cmd_out_std(cout), fp));
+    Clean:
+        file_close(fp.ptr);
+        if (err) return err;
+        try(cmd_out_sink_cleanup(&cout->std_sink, CMD_OUT_SCREEN));
+        try(cmd_out_sink_cleanup(&cout->msg_sink, CMD_OUT_WARN));
+
+    } else {
+        try( ui_vi_flush_msg(s, cout));
+        try( ui_vi_flush_std(s, cout));
+    }
+
+
+    if (!screen_touched) {
         try( ui_vi_show_session_default(s, cout));
+        try( ui_vi_flush_msg(s, cout));
+        try( ui_vi_flush_std(s, cout));
+    }
+
 
     return Ok;
 }
@@ -237,11 +263,8 @@ ui_vi_flush_std_to_msg(Session s[_1_], CmdOut cout[_1_]) {
 }
 
 static Err
-ui_vi_flush_std_to_file(Session s[_1_], CmdOut cout[_1_]) {
-    (void)cout;
-    try( ui_vi_flush_msg_read_input(s, svl("flush std to file not implemented")));
-    try( lit_write__(EscCodeClsScr, stdout));
-    return Ok;
+ui_vi_flush_std_to_file(CmdOut cout[_1_]) {
+    return cmd_out_sink_to_file_flush(&cout->std_sink, cmd_out_std(cout));
 }
 
 static Err
@@ -252,7 +275,8 @@ ui_vi_flush_std_to_shell(Session s[_1_], CmdOut cout[_1_]) {
     return Ok;
 }
 
-Err ui_vi_flush_std(Session* s, CmdOut cout[_1_]) {
+static Err
+ui_vi_flush_std(Session* s, CmdOut cout[_1_]) {
     if (!s) return "error: no session";
     Err err = Ok;
     switch (cout->std_sink.tag) {
@@ -260,7 +284,7 @@ Err ui_vi_flush_std(Session* s, CmdOut cout[_1_]) {
             break;
         case CMD_OUT_WARN:  err = ui_vi_flush_std_to_msg(s, cout);
             break;
-        case CMD_OUT_FILE: err = ui_vi_flush_std_to_file(s, cout);
+        case CMD_OUT_FILE: err = ui_vi_flush_std_to_file(cout);
             break;
         case CMD_OUT_SHELL: err = ui_vi_flush_std_to_shell(s, cout);
             break;
@@ -285,20 +309,8 @@ ui_vi_flush_msg_to_std(CmdOut cout[_1_]) {
 }
 
 static Err
-ui_vi_flush_msg_to_file(Session s[_1_], CmdOut cout[_1_]) {
-    (void)cout;
-    try( ui_vi_flush_msg_read_input(s, svl("flush msg to file not implemented")));
-    try( lit_write__(EscCodeClsScr, stdout));
-    return Ok;
-
-    /* FilePtr fp; */
-    /* try(cmd_out_sink_to_file(&cout->msg_sink, &fp)); */
-
-    /* try( ui_vi_flush_msg_read_input(s, sv(msg->s))); */
-    /* msg_reset(msg); */
-    /* try( lit_write__(EscCodeClsScr, fp.ptr)); */
-    /* cmd_out_sink_close_file(&cout->std_sink, &fp); */
-    //return Ok;
+ui_vi_flush_msg_to_file(CmdOut cout[_1_]) {
+    return cmd_out_sink_to_file_flush(&cout->msg_sink, msg_str(cmd_out_msg(cout)));
 }
 
 static Err
@@ -309,13 +321,14 @@ ui_vi_flush_msg_to_shell(Session s[_1_], CmdOut cout[_1_]) {
     return Ok;
 }
 
-Err ui_vi_flush_msg(Session* s, CmdOut cout[_1_]) {
+static Err
+ui_vi_flush_msg(Session* s, CmdOut cout[_1_]) {
     if (!s) return "error: no session";
     Err err = Ok;
     switch (cout->msg_sink.tag) {
         case CMD_OUT_WARN:    err = ui_vi_flush_msg_default(s, cout); break;
         case CMD_OUT_SCREEN:  err = ui_vi_flush_msg_to_std(cout); break;
-        case CMD_OUT_FILE:    err = ui_vi_flush_msg_to_file(s, cout); break;
+        case CMD_OUT_FILE:    err = ui_vi_flush_msg_to_file(cout); break;
         case CMD_OUT_SHELL:   err = ui_vi_flush_msg_to_shell(s, cout); break;
         default: fail_e("invalid output redirection");
     }

@@ -53,7 +53,6 @@ typedef struct {
     };
 } CmdOutSink;
 
-Err cmd_out_sink_to_file(CmdOutSink sink[_1_], FilePtr fp[_1_]);
 Err cmd_out_sink_close_file(CmdOutSink sink[_1_], FilePtr fp[_1_]);
 Err cmd_out_sink_set(CmdOutSink sink[_1_], CmdOutSinkTag tag, StrView* s);
 Err cmd_out_sink_reset(CmdOutSink sink[_1_], CmdOutSinkTag tag);
@@ -105,6 +104,5 @@ bool cmd_out_will_touch_screen(CmdOut o[_1_]);
 #define cmd_out_std_append_ui_as_base36(M,U) str_append_ui_as_base36(cmd_out_std(M), U)
 
 Err msg_fmt(CmdOut cout[_1_], const char* fmt, ...);
-Err cmd_out_std_flush(CmdOut co[_1_]);
-Err cmd_out_msg_flush(CmdOut co[_1_]);
+Err cmd_out_sink_to_file_flush(CmdOutSink sink[_1_], Str s[_1_]);
 #endif

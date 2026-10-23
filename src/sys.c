@@ -218,3 +218,12 @@ append_fnames_from_dir(const char* dir_path, ArlOf(Str) fnames[1]) {
     closedir(dir);
     return Ok;
 }
+
+
+Err
+file_write_flush_strview(FilePtr fp, StrView s) {
+    if (!s.len) return Ok;
+    try( mem_fwrite(s.items, s.len, fp.ptr));
+    if (fflush(fp.ptr)) return err_fmt("error: fflush failure: %s", strerror(errno));
+    return Ok;
+}

@@ -5,6 +5,7 @@
 #include "sys.h"
 
 
+
 Err
 msg_fmt(CmdOut cout[_1_], const char* fmt, ...) {
 #define TRUNC_MSG "TRMsg:"
@@ -67,17 +68,16 @@ cmd_out_sink_set(CmdOutSink sink[_1_], CmdOutSinkTag tag, StrView* s) {
 
 
 Err
-cmd_out_sink_to_file(CmdOutSink sink[_1_], FilePtr fp[_1_]) {
-    switch (sink->tag) {
-        case CMD_OUT_SCREEN:
-        case CMD_OUT_WARN:
-            fp->ptr = stdout;
-            return Ok;
-        case CMD_OUT_FILE:
-            return file_open(sink->filename.items,"w", &fp->ptr);
-        default:
-            fail_e("invalid CmdOutSinkTag");
-    }
+cmd_out_sink_to_file_flush(CmdOutSink sink[_1_], Str s[_1_]) {
+    if (sink->tag != CMD_OUT_FILE) fail_e("expecting CMD_OUT_FILE tag");
+    Err err = Ok;
+    FilePtr fp = (FilePtr){0};
+    try(file_open(sink->filename.items, "w", &fp.ptr));
+    tryjmp(err,Clean, file_write_flush_strview(fp, sv(s)));
+    str_reset(s);
+Clean:
+    file_close(fp.ptr);
+    return err;
 }
 
 Err

@@ -52,9 +52,7 @@ Err ui_line_show_err(Session* s, char* err, size_t len);
 typedef struct Session Session;
 Err ui_vi_show_session(Session* s, CmdOut cout[_1_]);
 Err ui_vi_write_msg(const char* mem, size_t len, Session* s);
-Err ui_vi_flush_msg(Session* s, CmdOut cout[_1_]);
 Err ui_vi_show_err(Session* s, char* err, size_t len);
-Err ui_vi_flush_std(Session* s, CmdOut cout[_1_]);
 
 /* getter */
 
