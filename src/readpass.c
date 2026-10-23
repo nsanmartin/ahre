@@ -13,9 +13,9 @@ Err readpass_term(ArlOf(char) passw[_1_], bool write) {
 
     while (1) {
         int cint = fgetc(stdin);
-        if (cint == EOF) return "error: EOF reading password";
+        if (cint == EOF) { err = "error: EOF reading password"; break; }
         if (cint == KeyEnter) { break; }
-        if (cint == KeyCtrl_C) { arlfn(char, clean)(passw); break; }
+        if (cint == KeyCtrl_C) { arlfn(char, clean)(passw); err = "ctrl-c"; break; }
 
         char c = (char)cint;
         if (!isprint(c)) continue;

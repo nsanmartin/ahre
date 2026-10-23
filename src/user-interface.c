@@ -336,7 +336,7 @@ static Err cmd_input_save(CmdParams p[_1_]) { return run_cmd_for_htmldoc_single_
 
 static SessionCmd _cmd_input_[] =
     { {.name="\"", .fn=cmd_input_info,    .help=NULL,          .flags=CMD_CHAR}
-    , {.name="",   .fn=cmd_input_submit,  .help=NULL,           .flags=CMD_EMPTY}
+    , {.name="",   .fn=cmd_input_submit,  .help=NULL,          .flags=CMD_EMPTY}
     , {.name="*",  .fn=cmd_input_submit,  .help=NULL,          .flags=CMD_CHAR}
     , {.name="#",  .fn=cmd_input_sharp ,  .help=NULL,          .flags=CMD_CHAR}
     , {.name="=",  .fn=cmd_input_set,     .help=CMD_INPUT_SET, .flags=CMD_CHAR}

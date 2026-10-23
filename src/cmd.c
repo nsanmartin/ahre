@@ -497,6 +497,14 @@ cmd_input_default_node(CmdParams p[_1_], DomNode node) {
     try( tablist_current_tab(session_tablist(p->s), &tab));
     UrlClient* url_client = session_url_client(p->s);
 
+    if (cmd_params_match_char(p, '=')) {
+        try(cmd_input_set_node(p, node));
+        try(cmd_params_cut_cmd(p));
+        return tab_node_tree_append_submit_input_node(tab, node, url_client, p->s, cmd_params_cmd_out(p));
+    }
+
+    try(cmd_params_cut_cmd(p));
+
     if (dom_node_tag(node) == HTML_TAG_INPUT) {
 
         if (dom_node_attr_has_value(node, svl("type"), svl("submit"))) 
