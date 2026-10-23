@@ -451,12 +451,12 @@ parse_output_redirect(UserLine ul[_1_], CmdOut cout[_1_]) {
         if(!user_line_pop_nonspace(ul, &src_param)) return "expecting file name";
         if (!user_line_cut_cmd_no_redirect(ul)) return "expecting end of redirect cmd";
         sink_tag = CMD_OUT_FILE;
-    } else if (str_startswith(svl("proc"), sink)) {
+    } else if (str_startswith(svl("shell"), sink)) {
         if(!user_line_pop_rest(ul, &src_param)) return "expecting system command";
         if (! user_line_cut_cmd_no_redirect(ul)) return "expecting end of redirect cmd";
-        sink_tag = CMD_OUT_PROC;
+        sink_tag = CMD_OUT_SHELL;
     } else {
-        return "expecting msg | std | file <fname> | proc <cmd...>";
+        return "expecting msg | std | file <fname> | shell <cmd...>";
     }
 
 

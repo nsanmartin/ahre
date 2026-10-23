@@ -41,7 +41,7 @@ typedef enum {
     CMD_OUT_SCREEN = 1,
     CMD_OUT_WARN   = 2,
     CMD_OUT_FILE   = 3,
-    CMD_OUT_PROC   = 4
+    CMD_OUT_SHELL  = 4
 } CmdOutSinkTag;
 
 
@@ -49,7 +49,7 @@ typedef struct {
     CmdOutSinkTag tag;
     union {
         Str filename;
-        Str proc_cmd;
+        Str shell_cmd;
     };
 } CmdOutSink;
 

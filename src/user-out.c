@@ -59,7 +59,7 @@ ui_line_flush_std_to_file(CmdOut cout[_1_]) {
     return Ok;
 }
 static Err
-ui_line_flush_std_to_proc(CmdOut cout[_1_]) {
+ui_line_flush_std_to_shell(CmdOut cout[_1_]) {
     (void)cout;
     try( flush_to_file_strview(svl( "not implemented"), (FilePtr){.ptr=stdout}));
     return Ok;
@@ -71,7 +71,7 @@ ui_line_flush_msg_to_file(CmdOut cout[_1_]) {
     return Ok;
 }
 static Err
-ui_line_flush_msg_to_proc(CmdOut cout[_1_]) {
+ui_line_flush_msg_to_shell(CmdOut cout[_1_]) {
     (void)cout;
     try( flush_to_file_strview(svl( "not implemented"), (FilePtr){.ptr=stdout}));
     return Ok;
@@ -88,7 +88,7 @@ ui_line_flush_std(Session* s, CmdOut cout[_1_]) {
             break;
         case CMD_OUT_FILE: err = ui_line_flush_std_to_file(cout);
             break;
-        case CMD_OUT_PROC: err = ui_line_flush_std_to_proc(cout);
+        case CMD_OUT_SHELL: err = ui_line_flush_std_to_shell(cout);
             break;
         default: fail_e("invalid output redirection");
     }
@@ -109,7 +109,7 @@ ui_line_flush_msg(Session* s, CmdOut cout[_1_]) {
             break;
         case CMD_OUT_FILE: err = ui_line_flush_msg_to_file(cout);
             break;
-        case CMD_OUT_PROC: err = ui_line_flush_msg_to_proc(cout);
+        case CMD_OUT_SHELL: err = ui_line_flush_msg_to_shell(cout);
             break;
         default: fail_e("invalid output redirection");
     }
@@ -245,9 +245,9 @@ ui_vi_flush_std_to_file(Session s[_1_], CmdOut cout[_1_]) {
 }
 
 static Err
-ui_vi_flush_std_to_proc(Session s[_1_], CmdOut cout[_1_]) {
+ui_vi_flush_std_to_shell(Session s[_1_], CmdOut cout[_1_]) {
     (void)cout;
-    try( ui_vi_flush_msg_read_input(s, svl("flush std to proc not implemented")));
+    try( ui_vi_flush_msg_read_input(s, svl("flush std to shell not implemented")));
     try( lit_write__(EscCodeClsScr, stdout));
     return Ok;
 }
@@ -262,7 +262,7 @@ Err ui_vi_flush_std(Session* s, CmdOut cout[_1_]) {
             break;
         case CMD_OUT_FILE: err = ui_vi_flush_std_to_file(s, cout);
             break;
-        case CMD_OUT_PROC: err = ui_vi_flush_std_to_proc(s, cout);
+        case CMD_OUT_SHELL: err = ui_vi_flush_std_to_shell(s, cout);
             break;
         default: fail_e("invalid output redirection");
     }
@@ -302,9 +302,9 @@ ui_vi_flush_msg_to_file(Session s[_1_], CmdOut cout[_1_]) {
 }
 
 static Err
-ui_vi_flush_msg_to_proc(Session s[_1_], CmdOut cout[_1_]) {
+ui_vi_flush_msg_to_shell(Session s[_1_], CmdOut cout[_1_]) {
     (void)cout;
-    try( ui_vi_flush_msg_read_input(s, svl("flush msg to proc not implemented")));
+    try( ui_vi_flush_msg_read_input(s, svl("flush msg to shell not implemented")));
     try( lit_write__(EscCodeClsScr, stdout));
     return Ok;
 }
@@ -316,7 +316,7 @@ Err ui_vi_flush_msg(Session* s, CmdOut cout[_1_]) {
         case CMD_OUT_WARN:    err = ui_vi_flush_msg_default(s, cout); break;
         case CMD_OUT_SCREEN:  err = ui_vi_flush_msg_to_std(cout); break;
         case CMD_OUT_FILE:    err = ui_vi_flush_msg_to_file(s, cout); break;
-        case CMD_OUT_PROC:    err = ui_vi_flush_msg_to_proc(s, cout); break;
+        case CMD_OUT_SHELL:   err = ui_vi_flush_msg_to_shell(s, cout); break;
         default: fail_e("invalid output redirection");
     }
     try(cmd_out_sink_cleanup(&cout->msg_sink, CMD_OUT_WARN));

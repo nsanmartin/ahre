@@ -33,8 +33,8 @@ cmd_out_sink_cleanup(CmdOutSink sink[_1_], CmdOutSinkTag tag) {
         case CMD_OUT_FILE:
             str_clean(&sink->filename);
             break;
-        case CMD_OUT_PROC:
-            str_clean(&sink->proc_cmd);
+        case CMD_OUT_SHELL:
+            str_clean(&sink->shell_cmd);
             break;
         default:
             fail_e("invalid sink tag!");
@@ -56,9 +56,9 @@ cmd_out_sink_set(CmdOutSink sink[_1_], CmdOutSinkTag tag, StrView* s) {
             if (!s) fail_e("null ptr failure");
             try(str_append(&sink->filename, s));
             return Ok;
-        case CMD_OUT_PROC:
+        case CMD_OUT_SHELL:
             if (!s) fail_e("null ptr failure");
-            try(str_append(&sink->proc_cmd, s));
+            try(str_append(&sink->shell_cmd, s));
             return Ok;
         default:
             fail_e("invalid sink tag!");
