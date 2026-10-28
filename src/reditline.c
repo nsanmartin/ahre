@@ -28,7 +28,8 @@ typedef enum {
 #define rl_try(Expr) do{\
     RlError rl_err_=validate_rl_err((Expr));if (rl_err_) return rl_err_;}while(0) 
 
-Err switch_tty_to_raw_mode(struct termios prev_termios[_1_]) {
+Err
+switch_tty_to_raw_mode(struct termios prev_termios[_1_]) {
 
     if (!isatty(STDIN_FILENO)) return "error: not a tty";
     if (tcgetattr(STDIN_FILENO, prev_termios) == -1) return "error: tcgetattr falure";
@@ -46,8 +47,11 @@ Err switch_tty_to_raw_mode(struct termios prev_termios[_1_]) {
 
 
 
-static inline void rlbuf_reset(RLBuf b[_1_]) { b->len = b->pos = 0; }
-static inline RlError rlbuf_ensure_extra_capacity_(RLBuf b[_1_], size_t size) {
+static inline void
+rlbuf_reset(RLBuf b[_1_]) { b->len = b->pos = 0; }
+
+static inline
+RlError rlbuf_ensure_extra_capacity_(RLBuf b[_1_], size_t size) {
     if (b->capacity < b->len + size) {
         const size_t new_capacity = b->capacity + RL_DEFAULT_LINE_CAPACITY;
         char* realloc_res         = std_realloc(b->items, new_capacity);
@@ -62,7 +66,8 @@ static inline RlError rlbuf_ensure_extra_capacity_(RLBuf b[_1_], size_t size) {
     return ReditlineOk;
 }
 
-static inline RlError rlbuf_append(RLBuf b[_1_], const char* data, size_t datalen) {
+static inline
+RlError rlbuf_append(RLBuf b[_1_], const char* data, size_t datalen) {
     rl_try(rlbuf_ensure_extra_capacity_(b, datalen));
     memmove(b->items + b->len, data, datalen);
     b->len += datalen;
@@ -80,12 +85,14 @@ static inline RLBuf* rl_buf(ReditLine rl[_1_]) { return &rl->buf; }
 static inline size_t* rl_pos(ReditLine rl[_1_]) { return &rl->buf.pos; }
 static inline size_t* rl_history_ix(ReditLine rl[_1_]) { return &rl->history_ix; }
 
-static inline const_cstr* rl_history_entry(ReditLine rl[_1_]) {
+static inline
+const_cstr* rl_history_entry(ReditLine rl[_1_]) {
     size_t actual_ix = len__(rl_history(rl)) - *rl_history_ix(rl);
     return arlfn(const_cstr, at)(rl_history(rl), actual_ix);
 }
 
-static inline RlError rl_init(ReditLine rl[_1_], ArlOf(const_cstr) h[_1_], const char* line) {
+static inline
+RlError rl_init(ReditLine rl[_1_], ArlOf(const_cstr) h[_1_], const char* line) {
     *rl = (ReditLine) {.history = h };
     if (!(rl_buf(rl)->items = std_malloc(RL_DEFAULT_LINE_CAPACITY))) return RlErrorMalloc;
     if (line && *line && isprint(*line)) {
@@ -95,14 +102,16 @@ static inline RlError rl_init(ReditLine rl[_1_], ArlOf(const_cstr) h[_1_], const
     return ReditlineOk;
 }
 
-static inline RlError rl_buf_write(ReditLine rl[_1_]) {
+static inline
+RlError rl_buf_write(ReditLine rl[_1_]) {
     size_t len = len__(rl_buf(rl)) ;
     if (len && fwrite(items__(rl_buf(rl)), 1, len, stdout) != len) 
             return RlErrorFwrite;
     return ReditlineOk;
 }
 
-static inline RlError rl_erase_line(void) {
+static inline
+RlError rl_erase_line(void) {
     if (fwrite(EscCodeEraseLine, 1, lit_len__(EscCodeEraseLine), stdout) != lit_len__(EscCodeEraseLine)
     ||  fwrite(EscCodeUnsaveCursor, 1, lit_len__(EscCodeUnsaveCursor), stdout) != lit_len__(EscCodeUnsaveCursor))
         return RlErrorFwrite;
@@ -110,7 +119,8 @@ static inline RlError rl_erase_line(void) {
 }
 
 
-static inline void rl_cleanup(ReditLine rl[_1_]) {
+static inline void
+rl_cleanup(ReditLine rl[_1_]) {
     //TODO: not cleaning history because it's cached and cleaned on exit;
     std_free(rl_buf(rl)->items);
     *rl_buf(rl) = (RLBuf){0};
@@ -157,7 +167,8 @@ rl_redraw_line(ReditLine rl[1]) {
 
 
 
-static RlError rl_insert_char(ReditLine rl[_1_], char c) {
+static
+RlError rl_insert_char(ReditLine rl[_1_], char c) {
     rl_try(rlbuf_ensure_extra_capacity_(rl_buf(rl), 1));
 
     bool redraw = rl->buf.pos < rl->buf.len;
@@ -186,7 +197,8 @@ rl_unsafe_get_pos_char(ReditLine rl[1]) { return rl_buf(rl)->items[*rl_pos(rl)-1
 #define REDITLINE_HISTORY_PREV 1
 #define REDITLINE_HISTORY_NEXT -1
 
-static RlError _rl_buf_from_history_(ReditLine rl[_1_], int direction) {
+static
+RlError _rl_buf_from_history_(ReditLine rl[_1_], int direction) {
     *rl_history_ix(rl) = *rl_history_ix(rl) + direction;
     const_cstr* entry = rl_history_entry(rl); 
     if (!entry) return RlErrorHistoryIndexOutOfRange;
@@ -196,14 +208,18 @@ static RlError _rl_buf_from_history_(ReditLine rl[_1_], int direction) {
     return ReditlineOk;
 }
 
-static inline RlError rl_history_next(ReditLine rl[_1_]) {
+
+static inline RlError
+rl_history_next(ReditLine rl[_1_]) {
     return len__(rl_history(rl)) && *rl_history_ix(rl) > 1 
         ? _rl_buf_from_history_(rl, REDITLINE_HISTORY_NEXT)
         : ReditlineOk
         ;
 }
 
-static inline RlError rl_history_prev(ReditLine rl[_1_]) {
+
+static inline RlError
+rl_history_prev(ReditLine rl[_1_]) {
     return len__(rl_history(rl)) > *rl_history_ix(rl)
         ? _rl_buf_from_history_(rl, REDITLINE_HISTORY_PREV)
         : ReditlineOk
@@ -374,7 +390,8 @@ rl_edit(ReditLine rl[_1_]) {
 }
 
 
-int redit_history_add(ArlOf(const_cstr) history[_1_], const char* line) {
+int
+redit_history_add(ArlOf(const_cstr) history[_1_], const char* line) {
     line = std_strdup(line);
     if (!line) return RlErrorStrdup;
     if (!arlfn(const_cstr,append)(history, &line)) {
@@ -384,7 +401,9 @@ int redit_history_add(ArlOf(const_cstr) history[_1_], const char* line) {
     return ReditlineOk;
 }
 
-static char* _reditline_error_ = "error: reditline failure";
+
+static char*
+_reditline_error_ = "error: reditline failure";
 bool reditline_error(char* res) { return res == _reditline_error_; }
 
  
@@ -415,6 +434,7 @@ reditline(const char* prompt, char* line, ArlOf(const_cstr) history[_1_]) {
 }
 
 //TODO: consider whether exporting or using atexit
-void reditline_history_cleanup(ArlOf(const_cstr) history[_1_]) {
+void
+reditline_history_cleanup(ArlOf(const_cstr) history[_1_]) {
     arlfn(const_cstr, clean)(history);
 }
