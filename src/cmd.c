@@ -250,14 +250,12 @@ cmd_fetch(Session session[_1_], CmdOut* out) {
     HtmlDocPtr* htmldoc;
     try( session_current_doc(session, &htmldoc));
 
-    Err err = Ok;
-    HtmlDocPtr newdoc = (HtmlDocPtr){.ptr=std_malloc(sizeof *newdoc.ptr)};
-    if (isnull(newdoc)) { err="error: could not alloc htmldoc"; goto FailAlloc; }
+    HtmlDocPtr newdoc;
     /* we reuse the request, but the Url is duplicated on fetch. We could
      * instead try to not duplicate it in this specific case, but this is
      * easier because the rest of the fetchs need to duplicate. */
-    tryjmp(err, Fail, htmldoc_init_move_request(
-        newdoc.ptr,
+    try(htmldoc_ptr_init_move_request(
+        &newdoc,
         htmldoc_request(htmldoc->ptr),
         session_url_client(session),
         session,
@@ -266,11 +264,6 @@ cmd_fetch(Session session[_1_], CmdOut* out) {
     htmldoc_destroy(htmldoc->ptr);
     htmldoc->ptr = newdoc.ptr;
     return Ok;
-
-Fail:
-    htmldoc_destroy(newdoc.ptr);
-FailAlloc:
-    return err;
 }
 
 

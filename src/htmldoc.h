@@ -66,6 +66,7 @@ typedef struct HtmlDoc {
     JsEngine             jsdoc;
 } HtmlDoc;
 
+typedef struct { HtmlDoc* ptr; } HtmlDocPtr;
 /* getters */
 static inline ArlOf(DomNode)* htmldoc_anchors(HtmlDoc d[_1_]) { return &d->draw_cache.anchors; }
 static inline ArlOf(DomNode)* htmldoc_forms(HtmlDoc d[_1_]) { return &d->draw_cache.forms; }
@@ -117,7 +118,6 @@ Err htmldoc_fetch(
     FetchHistoryEntry he[_1_]
 );
 Err htmldoc_init_bookmark_move_urlstr(HtmlDoc d[_1_], Str urlstr[_1_]);
-Err htmldoc_init_move_request(HtmlDoc d[_1_], Request r[_1_], UrlClient uc[_1_], Session* s, CmdOut* out);
 Err htmldoc_input_at(HtmlDoc d[_1_], size_t ix, DomNode out[_1_]);
 Err htmldoc_js_enable(HtmlDoc d[_1_], Session* s, CmdOut* out);
 Err htmldoc_print_info(HtmlDoc d[_1_], CmdOut* out);
@@ -140,4 +140,7 @@ Err htmldoc_set_cookielist(HtmlDoc d[_1_], StrView cookie);
 Err htmldoc_get_effective_url(HtmlDoc d[_1_], StrView url[_1_]);
 Err htmldoc_scripts_range_from_parsed_range( HtmlDoc h[_1_], RangeParse p[_1_], Range r[_1_]);
 Err htmldoc_script_write_all(HtmlDoc h[_1_], Range r[_1_], Writer w[_1_]);
+
+
+ Err htmldoc_ptr_init_move_request( HtmlDocPtr d[_1_], Request r[_1_], UrlClient uc[_1_], Session* s, CmdOut* cmd_out);
 #endif

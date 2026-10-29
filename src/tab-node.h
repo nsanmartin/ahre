@@ -10,7 +10,6 @@ typedef struct Session Session;
 struct ArlOf(TabNode);
 typedef struct ArlOf(TabNode) ArlOf(TabNode);
 
-typedef struct { HtmlDoc* ptr; } HtmlDocPtr;
 typedef struct TabNode TabNode;
 typedef struct TabNode {
     TabNode* parent; 
@@ -36,7 +35,7 @@ Err tab_node_current_doc(TabNode n[_1_], HtmlDocPtr* out[_1_] );
 /* getters */
 static inline ArlOf(TabNode)* tab_node_childs(TabNode dn[_1_]) { return dn->childs; }
 static inline size_t tab_node_child_count(TabNode dn[_1_]) { return dn->childs->len; }
-static inline HtmlDoc* tab_node_doc(TabNode n[_1_]) { return n->doc.ptr; }
+static inline HtmlDocPtr* tab_node_doc(TabNode n[_1_]) { return &n->doc; }
 static inline bool
 tab_node_have_current_child(TabNode n[_1_]) {return n->current_ix != tab_node_child_count(n);}
 static inline TabNode*

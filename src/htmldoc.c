@@ -948,7 +948,7 @@ _htmldoc_draw_(HtmlDoc htmldoc[_1_], Session s[_1_], CmdOut cmd_out[_1_]) {
 #define HTMLDOC_FLAG_JS 0x1u
 
 
-Err
+static Err
 htmldoc_init_move_request(
     HtmlDoc   d[_1_],
     Request   r[_1_],
@@ -1019,6 +1019,27 @@ Fail:
     return e;
 }
 
+
+Err
+htmldoc_ptr_init_move_request(
+    HtmlDocPtr   d[_1_],
+    Request   r[_1_],
+    UrlClient uc[_1_],
+    Session*  s,
+    CmdOut*   cmd_out
+) {
+    *d = (HtmlDocPtr){.ptr=std_malloc(sizeof (HtmlDoc))};
+    if (isnull(*d)) { return "error: could not alloc htmldoc"; }
+
+    Err err = Ok;
+    tryjmp(err, Fail, htmldoc_init_move_request( d->ptr, r, uc, s, cmd_out));
+    return Ok;
+
+Fail:
+    std_free(d->ptr);
+    d->ptr = NULL;
+    return err;
+}
 
 Err
 htmldoc_init_bookmark_move_urlstr(HtmlDoc d[_1_], Str urlstr[_1_]) {

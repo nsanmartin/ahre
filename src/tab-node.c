@@ -7,26 +7,13 @@
 /* ctor */
 static Err
 _tab_node_init_base_(TabNode n[_1_], TabNode* parent) {
-    Err err = Ok;
     *n = (TabNode){0};
     n->childs = std_malloc(sizeof *n->childs);
-    if (!n->childs) {
-        err = "error: tab_node_init_from_cstr mem failure";
-        goto FailChilds;
-    }
+    if (!n->childs) return "error: tab_node_init_from_cstr mem failure";
+
     *n->childs = (ArlOf(TabNode)){0};
-    n->parent = parent;
-    n->doc.ptr = std_malloc(sizeof *n->doc.ptr);
-    if (isnull(n->doc)) {
-        err = "error: failed to alloc htmldoc for node";
-        goto FailHtmlDoc;
-    }
-    return err;
-FailHtmlDoc:
-    std_free(n->childs);
-    n->childs = NULL;
-FailChilds:
-    return err;
+    n->parent  = parent;
+    return Ok;
 }
 
 
@@ -39,7 +26,7 @@ Err tab_node_init_move_request(
     CmdOut*     out
 ) {
     try(_tab_node_init_base_(n, parent));
-    try( htmldoc_init_move_request(tab_node_doc(n), r, url_client, s, out));
+    try( htmldoc_ptr_init_move_request(tab_node_doc(n), r, url_client, s, out));
 
     n->current_ix = n->childs->len;
     return Ok;
