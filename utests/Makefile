@@ -4,10 +4,10 @@ AHRE_UTESTS=$(REPO_DIR)/utests
 SANITIZE_FLAGS:= -fsanitize=leak,address,undefined,null,bounds,pointer-overflow
 
 run_tests: run_test_ed_write run_test_range run_test_buf run_test_error run_test_iconv \
-	run_test_url run_test_cmd-params run_test_user-input
+	run_test_url run_test_cmd-params run_test_user-input run_test_reditline
 
 all_tests: test_ed_write test_range test_buf test_error test_iconv test_url \
-	test_cmd-params test_user-input
+	test_cmd-params test_user-input test_reditline
 
 run_test_ed_write: test_ed_write
 	../build/test_ed_write
@@ -32,6 +32,10 @@ run_test_cmd-params: test_cmd-params
 
 run_test_user-input: test_user-input
 	../build/test_user-input
+
+
+run_test_reditline: test_reditline
+	../build/test_reditline
 
 
 test_range: $(AHRE_UTESTS)/test_range.c $(AHRE_BUILD)/isocline.o \
@@ -121,3 +125,9 @@ test_user-input:$(AHRE_UTESTS)/test_user-input.c \
 	$(CC) $(AHRE_CFLAGS) $(SANITIZE_FLAGS) $(AHRE_INCLUDE) -I. -I$(AHRE_UTESTS) \
 		-o $(AHRE_BUILD)/$@ $^  \
 		-lcurl -llexbor -lm
+
+
+test_reditline:$(AHRE_UTESTS)/test_reditline.c
+	$(CC) $(AHRE_CFLAGS) $(SANITIZE_FLAGS) $(AHRE_INCLUDE) -I. -I$(AHRE_UTESTS) \
+		-o $(AHRE_BUILD)/$@ $^ 
+

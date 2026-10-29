@@ -2319,7 +2319,7 @@ jse_eval(JsEngine js[_1_], Session* s,  StrView script, CmdOut* out)
 #endif
     } else {
         const char* str = JS_ToCString(ctx, result);
-        size_t str_len  = strlen(str);
+        size_t str_len  = str ? strlen(str) : 0;
         try(msg__(out,  svl("  => ")));
         if (str && str_len) try(msg_ln__(out, str));
         else try(msg__(out,  svl("\\0")));

@@ -15,13 +15,15 @@ typedef enum {
     ReditlineOk = 0,
     RlErrorRealloc,
     RlErrorMalloc,
+    RlErrorPutchar,
     RlErrorFwrite,
     RlErrorStrdup,
     RlErrorArlAppend,
     RlErrorHistoryIndexOutOfRange,
     RlErrorReadingInput,
     RlErrorUnexpectedEmptyLine,
-    RlErrorInvalidInput
+    RlErrorInvalidInput,
+    RlErrorUnexpected
 } RlError;
 
 #define validate_rl_err(Value) _Generic((Value), RlError: Value)
@@ -50,10 +52,13 @@ switch_tty_to_raw_mode(struct termios prev_termios[_1_]) {
 static inline void
 rlbuf_reset(RLBuf b[_1_]) { b->len = b->pos = 0; }
 
-static inline
-RlError rlbuf_ensure_extra_capacity_(RLBuf b[_1_], size_t size) {
+static inline RlError
+rlbuf_ensure_extra_capacity_(RLBuf b[_1_], size_t size) {
+    if (size > SIZE_MAX - b->len) return RlErrorRealloc;
     if (b->capacity < b->len + size) {
-        const size_t new_capacity = b->capacity + RL_DEFAULT_LINE_CAPACITY;
+        if (size < RL_DEFAULT_LINE_CAPACITY) size = RL_DEFAULT_LINE_CAPACITY;
+        if (size > SIZE_MAX - b->capacity) return RlErrorRealloc;
+        const size_t new_capacity = b->capacity + size;
         char* realloc_res         = std_realloc(b->items, new_capacity);
         if (!realloc_res) {
             std_free(b->items);
@@ -66,8 +71,8 @@ RlError rlbuf_ensure_extra_capacity_(RLBuf b[_1_], size_t size) {
     return ReditlineOk;
 }
 
-static inline
-RlError rlbuf_append(RLBuf b[_1_], const char* data, size_t datalen) {
+static inline RlError
+rlbuf_append(RLBuf b[_1_], const char* data, size_t datalen) {
     rl_try(rlbuf_ensure_extra_capacity_(b, datalen));
     memmove(b->items + b->len, data, datalen);
     b->len += datalen;
@@ -91,10 +96,12 @@ const_cstr* rl_history_entry(ReditLine rl[_1_]) {
     return arlfn(const_cstr, at)(rl_history(rl), actual_ix);
 }
 
-static inline
-RlError rl_init(ReditLine rl[_1_], ArlOf(const_cstr) h[_1_], const char* line) {
+static inline RlError
+rl_init(ReditLine rl[_1_], ArlOf(const_cstr) h[_1_], const char* line) {
     *rl = (ReditLine) {.history = h };
     if (!(rl_buf(rl)->items = std_malloc(RL_DEFAULT_LINE_CAPACITY))) return RlErrorMalloc;
+    rl_buf(rl)->capacity = RL_DEFAULT_LINE_CAPACITY;
+
     if (line && *line && isprint(*line)) {
         rl_try (rlbuf_append(rl_buf(rl), line, strlen(line)));
         rl_buf(rl)->pos = rl_buf(rl)->len;
@@ -102,16 +109,16 @@ RlError rl_init(ReditLine rl[_1_], ArlOf(const_cstr) h[_1_], const char* line) {
     return ReditlineOk;
 }
 
-static inline
-RlError rl_buf_write(ReditLine rl[_1_]) {
+static inline RlError
+rl_buf_write(ReditLine rl[_1_]) {
     size_t len = len__(rl_buf(rl)) ;
     if (len && fwrite(items__(rl_buf(rl)), 1, len, stdout) != len) 
             return RlErrorFwrite;
     return ReditlineOk;
 }
 
-static inline
-RlError rl_erase_line(void) {
+static inline RlError
+rl_erase_line(void) {
     if (fwrite(EscCodeEraseLine, 1, lit_len__(EscCodeEraseLine), stdout) != lit_len__(EscCodeEraseLine)
     ||  fwrite(EscCodeUnsaveCursor, 1, lit_len__(EscCodeUnsaveCursor), stdout) != lit_len__(EscCodeUnsaveCursor))
         return RlErrorFwrite;
@@ -166,10 +173,15 @@ rl_redraw_line(ReditLine rl[1]) {
 
 
 
+static RlError
+rl_putchar(char c) {
+    if ( EOF == putchar(c) ) return RlErrorPutchar;
+    return ReditlineOk;
+}
 
-static
-RlError rl_insert_char(ReditLine rl[_1_], char c) {
-    rl_try(rlbuf_ensure_extra_capacity_(rl_buf(rl), 1));
+static RlError
+rl_insert_char(ReditLine rl[_1_], char c) {
+    rl_try(rlbuf_ensure_extra_capacity_(rl_buf(rl), 2));
 
     bool redraw = rl->buf.pos < rl->buf.len;
     if (redraw) {
@@ -186,7 +198,7 @@ RlError rl_insert_char(ReditLine rl[_1_], char c) {
         rl_try(rl_redraw_line(rl));
         /* const size_t left_movement = rl->buf.len - (rl->buf.pos + 1); */
         /* rl_try(rl_move_cursor(left_movement, EscCodeDirectionBackward)); */
-    } else putchar(c);
+    } else rl_try(rl_putchar(c));
     return ReditlineOk;
 }
 
@@ -270,9 +282,13 @@ rl_delete_char_back(ReditLine rl[1]) {
 
 static RlError
 rl_delete_char_forward(ReditLine rl[1]) {
+    if (rl_buf(rl)->len <  rl_buf(rl)->pos) return RlErrorUnexpected;
+    if (rl_buf(rl)->len == 0) return ReditlineOk;
     if (rl_buf(rl)->len == rl_buf(rl)->pos) return ReditlineOk;
+
     --rl_buf(rl)->len;
-    const size_t chars_to_move = rl_buf(rl)->len - (rl_buf(rl)->pos - 1);
+    const size_t chars_to_move = rl_buf(rl)->len -  rl_buf(rl)->pos;
+
     memmove(
         rl_buf(rl)->items + rl_buf(rl)->pos,
         rl_buf(rl)->items + rl_buf(rl)->pos + 1,
@@ -381,6 +397,7 @@ rl_edit(ReditLine rl[_1_]) {
                            if (c == '[') c = fgetc(stdin);
                            break;
             default: {
+                if (c == EOF) return rl_erase_and_cleanup(rl);
                 if (!isprint(c)) break;
                 rl_try(rl_insert_char(rl, c));
                 break;
