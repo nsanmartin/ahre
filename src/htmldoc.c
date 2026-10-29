@@ -1096,6 +1096,7 @@ htmldoc_cleanup(HtmlDoc htmldoc[_1_]) {
 
 void
 htmldoc_destroy(HtmlDoc* htmldoc) {
+    if (!htmldoc) return;
     htmldoc_cleanup(htmldoc);
     std_free(htmldoc);
 }

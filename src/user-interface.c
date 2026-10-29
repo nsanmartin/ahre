@@ -41,9 +41,9 @@ typedef ArlOf(DomNode)* nodeCollectionCallback (HtmlDoc h[_1_]);
 
 static Err
 get_range_and_nodes(CmdParams p[_1_], Range r[_1_], ArlOf(DomNode)* collection[_1_], nodeCollectionCallback cb) {
-    HtmlDoc* h;
+    HtmlDocPtr* h;
     try(session_current_doc(p->s, &h));
-    *collection = cb(h);
+    *collection = cb(h->ptr);
     try( basic_range_from_parse(&p->rp, 0, len__(*collection), r));
     if (r->end <= r->beg) return "error: bad range";
     return Ok;
@@ -189,8 +189,8 @@ static Err cmd_anchor_print_range(CmdParams p[_1_]) {
 
 static Err cmd_anchor_asterisk_range(CmdParams p[_1_]) {
     Range r;
-    HtmlDoc* h;
-    try(session_current_doc(p->s, &h));
+    /* HtmlDocPtr* h; */
+    /* try(session_current_doc(p->s, &h)); */
     ArlOf(DomNode)* anchors;
     try(get_range_and_nodes(p, &r, &anchors, htmldoc_anchors));
     //TODO1: both cases should call cmd_anchor_asterisk, but we need to pass the information
@@ -351,9 +351,9 @@ Err cmd_input_save_node(CmdParams p[_1_], DomNode node) {
 
     StrView path;
     try (cmd_params_pop_last_path(p, &path));
-    HtmlDoc*       htmldoc;
+    HtmlDocPtr* htmldoc;
     try( session_current_doc(p->s, &htmldoc));
-    LipOf(DomNodePtr,bool)* checkboxes = htmldoc_checked_boxes(htmldoc);
+    LipOf(DomNodePtr,bool)* checkboxes = htmldoc_checked_boxes(htmldoc->ptr);
     DomNode form = dom_node_find_parent_form(node);
     if (isnull(form)) return "expected form, not found";
     Err e = Ok;
@@ -361,7 +361,7 @@ Err cmd_input_save_node(CmdParams p[_1_], DomNode node) {
     ArlOf(Request) rs = (ArlOf(Request)){0};
     Request* r;
     try(arl_append_zero(Request,&rs,r));
-    tryjmp(e,Clean, request_from_form_node(r, form, htmldoc_url(htmldoc), checkboxes));
+    tryjmp(e,Clean, request_from_form_node(r, form, htmldoc_url(htmldoc->ptr), checkboxes));
     tryjmp(e,Clean, request_arl_to_file(p, path, &rs));
 
 Clean:
@@ -413,10 +413,10 @@ static SessionCmd _cmd_tabs_[] =
 
 
 static Err cmd_doc_scripts_list(CmdParams p[_1_]) {
-    HtmlDoc* h;
+    HtmlDocPtr* h;
     try(session_current_doc(p->s, &h));
-    size_t head_scripts_count = len__(htmldoc_head_scripts(h));
-    size_t body_scripts_count = len__(htmldoc_body_scripts(h));
+    size_t head_scripts_count = len__(htmldoc_head_scripts(h->ptr));
+    size_t body_scripts_count = len__(htmldoc_body_scripts(h->ptr));
 
     CmdOut* out = cmd_params_cmd_out(p);
     try(msg__(out, svl("head script count: ")));
@@ -431,7 +431,7 @@ static Err cmd_doc_scripts_list(CmdParams p[_1_]) {
 #define CMD_SCRIPTS_LOCAL \
     "Load script frfom local file using current documnt's javascript runtime.\n"
 static Err cmd_doc_scripts_local(CmdParams p[_1_]) {
-    HtmlDoc* h;
+    HtmlDocPtr* h;
     try(session_current_doc(p->s, &h));
     CmdOut* out = cmd_params_cmd_out(p);
     StrView path;
@@ -442,7 +442,7 @@ static Err cmd_doc_scripts_local(CmdParams p[_1_]) {
         Err err = Ok;
         tryjmp(err, Clean_Fnames, append_fnames_from_dir(path.items, &fnames));
         foreach__(Str, &fnames, filename) {
-            Err js_eval_err = htmldoc_eval_js_file(h, p->s, filename->items, out);
+            Err js_eval_err = htmldoc_eval_js_file(h->ptr, p->s, filename->items, out);
             if (is_js_eval_err(js_eval_err)) {
                 tryjmp(err,Clean_Fnames, msg_ln__(out, sv(js_eval_err)));
             }
@@ -453,7 +453,7 @@ Clean_Fnames:
         arlfn(Str,clean)(&fnames);
         return err;
     }
-    return htmldoc_eval_js_file(h, p->s, path.items, out);
+    return htmldoc_eval_js_file(h->ptr, p->s, path.items, out);
 }
 
 static Err
@@ -474,14 +474,14 @@ Clean:
 static Err
 cmd_doc_scripts_save(CmdParams p[_1_]) {
     Err e = Ok;
-    HtmlDoc* h;
+    HtmlDocPtr* h;
     try(session_current_doc(p->s, &h));
     Range r;
-    try(htmldoc_scripts_range_from_parsed_range(h, &p->rp, &r));
+    try(htmldoc_scripts_range_from_parsed_range(h->ptr, &p->rp, &r));
     StrView path;
     try (cmd_params_pop_last_path(p, &path)); // "expecting a path where to write the scripts";
     if (!path_is_dir(path.items))
-        return cmd_doc_scripts_save_single_file(h, path.items, &r, cmd_params_cmd_out(p));
+        return cmd_doc_scripts_save_single_file(h->ptr, path.items, &r, cmd_params_cmd_out(p));
 
     Str script_filename = (Str){0};
     for (size_t it = r.beg; it < r.end; ++it) {
@@ -494,7 +494,7 @@ cmd_doc_scripts_save(CmdParams p[_1_]) {
 
         tryjmp(e,Clean, file_open(script_filename.items, "w", &fp));
         tryjmp(e,Clean, file_writer_init(&w, fp));
-        tryjmp(e,Clean, htmldoc_script_write(h, it, &w));
+        tryjmp(e,Clean, htmldoc_script_write(h->ptr, it, &w));
         tryjmp(e, Clean, msg__(cmd_params_cmd_out(p), svl("script(s) saved\n")));
 Clean:
         str_reset(&script_filename);
@@ -512,13 +512,13 @@ Clean:
     "If scripts were alredy fetched, it does nothing."
 static Err cmd_doc_scripts_fetch(CmdParams p[_1_]) {
     if (!range_parse_is_none(&p->rp)) return "cmd doc scripts fetch does not allow range. ";
-    HtmlDoc* h;
+    HtmlDocPtr* h;
     try(session_current_doc(p->s, &h));
-    if (len__(htmldoc_head_scripts(h)) + len__(htmldoc_body_scripts(h)))
+    if (len__(htmldoc_head_scripts(h->ptr)) + len__(htmldoc_body_scripts(h->ptr)))
         return "warn: htmldoc must have no scripts before fetching them";
     CurlPtr easy;
     try(w_curl_easy_init(&easy));
-    Err e = htmldoc_fetch_scripts(h, session_url_client(p->s), easy, cmd_params_cmd_out(p));
+    Err e = htmldoc_fetch_scripts(h->ptr, session_url_client(p->s), easy, cmd_params_cmd_out(p));
     curl_ptr_clean(&easy);
     return e;
 }
@@ -527,13 +527,13 @@ static Err cmd_doc_scripts_fetch(CmdParams p[_1_]) {
 
 
 static Err cmd_doc_scripts_msg(CmdParams p[_1_]) {
-    HtmlDoc* h;
+    HtmlDocPtr* h;
     try(session_current_doc(p->s, &h));
     Writer w;
     try(msg_writer_init(&w, cmd_out_msg(cmd_params_cmd_out(p))));
     Range r;
-    try(htmldoc_scripts_range_from_parsed_range(h, &p->rp, &r));
-    return htmldoc_script_write_all(h, &r, &w);
+    try(htmldoc_scripts_range_from_parsed_range(h->ptr, &p->rp, &r));
+    return htmldoc_script_write_all(h->ptr, &r, &w);
 }
 
 

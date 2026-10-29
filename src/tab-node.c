@@ -4,6 +4,32 @@
 #include "generic.h"
 
 
+/* ctor */
+static Err
+_tab_node_init_base_(TabNode n[_1_], TabNode* parent) {
+    Err err = Ok;
+    *n = (TabNode){0};
+    n->childs = std_malloc(sizeof *n->childs);
+    if (!n->childs) {
+        err = "error: tab_node_init_from_cstr mem failure";
+        goto FailChilds;
+    }
+    *n->childs = (ArlOf(TabNode)){0};
+    n->parent = parent;
+    n->doc.ptr = std_malloc(sizeof *n->doc.ptr);
+    if (isnull(n->doc)) {
+        err = "error: failed to alloc htmldoc for node";
+        goto FailHtmlDoc;
+    }
+    return err;
+FailHtmlDoc:
+    std_free(n->childs);
+    n->childs = NULL;
+FailChilds:
+    return err;
+}
+
+
 Err tab_node_init_move_request(
     TabNode     n[_1_],
     TabNode*    parent,
@@ -29,7 +55,7 @@ Err tab_node_tree_append_ahref_from_node(
 ) {
     if (!s) return "error: expecting a session";
     TabNode* n;
-    HtmlDoc* d;
+    HtmlDocPtr* d;
     try( tab_node_current_node(t, &n));
     try( tab_node_current_doc(t, &d));
 
@@ -38,7 +64,7 @@ Err tab_node_tree_append_ahref_from_node(
     Request r       = (Request){0};
     TabNode newnode = (TabNode){0};
 
-    tryjmp(e,Clean, request_init(&r, http_get, html, htmldoc_url(d)));
+    tryjmp(e,Clean, request_init(&r, http_get, html, htmldoc_url(d->ptr)));
     tryjmp(e,Clean, tab_node_init_move_request(&newnode, n, url_client, &r, s, out));
     tryjmp(e,Clean, tab_node_append_move_child(n, &newnode));
     return Ok;
@@ -57,7 +83,7 @@ Err tab_node_tree_append_submit_input_node(
     CmdOut* out
 ) {
     TabNode* tab_node;
-    HtmlDoc* d;
+    HtmlDocPtr* d;
     try( tab_node_current_node(t, &tab_node));
     try( tab_node_current_doc(t, &d));
 
@@ -67,7 +93,8 @@ Err tab_node_tree_append_submit_input_node(
     Request r       = (Request){0};
     TabNode newnode = (TabNode){0};
     Err e = Ok;
-    tryjmp(e,Clean, request_from_form_node(&r, form, htmldoc_url(d), htmldoc_checked_boxes(d)));
+    tryjmp(e,Clean,
+        request_from_form_node(&r, form, htmldoc_url(d->ptr), htmldoc_checked_boxes(d->ptr)));
     tryjmp(e,Clean, tab_node_init_move_request(&newnode, tab_node, url_client, &r, s, out));
     tryjmp(e,Clean, tab_node_append_move_child(tab_node, &newnode));
     return Ok;
@@ -81,7 +108,7 @@ Clean:
 
 void
 tab_node_cleanup(TabNode n[_1_]) {
-    htmldoc_cleanup(&n->doc);
+    htmldoc_destroy(n->doc.ptr);
     if (n->childs) arlfn(TabNode, clean)(n->childs);
     std_free(n->childs);
 }
@@ -109,7 +136,7 @@ TabNode* arl_of_tab_node_append(ArlOf(TabNode)* list, TabNode tn[_1_]) {
 
 Err tab_node_to_bookmark_description(TabNode n[_1_], Str description[_1_]) {
     DomNode title;
-    HtmlDoc* d = &n->doc;
+    HtmlDoc* d = n->doc.ptr;
     try(htmldoc_title(d, &title));
     if (!isnull(title))
         try(strview_join_lines_to_str(
@@ -166,3 +193,15 @@ Err session_tab_node_print(
     else --stack->len;
     return Ok;
 }
+
+
+Err
+tab_node_current_doc(TabNode n[_1_], HtmlDocPtr* out[_1_] ) {
+    TabNode* cn;
+    try( tab_node_current_node(n, &cn));
+    if (!cn) return "error: current node in NULL";
+    *out = &cn->doc;
+    return Ok;
+}
+
+

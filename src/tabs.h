@@ -1,6 +1,7 @@
 #ifndef AHRE_TABS_H__
 #define AHRE_TABS_H__
 
+
 #include "tab-node.h"
 
 void arl_of_tab_node_clean(ArlOf(TabNode)* t);
@@ -9,6 +10,9 @@ typedef struct {
     ArlOf(TabNode) tabs;
     size_t current_tab;
 } TabList;
+
+
+Err tablist_current_doc(TabList f[_1_], HtmlDocPtr* out[_1_]);
 
 
 /* getter */
@@ -48,18 +52,6 @@ Err tablist_current_node(TabList f[_1_], TabNode* out[_1_]) {
     return tab_node_current_node(root, out);
 }
 
-static inline Err tablist_current_doc(TabList f[_1_], HtmlDoc* out[_1_]) {
-    TabNode* t;
-    try( tablist_current_tab(f, &t));
-    if (!t) { 
-        *out = NULL;
-        return Ok;
-    }
-    HtmlDoc* d;
-    try( tab_node_current_doc(t, &d));
-    *out = d;
-    return Ok;
-}
 
 static inline Err
 tablist_append_move_tree(TabList f[_1_], TabNode t[_1_]) {

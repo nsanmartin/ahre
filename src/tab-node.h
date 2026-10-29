@@ -10,10 +10,11 @@ typedef struct Session Session;
 struct ArlOf(TabNode);
 typedef struct ArlOf(TabNode) ArlOf(TabNode);
 
+typedef struct { HtmlDoc* ptr; } HtmlDocPtr;
 typedef struct TabNode TabNode;
 typedef struct TabNode {
     TabNode* parent; 
-    HtmlDoc doc;
+    HtmlDocPtr doc;
     ArlOf(TabNode)* childs;
     size_t current_ix; /* if ix == childs.len => current == doc */
 } TabNode;
@@ -30,11 +31,12 @@ typedef TabNode* TabNodePtr;
 
 TabNode* arl_of_tab_node_append(ArlOf(TabNode)* list, TabNode tn[_1_]);
 
+Err tab_node_current_doc(TabNode n[_1_], HtmlDocPtr* out[_1_] );
 /* Node */
 /* getters */
 static inline ArlOf(TabNode)* tab_node_childs(TabNode dn[_1_]) { return dn->childs; }
 static inline size_t tab_node_child_count(TabNode dn[_1_]) { return dn->childs->len; }
-static inline HtmlDoc* tab_node_doc(TabNode n[_1_]) { return &n->doc; }
+static inline HtmlDoc* tab_node_doc(TabNode n[_1_]) { return n->doc.ptr; }
 static inline bool
 tab_node_have_current_child(TabNode n[_1_]) {return n->current_ix != tab_node_child_count(n);}
 static inline TabNode*
@@ -61,13 +63,6 @@ static inline Err tab_node_current_node(TabNode n[_1_], TabNode* out[_1_]) {
     return Ok;
 }
 
-static inline Err tab_node_current_doc(TabNode n[_1_], HtmlDoc* out[_1_] ) {
-    TabNode* cn;
-    try( tab_node_current_node(n, &cn));
-    if (!cn) return "error: current node in NULL";
-    *out = &(cn->doc);
-    return Ok;
-}
 
 static inline Err
 tab_node_append_move_child(TabNode n[_1_], TabNode newnode[_1_]) {
@@ -79,16 +74,6 @@ tab_node_append_move_child(TabNode n[_1_], TabNode newnode[_1_]) {
     return Ok;
 }
 
-/* ctor */
-static inline Err
-_tab_node_init_base_(TabNode n[_1_], TabNode* parent) {
-    *n = (TabNode){0};
-    n->childs = std_malloc(sizeof *n->childs);
-    if (!n->childs) return "error: tab_node_init_from_cstr mem failure";
-    *n->childs = (ArlOf(TabNode)){0};
-    n->parent = parent;
-    return Ok;
-}
 
 
 /**/

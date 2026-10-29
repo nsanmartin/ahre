@@ -24,7 +24,7 @@ dom_node_range_to_request_arl(
     StrView        url_attr,
     ArlOf(Request) reqs[_1_]
 ) {
-    HtmlDoc* d;
+    HtmlDocPtr* d;
     try( session_current_doc(p->s, &d));
     for_range(range, i) {
         Request*r ;
@@ -34,7 +34,7 @@ dom_node_range_to_request_arl(
         StrView url = dom_node_attr_value(*nodeptr, url_attr);
 
         try(arl_append_zero(Request,reqs,r));
-        Err e = request_init(r, method, url, htmldoc_url(d));
+        Err e = request_init(r, method, url, htmldoc_url(d->ptr));
         if (e) {
             msg_ln__(p, e);
             request_clean(r);
@@ -216,9 +216,9 @@ cmd_tabs_back(CmdParams p[_1_]) {
 
 Err cmd_doc_info(CmdParams p[_1_]) {
     try(cmd_params_cut_cmd(p));
-    HtmlDoc* d;
+    HtmlDocPtr* d;
     try( session_current_doc(p->s, &d));
-    return htmldoc_print_info(d, cmd_params_cmd_out(p));
+    return htmldoc_print_info(d->ptr, cmd_params_cmd_out(p));
 }
 
 
@@ -227,12 +227,12 @@ Err cmd_doc_bookmark_add(CmdParams p[_1_]) {
 }
 
 Err cmd_doc_print_cookies(CmdParams p[_1_]) {
-    HtmlDoc* d;
+    HtmlDocPtr* d;
     try( session_current_doc(p->s, &d));
 
     ArlOf(Str) cookies = (ArlOf(Str)){0};
     Err e = Ok;
-    tryjmp(e,Clean, htmldoc_get_cookies(d, &cookies));
+    tryjmp(e,Clean, htmldoc_get_cookies(d->ptr, &cookies));
 
     if (!cookies.len) tryjmp(e, Clean, msg_ln__(p, svl("no cookies for document")));
     else foreach__(Str,&cookies, it) tryjmp(e, Clean, msg_ln__(p, it));
@@ -242,37 +242,43 @@ Clean:
 }
 
 
-Err cmd_fetch(Session session[_1_], CmdOut* out) {
-    HtmlDoc* htmldoc;
+/*
+ * cmd_fetch replaces current_doc with refetched one
+ */
+Err
+cmd_fetch(Session session[_1_], CmdOut* out) {
+    HtmlDocPtr* htmldoc;
     try( session_current_doc(session, &htmldoc));
 
     Err err = Ok;
-    HtmlDoc newdoc;
+    HtmlDocPtr newdoc = (HtmlDocPtr){.ptr=std_malloc(sizeof *newdoc.ptr)};
+    if (isnull(newdoc)) { err="error: could not alloc htmldoc"; goto FailAlloc; }
     /* we reuse the request, but the Url is duplicated on fetch. We could
      * instead try to not duplicate it in this specific case, but this is
      * easier because the rest of the fetchs need to duplicate. */
     tryjmp(err, Fail, htmldoc_init_move_request(
-        &newdoc,
-        htmldoc_request(htmldoc),
+        newdoc.ptr,
+        htmldoc_request(htmldoc->ptr),
         session_url_client(session),
         session,
         out
     ));
-    htmldoc_cleanup(htmldoc);
-    *htmldoc = newdoc;
+    htmldoc_destroy(htmldoc->ptr);
+    htmldoc->ptr = newdoc.ptr;
     return Ok;
-Fail:
 
-    htmldoc_cleanup(&newdoc);
+Fail:
+    htmldoc_destroy(newdoc.ptr);
+FailAlloc:
     return err;
 }
 
 
 Err cmd_parse(Session session[_1_], CmdOut* out) {
-    HtmlDoc* d;
+    HtmlDocPtr* d;
     try( session_current_doc(session, &d));
-    try( htmldoc_reparse_source(d));
-    return session_htmldoc_redraw(d, session, out);
+    try( htmldoc_reparse_source(d->ptr));
+    return session_htmldoc_redraw(d->ptr, session, out);
 }
 
 
@@ -401,9 +407,9 @@ Clean:
 
 Err
 _cmd_form_print(CmdParams p[_1_], size_t ix) {
-    HtmlDoc* d;
+    HtmlDocPtr* d;
     try( session_current_doc(p->s, &d));
-    return _cmd_lexbor_node_print_(htmldoc_forms(d), ix, cmd_params_cmd_out(p));
+    return _cmd_lexbor_node_print_(htmldoc_forms(d->ptr), ix, cmd_params_cmd_out(p));
 }
 
 
@@ -436,10 +442,10 @@ cmd_toggle_checkbox(Session session[_1_], DomNode n, UserLine line[_1_], CmdOut 
 
     try (user_line_cut_cmd(line, cout));
 
-    HtmlDoc* d;
+    HtmlDocPtr* d;
     try( session_current_doc(session, &d));
 
-    bool* checked = lipfn(DomNodePtr,bool,get)(htmldoc_checked_boxes(d), &n.ptr);
+    bool* checked = lipfn(DomNodePtr,bool,get)(htmldoc_checked_boxes(d->ptr), &n.ptr);
     if (!checked) fail_e("could not find input checkbox node in internal set");
     *checked = !*checked;
     return session_doc_draw(session, cout);
@@ -460,7 +466,7 @@ static Err _show_request_(
     CmdOut* out
 ) {
     TabNode* tab_node;
-    HtmlDoc* d;
+    HtmlDocPtr* d;
     try( tab_node_current_node(t, &tab_node));
     try( tab_node_current_doc(t, &d));
 
@@ -469,7 +475,7 @@ static Err _show_request_(
 
     Request r = (Request){0};
     Err e     = Ok;
-    tryjmp(e,Clean, request_from_form_node(&r, form, htmldoc_url(d), htmldoc_checked_boxes(d)));
+    tryjmp(e,Clean, request_from_form_node(&r, form, htmldoc_url(d->ptr), htmldoc_checked_boxes(d->ptr)));
     tryjmp(e,Clean, request_show(&r, out));
 
 Clean:
@@ -625,9 +631,9 @@ Err cmd_input_set_node(CmdParams p[_1_], DomNode node) {
 /* image commands */
 
 Err _get_image_by_ix(Session session[_1_], size_t ix, DomNode outnode[_1_]) {
-    HtmlDoc* htmldoc;
+    HtmlDocPtr* htmldoc;
     try( session_current_doc(session, &htmldoc));
-    ArlOf(DomNode)* images = htmldoc_imgs(htmldoc);
+    ArlOf(DomNode)* images = htmldoc_imgs(htmldoc->ptr);
     DomNode* nodeptr = arlfn(DomNode, at)(images, ix);
     if (!nodeptr) return "image number invalid";
     *outnode = *nodeptr;

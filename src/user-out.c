@@ -190,13 +190,13 @@ ui_vi_show_session_default(Session* s, CmdOut cout[_1_]) {
         try( screen__(cout, svl(EMPTY_SESSION_MSG_)));
         return Ok;
     } else {
-        HtmlDoc* d;
+        HtmlDocPtr* d;
         TextBuf* tb;
         try( session_current_doc(s, &d));
         try( session_current_buf(s, &tb));
 
         if (textbuf_is_empty(tb)) {
-            if (!htmldoc_content_is_html(d)) 
+            if (!htmldoc_content_is_html(d->ptr)) 
                 try( msg_ln__(cout, svl(BUFFER_NOT_PARSED_MSG_)));
             else try( msg__(cout, svl(EMPTY_BUFFER_MSG_)));
         } else {

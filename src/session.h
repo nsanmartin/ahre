@@ -27,7 +27,7 @@ Err process_line(Session session[_1_], UserLine line[_1_], CmdOut cout[_1_]);
 
 /* getters */
 Err session_current_buf(Session session[_1_], TextBuf* out[_1_]);
-Err session_current_doc(Session session[_1_], HtmlDoc* out[_1_]);
+Err session_current_doc(Session session[_1_], HtmlDocPtr* out[_1_]);
 Err session_current_src(Session session[_1_], TextBuf* out[_1_]);
 
 static inline Str* session_dt_now_str(Session s[_1_]) { return &s->dt_now_str; }

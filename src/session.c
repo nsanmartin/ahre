@@ -9,26 +9,23 @@
 #include "draw.h"
 
 
-Err session_current_doc(Session session[_1_], HtmlDoc* out[_1_]) {
-    TabList* f = session_tablist(session);
-    HtmlDoc* d;
-    try( tablist_current_doc(f, &d));
-    *out = d;
-    return Ok;
+Err
+session_current_doc(Session session[_1_], HtmlDocPtr* out[_1_]) {
+    return tablist_current_doc(session_tablist(session), out);
 }
 
 
 Err session_current_buf(Session session[_1_], TextBuf* out[_1_]) {
-    HtmlDoc* d;
+    HtmlDocPtr* d;
     try( session_current_doc(session, &d));
-    *out = htmldoc_textbuf(d);
+    *out = htmldoc_textbuf(d->ptr);
     return Ok;
 }
 
 Err session_current_src(Session session[_1_], TextBuf* out[_1_]) {
-    HtmlDoc* d;
+    HtmlDocPtr* d;
     try( session_current_doc(session, &d));
-    *out = htmldoc_sourcebuf(d);
+    *out = htmldoc_sourcebuf(d->ptr);
     return Ok;
 }
 
@@ -206,25 +203,25 @@ Err session_htmldoc_redraw(HtmlDoc htmldoc[_1_], Session s[_1_], CmdOut cmd_out[
 
 Err
 session_doc_draw(Session session[_1_], CmdOut cmd_out[_1_]) {
-    HtmlDoc* htmldoc;
+    HtmlDocPtr* htmldoc;
     try( session_current_doc(session, &htmldoc));
-    return session_htmldoc_redraw(htmldoc, session, cmd_out);
+    return session_htmldoc_redraw(htmldoc->ptr, session, cmd_out);
 }
 
 
 Err
 session_doc_js(Session session[_1_], CmdOut* out) {
-    HtmlDoc* htmldoc;
+    HtmlDocPtr* htmldoc;
     try( session_current_doc(session, &htmldoc));
-    return htmldoc_switch_js(htmldoc, session, out);
+    return htmldoc_switch_js(htmldoc->ptr, session, out);
 }
 
 
 Err
 session_doc_console(Session session[_1_], const char* line, CmdOut* out) {
-    HtmlDoc* htmldoc;
+    HtmlDocPtr* htmldoc;
     try( session_current_doc(session, &htmldoc));
-    return htmldoc_console(htmldoc, session, line, out);
+    return htmldoc_console(htmldoc->ptr, session, line, out);
 }
 
 

@@ -171,3 +171,16 @@ Err tablist_info_tree(TabList f[_1_], CmdOut* out) {
     ok_then(err, msg__(out, svl("\n")));
     return Ok;
 }
+
+
+Err
+tablist_current_doc(TabList f[_1_], HtmlDocPtr* out[_1_]) {
+    TabNode* t;
+    try( tablist_current_tab(f, &t));
+    if (!t) { 
+        *out = NULL;
+        return Ok;
+    }
+
+    return tab_node_current_doc(t, out);
+}

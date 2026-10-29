@@ -79,11 +79,11 @@ Fail:
 Err
 cmd_bookmarks_list_sections(CmdParams p[_1_]) {
     Session* session = p->s;
-    HtmlDoc* htmldoc;
+    HtmlDocPtr* htmldoc;
     try( session_current_doc(session, &htmldoc));
     ArlOf(Str) list = (ArlOf(Str)){0};
     DomNode body;
-    try(bookmark_sections_body(htmldoc, &body));
+    try(bookmark_sections_body(htmldoc->ptr, &body));
     Err err = Ok;
 
     if (cmd_params_cmd_end(p)) {
@@ -403,7 +403,7 @@ bookmark_add_to_section(
     UrlClient url_client[_1_],
     CmdOut    cmd_out[_1_]
 ) {
-    HtmlDoc* d;
+    HtmlDocPtr* d;
     try( session_current_doc(s, &d));
 
     user_line_skip_space(line);
@@ -425,13 +425,13 @@ bookmark_add_to_section(
             get_bookmarks_doc(url_client, sv(&bm_path), cmd_out,  &bm));
 
     char* url;
-    if ((err = url_cstr_malloc(*htmldoc_url(d), &url))) goto Clean_Bm_Path_And_BmDoc;
+    if ((err = url_cstr_malloc(*htmldoc_url(d->ptr), &url))) goto Clean_Bm_Path_And_BmDoc;
 
     DomNode body;
     if ((err = bookmark_sections_body(&bm, &body))) goto Free_Curl_Url;
 
     Str* title = &(Str){0};
-    if ((err = htmldoc_title_or_url(d, url, title))) goto Free_Curl_Url;
+    if ((err = htmldoc_title_or_url(d->ptr, url, title))) goto Free_Curl_Url;
 
     DomElem bm_entry;
     if ((err = bookmark_mk_entry(bm.dom, url, title, &bm_entry))) goto Clean_Title;
