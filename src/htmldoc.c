@@ -995,7 +995,7 @@ htmldoc_init_move_request(
                 request_init(&req_replace, request_method(htmldoc_request(d->ptr)), svl(""), htmldoc_url(d->ptr)));
             tryjmp(e,Fail_Replace, htmldoc_ptr_init_move_request(&doc_replace, &req_replace, uc, s, cmd_out));
 
-            htmldoc_cleanup(d->ptr);
+            htmldoc_destroy(d->ptr);
             *d = doc_replace;
             break;
 
@@ -1037,7 +1037,7 @@ htmldoc_ptr_init_move_request(
     return Ok;
 
 Fail:
-    std_free(d->ptr);
+    htmldoc_destroy(d->ptr);
     d->ptr = NULL;
     return err;
 }
@@ -2227,12 +2227,12 @@ htmldoc_convert_sourcebuf_to_utf8(HtmlDoc d[_1_]) {
     const char* utf8s;
     size_t utf8slen;
     if (!htmldoc_http_charset_is_utf8(d)) {
-        Str* buf = textbuf_buf(htmldoc_sourcebuf(d));
+        Str* buf           = textbuf_buf(htmldoc_sourcebuf(d));
         char* from_charset = items__(htmldoc_http_charset(d));
         try( mem_convert_to_utf8(items__(buf), len__(buf), from_charset, &utf8s, &utf8slen));
         std_free(buf->items);
-        buf->items = (char*)utf8s;
-        buf->len = utf8slen;
+        buf->items    = (char*)utf8s;
+        buf->len      = utf8slen;
         buf->capacity = utf8slen;
         try( htmldoc_reparse_source(d));
     }

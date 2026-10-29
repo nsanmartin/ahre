@@ -276,6 +276,7 @@ Err
 mark_radio_button(DomNode radio) {
     StrView name = dom_node_attr_value(radio, svl("name"));
     DomNode form = dom_node_find_parent_form(radio);
+    if (isnull(form)) return Ok;
     try( unckeck_all_radio_with_name__rec_(form, name));
     try( dom_node_set_attr(radio, svl("checked"), svl("")));
     return Ok;

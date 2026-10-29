@@ -27,14 +27,14 @@ Err jse_set_post_action(JsEngine js[_1_], PostAction pa) {
    return Ok;
 }
 
-static JSClassID console_class_id     = 0;
-static JSClassID node_class_id        = 0;
-static JSClassID element_class_id     = 0;
-static JSClassID document_class_id    = 0;
-static JSClassID location_class_id    = 0;
-static JSClassID navigator_class_id   = 0;
-static JSClassID storage_class_id     = 0;
-static JSClassID performance_class_id = 0;
+static JSClassID console_class_id         = 0;
+static JSClassID node_class_id            = 0;
+static JSClassID element_class_id         = 0;
+static JSClassID document_class_id        = 0;
+static JSClassID location_class_id        = 0;
+static JSClassID navigator_class_id       = 0;
+static JSClassID storage_class_id         = 0;
+static JSClassID performance_class_id     = 0;
 static JSClassID URLSearchParams_class_id = 0;
 /* static JSClassID dom_token_list_class_id = 0; */
 /* static JSClassID classList_class_id = 0; */
@@ -332,6 +332,7 @@ static JSValueConst
 console_log_not_implemented_impl(JSContext* ctx, StrView fname) {
     JSValueConst console = get_global(ctx, "console");
     Str*    buf = JS_GetOpaque(console, console_class_id);
+    if (!buf) return JS_ThrowTypeError(ctx, "ahre: JS_GetOpaque returned NULL");
     Err e = Ok;
     tryjmp(e,Clean, str_append(buf, svl("TODO: ")));
     tryjmp(e,Clean, str_append(buf, fname));
@@ -916,7 +917,9 @@ static const JSCFunctionListEntry element_fn_list[] = {
 static js_fn__(document_createElement)
 {
     if (argc != 1) return JS_ThrowTypeError(ctx, "createElement: tagName needed");
-    Dom dom = htmldoc_dom(JS_GetOpaque(this, document_class_id));
+    HtmlDoc* d = JS_GetOpaque(this, document_class_id);
+    if (!d) return JS_ThrowTypeError(ctx, "ahre: JS_GetOpaque returns NULL");
+    Dom dom = htmldoc_dom(d);
     if (isnull(dom)) return JS_ThrowTypeError(ctx, "invalid document");
     size_t len;
     const char *tag = JS_ToCStringLen(ctx, &len, argv[0]);
@@ -978,7 +981,7 @@ static js_get__(document_get_title)
     Str title = (Str){0};
     Err e = dom_get_title_text_line(htmldoc_dom(d), &title);
     if (e) goto Clean;
-    rv = JS_NewString(ctx, title.items);
+    if (title.len) rv = JS_NewString(ctx, title.items);
 Clean:
     str_clean(&title);
     if (e) return JS_ThrowPlainError(ctx, "%s", e);
@@ -996,9 +999,12 @@ static js_set__(document_set_title)
 
     size_t len;
     const char* new_content = JS_ToCStringLen(ctx, &len, val);
+    if (new_content) {
+        e = dom_elem_set_text_content(title, sv(new_content, len));
+        JS_FreeCString(ctx, new_content);
+        if (e) return JS_ThrowTypeError(ctx, "%s", e);
+    }
 
-    e = dom_elem_set_text_content(title, sv(new_content, len));
-    if (e) return JS_ThrowTypeError(ctx, "%s", e);
     return JS_UNDEFINED;
 }
 
@@ -1234,8 +1240,8 @@ Clean:
 static js_get__(document_documentElement) {
     HtmlDoc* d = JS_GetOpaque(this, document_class_id);
     if (!d) throw("no document");
-    Dom dom = htmldoc_dom(d);
-    DomNode root = dom_root(dom);
+    Dom dom          = htmldoc_dom(d);
+    DomNode root     = dom_root(dom);
     DomElem doc_elem = dom_elem_from_node(root);
     return element_js_value_from_dom_elem(ctx, doc_elem);
 }
@@ -1427,13 +1433,14 @@ static JSValue replace_doc_url (JSContext* ctx, JSValueConst this, JSValueConst 
     StrView effective_url;
     Err e = htmldoc_get_effective_url(d, &effective_url);
     if (e) rv = JS_ThrowPlainError(ctx, "%s", e);
-
-    if (str_eq_case(effective_url, sv(url))) {
-        jse_set_post_action(htmldoc_js(d), POST_ACTION_NO_ACTION_SET_SAME_LOCATION);
-    } else {
-        jse_set_post_action(htmldoc_js(d), POST_ACTION_LOCATION_HREF_SET);
-        e = url_set_url_or_fragment(htmldoc_url(d), url);
-        if (e) rv = JS_ThrowPlainError(ctx, "%s", e);
+    else {
+        if (str_eq_case(effective_url, sv(url))) {
+            jse_set_post_action(htmldoc_js(d), POST_ACTION_NO_ACTION_SET_SAME_LOCATION);
+        } else {
+            jse_set_post_action(htmldoc_js(d), POST_ACTION_LOCATION_HREF_SET);
+            e = url_set_url_or_fragment(htmldoc_url(d), url);
+            if (e) rv = JS_ThrowPlainError(ctx, "%s", e);
+        }
     }
 
     JS_FreeCString(ctx, url);
@@ -2211,27 +2218,29 @@ static js_fn__(url_search_params_ctor)
         rv = proto;
         goto Fail;
     }
+
     rv = JS_NewObjectProtoClass(ctx, proto, URLSearchParams_class_id);
     JS_FreeValue(ctx, proto);
     if (JS_IsException(rv))
         goto Fail;
 
-    JS_SetOpaque(rv, data);
 
     if (argc == 0) return rv;
     if (JS_IsString(argv[0])) {
         size_t len;
         const char *str = JS_ToCStringLen(ctx, &len, argv[0]);
         if (!str) {
+            JS_FreeValue(ctx, rv);
             rv = JS_EXCEPTION;
             goto Fail;
         }
         url_search_params_parse_string(data, sv(str, len));
         JS_FreeCString(ctx, str);
     }
+    JS_SetOpaque(rv, data);
     return rv;
 
-    rv = JS_ThrowPlainError(ctx, "URLSearchParams ctor does not implement params"); 
+    /* rv = JS_ThrowPlainError(ctx, "URLSearchParams ctor does not implement params"); */ 
 Fail:
     js_free(ctx, data);
     return rv;

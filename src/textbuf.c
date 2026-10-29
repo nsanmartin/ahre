@@ -142,7 +142,7 @@ Err textbuf_get_line_of_offset(TextBuf tb[_1_], size_t off, size_t* out) {
     ) {
         if (off <= *it) { *out = 1 + it - arlfn(size_t,begin)(eols); return Ok; }
     }
-    *out = len__(eols);
+    *out = len__(eols) + 1;
     return Ok;
 }
 

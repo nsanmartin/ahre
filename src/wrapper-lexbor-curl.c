@@ -26,8 +26,7 @@ _lexbor_parse_chunk_end_(HtmlDoc htmldoc[_1_]) {
     if (LXB_STATUS_OK != lxb_status) 
         return err_fmt("error: lbx failed to parse html, status: %d", lxb_status);
 
-    try (textbuf_append_part(htmldoc_sourcebuf(htmldoc), "\0", 1));
-    return textbuf_append_line_indexes(htmldoc_sourcebuf(htmldoc));
+    return textbuf_append_part(htmldoc_sourcebuf(htmldoc), "\0", 1);
 }
 
 
@@ -297,5 +296,5 @@ Err curl_lexbor_fetch_document(
     try( htmldoc_convert_sourcebuf_to_utf8(htmldoc));
     if (fetch_scripts)
         try(htmldoc_fetch_scripts(htmldoc, url_client, easy, cmd_out));
-    return Ok;
+    return textbuf_append_line_indexes(htmldoc_sourcebuf(htmldoc));
 }

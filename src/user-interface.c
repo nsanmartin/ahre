@@ -527,6 +527,7 @@ static Err cmd_doc_scripts_fetch(CmdParams p[_1_]) {
 
 
 static Err cmd_doc_scripts_msg(CmdParams p[_1_]) {
+    try(cmd_params_cut_cmd(p));
     HtmlDocPtr* h;
     try(session_current_doc(p->s, &h));
     Writer w;
