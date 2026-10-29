@@ -950,33 +950,34 @@ _htmldoc_draw_(HtmlDoc htmldoc[_1_], Session s[_1_], CmdOut cmd_out[_1_]) {
 
 static Err
 htmldoc_init_move_request(
-    HtmlDoc   d[_1_],
-    Request   r[_1_],
-    UrlClient uc[_1_],
-    Session*  s,
-    CmdOut*   cmd_out
+    HtmlDocPtr d[_1_],
+    Request    r[_1_],
+    UrlClient  uc[_1_],
+    Session*   s,
+    CmdOut*    cmd_out
 ) {
     if (!s) return "error: expecting a session, recived NULL";
+
     Err e = Ok;
     const bool js_enabled = session_js(s);
 
     /* lexbor doc should be initialized before jse_init */
-    *d = (HtmlDoc){.req=*r};
-    tryjmp(e,Fail, doc_draw_cache_init(&d->draw_cache));
-    tryjmp(e,Fail, dom_init(&d->dom));
+    *d->ptr = (HtmlDoc){.req=*r};
+    tryjmp(e,Fail, doc_draw_cache_init(&d->ptr->draw_cache));
+    tryjmp(e,Fail, dom_init(&d->ptr->dom));
 
     FetchHistoryEntry* entry;
     tryjmp(e,Fail, arl_append_zero(FetchHistoryEntry, session_fetch_history(s), entry));
 
-    tryjmp(e,Fail, htmldoc_fetch(d, uc, js_enabled, cmd_out, entry));
+    tryjmp(e,Fail, htmldoc_fetch(d->ptr, uc, js_enabled, cmd_out, entry));
     if (js_enabled)
-        tryjmp(e, Fail, jse_init(s, d));
-    htmldoc_eval_js_scripts_or_continue(d, s, cmd_out);
-    tryjmp(e,Fail, _htmldoc_draw_(d, s, cmd_out));
-    tryjmp(e,Fail, fetch_history_entry_update_title(entry, htmldoc_dom(d)));
+        tryjmp(e, Fail, jse_init(s, d->ptr));
+    htmldoc_eval_js_scripts_or_continue(d->ptr, s, cmd_out);
+    tryjmp(e,Fail, _htmldoc_draw_(d->ptr, s, cmd_out));
+    tryjmp(e,Fail, fetch_history_entry_update_title(entry, htmldoc_dom(d->ptr)));
 
 
-    PostAction pa = jse_get_post_action(htmldoc_js(d));
+    PostAction pa = jse_get_post_action(htmldoc_js(d->ptr));
     switch (pa) {
         case POST_ACTION_NO_ACTION: break;
         case POST_ACTION_NO_ACTION_SET_SAME_LOCATION:
@@ -987,19 +988,19 @@ htmldoc_init_move_request(
         case POST_ACTION_LOCATION_REPLACE: {
             tryjmp(e,Fail, msg_ln__(cmd_out, svl("location replace")));
 
-            HtmlDoc doc_replace = (HtmlDoc){0};
+            HtmlDocPtr doc_replace = (HtmlDocPtr){0};
             Request req_replace = (Request){0};
 
             tryjmp(e,Fail_Replace,
-                request_init(&req_replace, request_method(htmldoc_request(d)), svl(""), htmldoc_url(d)));
-            tryjmp(e,Fail_Replace, htmldoc_init_move_request(&doc_replace, &req_replace, uc, s, cmd_out));
+                request_init(&req_replace, request_method(htmldoc_request(d->ptr)), svl(""), htmldoc_url(d->ptr)));
+            tryjmp(e,Fail_Replace, htmldoc_ptr_init_move_request(&doc_replace, &req_replace, uc, s, cmd_out));
 
-            htmldoc_cleanup(d);
+            htmldoc_cleanup(d->ptr);
             *d = doc_replace;
             break;
 
 Fail_Replace:
-            htmldoc_cleanup(&doc_replace);
+            htmldoc_destroy(doc_replace.ptr);
             request_clean(&req_replace);
             goto Fail;
         }
@@ -1013,8 +1014,8 @@ Fail_Replace:
 
 Fail:
     /* In case of failure, the caller keeps ownership. In case of success it loses it */
-    *r = d->req;
-    d->req = (Request){0};
+    *r = d->ptr->req;
+    d->ptr->req = (Request){0};
 
     return e;
 }
@@ -1032,7 +1033,7 @@ htmldoc_ptr_init_move_request(
     if (isnull(*d)) { return "error: could not alloc htmldoc"; }
 
     Err err = Ok;
-    tryjmp(err, Fail, htmldoc_init_move_request( d->ptr, r, uc, s, cmd_out));
+    tryjmp(err, Fail, htmldoc_init_move_request( d, r, uc, s, cmd_out));
     return Ok;
 
 Fail:
