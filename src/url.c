@@ -11,6 +11,16 @@
 
 
 Err
+curl_url_append(Url u, Str out[_1_]) {
+    char* url    = NULL;
+    try( w_curl_url_get_malloc(u.ptr, CURLUPART_URL, &url));
+    Err err = str_append(out, sv(url, strlen(url)));
+    w_curl_free(url);
+    return err;
+}
+
+
+Err
 curl_url_to_filename_append(Url u, Str out[_1_]) {
     char* url = NULL;
     char* schema = NULL;
