@@ -24,6 +24,7 @@ typedef enum {
     keycmd_pipe                = '|',
     keycmd_inverted_bar        = '\\',
     keycmd_prev_history        = KeyCtrl_P,
+    keycmd_enter               = KeyEnter,
     keycmd_scroll_up,
     keycmd_scroll_down
 } KeyCmd;
@@ -84,8 +85,8 @@ static Err _ui_vi_read_vi_mode_keys_(Session s[_1_], KeyCmd cmd[_1_]) {
         int c = fgetc(stdin);
         switch(c) {
             case EOF: return "error: EOF reading input";
-            case KeyEnter: 
             case KeyCtrl_C: continue;
+            case KeyEnter: *cmd = keycmd_enter; break;
             case KeyCtrl_F:
             case KeySpace: _ui_keystroke_ctrl_f_(s); *cmd = keycmd_scroll_up; break; 
             case KeyBackSpace:
@@ -121,10 +122,13 @@ Err ui_vi_mode_read_input(Session* s, const char* prompt, char* out[_1_]) {
 
     while (!*out) {
         KeyCmd cmd = keycmd_null;
-        while (!err && !cmd) { err = _ui_vi_read_vi_mode_keys_(s, &cmd); }
-        if (!err && _is_cmd_char_(cmd)) ok_then(err,_raw_reditline_(cmd, session_input_history(s), out));
+        while (!cmd)
+            tryjmp(err, Reset_Termios, _ui_vi_read_vi_mode_keys_(s, &cmd));
+        if (_is_cmd_char_(cmd))
+            tryjmp(err, Reset_Termios, _raw_reditline_(cmd, session_input_history(s), out));
         else break;
     }
+Reset_Termios:
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &prev_termios) == -1) return "error: tcsetattr failure";
     if (*out) puts("");
     return err;
