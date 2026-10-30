@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+    <div id="theid"></div>
+    <script>
+        console.log("window.location.href: ", window.location.href);
+        document.getElementById("theid").textContent = window.location.href;
+
+        window.location.href = "foo bar!";
+    </script>
+</body>
+</html>
+

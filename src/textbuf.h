@@ -9,7 +9,7 @@
 #include "str.h"
 #include "textmod.h"
 #include "utils.h"
-
+#include "cmd-out.h"
 
 typedef struct {
     Range last_range;
@@ -54,17 +54,6 @@ Err textbuf_get_line_of_offset(TextBuf tb[_1_], size_t off, size_t* out);
 static inline Err
 textbuf_get_current_line_number(TextBuf tb[_1_], size_t linenum[_1_]) {
     return textbuf_get_line_of_offset(tb, *textbuf_current_offset(tb), linenum);
-}
-
-//TODO0: use textbuf_get_current_line_number
-static inline size_t textbuf_current_line(TextBuf tb[_1_]) {
-    size_t line;
-    Err err = textbuf_get_line_of_offset(tb, *textbuf_current_offset(tb), &line);
-    if (err) {
-        fprintf(stderr, "ERROR MSG: %s\n", "invalid current offset!");
-        return SIZE_MAX;
-    }
-    return line;
 }
 
 static inline size_t textbuf_eol_count(TextBuf textbuf[_1_]) {
@@ -134,4 +123,5 @@ Err textbuf_range_from_parsed_range(
 Err textbuf_to_file(TextBuf tb[_1_], const char* filename, const char* mode);
 Err textbuf_get_lines_matching_regex(TextBuf tb[_1_], StrView pattern, ArlOf(size_t) lines[_1_]);
 Err textbuf_repeat_search(TextBuf tb[_1_]);
+Err textbuf_print_info(TextBuf t[_1_], CmdOut* out);
 #endif

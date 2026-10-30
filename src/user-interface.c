@@ -599,7 +599,8 @@ static SessionCmd _cmd_doc_[] =
 /* texbuf commands */
 
 static SessionCmd _cmd_textbuf_[] =
-    { {.name="",                .fn=cmd_textbuf_print,   .help=NULL, .flags=CMD_EMPTY}
+    { {.name="",      .fn=cmd_textbuf_print,             .help=NULL,             .flags=CMD_EMPTY}
+    , {.name="\"",    .fn=cmd_textbuf_info,              .help=CMD_DOC_INFO_DOC, .flags=CMD_CHAR}
     , {.name="g",     .match=1, .fn=cmd_textbuf_global,  .help=NULL}
     , {.name="n",     .match=1, .fn=cmd_textbuf_print_n, .help=NULL, .flags=CMD_NO_PARAMS}
     , {.name="print", .match=1, .fn=cmd_textbuf_print,   .help=NULL, .flags=CMD_NO_PARAMS}
@@ -729,13 +730,6 @@ static Err cmd_form_print(CmdParams p[_1_]) {
 Err cmd_image(CmdParams p[_1_]) { return run_cmd_on_range__(p, _cmd_image_, 36); }
 
 
-#define CMD_SHORTCUT_Z "zN print the following N lines"
-Err shortcut_z(CmdParams p[_1_]);
-static Err cmd_shortcut_z(CmdParams p[_1_]) {
-    return shortcut_z(p);
-}
-
-
 #define CMD_HELP_IX 0
 static SessionCmd _session_cmd_[] =
     { [CMD_HELP_IX]={.name="?",    .fn=cmd_help,        .help=CMD_HELP_DOC,      .flags=CMD_CHAR,      .subcmds=_session_cmd_               }
@@ -755,8 +749,7 @@ static SessionCmd _session_cmd_[] =
     , [14]={.name=ANCHOR_OPEN_STR, .fn=cmd_anchor,      .help=CMD_ANCHOR_DOC,    .flags=CMD_CHAR,      .subcmds=_cmd_anchor_                }
     , [15]={.name=INPUT_OPEN_STR,  .fn=cmd_input,       .help=CMD_INPUT_DOC,     .flags=CMD_CHAR,      .subcmds=_cmd_input_                 }
     , [16]={.name=IMAGE_OPEN_STR,  .fn=cmd_image,       .help=CMD_IMAGE_DOC,     .flags=CMD_CHAR,      .subcmds=_cmd_image_                 }
-    , [17]={.name="z",             .fn=cmd_shortcut_z,  .help=CMD_SHORTCUT_Z,    .flags=CMD_CHAR                                            }
-    , [18]={0}
+    , [17]={0}
     };
 
 static Err cmd_help(CmdParams p[_1_]) {

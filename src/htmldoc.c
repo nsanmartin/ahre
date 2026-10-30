@@ -1218,6 +1218,7 @@ htmldoc_print_info_request(Request r[1], CmdOut* out) {
 Err
 htmldoc_print_info(HtmlDoc d[_1_], CmdOut* out) {
 
+#define PRINT_INFO_HEADER_    "  htmldoc info\n"
 #define PRINT_INFO_DWN_SZ_    "  download size:      %ld\n"
 #define PRINT_INFO_HTML_SZ_   "  html size:          %ld\n"
 #define PRINT_INFO_TITLE_     "  title:              "
@@ -1228,6 +1229,7 @@ htmldoc_print_info(HtmlDoc d[_1_], CmdOut* out) {
 #define PRINT_INFO_DWN_SC_CT_ "  downloaded scripts: %ld\n"
 #define PRINT_INFO_EFFCT_URL_ "  effective url:\\"
 
+    try( msg_ln__(out, svl(PRINT_INFO_HEADER_)));
 
     try( msg_fmt(out, PRINT_INFO_DWN_SZ_, *htmldoc_curlinfo_sz_download(d)));
     try( msg_fmt(out, PRINT_INFO_HTML_SZ_, htmldoc_sourcebuf(d)->buf.len));
@@ -1279,7 +1281,10 @@ Clean_Cookies:
     try( msg_ln__(out, svl(PRINT_INFO_EFFCT_URL_)));
     if (effective_url.len) try(msg_ln__(out, effective_url));
     else try(msg_ln__(out, svl("<NO EFFECTIVE URL>")));
+
     return Ok;
+
+#undef PRINT_INFO_HEADER_
 #undef PRINT_INFO_DWN_SZ_
 #undef PRINT_INFO_HTML_SZ_
 #undef PRINT_INFO_TITLE_

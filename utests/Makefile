@@ -56,7 +56,7 @@ test_range: $(AHRE_UTESTS)/test_range.c $(AHRE_BUILD)/isocline.o \
 		$^ \
 		-lcurl -llexbor -lm
 
-test_buf: $(AHRE_UTESTS)/test_buf.c $(AHRE_BUILD)/str.o $(AHRE_BUILD)/sys.o
+test_buf: $(AHRE_UTESTS)/test_buf.c $(AHRE_BUILD)/str.o $(AHRE_BUILD)/sys.o $(AHRE_BUILD)/cmd-out.o
 	$(CC) $(AHRE_CFLAGS) $(SANITIZE_FLAGS) $(AHRE_INCLUDE) -I. -I$(AHRE_UTESTS) \
 		-o $(AHRE_BUILD)/$@ $^ \
 		-lcurl -llexbor

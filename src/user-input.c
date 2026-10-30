@@ -55,7 +55,9 @@ user_line_char(UserLine ul[_1_], char out[_1_]) {
 static Err _ui_keystroke_ctrl_f_(Session s[_1_]) {
     TextBuf* tb;
     try( session_current_buf(s, &tb));
-    size_t line = textbuf_current_line(tb) + *session_nrows(s);
+    size_t current_linenum;
+    try( textbuf_get_current_line_number(tb, &current_linenum));
+    size_t line = current_linenum + *session_nrows(s);
     if (line > textbuf_line_count(tb)) line = textbuf_line_count(tb);
 
     size_t off;
@@ -67,7 +69,8 @@ static Err _ui_keystroke_ctrl_f_(Session s[_1_]) {
 static Err _ui_keystroke_ctrl_b_(Session s[_1_]) {
     TextBuf* tb;
     try( session_current_buf(s, &tb));
-    size_t line = textbuf_current_line(tb);
+    size_t line;
+    try( textbuf_get_current_line_number(tb, &line));
     line = (line >  *session_nrows(s)) ? line - *session_nrows(s) : 1;
     size_t off;
     try(textbuf_get_offset_of_line(tb, line, &off));

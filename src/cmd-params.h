@@ -96,4 +96,9 @@ bool cmd_match(StrView input, const char* cmd_name, size_t unmatch, CmdParams p[
 static inline Err cmd_params_parse_range(CmdParams p[_1_], int base) {
     return user_line_parse_range(cmd_params_user_line(p), base, &p->rp);
 }
+
+static inline Err cmd_params_assert_no_range(CmdParams p[_1_]) {
+    if (p->rp.beg.tag == range_addr_none_tag && p->rp.end.tag == range_addr_none_tag) return Ok;
+    return "No range allowed ";
+}
 #endif

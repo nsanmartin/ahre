@@ -275,34 +275,13 @@ Err cmd_parse(Session session[_1_], CmdOut* out) {
 }
 
 
-Err shortcut_z(CmdParams p[_1_]) { //, Session session[_1_], const char* rest, CmdOut cmd_out[_1_]) {
-    TextBuf* tb;
-    try( session_current_buf(p->s, &tb));
-    if(textbuf_current_line(tb) > textbuf_line_count(tb)) return "No more lines in buffer";
-    if (!cmd_params_cmd_end(p)) {
-        size_t incr;
-        try(user_line_parse_size_t_or_throw(cmd_params_user_line(p), &incr, 10));
-        *session_nrows(p->s) = incr; //TODO0: does this makes sense?
-    } 
-    if (!*session_nrows(p->s)) return "invalid n rows";
-
-    size_t range_beg = textbuf_current_line(tb);
-    Range r = (Range){ .beg=range_beg, .end=range_beg + *session_nrows(p->s) - 3 };
-    if (r.end < r.beg) r.end = r.beg;
-    if (r.end > textbuf_line_count(tb)) r.end = textbuf_line_count(tb);
-
-
-    try( session_write_screen_range_mod(p->s, tb, &r, cmd_params_cmd_out(p)));
-    if (textbuf_current_line(tb) == r.end)
-        puts(MsgLastLine);
-    try( textbuf_get_offset_of_line(tb, r.end,textbuf_current_offset(tb)));
-    return Ok;
-}
-
-
-
 /* TextBuf commands */
 
+Err cmd_textbuf_info(CmdParams p[_1_]) {
+    try (cmd_params_assert_no_range(p));
+    try (cmd_params_cut_cmd(p));
+    return textbuf_print_info(p->tb, cmd_params_cmd_out(p));
+}
 
 Err cmd_textbuf_print(CmdParams p[_1_]) {
     Range rng;

@@ -319,16 +319,18 @@ _textbuf_range_parse_to_range_(
     size_t      match_offset[_1_]
 ) {
     *range_out             = (Range){0};
+    size_t current_linenum;
+    try( textbuf_get_current_line_number(tb, &current_linenum));
     switch (parse->beg.tag) {
         case range_addr_beg_tag: range_out->beg = 1 + parse->beg.delta;
             break;
-        case range_addr_curr_tag: range_out->beg = textbuf_current_line(tb) + parse->beg.delta;
+        case range_addr_curr_tag: range_out->beg = current_linenum + parse->beg.delta;
             break;
-        case range_addr_end_tag: range_out->beg = textbuf_line_count(tb) + parse->beg.delta;
+        case range_addr_end_tag: range_out->beg = current_linenum + parse->beg.delta;
             break;
         case range_addr_none_tag: /*?*/
              if (parse->end.tag == range_addr_none_tag) {
-                range_out->end = range_out->beg = textbuf_current_line(tb);
+                range_out->end = range_out->beg = current_linenum;
                 return Ok;
              }
              return "unexpected none beg range";
@@ -352,7 +354,7 @@ _textbuf_range_parse_to_range_(
     switch (parse->end.tag) {
         case range_addr_beg_tag: range_out->end = 1 + parse->beg.delta;
             break;
-        case range_addr_curr_tag: range_out->end = textbuf_current_line(tb) + parse->end.delta;
+        case range_addr_curr_tag: range_out->end = current_linenum + parse->end.delta;
             break;
         case range_addr_end_tag: range_out->end = textbuf_line_count(tb) + parse->end.delta;
             break;
@@ -427,4 +429,23 @@ Err textbuf_to_file(TextBuf textbuf[_1_], const char* filename, const char* mode
     if (len && !items[len-1]) --len;
     try(file_write_or_close(beg, len, fp));
     return file_close(fp);
+}
+
+
+Err
+textbuf_print_info(TextBuf t[_1_], CmdOut* out) {
+#define PRINT_INFO_HEADER_    "  textbuf info\n"
+#define PRINT_INFO_CURR_LN_   "  current line: %zu\n"
+#define PRINT_INFO_NLINES_    "  line count:   %zu\n"
+    size_t linenum;
+    try(textbuf_get_current_line_number(t, &linenum));
+    const size_t nlines = textbuf_line_count(t);
+
+    try( msg_ln__(out, svl(PRINT_INFO_HEADER_)));
+    try( msg_fmt(out, PRINT_INFO_CURR_LN_, linenum));
+    try( msg_fmt(out, PRINT_INFO_NLINES_, nlines));
+    return Ok;
+#undef PRINT_INFO_HEADER_
+#undef PRINT_INFO_CURR_LN_
+#undef PRINT_INFO_NLINES_
 }

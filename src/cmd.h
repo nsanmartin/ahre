@@ -11,13 +11,13 @@
 typedef Err (*SessionCmdFn)(CmdParams p[_1_]);
 typedef struct SessionCmd SessionCmd;
 typedef struct SessionCmd {
-    const char* name;
-    size_t len;
-    size_t match;
-    unsigned flags;
-    const char* help;
-    SessionCmdFn fn;
-    SessionCmd* subcmds;
+    const char*    name;
+    size_t         len;
+    size_t         match;
+    unsigned       flags;
+    const char*    help;
+    SessionCmdFn   fn;
+    SessionCmd*    subcmds;
 } SessionCmd ;
 
 /*
@@ -42,7 +42,6 @@ Err cmd_set_session_js(CmdParams p[_1_]);
 Err cmd_set_session_monochrome(CmdParams p[_1_]);
 Err cmd_set_session_ncols(CmdParams p[_1_]);
 Err cmd_set_session_winsz(CmdParams p[_1_]);
-Err shortcut_z(CmdParams p[_1_]);
 
 /*
  * Curl commands
@@ -179,4 +178,5 @@ dom_node_range_to_request_arl(
     ArlOf(Request) reqs[_1_]
 );
 Err foreach_request_save_to_file(CmdParams p[_1_], ArlOf(Request) rs[_1_]);
+Err cmd_textbuf_info(CmdParams p[_1_]);
 #endif
