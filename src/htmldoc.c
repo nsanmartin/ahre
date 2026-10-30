@@ -2323,7 +2323,7 @@ htmldoc_scripts_range_from_parsed_range( HtmlDoc h[_1_], RangeParse p[_1_], Rang
     size_t body_script_count = len__(htmldoc_body_scripts(h));
     if (head_script_count + body_script_count != len__(htmldoc_scripts(h)))
         return "scripts not fetched";
-    if (!head_script_count && !body_script_count) return "HtmlDoc has no scripts";
+    if (!head_script_count && !body_script_count) return "html document has no scripts";
     size_t script_max = head_script_count + body_script_count - 1;
     switch (p->beg.tag) {
         case range_addr_curr_tag:
