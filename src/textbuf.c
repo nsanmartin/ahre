@@ -326,7 +326,7 @@ _textbuf_range_parse_to_range_(
             break;
         case range_addr_curr_tag: range_out->beg = current_linenum + parse->beg.delta;
             break;
-        case range_addr_end_tag: range_out->beg = current_linenum + parse->beg.delta;
+        case range_addr_end_tag: range_out->beg = textbuf_line_count(tb) + parse->beg.delta;
             break;
         case range_addr_none_tag: /*?*/
              if (parse->end.tag == range_addr_none_tag) {
@@ -393,9 +393,9 @@ Err textbuf_get_lines_matching_regex(TextBuf tb[_1_], StrView pattern, ArlOf(siz
 
 
 static inline Err _textbuf_range_validate_(TextBuf tb[_1_], Range r[_1_]) {
-    if (r->end < r->beg) return "Backward r given";
-    if (r->end == 0) return "error: unexpected r with end == 0";
-    if (r->end > textbuf_line_count(tb)) return "r end too large";
+    if (r->end < r->beg) return "backward range given";
+    if (r->end == 0) return "textbuf ranges (:) start at 1";
+    if (r->end > textbuf_line_count(tb)) return "range end too large";
     return Ok;
 }
 
