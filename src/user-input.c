@@ -80,7 +80,8 @@ static Err _ui_keystroke_ctrl_b_(Session s[_1_]) {
 }
 
 
-static Err _ui_vi_read_vi_mode_keys_(Session s[_1_], KeyCmd cmd[_1_]) {
+static Err
+_ui_vi_read_vi_mode_keys_(Session s[_1_], KeyCmd cmd[_1_]) {
     while (!*cmd) {
         int c = fgetc(stdin);
         switch(c) {
@@ -111,7 +112,8 @@ _raw_reditline_(char first, ArlOf(const_cstr) history[_1_], char* out[_1_]) {
 }
 
 
-Err ui_vi_mode_read_input(Session* s, const char* prompt, char* out[_1_]) {
+Err
+ui_vi_mode_read_input(Session* s, const char* prompt, char* out[_1_]) {
     (void)prompt;
     
     Err err = Ok;
@@ -130,9 +132,13 @@ Err ui_vi_mode_read_input(Session* s, const char* prompt, char* out[_1_]) {
     }
 Reset_Termios:
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &prev_termios) == -1) return "error: tcsetattr failure";
-    if (*out) puts("");
+    if (!err && *out) { 
+        fwrite("\n", 1, 1, stdout);
+        fflush(stdout);
+    }
     return err;
 }
+
 
 static StrView
 _get_next_page_(size_t nrows, size_t ncols, StrView msg[_1_]) {
