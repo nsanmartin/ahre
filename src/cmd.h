@@ -103,6 +103,10 @@ Err cmd_doc_info(CmdParams p[_1_]);
 Err cmd_doc_bookmark_add(CmdParams p[_1_]);
 
 
+#define CMD_DOC_SAVE \
+    "Saves current doc's source to url like path.\n"
+Err cmd_doc_save(CmdParams p[_1_]);
+
 /*
  * TextBuf commands
  */

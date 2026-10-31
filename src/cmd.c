@@ -241,6 +241,30 @@ Clean:
     return e;
 }
 
+Err
+cmd_doc_save(CmdParams p[_1_]) {
+    try(cmd_params_cut_cmd(p));
+
+    HtmlDocPtr* d;
+    try( session_current_doc(p->s, &d));
+
+    Err err  = Ok;
+    Str path = (Str){0};
+    tryjmp(err,Clean, htmldoc_append_cache_path(d->ptr, &path));
+
+    size_t lastix = path.len - 1;
+
+    while (lastix && path.items[lastix] != '/') --lastix;
+    if (lastix)
+        tryjmp(err,Clean, mkdir_p(sv(path.items, lastix)));
+
+    tryjmp(err,Clean, textbuf_to_file(htmldoc_sourcebuf(d->ptr), path.items, "w"));
+
+Clean:
+    str_clean(&path);
+    return Ok;
+}
+
 
 /*
  * cmd_fetch replaces current_doc with refetched one
@@ -658,8 +682,4 @@ Err _cmd_lexbor_node_print_(ArlOf(DomNode) node_arl[_1_], size_t ix, CmdOut out[
     str_clean(buf);
     return err;
 }
-
-
-
-    
 

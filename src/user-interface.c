@@ -583,6 +583,7 @@ static inline Err cmd_doc_fetch(CmdParams p[_1_]) { return cmd_fetch(p->s, cmd_p
 static inline Err cmd_doc_parse(CmdParams p[_1_]) { return cmd_parse(p->s, cmd_params_cmd_out(p)); }
 
 
+
 static SessionCmd _cmd_doc_[] =
     { {.name="",        .fn=cmd_doc_info,              .help=CMD_DOC_INFO_DOC,     .flags=CMD_EMPTY}
     , {.name="+",       .fn=cmd_doc_bookmark_add,      .help=CMD_DOC_BOOKMARK_ADD, .flags=CMD_CHAR}
@@ -593,6 +594,7 @@ static SessionCmd _cmd_doc_[] =
     , {.name="fetch",   .match=1, .fn=cmd_doc_fetch,   .help=CMD_DOC_FETCH}
     , {.name="js",      .match=1, .fn=cmd_doc_js,      .help=CMD_DOC_JS}
     , {.name="parse",   .match=1, .fn=cmd_doc_parse,   .help=CMD_DOC_PARSE}
+    , {.name="save",    .match=1, .fn=cmd_doc_save,    .help=CMD_DOC_SAVE}
     , {0}
 };
 

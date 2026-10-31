@@ -227,3 +227,32 @@ file_write_flush_strview(FilePtr fp, StrView s) {
     if (fflush(fp.ptr)) return err_fmt("error: fflush failure: %s", strerror(errno));
     return Ok;
 }
+
+Err
+mkdir_p(StrView dirname) {
+    if (!dirname.len) fail_e("no name provided to create a dir");
+    Err err         = Ok;
+    Str buf         = (Str){0};
+    const char* beg = dirname.items;
+    char* end       = (char*)beg;
+
+    do {
+        end        = memchr(beg, '/', dirname.items + dirname.len - beg);
+        size_t len = end ? (size_t)(end - beg) + 1 : dirname.len - (beg - dirname.items);
+
+        if (len > 1) {
+            tryjmp(err,Clean, str_append(&buf, sv(beg, len)));
+            if (mkdir(buf.items, 0777))
+                if (errno != EEXIST) {
+                    err = err_fmt("%s", strerror(errno));
+                    goto Clean;
+                }
+        }
+
+        beg = end + 1;
+    } while (end != NULL);
+Clean:
+    str_clean(&buf);
+    return err;
+}
+

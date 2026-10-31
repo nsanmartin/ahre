@@ -94,6 +94,7 @@ StrView     cstr_split_word(const char* s[_1__]);
 bool        cstr_mem_eq_case(const char* cstr, const char* mem, size_t len);
 bool        cstr_starts_with(const char* s, const char* t);
 bool        str_startswith(StrView s, StrView v);
+bool        str_endswith(StrView s, StrView v);
 const char* cstr_cat_dup(const char* s, const char* t);
 const char* cstr_mem_cat_dup(const char* s, const char* t, size_t tlen);
 //TODO1: replace all space functions by uspace (unicode) space functions

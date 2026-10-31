@@ -529,8 +529,14 @@ str_startswith_mem(StrView s, const char* mem, size_t len) {
     return s.len >= len && !strncmp(s.items, mem, len);
 }
 
+static bool
+str_endswith_mem(StrView s, const char* mem, size_t len) {
+    return s.len >= len && !strncmp(s.items + s.len - len, mem, len);
+}
+
 
 bool str_startswith(StrView s, StrView v) { return str_startswith_mem(s, v.items, v.len); }
+bool str_endswith(StrView s, StrView v) { return str_endswith_mem(s, v.items, v.len); }
 
 
 size_t

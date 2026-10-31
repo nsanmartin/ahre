@@ -1188,6 +1188,37 @@ htmldoc_get_effective_url(HtmlDoc d[_1_], StrView url[_1_]) {
 }
 
 
+Err
+htmldoc_append_cache_path(HtmlDoc d[_1_], Str out[_1_]) {
+    StrView view;
+    try(htmldoc_get_effective_url(d, &view));
+    if (!view.len) fail_e("url has no length");
+
+    Err err         = Ok;
+    const char* beg = view.items;
+    char* end       = (char*)beg;
+
+    do {
+        end        = memchr(beg, '/', view.items + view.len - beg);
+        size_t len = end ? (size_t)(end - beg) + 1 : view.len - (beg - view.items);
+
+        if (len > 1)
+            try( str_append(out, sv(beg, len)));
+
+        beg = end + 1;
+    } while (end != NULL);
+
+    if (out->items[out->len - 1] == '/')
+        --out->len;
+
+    if (!str_endswith(sv(out), svl(".html")))
+        try( str_append(out, svl(".html")));
+
+    return err;
+
+}
+
+
 static Err
 htmldoc_print_info_request(Request r[1], CmdOut* out) {
 #define PRINT_INFO_REQ_FIELDS_ "  fields:             "

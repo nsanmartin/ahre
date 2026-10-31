@@ -141,6 +141,6 @@ Err htmldoc_get_effective_url(HtmlDoc d[_1_], StrView url[_1_]);
 Err htmldoc_scripts_range_from_parsed_range( HtmlDoc h[_1_], RangeParse p[_1_], Range r[_1_]);
 Err htmldoc_script_write_all(HtmlDoc h[_1_], Range r[_1_], Writer w[_1_]);
 
-
- Err htmldoc_ptr_init_move_request( HtmlDocPtr d[_1_], Request r[_1_], UrlClient uc[_1_], Session* s, CmdOut* cmd_out);
+Err htmldoc_ptr_init_move_request( HtmlDocPtr d[_1_], Request r[_1_], UrlClient uc[_1_], Session* s, CmdOut* cmd_out);
+Err htmldoc_append_cache_path(HtmlDoc d[_1_], Str out[_1_]);
 #endif
