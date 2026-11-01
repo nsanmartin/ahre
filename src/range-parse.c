@@ -101,12 +101,8 @@ _parse_range_addr_(const char* tk, RangeAddr out[_1_], const char* endptr[_1_], 
 /* external linkage */
 
 
-Err parse_range(
-    const char* tk,
-    RangeParse  res[_1_],
-    const char* endptr[_1_],
-    int         base
-) {
+Err
+parse_range(const char* tk, RangeParse res[_1_], const char* endptr[_1_], int base) {
     if (!tk) return "Error: cannot parse NULL, invalid input";
 
     tk = cstr_skip_space(tk);

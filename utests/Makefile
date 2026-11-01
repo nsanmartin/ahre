@@ -4,10 +4,11 @@ AHRE_UTESTS=$(REPO_DIR)/utests
 SANITIZE_FLAGS:= -fsanitize=leak,address,undefined,null,bounds,pointer-overflow
 
 run_tests: run_test_ed_write run_test_range run_test_buf run_test_error run_test_iconv \
-	run_test_url run_test_cmd-params run_test_user-input run_test_reditline
+	run_test_url run_test_cmd-params run_test_user-input run_test_reditline \
+	run_test_htmldoc
 
 all_tests: test_ed_write test_range test_buf test_error test_iconv test_url \
-	test_cmd-params test_user-input test_reditline
+	test_cmd-params test_user-input test_reditline test_htmldoc
 
 run_test_ed_write: test_ed_write
 	../build/test_ed_write
@@ -36,6 +37,9 @@ run_test_user-input: test_user-input
 
 run_test_reditline: test_reditline
 	../build/test_reditline
+
+run_test_htmldoc: test_htmldoc
+	../build/test_htmldoc
 
 
 test_range: $(AHRE_UTESTS)/test_range.c $(AHRE_BUILD)/isocline.o \
@@ -131,3 +135,18 @@ test_reditline:$(AHRE_UTESTS)/test_reditline.c
 	$(CC) $(AHRE_CFLAGS) $(SANITIZE_FLAGS) $(AHRE_INCLUDE) -I. -I$(AHRE_UTESTS) \
 		-o $(AHRE_BUILD)/$@ $^ 
 
+
+test_htmldoc: $(AHRE_UTESTS)/test_htmldoc.c \
+	$(AHRE_BUILD)/str.o $(AHRE_BUILD)/error.o $(AHRE_BUILD)/sys.o $(AHRE_BUILD)/utils.o \
+	$(AHRE_BUILD)/request.o $(AHRE_BUILD)/session.o $(AHRE_BUILD)/textbuf.o \
+	$(AHRE_BUILD)/url-client.o $(AHRE_BUILD)/cmd-out.o $(AHRE_BUILD)/dom.o \
+	$(AHRE_BUILD)/js-engine.o $(AHRE_BUILD)/re.o $(AHRE_BUILD)/reditline.o \
+	$(AHRE_BUILD)/tab-node.o $(AHRE_BUILD)/tabs.o $(AHRE_BUILD)/url.o \
+	$(AHRE_BUILD)/user-input.o $(AHRE_BUILD)/wrapper-curl.o \
+	$(AHRE_BUILD)/wrapper-lexbor-curl.o  $(AHRE_BUILD)/fetch-history.o \
+	$(AHRE_BUILD)/wrapper-lexbor.o $(AHRE_BUILD)/range-parse.o \
+	$(AHRE_BUILD)/cmd-params.o $(AHRE_BUILD)/session-conf.o $(AHRE_BUILD)/config.o \
+	$(QUICKJS_LIB)
+	$(CC) $(AHRE_CFLAGS) $(SANITIZE_FLAGS) $(AHRE_INCLUDE) -I. -I$(AHRE_UTESTS) \
+		-o $(AHRE_BUILD)/$@ $^  \
+		-lcurl -llexbor -lm

@@ -3,7 +3,8 @@
 #include "sys.h"
 
 
-Err session_conf_set_paths(SessionConf sc[_1_]) {
+Err
+session_conf_set_paths(SessionConf sc[_1_]) {
 
     Str confdir = (Str){0};
     Err err = create_or_get_confdir(&confdir);

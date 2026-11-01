@@ -1202,7 +1202,7 @@ htmldoc_append_cache_path(HtmlDoc d[_1_], Str out[_1_]) {
         end        = memchr(beg, '/', view.items + view.len - beg);
         size_t len = end ? (size_t)(end - beg) + 1 : view.len - (beg - view.items);
 
-        if (len != 1 || *beg != '/')
+        if (len && (len != 1 || *beg != '/'))
             try( str_append(out, sv(beg, len)));
 
         if (end) beg = end + 1;
