@@ -2129,21 +2129,6 @@ draw_splitted_table(
 }
 
 
-static Err _expecting_err_could_not_fit_the_table(Err expr, StrView caption, DrawCtx ctx[_1_]) {
-    if (expr == err_could_not_fit_the_table__) { 
-        StrView url = draw_ctx_url_strview(ctx);
-        if (url.len) {
-            msg__(ctx, svl("drawing "));
-            msg__(ctx, url);
-            msg__(ctx, svl(": "));
-        }
-        msg__(ctx, sv(expr));
-        if (caption.len) msg_ln__(ctx, caption);
-        else  msg_ln__(ctx, svl(": <TABLE WITH NO CAPTION>"));
-        return Ok;
-    } else return expr;
-}
-
 //TODO2:
 // when ew have nested tables, the outer table inteprets the inner as a cell,
 // hence if because of the screen width the cell is resized the table apparence
@@ -2198,21 +2183,13 @@ draw_tag_table_impl (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
         }
     }
 
-    tryjmp(err, Clean, _expecting_err_could_not_fit_the_table(
-        fit_table_to_screen(&table, screen_width, &colspan),
-        strview_from_draw_text_buf(caption),
-        ctx
-    ));
+    tryjmp(err, Clean, fit_table_to_screen(&table, screen_width, &colspan));
 
 
     tryjmp(err, Clean, draw_table_to_splitted_view(&table, &splitted_table));
     tryjmp(err, Clean, splitted_table_row_vertical_lengths(&splitted_table, &rows_vlengths));
     tryjmp(err, Clean, splitted_table_col_horizonal_lengths(&splitted_table, &colspan, &cols_hlengths));
-    tryjmp(err, Clean, _expecting_err_could_not_fit_the_table(
-        expand_columns_for_colspans(&table, screen_width, &colspan, &cols_hlengths),
-        strview_from_draw_text_buf(caption),
-        ctx
-    ));
+    tryjmp(err, Clean, expand_columns_for_colspans(&table, screen_width, &colspan, &cols_hlengths));
 
     draw_text_buf_append(caption, svl("\n"));
     draw_ctx_append_sub_text(text, caption);
@@ -2240,9 +2217,9 @@ Clean:
 static Err
 draw_tag_table (DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     Err err = draw_tag_table_impl(node, ctx, text);
-    if (err != err_unexpected_tag_in_table) {
-        return err;
-    }
+    if (  err != err_unexpected_tag_in_table
+       && err != err_could_not_fit_the_table__ ) return err;
+
     try(msg_ln__(get_cmd_out_(ctx), err));
     return draw_iter_childs(node, ctx, text);
 }
