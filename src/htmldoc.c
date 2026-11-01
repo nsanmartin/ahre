@@ -1202,13 +1202,13 @@ htmldoc_append_cache_path(HtmlDoc d[_1_], Str out[_1_]) {
         end        = memchr(beg, '/', view.items + view.len - beg);
         size_t len = end ? (size_t)(end - beg) + 1 : view.len - (beg - view.items);
 
-        if (len > 1)
+        if (len != 1 || *beg != '/')
             try( str_append(out, sv(beg, len)));
 
-        beg = end + 1;
+        if (end) beg = end + 1;
     } while (end != NULL);
 
-    if (out->items[out->len - 1] == '/')
+    if (out->len && out->items[out->len - 1] == '/')
         --out->len;
 
     if (!str_endswith(sv(out), svl(".html")))
@@ -2404,6 +2404,7 @@ Err curl_lexbor_fetch_document(
 );
 
 
+//TODO1: escape <,> etc in pathview
 static Err
 htmldoc_fetch_local_dir(HtmlDoc h[_1_]) {
 

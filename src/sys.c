@@ -240,7 +240,7 @@ mkdir_p(StrView dirname) {
         end        = memchr(beg, '/', dirname.items + dirname.len - beg);
         size_t len = end ? (size_t)(end - beg) + 1 : dirname.len - (beg - dirname.items);
 
-        if (*beg != '/') {
+        if (len != 1 || *beg != '/') {
             tryjmp(err,Clean, str_append(&buf, sv(beg, len)));
             if (mkdir(buf.items, 0777))
                 if (errno != EEXIST) {
@@ -249,7 +249,8 @@ mkdir_p(StrView dirname) {
                 }
         }
 
-        beg = end + 1;
+        if (end) beg = end + 1;
+
     } while (end != NULL);
 Clean:
     str_clean(&buf);

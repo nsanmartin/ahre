@@ -262,7 +262,7 @@ cmd_doc_save(CmdParams p[_1_]) {
 
 Clean:
     str_clean(&path);
-    return Ok;
+    return err;
 }
 
 
