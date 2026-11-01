@@ -1,3 +1,8 @@
+v0.2.8 (01 Nov 2026)
+	* ui  : Add `.save` cmd to save (cache) source to local standard path.
+	* ui  : Add `:"` cmd to print current line and line count.
+	* draw: draw local folder as html allowing navigation.
+
 v0.2.8 (17 Oct 2026)
 
 	* draw : insert space before text based on already rendered data.
