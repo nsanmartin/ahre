@@ -2426,6 +2426,48 @@ Err curl_lexbor_fetch_document(
     CurlPtr           easy
 );
 
+
+static Err
+htmldoc_fetch_local_dir(HtmlDoc h[_1_]) {
+
+    Err err            = Ok;
+    ArlOf(Str) files   = (ArlOf(Str)){0};
+    Str* path          = request_urlstr(htmldoc_request(h));
+    StrView fileschema = sv("file://");
+
+    if (!str_startswith(sv(path), svl("file://"))) return "not a local file";
+    StrView pathview = sv(path->items + fileschema.len, path->len - fileschema.len);
+    tryjmp(err, Clean, open_dir_append_files(pathview.items, &files));
+
+    Str* buf = &htmldoc_sourcebuf(h)->buf;
+    tryjmp(err,Clean, str_append(buf, svl("<html>\n<head><title>")));
+    tryjmp(err,Clean, str_append(buf, pathview));
+    tryjmp(err,Clean, str_append(buf, svl("</title></head>\n<body>\n")));
+    tryjmp(err,Clean, str_append(buf, svl("<h1>")));
+    tryjmp(err,Clean, str_append(buf, pathview));
+    tryjmp(err,Clean, str_append(buf, svl("</h1>\n")));
+    tryjmp(err,Clean, str_append(buf, svl("<ul>\n")));
+
+    foreach__(Str, &files, f) {
+        tryjmp(err,Clean, str_append(buf, svl("<li><a href=\"")));
+        tryjmp(err,Clean, str_append(buf, path));
+        tryjmp(err,Clean, str_append(buf, svl("/")));
+        tryjmp(err,Clean, str_append(buf, f));
+        tryjmp(err,Clean, str_append(buf, svl("\">")));
+        tryjmp(err,Clean, str_append(buf, f));
+        tryjmp(err,Clean, str_append(buf, svl("</a></li>\n")));
+    }
+    tryjmp(err,Clean, str_append(buf, svl("</ul>\n")));
+    tryjmp(err,Clean, str_append(buf, svl("</body>\n</html>\n")));
+
+    tryjmp(err,Clean, htmldoc_reparse_source(h));
+
+Clean:
+    arlfn(Str,clean)(&files);
+    return err;
+}
+
+
 Err
 htmldoc_fetch(
     HtmlDoc           htmldoc[_1_],
@@ -2435,6 +2477,9 @@ htmldoc_fetch(
     FetchHistoryEntry he[_1_]
 )
 {
+
+    if (request_is_local_dir(htmldoc_request(htmldoc)))
+        return htmldoc_fetch_local_dir(htmldoc);
     CurlPtr* easy = request_curl_handle(htmldoc_request(htmldoc));
     if (!easy) fail("error: expecting an easy handled");
     Err e = curl_lexbor_fetch_document(url_client, htmldoc, fetch_scripts, cmd_out, he, *easy);

@@ -480,3 +480,9 @@ Err request_show(Request r[1], CmdOut out[1]) {
     return Ok;
 }
 
+bool request_is_local_dir(Request req[1]) {
+    StrView urlstr = sv(request_urlstr(req));
+    StrView fileschema = sv("file://");
+    return request_is_local(req) && str_startswith(urlstr, fileschema) && path_is_dir(urlstr.items + fileschema.len);
+}
+

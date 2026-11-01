@@ -63,4 +63,5 @@ Err request_to_handle(
 Err url_client_perform_with_cancel(UrlClient uc[_1_], CurlPtr easy, Request req[_1_]);
 Err set_post_fields(Request r[_1_], CurlPtr curl);
 Err request_show(Request r[1], CmdOut out[1]);
+bool request_is_local_dir(Request r[1]);
 #endif

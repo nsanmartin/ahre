@@ -36,4 +36,5 @@ bool interrupt_flag(void);
 Err append_fnames_from_dir(const char* dir_path, ArlOf(Str) fnames[1]);
 Err file_write_flush_strview(FilePtr fp, StrView s);
 Err mkdir_p(StrView dirname);
+Err open_dir_append_files(const char* path, ArlOf(Str) out[_1_]);
 #endif

@@ -724,8 +724,10 @@ dom_get_title_node(Dom dom, DomNode title[_1_]) {
     if (collection == NULL) return err_internal("lexbor failed to create Collection object");
 
     Err        e         = Ok;
-    DomElemPtr head      = lxb_dom_interface_element(dom.ptr->head);
     StrView    title_str = svl("title");
+    DomElemPtr head      = lxb_dom_interface_element(dom.ptr->head);
+    if (!head) { title->ptr = NULL; goto Clean; }
+
     if (LXB_STATUS_OK !=
         lxb_dom_elements_by_tag_name(head, collection, (const lxb_char_t *)title_str.items, title_str.len)) {
         e = err_internal("lexbor failed to get scripts");
@@ -734,7 +736,7 @@ dom_get_title_node(Dom dom, DomNode title[_1_]) {
 
     size_t title_count = lxb_dom_collection_length(collection);
     if (title_count) {
-        //TODO2: if more than 1 title we shuuld message that
+        //TODO2: if more than 1 title we shuld message that
         lxb_dom_element_t* element = lxb_dom_collection_element(collection, 0);
         if (!element) {
             e = err_internal("lexbor collection failed to retrieve element");

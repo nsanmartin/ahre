@@ -240,7 +240,7 @@ mkdir_p(StrView dirname) {
         end        = memchr(beg, '/', dirname.items + dirname.len - beg);
         size_t len = end ? (size_t)(end - beg) + 1 : dirname.len - (beg - dirname.items);
 
-        if (len > 1) {
+        if (*beg != '/') {
             tryjmp(err,Clean, str_append(&buf, sv(beg, len)));
             if (mkdir(buf.items, 0777))
                 if (errno != EEXIST) {
@@ -256,3 +256,23 @@ Clean:
     return err;
 }
 
+
+Err
+open_dir_append_files(const char* path, ArlOf(Str) out[_1_]) {
+    DIR *dir = opendir(path);
+    if (!dir) return err_fmt("%s", strerror(errno));
+
+    Err err  = Ok;
+    struct dirent *entry;
+
+    while ((entry = readdir(dir))) {
+        Str* p = NULL;
+        tryjmp(err, Clean, arl_append_zero(Str,out, p));
+        tryjmp(err, Clean, str_append(p, sv(entry->d_name)));
+    }
+
+
+Clean:
+    closedir(dir);
+    return err;
+}
