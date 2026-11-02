@@ -2,6 +2,11 @@
 #include "session.h"
 #include "generic.h"
 
+#include <unistd.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
 
 static Err _url_from_post_request_(Request r[_1_]);
 Err url_from_get_request(Request r[_1_]) ;
@@ -363,13 +368,46 @@ Fail:
 }
 
 
+static Err
+request_change_url_if_path(Request r[_1_]) {
+
+
+    struct stat st;
+    if (stat(request_cache_path(r)->items, &st) != 0) {
+        const int eno = errno;
+        if (eno != ENOENT) return err_fmt("%s", strerror(eno));
+        return Ok;
+    }
+
+    if  (!S_ISREG(st.st_mode) && !S_ISLNK(st.st_mode)) 
+        return "cache file is not a regular not a symbolic link";
+
+    str_reset(request_urlstr(r));
+    try(str_append(request_urlstr(r), svl("file://")));
+    try(str_append_cwd(request_urlstr(r)));
+    if (len__(request_urlstr(r)) && items__(request_urlstr(r))[len__(request_urlstr(r))-1] != '/')
+        try(str_append(request_urlstr(r), svl("/")));
+    try(str_append(request_urlstr(r), request_cache_path(r)));
+    return Ok;
+}
+
+
+static Err
+request_change_url_to_cache_path_if_exists(Request r[_1_]) {
+    try( url_to_path(sv(request_urlstr(r)), request_cache_path(r)));
+    try( request_change_url_if_path(r));
+    return Ok;
+}
+
 
 Err
-request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url) {
+request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url, bool cache_req) {
     *r = (Request) {
         .method=method,
         .urlview=url
     };
+    request_set_cache_req(r, cache_req);
+                                //
     if (urlstr.len) try(str_append(request_urlstr(r), urlstr));
     if (str_startswith(sv(r->urlstr), svl("http://"))) request_set_https(r, false);
     else if (str_startswith(sv(r->urlstr), svl("https://"))) request_set_https(r, true);
@@ -378,6 +416,9 @@ request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url) {
         try(url_is_https(*r->urlview, &is_https));
         request_set_https(r, is_https);
     } else request_set_https(r, true); //curl's default is https
+
+    if (cache_req && len__(request_urlstr(r)))
+        try(request_change_url_to_cache_path_if_exists(r));
 
     return request_curl_init(r);
 }
@@ -424,16 +465,23 @@ set_post_fields(Request r[_1_], CurlPtr curl) {
 
 
 bool
-request_is_local(Request r[_1_]) { return r->flags & REQUEST_LOCAL; }
+request_is_local(const Request r[_1_]) { return r->flags & REQUEST_LOCAL; }
 
 void
 request_set_local(Request r[_1_], bool value) { set_flag(&r->flags, REQUEST_LOCAL, value); }
 
 bool
-request_is_https(Request r[_1_]) { return r->flags & REQUEST_HTTPS; }
+request_is_https(const Request r[_1_]) { return r->flags & REQUEST_HTTPS; }
 
 void
 request_set_https(Request r[_1_], bool value) { set_flag(&r->flags, REQUEST_HTTPS, value); }
+
+bool
+request_is_cache_req(const Request r[_1_]) { return r->flags & REQUEST_CACHE; }
+
+void
+request_set_cache_req(Request r[_1_], bool value) { set_flag(&r->flags, REQUEST_CACHE, value); }
+
 
 Err request_show(Request r[1], CmdOut out[1]) {
 #define REQ_SHOW_MET    "method: "
@@ -480,8 +528,8 @@ Err request_show(Request r[1], CmdOut out[1]) {
     return Ok;
 }
 
-bool request_is_local_dir(Request req[1]) {
-    StrView urlstr = sv(request_urlstr(req));
+bool request_is_local_dir(const Request req[1]) {
+    StrView urlstr = sv(request_urlstr((Request*)req));
     StrView fileschema = sv("file://");
     return request_is_local(req) && str_startswith(urlstr, fileschema) && path_is_dir(urlstr.items + fileschema.len);
 }

@@ -202,4 +202,6 @@ bool strview_strview_eq (StrView s, StrView t);
 bool strview_strview_eq_case (StrView s, StrView t);
 #define str_eq_case(S, T) strview_strview_eq_case(sv(S), sv(T))
 
+void str_swap(Str s[_1__], Str t[_1__]);
+Err url_to_path(StrView url, Str out[_1__]);
 #endif

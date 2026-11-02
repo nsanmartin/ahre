@@ -129,6 +129,7 @@ Err cmd_textbuf_write(CmdParams p[_1_]);
  */
 
 Err cmd_anchor_asterisk(CmdParams p[_1_], DomNode n);
+Err cmd_anchor_slash(CmdParams p[_1_], DomNode n);
 Err cmd_anchor_print_node(CmdParams p[_1_], DomNode n);
 Err cmd_anchor_save(CmdParams p[_1_], DomNode n);
 Err _cmd_anchor_range_save_to_dir(
@@ -178,6 +179,7 @@ dom_node_range_to_request_arl(
     ArlOf(DomNode) ns[_1_],
     CmdParams      p[_1_],
     HttpMethod     method,
+    bool           cache_req,
     StrView        url_attr,
     ArlOf(Request) reqs[_1_]
 );

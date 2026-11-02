@@ -992,7 +992,7 @@ htmldoc_init_move_request(
             Request req_replace = (Request){0};
 
             tryjmp(e,Fail_Replace,
-                request_init(&req_replace, request_method(htmldoc_request(d->ptr)), svl(""), htmldoc_url(d->ptr)));
+                request_init(&req_replace, request_method(htmldoc_request(d->ptr)), svl(""), htmldoc_url(d->ptr), false));
             tryjmp(e,Fail_Replace, htmldoc_ptr_init_move_request(&doc_replace, &req_replace, uc, s, cmd_out));
 
             htmldoc_destroy(d->ptr);
@@ -1050,7 +1050,7 @@ htmldoc_init_bookmark_move_urlstr(HtmlDoc d[_1_], Str urlstr[_1_]) {
     tryjmp(e,Fail, doc_draw_cache_init(&d->draw_cache));
     try(dom_init(&d->dom));
     if (!urlstr) return err_internal("cannot initialize bookmark with not path");
-    tryjmp(e, Fail, request_init(htmldoc_request(d), http_get, sv(urlstr), NULL));
+    tryjmp(e, Fail, request_init(htmldoc_request(d), http_get, sv(urlstr), NULL, false));
 
     return Ok;
 Fail:
@@ -1194,28 +1194,7 @@ htmldoc_append_cache_path(HtmlDoc d[_1_], Str out[_1_]) {
     try(htmldoc_get_effective_url(d, &view));
     if (!view.len) fail_e("url has no length");
 
-    Err err         = Ok;
-    const char* beg = view.items;
-    char* end       = (char*)beg;
-
-    do {
-        end        = memchr(beg, '/', view.items + view.len - beg);
-        size_t len = end ? (size_t)(end - beg) + 1 : view.len - (beg - view.items);
-
-        if (len && (len != 1 || *beg != '/'))
-            try( str_append(out, sv(beg, len)));
-
-        if (end) beg = end + 1;
-    } while (end != NULL);
-
-    if (out->len && out->items[out->len - 1] == '/')
-        --out->len;
-
-    if (!str_endswith(sv(out), svl(".html")))
-        try( str_append(out, svl(".html")));
-
-    return err;
-
+    return url_to_path(view, out);
 }
 
 
@@ -2447,6 +2426,19 @@ Clean:
 
 
 Err
+htmldoc_save_to_path_p(HtmlDoc d[_1_], StrView path) {
+    if (!path.len) fail_e("expecting non empty path to save -p");
+    size_t lastix = path.len - 1;
+
+    while (lastix && path.items[lastix] != '/') --lastix;
+    if (lastix)
+        try(mkdir_p(sv(path.items, lastix)));
+
+    return textbuf_to_file(htmldoc_sourcebuf(d), path.items, "w");
+}
+
+
+Err
 htmldoc_fetch(
     HtmlDoc           htmldoc[_1_],
     UrlClient         url_client[_1_],
@@ -2455,13 +2447,24 @@ htmldoc_fetch(
     FetchHistoryEntry he[_1_]
 )
 {
+    Request* req            = htmldoc_request(htmldoc);
+    const bool is_local_dir = request_is_local_dir(req);
 
-    if (request_is_local_dir(htmldoc_request(htmldoc)))
+    if (is_local_dir)
         return htmldoc_fetch_local_dir(htmldoc);
+
+
     CurlPtr* easy = request_curl_handle(htmldoc_request(htmldoc));
     if (!easy) fail("error: expecting an easy handled");
-    Err e = curl_lexbor_fetch_document(url_client, htmldoc, fetch_scripts, cmd_out, he, *easy);
-    return e;
+
+
+    try( curl_lexbor_fetch_document(url_client, htmldoc, fetch_scripts, cmd_out, he, *easy));
+
+    /* both are equal if and only if was fetched from cache*/
+    if (request_is_cache_req(req) && !str_eq(request_cache_path(req), request_urlstr(req)))
+        try( htmldoc_save_to_path_p(htmldoc, sv(request_cache_path(req))));
+        
+    return Ok;
 }
 
 

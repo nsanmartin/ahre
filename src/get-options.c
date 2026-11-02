@@ -60,7 +60,7 @@ static Err _session_conf_from_options_(int argc, char* argv[], CliParams cparams
         if (*arg != '-') {
             Request* r;
             try(arl_append_zero(Request,cparams_requests(cparams),r));
-            try(request_init(r, http_get, sv(arg), NULL));
+            try(request_init(r, http_get, sv(arg), NULL, false));
             continue;
         }
 

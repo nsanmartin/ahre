@@ -143,4 +143,5 @@ Err htmldoc_script_write_all(HtmlDoc h[_1_], Range r[_1_], Writer w[_1_]);
 
 Err htmldoc_ptr_init_move_request( HtmlDocPtr d[_1_], Request r[_1_], UrlClient uc[_1_], Session* s, CmdOut* cmd_out);
 Err htmldoc_append_cache_path(HtmlDoc d[_1_], Str out[_1_]);
+Err htmldoc_save_to_path_p(HtmlDoc d[_1_], StrView path);
 #endif

@@ -187,22 +187,34 @@ static Err cmd_anchor_print_range(CmdParams p[_1_]) {
 }
 
 
-static Err cmd_anchor_asterisk_range(CmdParams p[_1_]) {
+
+static Err
+cmd_anchor_open_range(CmdParams p[_1_], nodeCmdCallback cb) {
     Range r;
-    /* HtmlDocPtr* h; */
-    /* try(session_current_doc(p->s, &h)); */
     ArlOf(DomNode)* anchors;
     try(get_range_and_nodes(p, &r, &anchors, htmldoc_anchors));
-    //TODO1: both cases should call cmd_anchor_asterisk, but we need to pass the information
-    //of whther it is a range or a single url since if it is range we o not "follow" and go back
-    //immediately isntead
-    if (range_len(&r) > 1)
-        return run_cmd_for_dom_node_range(p, &r, anchors, cmd_anchor_asterisk);
+
+    try( run_cmd_for_dom_node_range(p, &r, anchors, cb));
+
+    if (range_len(&r) == 1) {
+        TabNode* current_tab;
+        try( tablist_current_tab(session_tablist(p->s), &current_tab));
+        if (current_tab) 
+            tab_node_set_last_as_current(current_tab);
+    }
+
+    return Ok;
+}
 
 
-    DomNode* a = arlfn(DomNode, at)(anchors, r.beg);
-    if (!a) return "link number invalid";
-    return session_follow_ahref(p->s, *a, cmd_params_cmd_out(p));
+static Err
+cmd_anchor_asterisk_range(CmdParams p[_1_]) {
+    return cmd_anchor_open_range(p, cmd_anchor_asterisk);
+}
+
+static Err
+cmd_anchor_slash_range(CmdParams p[_1_]) {
+    return cmd_anchor_open_range(p, cmd_anchor_slash);
 }
 
 
@@ -292,7 +304,7 @@ cmd_anchor_save_range(CmdParams p[_1_]) {
 
     ArlOf(Request) rs = (ArlOf(Request)){0};
     Err            e  = Ok;
-    tryjmp(e,Clean, dom_node_range_to_request_arl(&r, anchors, p, http_get, svl("href"), &rs));
+    tryjmp(e,Clean, dom_node_range_to_request_arl(&r, anchors, p, http_get, false, svl("href"), &rs));
     tryjmp(e,Clean, request_arl_to_file(p, path, &rs));
 Clean:
     arlfn(Request,clean)(&rs);
@@ -304,7 +316,8 @@ static SessionCmd _cmd_anchor_[] =
     { {.name="\"", .fn=cmd_anchor_print_range,    .help=CMD_ANCHOR_PRINT_DOC, .flags=CMD_CHAR}
     , {.name="",   .fn=cmd_anchor_asterisk_range, .help=NULL,                 .flags=CMD_EMPTY}
     , {.name="*",  .fn=cmd_anchor_asterisk_range, .help=NULL,                 .flags=CMD_CHAR}
-    , {.name="save",.fn=cmd_anchor_save_range,   .help=NULL,                 .match=1}
+    , {.name="/",  .fn=cmd_anchor_slash_range,    .help=NULL,                 .flags=CMD_CHAR}
+    , {.name="save",.fn=cmd_anchor_save_range,    .help=NULL,                 .match=1}
     , {0}
     };
 
@@ -632,7 +645,7 @@ static Err cmd_image_save_range(CmdParams p[_1_]) {
 
     ArlOf(Request) rs = (ArlOf(Request)){0};
     Err            e  = Ok;
-    tryjmp(e,Clean, dom_node_range_to_request_arl(&r, images, p, http_get, svl("src"), &rs));
+    tryjmp(e,Clean, dom_node_range_to_request_arl(&r, images, p, http_get, false, svl("src"), &rs));
     tryjmp(e,Clean, request_arl_to_file(p, path, &rs));
 Clean:
     arlfn(Request,clean)(&rs);

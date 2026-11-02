@@ -10,20 +10,25 @@ typedef struct {
     Url*       urlview;
     Url        url;
     Str        urlstr;
+    Str        cache_path;
     ArlOf(Str) keys;
     ArlOf(Str) values;
     Str        fields; /* used for post fields and quey */
     unsigned   flags;
 #define REQUEST_LOCAL         0x1
 #define REQUEST_HTTPS         0x2
+#define REQUEST_CACHE         0x4
 } Request;
 
-bool request_is_local(Request r[_1_]);
+bool request_is_local(const Request r[_1_]);
 void request_set_local(Request r[_1_], bool value);
-bool request_is_https(Request r[_1_]);
+bool request_is_https(const Request r[_1_]);
 void request_set_https(Request r[_1_], bool value);
+bool request_is_cache_req(const Request r[_1_]);
+void request_set_cache_req(Request r[_1_], bool value);
 static inline HttpMethod request_method(Request r[_1_]) { return r->method; }
 static inline Str* request_urlstr(Request r[_1_]) { return &r->urlstr; }
+static inline Str* request_cache_path(Request r[_1_]) { return &r->cache_path; }
 static inline Url* request_url(Request r[_1_]) { return &r->url; }
 static inline Str* request_fields(Request r[_1_]) { return &r->fields; }
 static inline ArlOf(Str)* request_query_keys(Request r[_1_]) { return &r->keys; }
@@ -31,6 +36,7 @@ static inline ArlOf(Str)* request_query_values(Request r[_1_]) { return &r->valu
 static inline CurlPtr* request_curl_handle(Request r[_1_]) { return &r->curl_handle; }
 static inline void request_clean(Request r[_1_]) {
     str_clean(request_urlstr(r));
+    str_clean(request_cache_path(r));
     str_clean(request_fields(r));
     arlfn(Str,clean)(request_query_keys(r));
     arlfn(Str,clean)(request_query_values(r));
@@ -49,7 +55,7 @@ Err request_query_append_key_value(Request r[_1_], const char*k, size_t klen, co
 Err request_from_cli_params(Request r[_1_], HttpMethod method, StrView urlstr, StrView fields);
 Err request_from_form_node (Request r[_1_], DomNode form, Url* urlview, LipOf(DomNodePtr,bool) checkbokes[1]);
 Err request_from_userln(Request r[_1_], UserLine userln[_1_], HttpMethod method, CmdOut cout[_1_]);
-Err request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url);
+Err request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url, bool cache_req);
 /* ctors **/
 
 Err request_to_handle(
@@ -63,5 +69,5 @@ Err request_to_handle(
 Err url_client_perform_with_cancel(UrlClient uc[_1_], CurlPtr easy, Request req[_1_]);
 Err set_post_fields(Request r[_1_], CurlPtr curl);
 Err request_show(Request r[1], CmdOut out[1]);
-bool request_is_local_dir(Request r[1]);
+bool request_is_local_dir(const Request r[1]);
 #endif

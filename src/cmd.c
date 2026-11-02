@@ -21,6 +21,7 @@ dom_node_range_to_request_arl(
     ArlOf(DomNode) ns[_1_],
     CmdParams      p[_1_],
     HttpMethod     method,
+    bool           cache_req,
     StrView        url_attr,
     ArlOf(Request) reqs[_1_]
 ) {
@@ -34,7 +35,7 @@ dom_node_range_to_request_arl(
         StrView url = dom_node_attr_value(*nodeptr, url_attr);
 
         try(arl_append_zero(Request,reqs,r));
-        Err e = request_init(r, method, url, htmldoc_url(d->ptr));
+        Err e = request_init(r, method, url, htmldoc_url(d->ptr), cache_req);
         if (e) {
             msg_ln__(p, e);
             request_clean(r);
@@ -252,13 +253,7 @@ cmd_doc_save(CmdParams p[_1_]) {
     Str path = (Str){0};
     tryjmp(err,Clean, htmldoc_append_cache_path(d->ptr, &path));
 
-    size_t lastix = path.len - 1;
-
-    while (lastix && path.items[lastix] != '/') --lastix;
-    if (lastix)
-        tryjmp(err,Clean, mkdir_p(sv(path.items, lastix)));
-
-    tryjmp(err,Clean, textbuf_to_file(htmldoc_sourcebuf(d->ptr), path.items, "w"));
+    tryjmp(err,Clean, htmldoc_save_to_path_p(d->ptr, sv(path)));
 
 Clean:
     str_clean(&path);
@@ -647,21 +642,28 @@ Err cmd_image_print(CmdParams p[_1_], DomNode node) {
 
 /* anchor commands */
 
-
-Err cmd_anchor_asterisk(CmdParams p[_1_], DomNode node) {
-    Session*  s = p->s;
-    if (!s) return "error: expecting a session";
-    CmdOut* out = cmd_params_cmd_out(p);
+static Err
+cmd_anchor_open(CmdParams p[_1_], DomNode node, bool cache_req) {
+    if (!p->s) return "error: expecting a session";
     TabNode* current_tab;
-    try( tablist_current_tab(session_tablist(s), &current_tab));
+    try( tablist_current_tab(session_tablist(p->s), &current_tab));
+
     if(current_tab) {
-        try( tab_node_tree_append_ahref_from_node(current_tab , node, session_url_client(s), s, out));
-        //TODO: the will depend on whther is a single url or a range
-        return tablist_back(session_tablist(s));
+        return tab_node_tree_append_ahref_from_node(
+            current_tab , node, session_url_client(p->s), p->s, cache_req, cmd_params_cmd_out(p)
+        );
     }
     
     return "error: where is the href if current tree is empty?";
 }
+
+
+
+Err
+cmd_anchor_asterisk(CmdParams p[_1_], DomNode node) { return cmd_anchor_open(p, node, false); }
+
+Err
+cmd_anchor_slash(CmdParams p[_1_], DomNode node) { return cmd_anchor_open(p, node, true); }
 
 
 Err cmd_print_node(CmdParams p[_1_], DomNode node) {

@@ -67,12 +67,18 @@ static inline Err
 tab_node_append_move_child(TabNode n[_1_], TabNode newnode[_1_]) {
     if (!arl_of_tab_node_append(tab_node_childs(n), newnode))
         return "error: mem failure arl";
-    n->current_ix = tab_node_child_count(n);
-    if (!n->current_ix) return "error: no items after appending";
-    --n->current_ix; /* the ix of last one */
+
     return Ok;
 }
 
+
+static inline Err
+tab_node_set_last_as_current(TabNode n[_1_]) {
+    n->current_ix = tab_node_child_count(n);
+    if (!n->current_ix) fail_e("no node to set as current");
+    --n->current_ix; /* the ix of last one */
+    return Ok;
+}
 
 
 /**/
@@ -140,6 +146,7 @@ Err tab_node_tree_append_ahref_from_node(
     DomNode   a,
     UrlClient url_client[_1_],
     Session*  s,
+    bool      cache_req,
     CmdOut*   out
 );
 

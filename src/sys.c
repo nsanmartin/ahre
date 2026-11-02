@@ -12,6 +12,15 @@
 static bool is_wordexp_failure(Err e);
 
 
+Err
+str_append_cwd(Str out[_1_]) {
+    char buf[PATH_MAX];
+    if (getcwd(buf, sizeof buf) == NULL) return err_fmt("%s", strerror(errno));
+
+    return str_append(out, sv(buf));
+}
+
+
 /* file utils */
 
 
@@ -158,7 +167,8 @@ static bool
 is_wordexp_failure(Err e) { return e == wordexp_failure__; }
 
 
-bool path_is_dir(const char* path) {
+bool
+path_is_dir(const char* path) {
     struct stat st;
     return stat(path, &st) == 0 && S_ISDIR(st.st_mode);
 }

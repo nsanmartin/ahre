@@ -22,7 +22,7 @@ Err get_bookmarks_doc(
     Err  err    = Ok;
     Str* bm_url = &(Str){0};
 
-    try( str_append_z(bm_url, svl("file://")));
+    try( str_append(bm_url, svl("file://")));
     tryjmp(err, Clean, str_append_z(bm_url, bm_path));
     tryjmp(err, Clean, htmldoc_init_bookmark_move_urlstr(htmldoc_out, bm_url));
     FetchHistoryEntry e = (FetchHistoryEntry){0};
@@ -66,7 +66,7 @@ cmd_bookmarks_show(CmdParams p[_1_]) {
     if (!len__(session_bookmarks_fname(p->s))) return "no bookmarks file configured";
     try(str_append(&u, svl("file://")));
     try(resolve_bookmarks_file(items__(session_bookmarks_fname(p->s)), &u));
-    tryjmp(e,Fail, request_init(&r, http_get, sv(u), NULL));
+    tryjmp(e,Fail, request_init(&r, http_get, sv(u), NULL, false));
     tryjmp(e,Fail, session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p)));
     str_clean(&u);
     return Ok;

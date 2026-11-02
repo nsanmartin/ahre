@@ -28,7 +28,6 @@ Err tab_node_init_move_request(
     try(_tab_node_init_base_(n, parent));
     try( htmldoc_ptr_init_move_request(tab_node_doc(n), r, url_client, s, out));
 
-    n->current_ix = n->childs->len;
     return Ok;
 }
 
@@ -38,6 +37,7 @@ Err tab_node_tree_append_ahref_from_node(
     DomNode   a,
     UrlClient url_client[_1_],
     Session*  s,
+    bool      cache_req,
     CmdOut*   out
 ) {
     if (!s) return "error: expecting a session";
@@ -51,7 +51,7 @@ Err tab_node_tree_append_ahref_from_node(
     Request r       = (Request){0};
     TabNode newnode = (TabNode){0};
 
-    tryjmp(e,Clean, request_init(&r, http_get, html, htmldoc_url(d->ptr)));
+    tryjmp(e,Clean, request_init(&r, http_get, html, htmldoc_url(d->ptr), cache_req));
     tryjmp(e,Clean, tab_node_init_move_request(&newnode, n, url_client, &r, s, out));
     tryjmp(e,Clean, tab_node_append_move_child(n, &newnode));
     return Ok;
@@ -84,6 +84,7 @@ Err tab_node_tree_append_submit_input_node(
         request_from_form_node(&r, form, htmldoc_url(d->ptr), htmldoc_checked_boxes(d->ptr)));
     tryjmp(e,Clean, tab_node_init_move_request(&newnode, tab_node, url_client, &r, s, out));
     tryjmp(e,Clean, tab_node_append_move_child(tab_node, &newnode));
+    tryjmp(e,Clean, tab_node_set_last_as_current(tab_node));
     return Ok;
 
 Clean:

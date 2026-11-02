@@ -734,6 +734,41 @@ size_t strview_trim_utf8_space(StrView s[_1__]) {
     return strview_trim_left_utf8_space(s) + strview_trim_right_utf8_space(s);
 }
 
+void
+str_swap(Str s[_1_], Str t[_1_]) {
+    Str tmp = *s;
+    *s      = *t;
+    *t      = tmp;
+}
+
+Err
+url_to_path(StrView url, Str out[_1_]) {
+    Err err         = Ok;
+    const char* beg = url.items;
+    char* end       = (char*)beg;
+
+    do {
+        end        = memchr(beg, '/', url.items + url.len - beg);
+        size_t len = end ? (size_t)(end - beg) + 1 : url.len - (beg - url.items);
+
+        if (len && (len != 1 || *beg != '/'))
+            try( str_append(out, sv(beg, len)));
+
+        if (end) beg = end + 1;
+    } while (end != NULL);
+
+    if (out->len && out->items[out->len - 1] == '/')
+        --out->len;
+
+    if (!str_endswith(sv(out), svl(".html")))
+        try( str_append(out, svl(".html")));
+
+    return err;
+
+}
+
+
+
 /* testing */
 #ifdef TESTING_FAILURES
 bool unsigned APPENDS__ = 0;
