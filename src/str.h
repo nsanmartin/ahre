@@ -204,4 +204,5 @@ bool strview_strview_eq_case (StrView s, StrView t);
 
 void str_swap(Str s[_1__], Str t[_1__]);
 Err url_to_path(StrView url, Str out[_1__]);
+bool str_match_last(Str s[_1__], char c);
 #endif

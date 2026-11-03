@@ -816,8 +816,17 @@ draw_tag_em(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     if (!isnull(dom_node_prev(node)) && draw_text_buf_last_isgraph(text))
         try( draw_text_buf_append_lit__(text, " "));
     try(_hypertext_open_(ctx, text, draw_ctx_push_underline, NULL));
-    try( draw_iter_childs(node, ctx, text));
-    try( _hypertext_close_(ctx, text, draw_ctx_reset_color, NULL));
+
+    Err err               = Ok;
+    DrawTextBuf* sub_text = &(DrawTextBuf){0};
+    tryjmp(err,Clean, draw_iter_childs(node, ctx, sub_text));
+    draw_text_buf_trim(sub_text);
+    if (sub_text->buf.len) tryjmp(err,Clean, draw_ctx_append_sub_text(text, sub_text));
+
+    tryjmp(err,Clean, _hypertext_close_(ctx, text, draw_ctx_reset_color, NULL));
+
+Clean:
+    draw_text_buf_clean(sub_text);
     return Ok;
 }
 
@@ -2461,8 +2470,8 @@ htmldoc_fetch(
     try( curl_lexbor_fetch_document(url_client, htmldoc, fetch_scripts, cmd_out, he, *easy));
 
     /* both are equal if and only if was fetched from cache*/
-    if (request_is_cache_req(req) && !str_eq(request_cache_path(req), request_urlstr(req)))
-        try( htmldoc_save_to_path_p(htmldoc, sv(request_cache_path(req))));
+    if (request_is_cache_miss(req))
+        try( htmldoc_save_to_path_p(htmldoc, request_cache_path(req)));
         
     return Ok;
 }

@@ -11,6 +11,7 @@ typedef struct {
     Url        url;
     Str        urlstr;
     Str        cache_path;
+    size_t     cache_path_off;
     ArlOf(Str) keys;
     ArlOf(Str) values;
     Str        fields; /* used for post fields and quey */
@@ -18,6 +19,7 @@ typedef struct {
 #define REQUEST_LOCAL         0x1
 #define REQUEST_HTTPS         0x2
 #define REQUEST_CACHE         0x4
+#define REQUEST_CACHE_MISS    0x8
 } Request;
 
 bool request_is_local(const Request r[_1_]);
@@ -26,9 +28,12 @@ bool request_is_https(const Request r[_1_]);
 void request_set_https(Request r[_1_], bool value);
 bool request_is_cache_req(const Request r[_1_]);
 void request_set_cache_req(Request r[_1_], bool value);
+bool request_is_cache_miss(const Request r[_1_]);
+void request_set_cache_miss(Request r[_1_], bool value);
+
 static inline HttpMethod request_method(Request r[_1_]) { return r->method; }
 static inline Str* request_urlstr(Request r[_1_]) { return &r->urlstr; }
-static inline Str* request_cache_path(Request r[_1_]) { return &r->cache_path; }
+static inline Str* request_cache_url(Request r[_1_]) { return &r->cache_path; }
 static inline Url* request_url(Request r[_1_]) { return &r->url; }
 static inline Str* request_fields(Request r[_1_]) { return &r->fields; }
 static inline ArlOf(Str)* request_query_keys(Request r[_1_]) { return &r->keys; }
@@ -36,7 +41,7 @@ static inline ArlOf(Str)* request_query_values(Request r[_1_]) { return &r->valu
 static inline CurlPtr* request_curl_handle(Request r[_1_]) { return &r->curl_handle; }
 static inline void request_clean(Request r[_1_]) {
     str_clean(request_urlstr(r));
-    str_clean(request_cache_path(r));
+    str_clean(request_cache_url(r));
     str_clean(request_fields(r));
     arlfn(Str,clean)(request_query_keys(r));
     arlfn(Str,clean)(request_query_values(r));
@@ -44,6 +49,8 @@ static inline void request_clean(Request r[_1_]) {
     curl_ptr_clean(request_curl_handle(r));
 }
 
+StrView request_actual_url(Request r[_1_]);
+StrView request_cache_path(Request r[_1_]);
 #define Hotl_Arl_T Request
 #define Hotl_Arl_T_Clean request_clean
 #include <arl.h>

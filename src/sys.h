@@ -38,4 +38,5 @@ Err file_write_flush_strview(FilePtr fp, StrView s);
 Err mkdir_p(StrView dirname);
 Err open_dir_append_files(const char* path, ArlOf(Str) out[_1_]);
 Err str_append_cwd(Str out[_1_]);
+Err path_is_reg_or_lnk(const char* path, bool out[_1_]);
 #endif

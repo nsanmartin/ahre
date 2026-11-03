@@ -175,6 +175,22 @@ path_is_dir(const char* path) {
 
 
 Err
+path_is_reg_or_lnk(const char* path, bool out[_1_]) {
+    *out = false;
+    struct stat st;
+    if (stat(path, &st) != 0) {
+        const int eno = errno;
+        if (eno != ENOENT) return err_fmt("%s", strerror(eno));
+        return Ok;
+    }
+
+    if  (S_ISREG(st.st_mode) || S_ISLNK(st.st_mode)) 
+        *out = true;
+    return Ok;
+}
+
+
+Err
 file_read(FilePtr fp[1], char* mem, size_t len, size_t read[1]) {
     *read = fread(mem, 1, len, fp->ptr);
     if (ferror(fp->ptr)) return err_from(errno);

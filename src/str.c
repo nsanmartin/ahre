@@ -767,6 +767,10 @@ url_to_path(StrView url, Str out[_1_]) {
 
 }
 
+bool
+str_match_last(Str s[_1__], char c) {
+    return len__(s) && items__(s)[len__(s)-1] == c;
+}
 
 
 /* testing */

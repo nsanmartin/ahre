@@ -8,11 +8,18 @@
 #include <stdio.h>
 #include <errno.h>
 
+
+#define FILE_SCHEMA "file://"
+#define HTTP_SCHEMA "http://"
+#define HTTPS_SCHEMA "https://"
+
+
 static Err _url_from_post_request_(Request r[_1_]);
 Err url_from_get_request(Request r[_1_]) ;
 
 
-static Err request_curl_init(Request r[_1_]) {
+static Err
+request_curl_init(Request r[_1_]) {
     try(w_curl_easy_init(request_curl_handle(r)));
     switch (r->method) {
         case http_post: return _url_from_post_request_(r);
@@ -223,11 +230,14 @@ Err request_from_form_node (Request r[_1_], DomNode form, Url* urlview, LipOf(Do
 
 static Err
 _url_from_post_request_(Request r[_1_]) {
-    Err err = Ok;
     try(url_init(request_url(r), r->urlview));
-    CURLU* cu = url_cu(&r->url);
-    if (len__(request_urlstr(r))) {
-        CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, items__(request_urlstr(r)), CURLU_DEFAULT_SCHEME);
+
+    Err err        = Ok;
+    CURLU* cu      = url_cu(&r->url);
+    StrView urlstr = sv(request_urlstr(r)); /* POST does not admit cached url */
+
+    if (urlstr.len) {
+        CURLUcode curl_code = curl_url_set(cu, CURLUPART_URL, urlstr.items, CURLU_DEFAULT_SCHEME);
         if (curl_code != CURLUE_OK) {
             err = err_fmt("warn: curl_url_set failed: %s\n", curl_url_strerror(curl_code));
             goto Clean_Url;
@@ -289,9 +299,6 @@ Failure_Free_Escaped:
 }
 
 
-#define FILE_SCHEMA "file://"
-#define HTTP_SCHEMA "http://"
-#define HTTPS_SCHEMA "https://"
 static Err
 resolve_request_url_if_local(Request r[_1_]) {
     Str* url = request_urlstr(r);
@@ -320,13 +327,16 @@ Clean:
 
 
 Err url_from_get_request(Request r[_1_]) {
-    Url u = (Url){0};
+    Url u              = (Url){0};
+    Err e              = Ok;
+    Str file           = (Str){0};
+    StrView actual_url = request_actual_url(r);
+
     try(url_init(&u, r->urlview));
-    Err    e    = Ok;
-    Str    file = (Str){0};
-    if (len__(request_urlstr(r)) && !str_eq_case(svl("/"), request_urlstr(r))) {
+
+    if (actual_url.len && !str_eq_case(svl("/"), actual_url)) {
         tryjmp(e,Fail, resolve_request_url_if_local(r));
-        tryjmp(e,Fail, url_set_url_or_fragment(&u, items__(request_urlstr(r))));
+        tryjmp(e,Fail, url_set_url_or_fragment(&u, actual_url.items));
     }
 
 
@@ -369,39 +379,26 @@ Fail:
 
 
 static Err
-request_change_url_if_path(Request r[_1_]) {
+request_fill_cache_path(Request r[_1_]) {
+    try( str_append(    request_cache_url(r), svl(FILE_SCHEMA)));
+    try( str_append_cwd(request_cache_url(r)));
 
+    if (!str_match_last(request_cache_url(r), '/'))
+        try( str_append(request_cache_url(r), svl("/")));
 
-    struct stat st;
-    if (stat(request_cache_path(r)->items, &st) != 0) {
-        const int eno = errno;
-        if (eno != ENOENT) return err_fmt("%s", strerror(eno));
-        return Ok;
-    }
+    r->cache_path_off = len__(request_cache_url(r));
+    try( url_to_path(sv(request_urlstr(r)), request_cache_url(r)));
 
-    if  (!S_ISREG(st.st_mode) && !S_ISLNK(st.st_mode)) 
-        return "cache file is not a regular not a symbolic link";
-
-    str_reset(request_urlstr(r));
-    try(str_append(request_urlstr(r), svl("file://")));
-    try(str_append_cwd(request_urlstr(r)));
-    if (len__(request_urlstr(r)) && items__(request_urlstr(r))[len__(request_urlstr(r))-1] != '/')
-        try(str_append(request_urlstr(r), svl("/")));
-    try(str_append(request_urlstr(r), request_cache_path(r)));
-    return Ok;
-}
-
-
-static Err
-request_change_url_to_cache_path_if_exists(Request r[_1_]) {
-    try( url_to_path(sv(request_urlstr(r)), request_cache_path(r)));
-    try( request_change_url_if_path(r));
+    bool is_reg_or_lnk;
+    try( path_is_reg_or_lnk(items__(request_cache_url(r)) + lit_len__(FILE_SCHEMA), &is_reg_or_lnk));
+    request_set_cache_miss(r, !is_reg_or_lnk);
     return Ok;
 }
 
 
 Err
 request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url, bool cache_req) {
+    if (cache_req && method == http_post) return "POST method is nott cached, try * cmd";
     *r = (Request) {
         .method=method,
         .urlview=url
@@ -418,7 +415,7 @@ request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url, bool c
     } else request_set_https(r, true); //curl's default is https
 
     if (cache_req && len__(request_urlstr(r)))
-        try(request_change_url_to_cache_path_if_exists(r));
+        try( request_fill_cache_path(r));
 
     return request_curl_init(r);
 }
@@ -482,6 +479,12 @@ request_is_cache_req(const Request r[_1_]) { return r->flags & REQUEST_CACHE; }
 void
 request_set_cache_req(Request r[_1_], bool value) { set_flag(&r->flags, REQUEST_CACHE, value); }
 
+bool
+request_is_cache_miss(const Request r[_1_]) { return r->flags & REQUEST_CACHE_MISS; }
+
+void
+request_set_cache_miss(Request r[_1_], bool value) { set_flag(&r->flags, REQUEST_CACHE_MISS, value); }
+
 
 Err request_show(Request r[1], CmdOut out[1]) {
 #define REQ_SHOW_MET    "method: "
@@ -534,3 +537,21 @@ bool request_is_local_dir(const Request req[1]) {
     return request_is_local(req) && str_startswith(urlstr, fileschema) && path_is_dir(urlstr.items + fileschema.len);
 }
 
+
+StrView
+request_actual_url(Request r[_1_]) {
+    return (!request_is_cache_req(r) || request_is_cache_miss(r))
+        ? sv(request_urlstr(r))
+        : sv(request_cache_url(r));
+}
+
+StrView
+request_cache_path(Request r[_1_]) {
+    const size_t off = r->cache_path_off;
+    if (off >= len__(request_cache_url(r)))
+        return (StrView){0};
+    return (StrView){
+        .items=items__(request_cache_url(r)) + off,
+        .len=len__(request_cache_url(r)) - off
+    };
+}
