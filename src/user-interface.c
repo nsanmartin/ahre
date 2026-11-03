@@ -196,12 +196,8 @@ cmd_anchor_open_range(CmdParams p[_1_], nodeCmdCallback cb) {
 
     try( run_cmd_for_dom_node_range(p, &r, anchors, cb));
 
-    if (range_len(&r) == 1) {
-        TabNode* current_tab;
-        try( tablist_current_tab(session_tablist(p->s), &current_tab));
-        if (current_tab) 
-            tab_node_set_last_as_current(current_tab);
-    }
+    if (range_len(&r) == 1)
+        try(tablist_set_currents_last_child_as_current(session_tablist(p->s)));
 
     return Ok;
 }
@@ -331,7 +327,15 @@ static Err cmd_input_sharp(CmdParams p[_1_]) {
 
 
 static Err cmd_input_submit(CmdParams p[_1_]) {
-    return run_cmd_for_indep_dom_node_range(p, htmldoc_inputs, cmd_input_default_node); 
+    ArlOf(DomNode)* nodes;
+    Range r;
+    try(get_range_and_nodes(p, &r, &nodes, htmldoc_inputs));
+    try( run_cmd_for_dom_node_range(p, &r, nodes, cmd_input_default_node));
+
+    if (range_len(&r) == 1) 
+        try(tablist_set_currents_last_child_as_current(session_tablist(p->s)));
+
+    return Ok;
 }
 
 #define CMD_INPUT_SET \

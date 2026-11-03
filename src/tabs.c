@@ -184,3 +184,12 @@ tablist_current_doc(TabList f[_1_], HtmlDocPtr* out[_1_]) {
 
     return tab_node_current_doc(t, out);
 }
+
+Err
+tablist_set_currents_last_child_as_current(TabList tl[_1_]) {
+    TabNode* current_tab;
+    try( tablist_current_tab(tl, &current_tab));
+    TabNode* cn;
+    try( tab_node_current_node(current_tab, &cn));
+    return tab_node_set_last_as_current(cn);
+}

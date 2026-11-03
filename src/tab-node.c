@@ -28,6 +28,7 @@ Err tab_node_init_move_request(
     try(_tab_node_init_base_(n, parent));
     try( htmldoc_ptr_init_move_request(tab_node_doc(n), r, url_client, s, out));
 
+    n->current_ix = tab_node_child_count(n);
     return Ok;
 }
 
@@ -84,7 +85,6 @@ Err tab_node_tree_append_submit_input_node(
         request_from_form_node(&r, form, htmldoc_url(d->ptr), htmldoc_checked_boxes(d->ptr)));
     tryjmp(e,Clean, tab_node_init_move_request(&newnode, tab_node, url_client, &r, s, out));
     tryjmp(e,Clean, tab_node_append_move_child(tab_node, &newnode));
-    tryjmp(e,Clean, tab_node_set_last_as_current(tab_node));
     return Ok;
 
 Clean:

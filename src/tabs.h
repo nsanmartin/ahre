@@ -103,4 +103,6 @@ Err tablist_move_to_path(TabList tl[_1_], const char* line) {
 
     return Ok;
 }
+
+Err tablist_set_currents_last_child_as_current(TabList tl[_1_]);
 #endif
