@@ -1,10 +1,14 @@
+DIR=$HOME/cb/nsm/ahre
+
 _vahre_() {
     local ERRFILE=${1:-0}; [ $# -gt 0 ] && shift
-    echo stderr sent to err/"$ERRFILE"
+    echo stderr sent to "$DIR"/err/"$ERRFILE"
     echo "$@" >&2
-    make && valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all ./build/ahre "$@" 2> err/"$ERRFILE"
+    make -C $DIR && \
+        valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all \
+        $DIR/build/ahre "$@" 2> $DIR/err/"$ERRFILE"
 }
 vahre() { _vahre_ "$@"; }
 vddg0()   { local IFS="+"; _vahre_ 0  -d q="$*" lite.duckduckgo.com/lite; }
-gahre()    { gdb -ex 'run' -ex 'set print pretty on' --args ./build/ahre "$@"; }
-gahrebug() { gdb -ex 'run' --args ./build/debug/ahre "$@"; }
+gahre()    { gdb -ex 'run' -ex 'set print pretty on' --args $DIR/build/ahre "$@"; }
+gahrebug() { gdb -ex 'run' --args $DIR/build/debug/ahre "$@"; }
