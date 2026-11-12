@@ -66,7 +66,7 @@ cmd_bookmarks_show(CmdParams p[_1_]) {
     if (!len__(session_bookmarks_fname(p->s))) return "no bookmarks file configured";
     try(str_append(&u, svl("file://")));
     try(resolve_bookmarks_file(items__(session_bookmarks_fname(p->s)), &u));
-    tryjmp(e,Fail, request_init(&r, http_get, sv(u), NULL, false));
+    tryjmp(e,Fail, request_init_get(&r, sv(u), NULL, false));
     tryjmp(e,Fail, session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p)));
     str_clean(&u);
     return Ok;

@@ -16,11 +16,10 @@ Err _get_image_by_ix(Session session[_1_], size_t ix, DomNode outnode[_1_]);
 
 
 Err
-dom_node_range_to_request_arl(
+dom_node_range_to_request_get_arl(
     Range          range[_1_],
     ArlOf(DomNode) ns[_1_],
     CmdParams      p[_1_],
-    HttpMethod     method,
     bool           cache_req,
     StrView        url_attr,
     ArlOf(Request) reqs[_1_]
@@ -35,7 +34,7 @@ dom_node_range_to_request_arl(
         StrView url = dom_node_attr_value(*nodeptr, url_attr);
 
         try(arl_append_zero(Request,reqs,r));
-        Err e = request_init(r, method, url, htmldoc_url(d->ptr), cache_req);
+        Err e = request_init_get(r, url, htmldoc_url(d->ptr), cache_req);
         if (e) {
             msg_ln__(p, e);
             request_clean(r);
@@ -49,12 +48,12 @@ dom_node_range_to_request_arl(
 
 /* session commands */
 static Err
-cmd_fetch_request_(CmdParams p[_1_], HttpMethod method) {
+cmd_fetch_request_(CmdParams p[_1_], HttpMethod method, bool cache_req) {
     Request r = (Request){0};
     Str     u = (Str){0};
     Err     e = Ok;
 
-    tryjmp(e,Fail, request_from_userln(&r, cmd_params_user_line(p), method, cmd_params_cmd_out(p)));
+    tryjmp(e,Fail, request_from_userln(&r, cmd_params_user_line(p), method, cache_req, cmd_params_cmd_out(p)));
 
     tryjmp(e,Fail, session_fetch_request(p->s, &r, session_url_client(p->s), cmd_params_cmd_out(p)));
     str_clean(&u);
@@ -65,8 +64,10 @@ Fail:
     return e;
 }
 
-Err cmd_get(CmdParams p[_1_]) { return cmd_fetch_request_(p, http_get); }
-Err cmd_post(CmdParams p[_1_]) { return cmd_fetch_request_(p, http_post); }
+Err cmd_get(CmdParams p[_1_]) { return cmd_fetch_request_(p, http_get, false); }
+Err cmd_post(CmdParams p[_1_]) { return cmd_fetch_request_(p, http_post, false); }
+
+Err cmd_cache(CmdParams p[_1_]) { return cmd_fetch_request_(p, http_get, true); }
 
 
 Err cmd_set_session_winsz(CmdParams p[_1_]) {

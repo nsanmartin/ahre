@@ -300,7 +300,7 @@ cmd_anchor_save_range(CmdParams p[_1_]) {
 
     ArlOf(Request) rs = (ArlOf(Request)){0};
     Err            e  = Ok;
-    tryjmp(e,Clean, dom_node_range_to_request_arl(&r, anchors, p, http_get, false, svl("href"), &rs));
+    tryjmp(e,Clean, dom_node_range_to_request_get_arl(&r, anchors, p, false, svl("href"), &rs));
     tryjmp(e,Clean, request_arl_to_file(p, path, &rs));
 Clean:
     arlfn(Request,clean)(&rs);
@@ -649,7 +649,7 @@ static Err cmd_image_save_range(CmdParams p[_1_]) {
 
     ArlOf(Request) rs = (ArlOf(Request)){0};
     Err            e  = Ok;
-    tryjmp(e,Clean, dom_node_range_to_request_arl(&r, images, p, http_get, false, svl("src"), &rs));
+    tryjmp(e,Clean, dom_node_range_to_request_get_arl(&r, images, p, false, svl("src"), &rs));
     tryjmp(e,Clean, request_arl_to_file(p, path, &rs));
 Clean:
     arlfn(Request,clean)(&rs);
@@ -753,22 +753,23 @@ Err cmd_image(CmdParams p[_1_]) { return run_cmd_on_range__(p, _cmd_image_, 36);
 static SessionCmd _session_cmd_[] =
     { [CMD_HELP_IX]={.name="?",    .fn=cmd_help,        .help=CMD_HELP_DOC,      .flags=CMD_CHAR,      .subcmds=_session_cmd_               }
     , [ 1]={.name="bookmarks",     .fn=cmd_bookmarks,   .help=CMD_BOOKMARKS_DOC,                       .subcmds=_cmd_bookmarks_,   .match=1 }
-    , [ 2]={.name="curl",          .fn=cmd_curl,        .help=CMD_CURL_DOC,                            .subcmds=_cmd_curl_,        .match=1 }
-    , [ 3]={.name="echo",          .fn=cmd_echo,        .help=CMD_ECHO_DOC,                                                        .match=1 }
-    , [ 4]={.name="get",           .fn=cmd_get,         .help=CMD_GET_DOC,                                                         .match=1 }
-    , [ 5]={.name="post",          .fn=cmd_post,        .help=CMD_POST_DOC,                                                        .match=1 }
-    , [ 6]={.name="quit",          .fn=cmd_quit,        .help=CMD_QUIT_DOC,      .flags=CMD_NO_PARAMS,                             .match=1 }
-    , [ 7]={.name="set",           .fn=cmd_session_set, .help=SESSION_SET_DOC,                         .subcmds=_cmd_session_set_, .match=1 }
-    , [ 8]={.name="$",             .fn=cmd_scripts,     .help=CMD_SCRIPTS,       .flags=CMD_CHAR                                            }
-    , [ 9]={.name="|",             .fn=cmd_tabs,        .help=CMD_TABS_DOC,      .flags=CMD_CHAR,      .subcmds=_cmd_tabs_                  }
-    , [10]={.name=".",             .fn=cmd_doc,         .help=CMD_DOC_DOC,       .flags=CMD_CHAR,      .subcmds=_cmd_doc_                   }
-    , [11]={.name=":",             .fn=cmd_textbuf,     .help=NULL,              .flags=CMD_CHAR,      .subcmds=_cmd_textbuf_               }
-    , [12]={.name="<",             .fn=cmd_sourcebuf,   .help=NULL,              .flags=CMD_CHAR,      .subcmds=_cmd_textbuf_               }
-    , [13]={.name=FORM_OPEN_STR,   .fn=cmd_form_print,  .help=NULL,              .flags=CMD_CHAR                                            }
-    , [14]={.name=ANCHOR_OPEN_STR, .fn=cmd_anchor,      .help=CMD_ANCHOR_DOC,    .flags=CMD_CHAR,      .subcmds=_cmd_anchor_                }
-    , [15]={.name=INPUT_OPEN_STR,  .fn=cmd_input,       .help=CMD_INPUT_DOC,     .flags=CMD_CHAR,      .subcmds=_cmd_input_                 }
-    , [16]={.name=IMAGE_OPEN_STR,  .fn=cmd_image,       .help=CMD_IMAGE_DOC,     .flags=CMD_CHAR,      .subcmds=_cmd_image_                 }
-    , [17]={0}
+    , [ 2]={.name="cache",         .fn=cmd_cache,       .help=CMD_CACHE_DOC,                                                       .match=2 }
+    , [ 3]={.name="curl",          .fn=cmd_curl,        .help=CMD_CURL_DOC,                            .subcmds=_cmd_curl_,        .match=2 }
+    , [ 4]={.name="echo",          .fn=cmd_echo,        .help=CMD_ECHO_DOC,                                                        .match=1 }
+    , [ 5]={.name="get",           .fn=cmd_get,         .help=CMD_GET_DOC,                                                         .match=1 }
+    , [ 6]={.name="post",          .fn=cmd_post,        .help=CMD_POST_DOC,                                                        .match=1 }
+    , [ 7]={.name="quit",          .fn=cmd_quit,        .help=CMD_QUIT_DOC,      .flags=CMD_NO_PARAMS,                             .match=1 }
+    , [ 8]={.name="set",           .fn=cmd_session_set, .help=SESSION_SET_DOC,                         .subcmds=_cmd_session_set_, .match=1 }
+    , [ 9]={.name="$",             .fn=cmd_scripts,     .help=CMD_SCRIPTS,       .flags=CMD_CHAR                                            }
+    , [10]={.name="|",             .fn=cmd_tabs,        .help=CMD_TABS_DOC,      .flags=CMD_CHAR,      .subcmds=_cmd_tabs_                  }
+    , [11]={.name=".",             .fn=cmd_doc,         .help=CMD_DOC_DOC,       .flags=CMD_CHAR,      .subcmds=_cmd_doc_                   }
+    , [12]={.name=":",             .fn=cmd_textbuf,     .help=NULL,              .flags=CMD_CHAR,      .subcmds=_cmd_textbuf_               }
+    , [13]={.name="<",             .fn=cmd_sourcebuf,   .help=NULL,              .flags=CMD_CHAR,      .subcmds=_cmd_textbuf_               }
+    , [14]={.name=FORM_OPEN_STR,   .fn=cmd_form_print,  .help=NULL,              .flags=CMD_CHAR                                            }
+    , [15]={.name=ANCHOR_OPEN_STR, .fn=cmd_anchor,      .help=CMD_ANCHOR_DOC,    .flags=CMD_CHAR,      .subcmds=_cmd_anchor_                }
+    , [16]={.name=INPUT_OPEN_STR,  .fn=cmd_input,       .help=CMD_INPUT_DOC,     .flags=CMD_CHAR,      .subcmds=_cmd_input_                 }
+    , [17]={.name=IMAGE_OPEN_STR,  .fn=cmd_image,       .help=CMD_IMAGE_DOC,     .flags=CMD_CHAR,      .subcmds=_cmd_image_                 }
+    , [18]={0}
     };
 
 static Err cmd_help(CmdParams p[_1_]) {

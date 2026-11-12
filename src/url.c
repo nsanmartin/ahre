@@ -20,6 +20,7 @@ curl_url_append(Url u, Str out[_1_]) {
 }
 
 
+/* Generates the relative file name replacing slashes */
 Err
 curl_url_to_filename_append(Url u, Str out[_1_]) {
     char* url = NULL;
@@ -35,7 +36,7 @@ curl_url_to_filename_append(Url u, Str out[_1_]) {
     if (!strncmp(fname, schema, strlen(schema))) fname += schema_len;
     if (!strncmp(fname, "://", 3)) fname += 3;
     cstr_replace_char_inplace(fname, '/', '_');
-    err = str_append_z(out, sv(fname, strlen(fname) + 1));
+    err = str_append(out, sv(fname, strlen(fname) + 1));
     w_curl_free(schema);
     w_curl_free(url);
     return err;
@@ -119,3 +120,60 @@ url_set_url_or_fragment(Url u[_1_], const char* cstr) {
 }
 
 Err url_is_https(Url u, bool is[1]) { return w_curl_url_is_https(u.ptr, is); }
+
+Err
+url_str_get_scheme_if_absent(StrView s, Str out[_1_]) {
+    Err err      = Ok;
+    char* scheme = NULL;
+    Url u        = (Url){.ptr=curl_url()};
+    if (isnull(u)) fail_e("out of memory calling curl_url");
+    
+    CURLUcode code = curl_url_set(u.ptr, CURLUPART_URL, s.items, 0);
+    switch (code) {
+        case CURLUE_NO_SCHEME: break;
+        case CURLUE_BAD_SCHEME: break;
+        case CURLUE_OK: goto Clean;
+        default:
+            err = err_fmt("error setting CURLU with '%s': %s", s.items, curl_url_strerror(code));
+            goto Clean;
+    }
+    
+    code = curl_url_set(u.ptr, CURLUPART_URL, s.items, CURLU_DEFAULT_SCHEME);
+    switch (code) {
+        case CURLUE_OK: break;
+        default:
+            err = err_fmt("error setting CURLU with '%s': %s", s.items, curl_url_strerror(code));
+            goto Clean;
+    }
+
+    code = w_curl_get_part(u.ptr, CURLUPART_SCHEME, &scheme, CURLU_DEFAULT_SCHEME);
+    switch (code) {
+        case CURLUE_OK: tryjmp( err,Clean, str_append(out, sv(scheme)));
+            break;
+        default:
+            err = err_fmt("warn: getting scheme from CURLU: %s", curl_url_strerror(code));
+            break;
+    }
+
+
+Clean:
+    if (scheme) w_curl_free(scheme);
+    url_cleanup(&u);
+    return err;
+}
+
+Err
+urlstr_to_cache_path_append(StrView urlstr, Str out[_1_]) {
+    Err err    = Ok;
+    Str schema = (Str){0};
+    try( url_str_get_scheme_if_absent(urlstr, &schema));
+    if (schema.len) {
+        tryjmp(err,Clean, str_append(out, sv(schema)));
+        tryjmp(err,Clean, str_append(out, svl(":/")));
+    }
+    tryjmp(err,Clean, urlstr_to_path_append(urlstr, out));
+Clean:
+    str_clean(&schema);
+    return err;
+}
+

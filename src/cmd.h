@@ -34,8 +34,16 @@ Err cmd_get(CmdParams p[_1_]);
     "Open the given url as a new tab, using POST method\n"\
     "If the url is an existing file in the host ahre will try to open it.\n"\
     "Otherwise, it will curl it.\n"
-
 Err cmd_post(CmdParams p[_1_]);
+
+#define CMD_CACHE_DOC \
+    "Open the given url as a new tab.\n"\
+    "If the url is an existing file in the host ahre will try to open it.\n"\
+    "Otherwise, it will curl it.\n" \
+    "It is just like get ut differs in that it used the cached data for the\n" \
+    "url and saves the data if there is a cache miss.\n"
+Err cmd_cache(CmdParams p[_1_]);
+
 Err cmd_set_session_bookmark(CmdParams p[_1_]);
 Err cmd_set_session_input(CmdParams p[_1_]);
 Err cmd_set_session_js(CmdParams p[_1_]);
@@ -174,11 +182,10 @@ Err cmd_print_node(CmdParams p[_1_], DomNode node);
 Err
 map_requests(Range range[_1_], ArlOf(DomNode) ns[_1_], HttpMethod method, Url u[_1_], ArlOf(Request) reqs[_1_]);
 Err
-dom_node_range_to_request_arl(
+dom_node_range_to_request_get_arl(
     Range          range[_1_],
     ArlOf(DomNode) ns[_1_],
     CmdParams      p[_1_],
-    HttpMethod     method,
     bool           cache_req,
     StrView        url_attr,
     ArlOf(Request) reqs[_1_]

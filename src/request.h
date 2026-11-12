@@ -61,8 +61,9 @@ Err request_query_append_key_value(Request r[_1_], const char*k, size_t klen, co
 /* ctors */
 Err request_from_cli_params(Request r[_1_], HttpMethod method, StrView urlstr, StrView fields);
 Err request_from_form_node (Request r[_1_], DomNode form, Url* urlview, LipOf(DomNodePtr,bool) checkbokes[1]);
-Err request_from_userln(Request r[_1_], UserLine userln[_1_], HttpMethod method, CmdOut cout[_1_]);
-Err request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url, bool cache_req);
+Err request_from_userln(Request r[_1_], UserLine userln[_1_], HttpMethod method, bool cache_req, CmdOut cout[_1_]);
+Err request_init_get(Request r[_1_], StrView urlstr, Url* urlview, bool cache_req);
+Err request_init_post(Request r[_1_], StrView urlstr, Url* urlview, StrView params, bool cache_req);
 /* ctors **/
 
 Err request_to_handle(

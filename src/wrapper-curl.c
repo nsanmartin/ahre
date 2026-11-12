@@ -6,7 +6,6 @@
 
 /* internal linkage */
 
-CURLUcode w_curl_get_part(CurlUrlPtr cu, CURLUPart part, char** content, unsigned flags);
 
 /* external linkage */
 size_t skip_header_callback(char *buffer, size_t size, size_t nitems, void *htmldoc) {

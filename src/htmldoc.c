@@ -1001,7 +1001,7 @@ htmldoc_init_move_request(
             Request req_replace = (Request){0};
 
             tryjmp(e,Fail_Replace,
-                request_init(&req_replace, request_method(htmldoc_request(d->ptr)), svl(""), htmldoc_url(d->ptr), false));
+                request_init_get(&req_replace, svl(""), htmldoc_url(d->ptr), false));
             tryjmp(e,Fail_Replace, htmldoc_ptr_init_move_request(&doc_replace, &req_replace, uc, s, cmd_out));
 
             htmldoc_destroy(d->ptr);
@@ -1059,7 +1059,7 @@ htmldoc_init_bookmark_move_urlstr(HtmlDoc d[_1_], Str urlstr[_1_]) {
     tryjmp(e,Fail, doc_draw_cache_init(&d->draw_cache));
     try(dom_init(&d->dom));
     if (!urlstr) return err_internal("cannot initialize bookmark with not path");
-    tryjmp(e, Fail, request_init(htmldoc_request(d), http_get, sv(urlstr), NULL, false));
+    tryjmp(e, Fail, request_init_get(htmldoc_request(d), sv(urlstr), NULL, false));
 
     return Ok;
 Fail:
@@ -1203,7 +1203,7 @@ htmldoc_append_cache_path(HtmlDoc d[_1_], Str out[_1_]) {
     try(htmldoc_get_effective_url(d, &view));
     if (!view.len) fail_e("url has no length");
 
-    return url_to_path(view, out);
+    return urlstr_to_cache_path_append(view, out);
 }
 
 

@@ -742,7 +742,7 @@ str_swap(Str s[_1_], Str t[_1_]) {
 }
 
 Err
-url_to_path(StrView url, Str out[_1_]) {
+urlstr_to_path_append(StrView url, Str out[_1_]) {
     Err err         = Ok;
     const char* beg = url.items;
     char* end       = (char*)beg;

@@ -15,6 +15,7 @@
 
 
 static Err _url_from_post_request_(Request r[_1_]);
+static Err request_fill_cache_path(Request r[_1_]);
 Err url_from_get_request(Request r[_1_]) ;
 
 
@@ -89,26 +90,22 @@ request_append_lexbor_checkbox_value_attr(Request r[1], DomNode node) {
 /* external linkage */
 
 
-Err request_from_userln(Request r[_1_], UserLine userln[_1_], HttpMethod method, CmdOut cout[_1_]) {
+Err request_from_userln(Request r[_1_], UserLine userln[_1_], HttpMethod method, bool cache_req, CmdOut cout[_1_]) {
     user_line_skip_space(userln);
     StrView url;
     StrView params = (StrView){0};
     if (method == http_get) {
         try (user_line_pop_last_nonspace(userln, &url, cout)); // return err_fmt("expecting a url to get, not '%s'\n", user_line_remaining(userln));
         try(user_line_chop_and_skip_space(userln));
+        return request_init_get(r, url, NULL, cache_req);
     } else if (method == http_post) {
         if (!user_line_pop_nonspace(userln, &url)) return "expecting a url to post";
         try(user_line_chop_and_skip_space(userln));
         try (user_line_pop_last_nonspace(userln, &params, cout));
+        return request_init_post(r, url, NULL, params, cache_req);
+    }
+    fail_e("http method not supported");
 
-    } else fail_e("http method not supported");
-
-    *r = (Request){ .method=method };
-
-    try(str_append(&r->urlstr, url)); 
-    if (str_startswith(sv(r->urlstr), svl("https://"))) request_set_https(r, true);
-    if (params.len) try(str_append(&r->fields, params));
-    return request_curl_init(r);
 }
 
 
@@ -386,8 +383,9 @@ request_fill_cache_path(Request r[_1_]) {
     if (!str_match_last(request_cache_url(r), '/'))
         try( str_append(request_cache_url(r), svl("/")));
 
+
     r->cache_path_off = len__(request_cache_url(r));
-    try( url_to_path(sv(request_urlstr(r)), request_cache_url(r)));
+    try( urlstr_to_cache_path_append(sv(request_urlstr(r)), request_cache_url(r)));
 
     bool is_reg_or_lnk;
     try( path_is_reg_or_lnk(items__(request_cache_url(r)) + lit_len__(FILE_SCHEMA), &is_reg_or_lnk));
@@ -395,16 +393,15 @@ request_fill_cache_path(Request r[_1_]) {
     return Ok;
 }
 
+static Err
+request_init(
+    Request r[_1_], HttpMethod method, StrView urlstr, Url* urlview, bool cache_req, StrView params
+) {
+    if (params.len && method != http_post) return "only POST method allow params";
 
-Err
-request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url, bool cache_req) {
-    if (cache_req && method == http_post) return "POST method is nott cached, try * cmd";
-    *r = (Request) {
-        .method=method,
-        .urlview=url
-    };
+    *r = (Request) { .method=method, .urlview=urlview };
     request_set_cache_req(r, cache_req);
-                                //
+
     if (urlstr.len) try(str_append(request_urlstr(r), urlstr));
     if (str_startswith(sv(r->urlstr), svl("http://"))) request_set_https(r, false);
     else if (str_startswith(sv(r->urlstr), svl("https://"))) request_set_https(r, true);
@@ -417,7 +414,20 @@ request_init(Request r[_1_], HttpMethod method, StrView urlstr, Url* url, bool c
     if (cache_req && len__(request_urlstr(r)))
         try( request_fill_cache_path(r));
 
+    if (r->method == http_post && params.len) try(str_append(&r->fields, params));
+
     return request_curl_init(r);
+}
+
+
+Err
+request_init_get(Request r[_1_], StrView urlstr, Url* urlview, bool cache_req) {
+    return request_init(r, http_get, urlstr, urlview, cache_req, svl(""));
+}
+
+Err
+request_init_post(Request r[_1_], StrView urlstr, Url* urlview, StrView params, bool cache_req) {
+    return request_init(r, http_post, urlstr, urlview, cache_req, params);
 }
 
 Err

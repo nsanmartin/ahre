@@ -56,7 +56,7 @@ static inline Err url_dup(Url u, Url out[_1_]) {
 
 
 static inline Err url_init(Url u[_1_], Url* from) {
-    if (from) return url_dup(*from, u);
+    if (from && !isnull(*from)) return url_dup(*from, u);
     *u = (Url){.ptr=curl_url()};
     if (!u->ptr) return "error initializing CURLU";
     return Ok;
@@ -70,4 +70,8 @@ Err url_append_host_to_str(Url u, char* out[_1_]);
 Err url_append_path_to_str(Url u, char* out[_1_]);
 Err url_is_https(Url u, bool is[1]);
 Err curl_url_append(Url u, Str out[_1_]);
+Err url_str_get_scheme(Url* from, StrView s, Str out[_1_]);
+Err url_str_get_scheme_if_absent(StrView s, Str out[_1_]);
+Err urlstr_to_cache_path_append(StrView urlstr, Str out[_1_]);
+
 #endif
