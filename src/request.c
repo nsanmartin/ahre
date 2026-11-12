@@ -330,8 +330,9 @@ resolve_request_url_if_local(Request r[_1_]) {
     tryjmp(e,Clean, str_append(&resolved, svl(FILE_SCHEMA)));
     tryjmp(e,Clean, resolve_path(items__(url), &file_exists, &resolved));
     if (file_exists) {
-        str_clean(request_urlstr(r));
-        *request_urlstr(r) = resolved;
+        str_swap(request_urlstr(r), &resolved);
+        str_clean(&resolved);
+        resolved = (Str){0};
         request_set_local(r, true);
         return Ok;
     }
@@ -351,7 +352,7 @@ Err url_from_get_request(Request r[_1_]) {
 
     if (actual_url.len && !str_eq_case(svl("/"), actual_url)) {
         tryjmp(e,Fail, resolve_request_url_if_local(r));
-        tryjmp(e,Fail, url_set_url_or_fragment(&u, actual_url.items));
+        tryjmp(e,Fail, url_set_url_or_fragment(&u, request_urlstr(r)->items));
     }
 
 
