@@ -115,3 +115,14 @@ ddg something
 
 ## Usage:
 See [./doc/quick-reference-guide.md](https://codeberg.org/nsm/ahre/src/branch/main/doc/quick-reference-guide.md)
+
+# Copyright Notice 
+
+Copyright (C) 2026 Nicolas San Martin
+
+# Licence Notice
+
+Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright
+notice and this notice are preserved.  This file is offered as-is,
+without any warranty.
