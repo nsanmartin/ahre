@@ -19,6 +19,6 @@ along with ahre; see the file LICENSE or see
 #ifndef AHRE_AHRE___H__
 #define AHRE_AHRE___H__
 
-#define AHRE_VERSION "0.2.9"
+#define AHRE_VERSION "0.2.10"
 
 #endif
