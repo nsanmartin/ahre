@@ -311,7 +311,7 @@ Clean:
 static SessionCmd _cmd_anchor_[] =
     { {.name="\"", .fn=cmd_anchor_print_range,    .help=CMD_ANCHOR_PRINT_DOC, .flags=CMD_CHAR}
     , {.name="",   .fn=cmd_anchor_asterisk_range, .help=NULL,                 .flags=CMD_EMPTY}
-    , {.name="*",  .fn=cmd_anchor_asterisk_range, .help=NULL,                 .flags=CMD_CHAR}
+    , {.name="*",  .fn=cmd_anchor_slash_range, .help=NULL,                 .flags=CMD_CHAR}
     , {.name="/",  .fn=cmd_anchor_slash_range,    .help=NULL,                 .flags=CMD_CHAR}
     , {.name="save",.fn=cmd_anchor_save_range,    .help=NULL,                 .match=1}
     , {0}

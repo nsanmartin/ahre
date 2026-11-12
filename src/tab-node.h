@@ -75,7 +75,7 @@ tab_node_append_move_child(TabNode n[_1_], TabNode newnode[_1_]) {
 static inline Err
 tab_node_set_last_as_current(TabNode n[_1_]) {
     n->current_ix = tab_node_child_count(n);
-    if (!n->current_ix) return "error: no items after appending";
+    if (!n->current_ix) return Ok;
     --n->current_ix; /* the ix of last one */
     return Ok;
 }
