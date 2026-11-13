@@ -98,15 +98,17 @@ mkdir build
 make ahre
 ```
 
+To build with no quickjs (and hence no js):
+`CFLAGS=-DAHRE_QUICKJS_DISABLED make`
+
 #### tcc build
 To build with tcc you need to disable regex passing the `AHRE_REGEX_DISABLED` flag:
 
 `CC=tcc CFLAGS=-DAHRE_REGEX_DISABLED make`
 
-but `TIME_UTC` is undeclared, so we need to avoid using timespec_get to allow tcc.
+In raspberry pi tcc build fail so qjs should be disabled there:
 
-To build with no quickjs (and hence no js):
-`CFLAGS=-DAHRE_QUICKJS_DISABLED make`
+`CC=tcc CFLAGS="-DAHRE_REGEX_DISABLED -DAHRE_QUICKJS_DISABLED" make`
 
 ## Run
 
