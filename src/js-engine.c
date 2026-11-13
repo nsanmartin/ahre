@@ -106,7 +106,7 @@ typedef struct {
 #define mk_proto_fns(Name) ((ProtoFns){.proto=Name ## _proto, .fn_list= Name ## _fn_list, .len=COUNT(Name ## _fn_list)})
 
 static JSValueConst console_log_not_implemented_impl(JSContext* ctx, StrView fname);
-#define console_log_not_implemented(Ctx) console_log_not_implemented_impl(Ctx, sv(__func__))
+#define console_log_not_implemented(Ctx) console_log_not_implemented_impl(Ctx, strview_from_cstr(__func__))
 
 /*
  * I'm using many macros here to make this file shorted and write less
@@ -180,7 +180,7 @@ static JSValueConst console_log_not_implemented_impl(JSContext* ctx, StrView fna
 
 
 static js_set__(js_set_noop) {
-    (void)ctx; (void)this; (void)val;
+    (void)this; (void)val;
     tryjs(console_log_not_implemented(ctx));
     return JS_UNDEFINED;
 }
