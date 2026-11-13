@@ -107,7 +107,7 @@ Err fetch_history_entry_update_title(FetchHistoryEntry e[_1_], Dom d) {
 
 Err fetch_history_entry_init(FetchHistoryEntry e[_1_]) {
     *e = (FetchHistoryEntry){0};
-    if (TIME_UTC != timespec_get(&e->ts, TIME_UTC))
+    if (0 != clock_gettime(CLOCK_REALTIME, &e->ts))
         return "error: timespec_get failure";
     return Ok;
 }

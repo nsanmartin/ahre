@@ -198,7 +198,7 @@ request_from_form_node__rec_(Request r[_1_], DomNode node, LipOf(DomNodePtr,bool
         return _request_append_select_(node, r);
     }
 
-Continue_:
+Continue_: ; // TCC requires this
     /* recursive case */
     DomNode it = dom_node_first_child(node);
     while (!isnull(it)) {

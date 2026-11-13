@@ -273,7 +273,8 @@ Err str_append_timespec(Str out[_1_], struct timespec ts[_1_]) {
 Err str_append_datetime_now(Str out[_1_]) {
 
     struct timespec ts;
-    timespec_get(&ts, TIME_UTC);
+    if (clock_gettime(CLOCK_REALTIME, &ts) != 0)
+        return "error: clock_gettime failure";
     return str_append_timespec(out, &ts);
 }
 

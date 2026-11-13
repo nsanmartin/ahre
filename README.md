@@ -12,6 +12,14 @@ A text based web browser for the terminal.
 ## Website
 [ahre web page](https://ahre.pages.dev/)
 
+## Mailing list
+[ahre mailing list](https://lists.nongnu.org/mailman/listinfo/ahre)
+
+## IRC channel
+
+[#ahre IRC channel](https://web.libera.chat/#ahre)
+
+
 ## Other text browsers:
 + [lynx](https://github.com/ThomasDickey/lynx-snapshots)
 + [edbrowse](https://github.com/CMB/edbrowse)
@@ -30,6 +38,8 @@ A text based web browser for the terminal.
 
 ## Build instructions
 ### Lexbor installation
+
+If you package manager does not include lexbor install from sources.
 
 checkout v3.0.0 and follow [INSTALL.md](https://github.com/lexbor/lexbor/blob/master/INSTALL.md)
 in lexbor repo. But basically:
@@ -57,7 +67,11 @@ if `liblexbor.so.2 not found` when running `ahre`.
 pkg install libandroid-wordexp
 pkg install libiconv
 export LDFLAGS="-landroid-wordexp -liconv"
+export CFLAGS=-fsanitize=address
+make AHRE_QUICKJS_DISABLED=1
 ```
+
+Run `bash/make-termux.sh` if you want tot tpe less.
 
 #### Debian/Ubuntu
 ```bash
@@ -85,9 +99,7 @@ make ahre
 ```
 
 #### tcc build
-tcc does not support regex and wordexp so currently it won't work.
-
-You can disable regex passing the `NO_REGEX` flag:
+To build with tcc you need to disable regex passing the `AHRE_REGEX_DISABLED` flag:
 
 `CC=tcc CFLAGS=-DAHRE_REGEX_DISABLED make`
 

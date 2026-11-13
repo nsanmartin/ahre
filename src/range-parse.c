@@ -24,7 +24,6 @@ along with ahre; see the file LICENSE or see
 #include "utils.h"
 #include "textbuf.h"
 #include "range-parse.h"
-#include "re.h"
 #include "str.h"
 
 /*

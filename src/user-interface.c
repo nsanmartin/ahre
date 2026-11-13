@@ -499,7 +499,7 @@ cmd_doc_scripts_save_single_file(HtmlDoc h[1], const char* filename, Range r[_1_
     try(file_open(filename, "w", &fp.ptr));
     tryjmp(e, Clean, file_writer_init(&w, fp.ptr));
     tryjmp(e, Clean, htmldoc_script_write_all(h, r, &w));
-Clean:
+Clean: ; // TCC requires this
     Err e1 = file_close(fp.ptr);
     if (!e1) e = msg__(out, svl("script(s) saved\n"));
     else e = e1;
