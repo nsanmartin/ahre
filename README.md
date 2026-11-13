@@ -73,7 +73,7 @@ export CFLAGS=-fsanitize=address
 make AHRE_QUICKJS_DISABLED=1
 ```
 
-Run `bash/make-termux.sh` if you want tot tpe less.
+Run `bash/make-termux.sh` if you want to type less.
 
 #### Debian/Ubuntu
 ```bash
@@ -83,6 +83,13 @@ or
 
 ```bash
 sudo apt install libcurl4-gnutls-dev
+```
+
+Debian sid includes lexbor:
+
+```bash
+sudo apt install liblexbor-dev
+```
 ```
 
 ### Clone Repo
@@ -108,7 +115,7 @@ To build with tcc you need to disable regex passing the `AHRE_REGEX_DISABLED` fl
 
 `CC=tcc CFLAGS=-DAHRE_REGEX_DISABLED make`
 
-In raspberry pi tcc build fail so qjs should be disabled there:
+In raspberry pi, tcc build fails so qjs should be disabled there:
 
 `CC=tcc CFLAGS="-DAHRE_REGEX_DISABLED -DAHRE_QUICKJS_DISABLED" make`
 
