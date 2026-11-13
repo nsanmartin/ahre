@@ -9,6 +9,9 @@ __/__/__/___________/__/__/__/
 
 A text based web browser for the terminal.
 
+## Source Repository
+[ahre codeberg repository](https://codeberg.org/nsm/ahre)
+
 ## Website
 [ahre web page](https://ahre.pages.dev/)
 
@@ -16,7 +19,6 @@ A text based web browser for the terminal.
 [ahre mailing list](https://lists.nongnu.org/mailman/listinfo/ahre)
 
 ## IRC channel
-
 [#ahre IRC channel](https://web.libera.chat/#ahre)
 
 
