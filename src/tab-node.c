@@ -227,13 +227,14 @@ tab_node_current_node_ix(TabNode n[_1_], size_t out[_1_]) {
     while (n) {
         prev = n;
         n = arlfn(TabNode, at)(n->childs, n->current_ix);
-        if (n)
+        if (n) {
+            ++*out;
             for (size_t ix = 0; ix < prev->current_ix; ++ix)
                 *out += tab_node_count(arlfn(TabNode,at)(tab_node_childs(prev),ix));
+        }
     }
 
     if (!prev) return "error: tab_node_current_node failure";
-    ++*out;
     return Ok;
 }
 

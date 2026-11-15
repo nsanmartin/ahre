@@ -237,13 +237,15 @@ tablist_range_from_parsed_range(TabList tl[_1_], RangeParse p[_1_], Range r[_1_]
     switch (p->beg.tag) {
         case range_addr_curr_tag:
             try(tablist_current_node_ix(tl, &r->beg));
+            r->beg += p->beg.delta;
             break;
         case range_addr_none_tag:
         case range_addr_prev_tag: 
         case range_addr_search_tag:
             return "invalid range.beg address for tablist";
         case range_addr_beg_tag:
-             try(set__(&r->beg, p->beg.delta));
+             /* try(set__(&r->beg, p->beg.delta)); */
+             try( _set_size_t_from_int_(&r->beg, p->beg.delta));
             break;
         case range_addr_end_tag: r->beg = range_max + p->beg.delta;
             break;
