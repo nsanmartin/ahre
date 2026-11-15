@@ -209,6 +209,45 @@ Err tablist_info_tree(TabList f[_1_], CmdOut* out) {
 
 
 Err
+tablist_dump_range(CmdParams p[_1_]) {
+    CmdOut* out              = cmd_params_cmd_out(p);
+    Str buf                  = (Str){0};
+    ArlOf(TabNodePtr)* nodes = &(ArlOf(TabNodePtr)){0};
+    TabList* f               = session_tablist(p->s);
+    Err err                  = Ok;
+
+    Range r;
+    try(tablist_range_from_parsed_range(session_tablist(p->s), &p->rp, &r));
+
+    TabNode* current_node = NULL;
+    tryjmp(err,Clean, tablist_current_node(f, &current_node));
+    size_t prev_offset = 0;
+
+    foreach__ (TabNode,_tablist_tabs_(f), it)  {
+        prev_offset += len__(nodes);
+        arlfn(TabNodePtr,reset)(nodes);
+        tryjmp(err,Clean, screen__(out, "    .\n"));
+        tryjmp(err,Clean, tablist_to_node_list(it, nodes, out));
+
+        const TabNodePtr* nodes_offset = arlfn(TabNodePtr,begin)(nodes);
+        foreach__(TabNodePtr,nodes,n) {
+            const size_t ix = prev_offset + n - nodes_offset;
+            if (ix < r.beg) continue;
+            if (r.end <= ix) goto Clean;
+
+            TextBuf* tb = htmldoc_textbuf(tab_node_doc(*n)->ptr);
+            tryjmp(err,Clean, screen_ln__(out, textbuf_buf(tb)));
+        }
+    }
+
+Clean:
+    arlfn(TabNodePtr, clean)(nodes);
+    str_clean(&buf);
+    return Ok;
+}
+
+
+Err
 tablist_current_doc(TabList f[_1_], HtmlDocPtr* out[_1_]) {
     TabNode* t;
     try( tablist_current_tab(f, &t));

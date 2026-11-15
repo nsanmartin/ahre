@@ -212,6 +212,12 @@ cmd_tabs_info(CmdParams p[_1_]) {
     Range r;
     try(tablist_range_from_parsed_range(session_tablist(p->s), &p->rp, &r));
 
+    StrView subcmd;
+    if (cmd_params_pop_alpha(p, &subcmd)) {
+        try(cmd_params_cut_cmd(p));
+        return tablist_dump_range(p);
+    }
+
     try(cmd_params_cut_cmd(p));
     if (range_len(&r) == 1) return tablist_move_to_node_ix(f, r.beg);
     return tablist_info_titles_range(p);

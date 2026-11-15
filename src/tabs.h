@@ -143,4 +143,5 @@ size_t tablist_node_count(TabList tl[_1_]);
 Err tablist_range_from_parsed_range(TabList tl[_1_], RangeParse p[_1_], Range r[_1_]);
 Err tablist_info_titles_range(CmdParams p[_1_]);
 Err tablist_move_to_node_ix(TabList tl[_1_], size_t ix);
+Err tablist_dump_range(CmdParams p[_1_]);
 #endif
