@@ -13,7 +13,7 @@ A text based web browser for the terminal.
 [ahre codeberg repository](https://codeberg.org/nsm/ahre)
 
 ## Website
-[ahre web page](https://ahre.pages.dev/)
+[ahre web page](https://www.nongnu.org/ahre/)
 
 ## Mailing list
 [ahre mailing list](https://lists.nongnu.org/mailman/listinfo/ahre)
