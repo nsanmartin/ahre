@@ -200,29 +200,27 @@ cmd_doc_console(CmdParams p[_1_]) {
 
 /* tabs commands */
 
+#define assert_range_was_not_set(CpPtr) do{\
+    if (range_was_set(&(CpPtr)->rp)) return err_fmt("%s does not accept range", __func__); \
+} while(0)
 
 Err
 cmd_tabs_info(CmdParams p[_1_]) {
     TabList* f = session_tablist(p->s);
-    StrView node;
-    if (cmd_params_pop_alnum(p, &node)) {
-        try(cmd_params_cut_cmd(p));
-        return tablist_move_to_node(f, node.items);
-    }
-    if (cmd_params_match_char(p, '.')) {
-        if (cmd_params_pop_nonspace(p, &node)) {
-            try(cmd_params_cut_cmd(p));
-            return tablist_move_to_path(f, node.items);
-        }
-        return tablist_info_tree(f, cmd_params_cmd_out(p));
-    }
-    try(cmd_params_cut_cmd(p)); /* return "expecting either a node index (base 36)  or path (.N.N...)"; */
-    return tablist_info_titles(f, cmd_params_cmd_out(p));
+    if (!range_was_set(&p->rp)) return tablist_info_tree(f, cmd_params_cmd_out(p));
+
+    Range r;
+    try(tablist_range_from_parsed_range(session_tablist(p->s), &p->rp, &r));
+
+    try(cmd_params_cut_cmd(p));
+    if (range_len(&r) == 1) return tablist_move_to_node_ix(f, r.beg);
+    return tablist_info_titles_range(p);
 }
 
 
 Err
 cmd_tabs_back(CmdParams p[_1_]) {
+    assert_range_was_not_set(p);
     try(cmd_params_cut_cmd(p));
     TabList* f = session_tablist(p->s);
     return tablist_back(f);
@@ -702,5 +700,11 @@ Err _cmd_lexbor_node_print_(ArlOf(DomNode) node_arl[_1_], size_t ix, CmdOut out[
     ok_then(err,  msg__(out, buf));
     str_clean(buf);
     return err;
+}
+
+Err
+run_cmd_for_tablist_range(CmdParams p[_1_], TabList tl[_1_], tabnodeCmdCallback cb) {
+    (void)p;(void)tl;(void)cb;
+    return Ok;
 }
 

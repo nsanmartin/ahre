@@ -38,6 +38,7 @@ typedef struct SessionCmd {
     SessionCmd*    subcmds;
 } SessionCmd ;
 
+typedef Err tabnodeCmdCallback (CmdParams p[_1_], TabList tl[_1_]);
 /*
  * Session commands
  */
@@ -210,4 +211,5 @@ dom_node_range_to_request_get_arl(
 );
 Err foreach_request_save_to_file(CmdParams p[_1_], ArlOf(Request) rs[_1_]);
 Err cmd_textbuf_info(CmdParams p[_1_]);
+Err run_cmd_for_tablist_range(CmdParams p[_1_], TabList tl[_1_], tabnodeCmdCallback cb);
 #endif

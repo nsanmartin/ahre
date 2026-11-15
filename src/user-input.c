@@ -489,7 +489,7 @@ parse_output_redirect(UserLine ul[_1_], CmdOut cout[_1_]) {
             return "expecting end of redirect cmd";
         sink_tag = CMD_OUT_SHELL;
     } else {
-        return "expecting msg | std | file <fname> | shell <cmd...>";
+        return "expecting msg | std | file <fname> | pipe <cmd...>";
     }
 
 

@@ -89,6 +89,7 @@ Err parse_size_t_or_throw(const char** strptr, size_t* num, int base) {
 Err parse_ll_err(const char* tk, intmax_t llp[_1_], const char* endptr[_1_]) {
     if (!tk) return "error parsing ll: NULL received";
     if (!*tk) return "error parsing ll: \"\\0\" received";
+    errno = 0;
     *llp = strtoll(tk, (char**)endptr, 10);
     if (ERANGE == errno && (LLONG_MAX == *llp || LLONG_MIN == *llp))
        return err_fmt("error: %s", strerror(errno));
@@ -99,6 +100,7 @@ Err parse_ll_err(const char* tk, intmax_t llp[_1_], const char* endptr[_1_]) {
 Err parse_size_t_err(const char* tk, size_t out[_1_], const char* endptr[_1_], int base) {
     if (!tk) return "error parsing size_t: NULL received";
     if (!*tk) return "error parsing size_t: \"\\0\" received";
+    errno = 0;
     long long unsigned llu = strtoull(tk, (char**)endptr, base);
     if (ERANGE == errno) return err_fmt("error: %s", strerror(errno));
     if (llu > SIZE_MAX) return "error: size_t too small for num";

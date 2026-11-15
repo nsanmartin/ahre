@@ -57,7 +57,6 @@ tablist_current_tab(TabList f[_1_], TabNode* out[_1_]) {
     return Ok;
 }
 
-
 static inline
 Err tablist_current_node(TabList f[_1_], TabNode* out[_1_]) {
     TabNode* root;
@@ -70,6 +69,23 @@ Err tablist_current_node(TabList f[_1_], TabNode* out[_1_]) {
     return tab_node_current_node(root, out);
 }
 
+
+static inline
+Err tablist_current_node_ix(TabList f[_1_], size_t out[_1_]) {
+    if (!f->tabs.len) return "no tabs in session";
+    if (f->tabs.len <= f->current_tab) fail_e("bad current tab");
+
+    *out      = 0;
+    size_t ix = 0;
+
+    while (ix < f->current_tab) {
+        *out += tab_node_count(arlfn(TabNode,at)(_tablist_tabs_(f),ix));
+    }
+
+    TabNode* node = arlfn(TabNode,at)(_tablist_tabs_(f),f->current_tab);
+
+    return tab_node_current_node_ix(node, out);
+}
 
 static inline Err
 tablist_append_move_tree(TabList f[_1_], TabNode t[_1_]) {
@@ -123,4 +139,8 @@ Err tablist_move_to_path(TabList tl[_1_], const char* line) {
 }
 
 Err tablist_set_currents_last_child_as_current(TabList tl[_1_]);
+size_t tablist_node_count(TabList tl[_1_]);
+Err tablist_range_from_parsed_range(TabList tl[_1_], RangeParse p[_1_], Range r[_1_]);
+Err tablist_info_titles_range(CmdParams p[_1_]);
+Err tablist_move_to_node_ix(TabList tl[_1_], size_t ix);
 #endif

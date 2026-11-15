@@ -67,7 +67,7 @@ static inline void request_clean(Request r[_1_]) {
     curl_ptr_clean(request_curl_handle(r));
 }
 
-StrView request_actual_url(Request r[_1_]);
+StrView request_actual_url_strview(Request r[_1_]);
 StrView request_cache_path(Request r[_1_]);
 #define Hotl_Arl_T Request
 #define Hotl_Arl_T_Clean request_clean
@@ -96,4 +96,5 @@ Err url_client_perform_with_cancel(UrlClient uc[_1_], CurlPtr easy, Request req[
 Err set_post_fields(Request r[_1_], CurlPtr curl);
 Err request_show(Request r[1], CmdOut out[1]);
 bool request_is_local_dir(const Request r[1]);
+Str* request_actual_urlstr(Request r[_1_]);
 #endif

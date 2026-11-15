@@ -221,7 +221,7 @@ Err request_from_form_node (Request r[_1_], DomNode form, Url* urlview, LipOf(Do
     StrView method = dom_node_attr_value(form, svl("method"));
 
     if (action.items && action.len) 
-        try(str_append(request_urlstr(r), &action));
+        try(str_append(request_urlstr(r), &action)); //TODO0: use actual url here?
 
 
 
@@ -316,8 +316,9 @@ Failure_Free_Escaped:
 
 static Err
 resolve_request_url_if_local(Request r[_1_]) {
-    Str* url = request_urlstr(r);
-    if (!len__(url)) return Ok;
+    /* Str* url = request_urlstr(r); */
+    StrView url = request_actual_url_strview(r);
+    if (!url.len) return Ok;
     if (str_startswith(sv(url), svl(HTTP_SCHEMA))) return Ok;
     if (str_startswith(sv(url), svl(HTTPS_SCHEMA))) return Ok;
     if (str_startswith(sv(url), svl(FILE_SCHEMA))) {
@@ -328,9 +329,9 @@ resolve_request_url_if_local(Request r[_1_]) {
     Err  e        = Ok;
     Str  resolved = (Str){0};
     tryjmp(e,Clean, str_append(&resolved, svl(FILE_SCHEMA)));
-    tryjmp(e,Clean, resolve_path(items__(url), &file_exists, &resolved));
+    tryjmp(e,Clean, resolve_path(url.items, &file_exists, &resolved));
     if (file_exists) {
-        str_swap(request_urlstr(r), &resolved);
+        str_swap(request_actual_urlstr(r), &resolved);
         str_clean(&resolved);
         resolved = (Str){0};
         request_set_local(r, true);
@@ -346,13 +347,13 @@ Err url_from_get_request(Request r[_1_]) {
     Url u              = (Url){0};
     Err e              = Ok;
     Str file           = (Str){0};
-    StrView actual_url = request_actual_url(r);
+    StrView actual_url = request_actual_url_strview(r);
 
     try(url_init(&u, r->urlview));
 
     if (actual_url.len && !str_eq_case(svl("/"), actual_url)) {
         tryjmp(e,Fail, resolve_request_url_if_local(r));
-        tryjmp(e,Fail, url_set_url_or_fragment(&u, request_urlstr(r)->items));
+        tryjmp(e,Fail, url_set_url_or_fragment(&u, request_actual_url_strview(r).items));
     }
 
 
@@ -561,17 +562,24 @@ Err request_show(Request r[1], CmdOut out[1]) {
 }
 
 bool request_is_local_dir(const Request req[1]) {
-    StrView urlstr = sv(request_urlstr((Request*)req));
+    StrView urlstr = sv(request_actual_urlstr((Request*)req));
     StrView fileschema = sv("file://");
     return request_is_local(req) && str_startswith(urlstr, fileschema) && path_is_dir(urlstr.items + fileschema.len);
 }
 
 
 StrView
-request_actual_url(Request r[_1_]) {
+request_actual_url_strview(Request r[_1_]) {
     return (!request_is_cache_req(r) || request_is_cache_miss(r))
         ? sv(request_urlstr(r))
         : sv(request_cache_url(r));
+}
+
+Str*
+request_actual_urlstr(Request r[_1_]) {
+    return (!request_is_cache_req(r) || request_is_cache_miss(r))
+        ? request_urlstr(r)
+        : request_cache_url(r);
 }
 
 StrView

@@ -108,6 +108,20 @@ tablist_move_to_node(TabList tl[_1_], const char* line) {
 }
 
 
+Err
+tablist_move_to_node_ix(TabList tl[_1_], size_t ix) {
+
+    TabNode* search = NULL;
+    size_t tablist_ix;
+    try(tablist_enumerated_get_node(tl, &ix, &search, &tablist_ix));
+    try( tab_node_set_as_current(search));
+    *_tablist_current_tab_ix_(tl) = tablist_ix;
+    return Ok;
+
+}
+
+
+
 static Err
 tablist_to_node_list(TabNode n[_1_], ArlOf(TabNodePtr) nodes[_1_], CmdOut* out) {
     if (!arlfn(TabNodePtr,append)(nodes,&n)) fail_e("arl append");
@@ -122,36 +136,39 @@ tablist_to_node_list(TabNode n[_1_], ArlOf(TabNodePtr) nodes[_1_], CmdOut* out) 
 
 
 Err
-tablist_info_titles(TabList f[_1_], CmdOut* out) {
+tablist_info_titles_range(CmdParams p[_1_]) {
+    CmdOut* out              = cmd_params_cmd_out(p);
     Str buf                  = (Str){0};
     ArlOf(TabNodePtr)* nodes = &(ArlOf(TabNodePtr)){0};
+    TabList* f               = session_tablist(p->s);
+    Err err                  = Ok;
 
-    Err err = Ok;
+    Range r;
+    try(tablist_range_from_parsed_range(session_tablist(p->s), &p->rp, &r));
 
-    TabNode* it          = arlfn(TabNode, begin)(&f->tabs);
-    const TabNode* end   = arlfn(TabNode, end)(&f->tabs);
-    
     TabNode* current_node = NULL;
     tryjmp(err,Clean, tablist_current_node(f, &current_node));
     size_t prev_offset = 0;
 
-    for (; it != end; ++it)  {
+    foreach__ (TabNode,_tablist_tabs_(f), it)  {
         prev_offset += len__(nodes);
         arlfn(TabNodePtr,reset)(nodes);
-        tryjmp(err,Clean, msg__(out, "    .\n"));
+        tryjmp(err,Clean, screen__(out, "    .\n"));
         tryjmp(err,Clean, tablist_to_node_list(it, nodes, out));
 
         const TabNodePtr* nodes_offset = arlfn(TabNodePtr,begin)(nodes);
         foreach__(TabNodePtr,nodes,n) {
-            if (*n == current_node) tryjmp(err,Clean, msg__(out, "[*] "));
-            else if (tab_node_is_current_in_tab(*n)) tryjmp(err,Clean, msg__(out, "[ ] "));
-            else tryjmp(err,Clean, msg__(out, "    "));
             const size_t ix = prev_offset + n - nodes_offset;
-            tryjmp(err,Clean, cmd_out_msg_append_ui_as_base36(out, ix));
-            tryjmp(err,Clean, msg__(out, " "));
+            if (ix < r.beg) continue;
+            if (r.end <= ix) goto Clean;
+            if (*n == current_node) tryjmp(err,Clean, screen__(out, "[*] "));
+            else if (tab_node_is_current_in_tab(*n)) tryjmp(err,Clean, screen__(out, "[ ] "));
+            else tryjmp(err,Clean, screen__(out, "    "));
+            tryjmp(err,Clean, cmd_out_std_append_ui_as_base36(out, ix));
+            tryjmp(err,Clean, screen__(out, " "));
             str_reset(&buf);
             tryjmp(err,Clean, tab_node_to_bookmark_description(*n, &buf));
-            tryjmp(err,Clean, msg_ln__(out, buf));
+            tryjmp(err,Clean, screen_ln__(out, buf));
         }
     }
 
@@ -211,3 +228,56 @@ tablist_set_currents_last_child_as_current(TabList tl[_1_]) {
     try( tab_node_current_node(current_tab, &cn));
     return tab_node_set_last_as_current(cn);
 }
+
+
+Err
+tablist_range_from_parsed_range(TabList tl[_1_], RangeParse p[_1_], Range r[_1_]) {
+    *r = (Range){0};
+    size_t range_max = tablist_node_count(tl);
+    switch (p->beg.tag) {
+        case range_addr_curr_tag:
+            try(tablist_current_node_ix(tl, &r->beg));
+            break;
+        case range_addr_none_tag:
+        case range_addr_prev_tag: 
+        case range_addr_search_tag:
+            return "invalid range.beg address for tablist";
+        case range_addr_beg_tag:
+             try(set__(&r->beg, p->beg.delta));
+            break;
+        case range_addr_end_tag: r->beg = range_max + p->beg.delta;
+            break;
+        case range_addr_num_tag: r->beg = p->beg.n + p->beg.delta;
+            break;
+        default: return "error: invalid RangeParse beg tag";
+    }
+    switch (p->end.tag) {
+        case range_addr_curr_tag:
+            try(tablist_current_node_ix(tl, &r->beg));
+            break;
+        case range_addr_prev_tag: 
+        case range_addr_search_tag:
+             return "invalid range.end address for tablist";
+        case range_addr_beg_tag: r->end = 1 + p->end.delta;
+            break;
+        case range_addr_none_tag: r->end = 1 + r->beg;
+            break;
+        case range_addr_end_tag: r->end = 1 + range_max + p->end.delta;
+            break;
+        case range_addr_num_tag: r->end = 1 + p->end.n + p->end.delta;
+            break;
+        default: return "error: invalid RangeParse end tag";
+    }
+    return Ok;
+}
+
+
+size_t
+tablist_node_count(TabList tl[_1_]) {
+    size_t count = 0;
+    foreach__(TabNode,_tablist_tabs_(tl), it) {
+        count += tab_node_count(it);
+    }
+    return count;
+}
+

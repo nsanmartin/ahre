@@ -71,9 +71,12 @@ static inline bool tab_node_is_current_in_tab(TabNode n[_1_]) {
 
 static inline Err tab_node_current_node(TabNode n[_1_], TabNode* out[_1_]) {
     TabNode* prev = NULL;
+
     while (n) {
+
         prev = n;
         n = arlfn(TabNode, at)(n->childs, n->current_ix);
+
     }
     if (!prev) return "error: tab_node_current_node failure";
     *out = prev;
@@ -169,4 +172,7 @@ Err tab_node_tree_append_ahref_from_node(
 );
 
 Err tab_node_to_bookmark_description(TabNode n[_1_], Str description[_1_]);
+size_t tab_node_count(TabNode n[_1_]);
+Err tab_node_current_node_ix(TabNode n[_1_], size_t out[_1_]);
+Err tab_node_show_title_cmd(CmdParams p[_1_], TabNode n[_1_]);
 #endif

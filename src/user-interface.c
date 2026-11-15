@@ -54,7 +54,6 @@ typedef ArlOf(DomNode)* nodeCollectionCallback (HtmlDoc h[_1_]);
 #define Hotl_LipMap_VT Str
 #include "lipmap.h"
 
-
 /* internal linkage */
 
 static Err
@@ -441,7 +440,7 @@ static Err cmd_session_set(CmdParams p[_1_]) { return run_cmd__(p, _cmd_session_
 
 
 static SessionCmd _cmd_tabs_[] =
-    { {.name="-",    .fn=cmd_tabs_back,      .help=NULL, .flags=CMD_CHAR}
+    { {.name="_",    .fn=cmd_tabs_back,      .help=NULL, .flags=CMD_CHAR}
     , {.name="",     .fn=cmd_tabs_info,      .help=NULL, .flags=CMD_ANY}
     , {0}
 };
@@ -729,7 +728,7 @@ static Err cmd_quit (CmdParams p[_1_]) { session_quit_set(p->s); return Ok;}
 
 
 #define CMD_TABS_DOC "ahre tabs are tres of the visited urls.\n"
-Err cmd_tabs(CmdParams p[_1_]) { return run_cmd__(p, _cmd_tabs_); }
+Err cmd_tabs(CmdParams p[_1_]) { return run_cmd_on_range__(p, _cmd_tabs_, 36); }
 
 #define CMD_DOC_DOC "'.' command: commands related to the current document\n"
 Err cmd_doc(CmdParams p[_1_]) { return run_cmd__(p, _cmd_doc_); }

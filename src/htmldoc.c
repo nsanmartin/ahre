@@ -2577,8 +2577,8 @@ bool htmldoc_content_is_html(HtmlDoc d[_1_]) {
     Request* r = htmldoc_request(d);
     if (!request_is_local(r)) return htmldoc_http_content_type_text_or_undef(d);
 
-    char*  url  = items__(request_urlstr(r));
-    size_t len  = len__(request_urlstr(r));
+    char*  url  = items__(request_actual_urlstr(r));
+    size_t len  = len__(request_actual_urlstr(r));
     if (!len || !url) return false;
     size_t dot = len - 1;
     for (;dot; --dot) if (url[dot] == '.') break;

@@ -210,4 +210,34 @@ tab_node_current_doc(TabNode n[_1_], HtmlDocPtr* out[_1_] ) {
     return Ok;
 }
 
+size_t
+tab_node_count(TabNode n[_1_]) {
+    size_t count = 1;
+    foreach__(TabNode,tab_node_childs(n),it) {
+        count += tab_node_count(it);
+    }
+    return count;
+}
 
+
+Err
+tab_node_current_node_ix(TabNode n[_1_], size_t out[_1_]) {
+    TabNode* prev = NULL;
+
+    while (n) {
+        prev = n;
+        n = arlfn(TabNode, at)(n->childs, n->current_ix);
+        if (n)
+            for (size_t ix = 0; ix < prev->current_ix; ++ix)
+                *out += tab_node_count(arlfn(TabNode,at)(tab_node_childs(prev),ix));
+    }
+
+    if (!prev) return "error: tab_node_current_node failure";
+    ++*out;
+    return Ok;
+}
+
+Err
+tab_node_show_title_cmd(CmdParams p[_1_], TabNode n[_1_]) {
+    return tab_node_to_bookmark_description(n, cmd_out_std(cmd_params_cmd_out(p)));
+}
