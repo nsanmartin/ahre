@@ -5,4 +5,4 @@ _check_compiler_() {
         CC="$CComp" CFLAGS="$CFlags" make run_tests &&
         for f in build/test_*; do "./$f" || return 1; done
 }
-_check_compiler_ clang && _check_compiler_ gcc && make clean
+_check_compiler_ tcc "-DAHRE_REGEX_DISABLED -DAHRE_QUICKJS_DISABLED=1" && _check_compiler_ clang && _check_compiler_ gcc && make clean

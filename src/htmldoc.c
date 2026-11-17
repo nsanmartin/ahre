@@ -756,7 +756,7 @@ draw_tag_li(DomNode node, DrawCtx ctx[_1_], DrawTextBuf text[_1_]) {
     }
 
     draw_text_buf_clean(&sub);
-    return Ok;
+    return err;
 }
 
 
@@ -1028,7 +1028,10 @@ htmldoc_init_move_request(
 
 Fail_Replace:
             htmldoc_destroy(doc_replace.ptr);
+            doc_replace = (HtmlDocPtr){0};
             request_clean(&req_replace);
+            req_replace = (Request){0};
+
             goto Fail;
         }
         default: fail("unsupported post action");
@@ -1191,7 +1194,7 @@ htmldoc_get_cookies(HtmlDoc d[_1_], ArlOf(Str) out[_1_]) {
 Clean:
     curl_free(host);
     curl_slist_free_all(cookies);
-    return Ok;
+    return e;
 }
 
 
