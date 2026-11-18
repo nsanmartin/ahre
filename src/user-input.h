@@ -92,6 +92,13 @@ static inline bool user_line_cmd_end(UserLine ul[_1_]) {
         || user_line_check_char(ul, '>')
         || user_line_check_char(ul, '\0'); 
 }
+
+static inline bool user_line_cmd_end_no_redirect(UserLine ul[_1_]) {
+    return user_line_is_exhausted(ul)
+        || user_line_check_char(ul, ';')
+        || user_line_check_char(ul, '\0');
+}
+
 bool user_line_cmd_end_skipping_space(UserLine ul[_1_]);
 Err user_line_cut_cmd(UserLine ul[_1_], CmdOut cout[_1_]);
 

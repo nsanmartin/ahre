@@ -480,12 +480,14 @@ parse_output_redirect(UserLine ul[_1_], CmdOut cout[_1_]) {
         sink_tag = CMD_OUT_WARN;
     } else if (str_startswith(svl("file"), sink)) {
         if(!user_line_pop_nonspace(ul, &src_param)) return "expecting file name";
-        if (!user_line_cut_cmd_no_redirect(ul) && !user_line_check_char(ul,'<'))
+        user_line_skip_space(ul);
+        if (!user_line_cmd_end_no_redirect(ul) && !user_line_check_char(ul,'<'))
             return "expecting end of redirect cmd";
         sink_tag = CMD_OUT_FILE;
     } else if (str_startswith(svl("shell"), sink)) {
         if(!user_line_pop_rest(ul, &src_param)) return "expecting system command";
-        if (!user_line_cut_cmd_no_redirect(ul) && !user_line_check_char(ul,'<'))
+        user_line_skip_space(ul);
+        if (!user_line_cmd_end_no_redirect(ul) && !user_line_check_char(ul,'<'))
             return "expecting end of redirect cmd";
         sink_tag = CMD_OUT_SHELL;
     } else {
